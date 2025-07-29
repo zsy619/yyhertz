@@ -1,0 +1,96 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4>用户详情</h4>
+            </div>
+            <div class="card-body">
+                {{if .User}}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <img src="/static/images/avatar-default.png" class="img-fluid rounded-circle" style="width: 150px; height: 150px;" alt="用户头像">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th>用户ID:</th>
+                                <td>{{.User.ID}}</td>
+                            </tr>
+                            <tr>
+                                <th>用户名:</th>
+                                <td>{{.User.Name}}</td>
+                            </tr>
+                            <tr>
+                                <th>邮箱:</th>
+                                <td>{{.User.Email}}</td>
+                            </tr>
+                            <tr>
+                                <th>状态:</th>
+                                <td>
+                                    {{if .User.Active}}
+                                    <span class="badge bg-success">活跃</span>
+                                    {{else}}
+                                    <span class="badge bg-danger">禁用</span>
+                                    {{end}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>注册时间:</th>
+                                <td>{{.User.CreatedAt}}</td>
+                            </tr>
+                            <tr>
+                                <th>最后登录:</th>
+                                <td>{{.User.LastLogin}}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>用户权限</h5>
+                    <div class="row">
+                        {{range .User.Permissions}}
+                        <div class="col-md-3 mb-2">
+                            <span class="badge bg-info">{{.}}</span>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <a href="/user" class="btn btn-secondary">返回列表</a>
+                    <a href="/user/edit?id={{.User.ID}}" class="btn btn-primary">编辑用户</a>
+                    <button class="btn btn-danger" onclick="deleteUser({{.User.ID}})">删除用户</button>
+                </div>
+                {{else}}
+                <div class="alert alert-warning">
+                    <h4>用户不存在</h4>
+                    <p>抱歉，您查找的用户不存在或已被删除。</p>
+                    <a href="/user" class="btn btn-primary">返回用户列表</a>
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteUser(id) {
+    if (confirm('确定要删除该用户吗？删除后将无法恢复！')) {
+        fetch('/user/remove?id=' + id, {
+            method: 'DELETE'
+        }).then(response => {
+            if (response.ok) {
+                alert('用户已删除');
+                window.location.href = '/user';
+            } else {
+                alert('删除失败');
+            }
+        });
+    }
+}
+</script>
+{{end}}

@@ -1,0 +1,126 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>用户管理</h2>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+                新增用户
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>邮箱</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Users}}
+                            <tr>
+                                <td>{{.ID}}</td>
+                                <td>{{.Name}}</td>
+                                <td>{{.Email}}</td>
+                                <td>{{.CreatedAt}}</td>
+                                <td>
+                                    <a href="/user/info?id={{.ID}}" class="btn btn-sm btn-outline-primary">查看</a>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="editUser({{.ID}})">编辑</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{.ID}})">删除</button>
+                                </td>
+                            </tr>
+                            {{else}}
+                            <tr>
+                                <td colspan="5" class="text-center">暂无用户数据</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                {{if .Pagination}}
+                <nav aria-label="分页导航">
+                    <ul class="pagination justify-content-center">
+                        {{if .Pagination.HasPrev}}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{.Pagination.PrevPage}}">上一页</a>
+                        </li>
+                        {{end}}
+
+                        {{range .Pagination.Pages}}
+                        <li class="page-item {{if .IsCurrent}}active{{end}}">
+                            <a class="page-link" href="?page={{.Page}}">{{.Page}}</a>
+                        </li>
+                        {{end}}
+
+                        {{if .Pagination.HasNext}}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{.Pagination.NextPage}}">下一页</a>
+                        </li>
+                        {{end}}
+                    </ul>
+                </nav>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 用户模态框 -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/user/create" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="userName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userEmail" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="userEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="userPassword" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editUser(id) {
+    // 编辑用户逻辑
+    window.location.href = '/user/edit?id=' + id;
+}
+
+function deleteUser(id) {
+    if (confirm('确定要删除该用户吗？')) {
+        fetch('/user/remove?id=' + id, {
+            method: 'DELETE'
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('删除失败');
+            }
+        });
+    }
+}
+</script>
+{{end}}

@@ -1,0 +1,179 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-md-12">
+        <h2>管理员控制台</h2>
+        <p class="text-muted">欢迎来到系统管理后台</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{.Stats.Users}}</h4>
+                        <p class="mb-0">总用户数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{.Stats.Products}}</h4>
+                        <p class="mb-0">商品数量</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-box fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{.Stats.Orders}}</h4>
+                        <p class="mb-0">订单数量</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>¥{{.Stats.Revenue}}</h4>
+                        <p class="mb-0">总收入</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>最近活动</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>用户</th>
+                                <th>操作</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .RecentActivities}}
+                            <tr>
+                                <td>{{.Time}}</td>
+                                <td>{{.User}}</td>
+                                <td>{{.Action}}</td>
+                                <td>
+                                    {{if eq .Status "success"}}
+                                    <span class="badge bg-success">成功</span>
+                                    {{else if eq .Status "warning"}}
+                                    <span class="badge bg-warning">警告</span>
+                                    {{else}}
+                                    <span class="badge bg-danger">失败</span>
+                                    {{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>系统状态</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>CPU使用率</span>
+                        <span>{{.SystemStatus.CPU}}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{.SystemStatus.CPU}}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>内存使用率</span>
+                        <span>{{.SystemStatus.Memory}}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{.SystemStatus.Memory}}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>磁盘使用率</span>
+                        <span>{{.SystemStatus.Disk}}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: {{.SystemStatus.Disk}}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/admin/users" class="btn btn-outline-primary">用户管理</a>
+                    <a href="/admin/settings" class="btn btn-outline-secondary">系统设置</a>
+                    <a href="/admin/logs" class="btn btn-outline-info">查看日志</a>
+                    <button class="btn btn-outline-danger" onclick="clearCache()">清除缓存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function clearCache() {
+    if (confirm('确定要清除系统缓存吗？')) {
+        fetch('/admin/clear-cache', {
+            method: 'POST'
+        }).then(response => {
+            if (response.ok) {
+                alert('缓存已清除');
+            } else {
+                alert('清除失败');
+            }
+        });
+    }
+}
+</script>
+{{end}}
