@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"mime/multipart"
 	"net"
 	"path/filepath"
@@ -14,17 +13,18 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
+	"hertz-controller/framework/config"
 	"hertz-controller/framework/types"
 )
 
 // BaseController 基础控制器结构
 // 提供了标准的HTTP响应方法、模板渲染、参数绑定等功能
 type BaseController struct {
-	Ctx        *RequestContext       // HTTP请求上下文
-	ViewPath   string                // 视图文件路径
-	LayoutPath string                // 布局文件路径
-	Data       map[string]any        // 模板数据
-	logger     *log.Logger           // 日志记录器
+	Ctx        *RequestContext // HTTP请求上下文
+	ViewPath   string          // 视图文件路径
+	LayoutPath string          // 布局文件路径
+	Data       map[string]any  // 模板数据
 }
 
 // NewBaseController 创建新的基础控制器实例
@@ -33,7 +33,6 @@ func NewBaseController() *BaseController {
 		Data:       make(map[string]any),
 		ViewPath:   "views",
 		LayoutPath: "views/layout",
-		logger:     log.Default(),
 	}
 }
 
@@ -48,9 +47,6 @@ func NewBaseControllerWithContext(ctx *RequestContext) *BaseController {
 func (c *BaseController) Init() {
 	if c.Data == nil {
 		c.Data = make(map[string]any)
-	}
-	if c.logger == nil {
-		c.logger = log.Default()
 	}
 }
 
@@ -72,7 +68,7 @@ func (c *BaseController) JSON(data any) {
 // JSONWithStatus 返回指定状态码的JSON数据
 func (c *BaseController) JSONWithStatus(status int, data any) {
 	if c.Ctx == nil {
-		c.logger.Printf("Error: Context is nil when trying to return JSON")
+		config.Error("Context is nil when trying to return JSON")
 		return
 	}
 	c.Ctx.JSON(status, data)
@@ -101,7 +97,7 @@ func (c *BaseController) String(s string) {
 // StringWithStatus 返回指定状态码的字符串响应
 func (c *BaseController) StringWithStatus(status int, s string) {
 	if c.Ctx == nil {
-		c.logger.Printf("Error: Context is nil when trying to return string")
+		config.Error("Context is nil when trying to return string")
 		return
 	}
 	c.Ctx.String(status, s)
@@ -113,7 +109,7 @@ func (c *BaseController) Render(viewName string, data ...map[string]any) {
 			c.Data[k] = v
 		}
 	}
-	
+
 	c.RenderWithLayout(viewName, "")
 }
 
@@ -121,16 +117,16 @@ func (c *BaseController) RenderWithLayout(viewName, layoutName string) {
 	if layoutName == "" {
 		layoutName = "layout.html"
 	}
-	
+
 	layoutPath := filepath.Join(c.LayoutPath, layoutName)
 	viewPath := filepath.Join(c.ViewPath, viewName)
-	
+
 	tmpl, err := template.ParseFiles(layoutPath, viewPath)
 	if err != nil {
 		c.Error(500, "模板解析错误: "+err.Error())
 		return
 	}
-	
+
 	c.Ctx.Header("Content-Type", "text/html; charset=utf-8")
 	err = tmpl.ExecuteTemplate(c.Ctx, "layout", c.Data)
 	if err != nil {
@@ -145,14 +141,14 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 			c.Data[k] = v
 		}
 	}
-	
+
 	viewPath := filepath.Join(c.ViewPath, viewName)
 	tmpl, err := template.ParseFiles(viewPath)
 	if err != nil {
 		c.Error(500, "模板解析错误: "+err.Error())
 		return
 	}
-	
+
 	c.Ctx.Header("Content-Type", "text/html; charset=utf-8")
 	err = tmpl.Execute(c.Ctx, c.Data)
 	if err != nil {
@@ -275,12 +271,12 @@ func (c *BaseController) GetClientIP() string {
 			}
 		}
 	}
-	
+
 	// 尝试从X-Real-IP获取
 	if xri := c.Ctx.GetHeader("X-Real-IP"); len(xri) > 0 {
 		return string(xri)
 	}
-	
+
 	// 从RemoteAddr获取
 	remoteAddr := c.Ctx.RemoteAddr().String()
 	host, _, err := net.SplitHostPort(remoteAddr)
@@ -299,7 +295,7 @@ func (c *BaseController) GetPostJSON() map[string]any {
 	if err != nil {
 		return make(map[string]any)
 	}
-	
+
 	var data map[string]any
 	if err := json.Unmarshal(body, &data); err != nil {
 		return make(map[string]any)
@@ -332,7 +328,7 @@ func (c *BaseController) GetPageInfoByParam(pageParam, pageSizeParam string, pag
 	if pageSizeParam == "" {
 		pageSizeParam = "limit"
 	}
-	
+
 	// 如果没有Context，返回默认值
 	if c.Ctx == nil {
 		page = 1
@@ -341,7 +337,7 @@ func (c *BaseController) GetPageInfoByParam(pageParam, pageSizeParam string, pag
 		page = c.GetInt(pageParam, 1)
 		pageSize = c.GetInt(pageSizeParam, pageSizeDefault)
 	}
-	
+
 	// 确保页码和页大小的合理性
 	if page < 1 {
 		page = 1
@@ -407,7 +403,7 @@ func (c *BaseController) GetParam(key string) string {
 	return c.Ctx.Param(key)
 }
 
-// GetPostForm 获取POST表单参数 
+// GetPostForm 获取POST表单参数
 func (c *BaseController) GetPostForm(key string) string {
 	if c.Ctx == nil {
 		return ""
@@ -685,24 +681,102 @@ func (c *BaseController) GetSession(key string) any {
 
 // === 调试和日志方法 ===
 
+// ============= 增强日志方法 =============
+
 // LogInfo 记录信息日志
 func (c *BaseController) LogInfo(format string, args ...any) {
-	if c.logger != nil {
-		c.logger.Printf("[INFO] "+format, args...)
-	}
+	config.Infof(format, args...)
 }
 
 // LogError 记录错误日志
 func (c *BaseController) LogError(format string, args ...any) {
-	if c.logger != nil {
-		c.logger.Printf("[ERROR] "+format, args...)
-	}
+	config.Errorf(format, args...)
 }
 
 // LogDebug 记录调试日志
 func (c *BaseController) LogDebug(format string, args ...any) {
-	if c.logger != nil {
-		c.logger.Printf("[DEBUG] "+format, args...)
+	config.Debugf(format, args...)
+}
+
+// LogWarn 记录警告日志
+func (c *BaseController) LogWarn(format string, args ...any) {
+	config.Warnf(format, args...)
+}
+
+// LogFatal 记录致命错误日志
+func (c *BaseController) LogFatal(format string, args ...any) {
+	config.Fatalf(format, args...)
+}
+
+// LogWithFields 带字段的日志记录
+func (c *BaseController) LogWithFields(level string, msg string, fields map[string]any) {
+	entry := config.WithFields(fields)
+	switch strings.ToLower(level) {
+	case "info":
+		entry.Info(msg)
+	case "error":
+		entry.Error(msg)
+	case "debug":
+		entry.Debug(msg)
+	case "warn":
+		entry.Warn(msg)
+	case "fatal":
+		entry.Fatal(msg)
+	case "panic":
+		entry.Panic(msg)
+	default:
+		entry.Info(msg)
+	}
+}
+
+// LogRequest 记录请求日志
+func (c *BaseController) LogRequest() {
+	if c.Ctx == nil {
+		return
+	}
+
+	// 获取请求ID（如果存在）
+	requestID := c.Ctx.GetString("request_id")
+
+	fields := map[string]any{
+		"method":     string(c.Ctx.Method()),
+		"path":       string(c.Ctx.Path()),
+		"user_agent": string(c.Ctx.UserAgent()),
+		"client_ip":  c.Ctx.ClientIP(),
+		"request_id": requestID,
+		"timestamp":  time.Now().Format(time.RFC3339),
+	}
+
+	config.WithFields(fields).Info("Controller: HTTP Request started")
+}
+
+// LogResponse 记录响应日志
+func (c *BaseController) LogResponse(statusCode int, message string) {
+	if c.Ctx == nil {
+		return
+	}
+
+	// 获取请求ID（如果存在）
+	requestID := c.Ctx.GetString("request_id")
+
+	fields := map[string]any{
+		"status_code": statusCode,
+		"message":     message,
+		"path":        string(c.Ctx.Path()),
+		"method":      string(c.Ctx.Method()),
+		"request_id":  requestID,
+		"timestamp":   time.Now().Format(time.RFC3339),
+	}
+
+	// 根据状态码选择日志级别
+	if statusCode >= 500 {
+		config.WithFields(fields).Error("Controller: HTTP Response completed with server error")
+	} else if statusCode >= 400 {
+		config.WithFields(fields).Warn("Controller: HTTP Response completed with client error")
+	} else if statusCode >= 300 {
+		config.WithFields(fields).Info("Controller: HTTP Response completed with redirect")
+	} else {
+		config.WithFields(fields).Info("Controller: HTTP Response completed successfully")
 	}
 }
 
@@ -711,7 +785,7 @@ func (c *BaseController) DumpRequest() map[string]any {
 	if c.Ctx == nil {
 		return map[string]any{"error": "context is nil"}
 	}
-	
+
 	return map[string]any{
 		"method":     string(c.Ctx.Method()),
 		"path":       string(c.Ctx.Path()),
@@ -728,8 +802,181 @@ func (c *BaseController) getHeaders() map[string]string {
 	if c.Ctx == nil {
 		return headers
 	}
-	
+
 	// 这里需要根据Hertz的实际API来实现
 	// 暂时返回空map，实际项目中需要补充
 	return headers
+}
+
+// ============= 新增的单例日志增强方法 =============
+
+// LogWithRequestID 记录带请求ID的日志
+func (c *BaseController) LogWithRequestID(level string, msg string) {
+	if c.Ctx == nil {
+		config.Infof("Controller log: %s", msg)
+		return
+	}
+
+	requestID := c.Ctx.GetString("request_id")
+	entry := config.WithRequestID(requestID)
+
+	switch strings.ToLower(level) {
+	case "info":
+		entry.Info(msg)
+	case "error":
+		entry.Error(msg)
+	case "debug":
+		entry.Debug(msg)
+	case "warn":
+		entry.Warn(msg)
+	case "fatal":
+		entry.Fatal(msg)
+	default:
+		entry.Info(msg)
+	}
+}
+
+// LogWithUserID 记录带用户ID的日志
+func (c *BaseController) LogWithUserID(level string, msg string, userID string) {
+	entry := config.WithUserID(userID)
+
+	switch strings.ToLower(level) {
+	case "info":
+		entry.Info(msg)
+	case "error":
+		entry.Error(msg)
+	case "debug":
+		entry.Debug(msg)
+	case "warn":
+		entry.Warn(msg)
+	case "fatal":
+		entry.Fatal(msg)
+	default:
+		entry.Info(msg)
+	}
+}
+
+// LogControllerAction 记录控制器动作日志
+func (c *BaseController) LogControllerAction(action string, params ...map[string]any) {
+	if c.Ctx == nil {
+		config.Infof("Controller action: %s", action)
+		return
+	}
+
+	// 获取请求ID
+	requestID := c.Ctx.GetString("request_id")
+
+	// 构建基础字段
+	fields := map[string]any{
+		"action":     action,
+		"controller": "BaseController", // 子类可以重写
+		"method":     string(c.Ctx.Method()),
+		"path":       string(c.Ctx.Path()),
+		"request_id": requestID,
+		"timestamp":  time.Now().Format(time.RFC3339),
+	}
+
+	// 合并额外参数
+	if len(params) > 0 {
+		for k, v := range params[0] {
+			fields[k] = v
+		}
+	}
+
+	config.WithFields(fields).Info("Controller action executed")
+}
+
+// LogValidationError 记录验证错误
+func (c *BaseController) LogValidationError(errors []string, data map[string]any) {
+	if c.Ctx == nil {
+		config.Errorf("Validation errors: %v", errors)
+		return
+	}
+
+	requestID := c.Ctx.GetString("request_id")
+
+	fields := map[string]any{
+		"validation_errors": errors,
+		"error_count":       len(errors),
+		"request_id":        requestID,
+		"path":              string(c.Ctx.Path()),
+		"method":            string(c.Ctx.Method()),
+		"client_ip":         c.Ctx.ClientIP(),
+	}
+
+	// 添加验证数据（去除敏感信息）
+	if data != nil {
+		sanitizedData := make(map[string]any)
+		for k, v := range data {
+			// 简单的敏感信息过滤
+			if strings.Contains(strings.ToLower(k), "password") ||
+				strings.Contains(strings.ToLower(k), "secret") ||
+				strings.Contains(strings.ToLower(k), "token") {
+				sanitizedData[k] = "***"
+			} else {
+				sanitizedData[k] = v
+			}
+		}
+		fields["input_data"] = sanitizedData
+	}
+
+	config.WithFields(fields).Warn("Controller validation failed")
+}
+
+// LogDatabaseOperation 记录数据库操作日志
+func (c *BaseController) LogDatabaseOperation(operation string, table string, duration time.Duration, err error) {
+	if c.Ctx == nil {
+		if err != nil {
+			config.Errorf("Database %s on %s failed: %v (took %v)", operation, table, err, duration)
+		} else {
+			config.Infof("Database %s on %s completed (took %v)", operation, table, duration)
+		}
+		return
+	}
+
+	requestID := c.Ctx.GetString("request_id")
+
+	fields := map[string]any{
+		"db_operation": operation,
+		"table":        table,
+		"duration":     duration.String(),
+		"duration_ms":  duration.Milliseconds(),
+		"request_id":   requestID,
+		"path":         string(c.Ctx.Path()),
+		"method":       string(c.Ctx.Method()),
+	}
+
+	if err != nil {
+		fields["error"] = err.Error()
+		config.WithFields(fields).Error("Controller database operation failed")
+	} else {
+		config.WithFields(fields).Debug("Controller database operation completed")
+	}
+}
+
+// LogBusinessLogic 记录业务逻辑日志
+func (c *BaseController) LogBusinessLogic(event string, details map[string]any) {
+	if c.Ctx == nil {
+		config.WithFields(details).Infof("Business logic: %s", event)
+		return
+	}
+
+	requestID := c.Ctx.GetString("request_id")
+
+	fields := map[string]any{
+		"business_event": event,
+		"request_id":     requestID,
+		"path":           string(c.Ctx.Path()),
+		"method":         string(c.Ctx.Method()),
+		"timestamp":      time.Now().Format(time.RFC3339),
+	}
+
+	// 合并详细信息
+	if details != nil {
+		for k, v := range details {
+			fields[k] = v
+		}
+	}
+
+	config.WithFields(fields).Info("Controller business logic executed")
 }

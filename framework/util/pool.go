@@ -80,9 +80,9 @@ func NewWorkerPool(workerCount int, queueSize int) *WorkerPool {
 	if queueSize <= 0 {
 		queueSize = workerCount * 2
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	pool := &WorkerPool{
 		workerCount: workerCount,
 		taskQueue:   make(chan func(), queueSize),
@@ -90,7 +90,7 @@ func NewWorkerPool(workerCount int, queueSize int) *WorkerPool {
 		ctx:         ctx,
 		cancel:      cancel,
 	}
-	
+
 	return pool
 }
 
@@ -105,7 +105,7 @@ func (wp *WorkerPool) Start() {
 // worker 工作协程
 func (wp *WorkerPool) worker(id int) {
 	defer wp.wg.Done()
-	
+
 	for {
 		select {
 		case task := <-wp.taskQueue:
@@ -188,19 +188,19 @@ func (wp *WorkerPool) IsRunning() bool {
 
 // TaskResult 任务结果结构
 type TaskResult struct {
-	Result interface{}
+	Result any
 	Error  error
 }
 
 // Task 任务结构
 type Task struct {
 	ID     string
-	Func   func() (interface{}, error)
+	Func   func() (any, error)
 	Result chan TaskResult
 }
 
 // NewTask 创建新任务
-func NewTask(id string, fn func() (interface{}, error)) *Task {
+func NewTask(id string, fn func() (any, error)) *Task {
 	return &Task{
 		ID:     id,
 		Func:   fn,
@@ -211,7 +211,7 @@ func NewTask(id string, fn func() (interface{}, error)) *Task {
 // Execute 执行任务
 func (t *Task) Execute() {
 	defer close(t.Result)
-	
+
 	result, err := t.Func()
 	t.Result <- TaskResult{
 		Result: result,
@@ -269,7 +269,7 @@ func (rp *ResultPool) GetResult(taskID string) (*Task, bool) {
 // GetAllResults 获取所有结果
 func (rp *ResultPool) GetAllResults() map[string]*Task {
 	results := make(map[string]*Task)
-	rp.results.Range(func(key, value interface{}) bool {
+	rp.results.Range(func(key, value any) bool {
 		if taskID, ok := key.(string); ok {
 			if task, ok := value.(*Task); ok {
 				results[taskID] = task
@@ -277,10 +277,10 @@ func (rp *ResultPool) GetAllResults() map[string]*Task {
 		}
 		return true
 	})
-	
+
 	// 清空结果
 	rp.results = sync.Map{}
-	
+
 	return results
 }
 
@@ -288,42 +288,42 @@ func (rp *ResultPool) GetAllResults() map[string]*Task {
 type BatchProcessor struct {
 	batchSize int
 	timeout   time.Duration
-	processor func([]interface{}) error
-	buffer    []interface{}
+	processor func([]any) error
+	buffer    []any
 	mutex     sync.Mutex
 	timer     *time.Timer
 }
 
 // NewBatchProcessor 创建批处理器
-func NewBatchProcessor(batchSize int, timeout time.Duration, processor func([]interface{}) error) *BatchProcessor {
+func NewBatchProcessor(batchSize int, timeout time.Duration, processor func([]any) error) *BatchProcessor {
 	return &BatchProcessor{
 		batchSize: batchSize,
 		timeout:   timeout,
 		processor: processor,
-		buffer:    make([]interface{}, 0, batchSize),
+		buffer:    make([]any, 0, batchSize),
 	}
 }
 
 // Add 添加数据到批处理器
-func (bp *BatchProcessor) Add(item interface{}) error {
+func (bp *BatchProcessor) Add(item any) error {
 	bp.mutex.Lock()
 	defer bp.mutex.Unlock()
-	
+
 	bp.buffer = append(bp.buffer, item)
-	
+
 	// 如果是第一个元素，启动定时器
 	if len(bp.buffer) == 1 {
 		bp.timer = time.AfterFunc(bp.timeout, func() {
 			bp.flush()
 		})
 	}
-	
+
 	// 如果达到批大小，立即处理
 	if len(bp.buffer) >= bp.batchSize {
 		bp.stopTimer()
 		return bp.processBatch()
 	}
-	
+
 	return nil
 }
 
@@ -331,7 +331,7 @@ func (bp *BatchProcessor) Add(item interface{}) error {
 func (bp *BatchProcessor) Flush() error {
 	bp.mutex.Lock()
 	defer bp.mutex.Unlock()
-	
+
 	bp.stopTimer()
 	return bp.processBatch()
 }
@@ -340,7 +340,7 @@ func (bp *BatchProcessor) Flush() error {
 func (bp *BatchProcessor) flush() {
 	bp.mutex.Lock()
 	defer bp.mutex.Unlock()
-	
+
 	bp.processBatch()
 }
 
@@ -357,11 +357,11 @@ func (bp *BatchProcessor) processBatch() error {
 	if len(bp.buffer) == 0 {
 		return nil
 	}
-	
-	batch := make([]interface{}, len(bp.buffer))
+
+	batch := make([]any, len(bp.buffer))
 	copy(batch, bp.buffer)
 	bp.buffer = bp.buffer[:0] // 清空缓冲区
-	
+
 	return bp.processor(batch)
 }
 
