@@ -1,9 +1,11 @@
-package yyhertz
+package mvc
 
 import (
 	"context"
 	"reflect"
 	"strings"
+
+	"github.com/cloudwego/hertz/pkg/app"
 )
 
 // RegisterController 注册控制器到指定路径
@@ -159,4 +161,20 @@ func (app *App) Router(basePath string, controller IController, routes ...string
 		// 创建并注册处理器
 		app.createHandler(httpMethod, routePath, rt, methodName)
 	}
+}
+
+func (app *App) Handle(method, path string, handler HandlerFunc) {
+	app.Hertz.Handle(method, path, AdaptHandler(handler))
+}
+
+func (app *App) Static(prefix, root string) {
+	app.Hertz.Static(prefix, root)
+}
+
+func (app *App) StaticFile(path, file string) {
+	app.Hertz.StaticFile(path, file)
+}
+
+func (app *App) StaticFS(prefix string, fs *app.FS) {
+	app.Hertz.StaticFS(prefix, fs)
 }

@@ -1,22 +1,29 @@
-package types
+package response
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/zsy619/yyhertz/framework/constant"
+	"github.com/zsy619/yyhertz/framework/errors"
+)
+
+// =============== 响应类型定义 ===============
 
 // JSONResponse 标准JSON响应结构
 type JSONResponse struct {
-	Code    CodeResult `json:"code"`
-	Message string     `json:"message"`
-	Data    any        `json:"data"`
+	Code    constant.CodeResult `json:"code"`
+	Message string              `json:"message"`
+	Data    any                 `json:"data"`
 }
 
 // SetResult 设置响应结果
-func (r *JSONResponse) SetResult(code CodeResult, message string) {
+func (r *JSONResponse) SetResult(code constant.CodeResult, message string) {
 	r.Code = code
 	r.Message = message
 }
 
 // NewJSONResponse 创建标准JSON响应
-func NewJSONResponse(code CodeResult, message string) *JSONResponse {
+func NewJSONResponse(code constant.CodeResult, message string) *JSONResponse {
 	return &JSONResponse{
 		Code:    code,
 		Message: message,
@@ -24,7 +31,7 @@ func NewJSONResponse(code CodeResult, message string) *JSONResponse {
 }
 
 // NewJSONDataResponse 创建带数据的JSON响应
-func NewJSONDataResponse(code CodeResult, message string, data any) *JSONResponse {
+func NewJSONDataResponse(code constant.CodeResult, message string, data any) *JSONResponse {
 	return &JSONResponse{
 		Code:    code,
 		Message: message,
@@ -34,17 +41,17 @@ func NewJSONDataResponse(code CodeResult, message string, data any) *JSONRespons
 
 // JSONResponsePage 分页响应结构
 type JSONResponsePage struct {
-	Code    CodeResult `json:"code"`
-	Message string     `json:"message"`
-	Data    any        `json:"data"`
-	Count   int64      `json:"count"`
-	Page    int        `json:"page,omitempty"`
-	Size    int        `json:"size,omitempty"`
-	Total   int64      `json:"total,omitempty"`
+	Code    constant.CodeResult `json:"code"`
+	Message string              `json:"message"`
+	Data    any                 `json:"data"`
+	Count   int64               `json:"count"`
+	Page    int                 `json:"page,omitempty"`
+	Size    int                 `json:"size,omitempty"`
+	Total   int64               `json:"total,omitempty"`
 }
 
 // NewJSONPageResponse 创建分页响应
-func NewJSONPageResponse(code CodeResult, message string, data any, count int64) *JSONResponsePage {
+func NewJSONPageResponse(code constant.CodeResult, message string, data any, count int64) *JSONResponsePage {
 	return &JSONResponsePage{
 		Code:    code,
 		Message: message,
@@ -55,9 +62,9 @@ func NewJSONPageResponse(code CodeResult, message string, data any, count int64)
 
 // JSONResponseAPI API响应结构
 type JSONResponseAPI struct {
-	Code    CodeResult `json:"code"`
-	Message string     `json:"msg"`
-	Data    any        `json:"data"`
+	Code    constant.CodeResult `json:"code"`
+	Message string              `json:"msg"`
+	Data    any                 `json:"data"`
 }
 
 // Result 简单结果结构
@@ -173,16 +180,16 @@ func NewSelectResponse(code int, msg string, data []SelectItem) *SelectResponse 
 
 // ErrorResponse 错误响应结构
 type ErrorResponse struct {
-	Code      CodeResult `json:"code"`
-	Message   string     `json:"message"`
-	Error     string     `json:"error,omitempty"`
-	Details   any        `json:"details,omitempty"`
-	Timestamp int64      `json:"timestamp"`
-	Path      string     `json:"path,omitempty"`
+	Code      constant.CodeResult `json:"code"`
+	Message   string              `json:"message"`
+	Error     string              `json:"error,omitempty"`
+	Details   any                 `json:"details,omitempty"`
+	Timestamp int64               `json:"timestamp"`
+	Path      string              `json:"path,omitempty"`
 }
 
 // NewErrorResponse 创建错误响应
-func NewErrorResponse(code CodeResult, message, error, path string, details any, timestamp int64) *ErrorResponse {
+func NewErrorResponse(code constant.CodeResult, message, error, path string, details any, timestamp int64) *ErrorResponse {
 	return &ErrorResponse{
 		Code:      code,
 		Message:   message,
@@ -207,40 +214,40 @@ func (e *ValidationError) Error() string {
 
 // ValidationResponse 验证错误响应
 type ValidationResponse struct {
-	Code    CodeResult        `json:"code"`
-	Message string            `json:"message"`
-	Errors  []ValidationError `json:"errors"`
+	Code    constant.CodeResult `json:"code"`
+	Message string              `json:"message"`
+	Errors  []ValidationError   `json:"errors"`
 }
 
 // NewValidationResponse 创建验证错误响应
 func NewValidationResponse(message string, errors []ValidationError) *ValidationResponse {
 	return &ValidationResponse{
-		Code:    CodeParamError,
+		Code:    constant.CodeParamError,
 		Message: message,
 		Errors:  errors,
 	}
 }
 
-// 便捷方法
+// =============== 便捷响应方法 ===============
 
 // Success 成功响应
 func Success(message string, data any) *JSONResponse {
-	return NewJSONDataResponse(CodeSuccess, message, data)
+	return NewJSONDataResponse(constant.CodeSuccess, message, data)
 }
 
 // Error 错误响应
 func Error(message string) *JSONResponse {
-	return NewJSONResponse(CodeError, message)
+	return NewJSONResponse(constant.CodeError, message)
 }
 
 // SuccessPage 成功分页响应
 func SuccessPage(message string, data any, count int64) *JSONResponsePage {
-	return NewJSONPageResponse(CodeSuccess, message, data, count)
+	return NewJSONPageResponse(constant.CodeSuccess, message, data, count)
 }
 
 // ErrorPage 错误分页响应
 func ErrorPage(message string, data any, count int64) *JSONResponsePage {
-	return NewJSONPageResponse(CodeError, message, data, count)
+	return NewJSONPageResponse(constant.CodeError, message, data, count)
 }
 
 // SuccessTable 成功表格响应
@@ -253,7 +260,55 @@ func ErrorTable(msg string) *TableResponse {
 	return NewTableResponse(1, msg, nil, 0)
 }
 
-// 选项模式支持
+// BuildSuccessResp 构建成功响应
+func BuildSuccessResp(data any) *JSONResponse {
+	return &JSONResponse{
+		Code:    constant.CodeSuccess,
+		Message: "success",
+		Data:    data,
+	}
+}
+
+// BuildErrorResp 构建错误响应
+func BuildErrorResp(err error) *JSONResponse {
+	if err == nil {
+		return BuildSuccessResp(nil)
+	}
+
+	if errNo, ok := err.(errors.ErrNo); ok {
+		return &JSONResponse{
+			Code:    constant.CodeResult(errNo.ErrCode),
+			Message: errNo.ErrMsg,
+		}
+	}
+
+	return &JSONResponse{
+		Code:    constant.CodeError,
+		Message: err.Error(),
+	}
+}
+
+// BuildPageResp 构建分页响应
+func BuildPageResp(data any, total int64, page, pageSize int) *JSONResponsePage {
+	return &JSONResponsePage{
+		Code:    constant.CodeSuccess,
+		Message: "success",
+		Data:    data,
+		Count:   total,
+		Page:    page,
+	}
+}
+
+// BuildUploadResp 构建上传文件响应
+func BuildUploadResp(url, filename string, size int64) *JSONUploadFile {
+	return &JSONUploadFile{
+		FileSize: size,
+		FileUrl2: url,
+		FileName: filename,
+	}
+}
+
+// =============== 选项模式支持 ===============
 
 // ResultOption Result选项函数
 type ResultOption func(*Result)
@@ -317,13 +372,4 @@ func WithDataResultCount(count int64) DataResultOption {
 	return func(dr *DataResult) {
 		dr.Count = count
 	}
-}
-
-// NewDataResultWithOptions 使用选项模式创建数据结果
-func NewDataResultWithOptions(opts ...DataResultOption) *DataResult {
-	result := &DataResult{}
-	for _, opt := range opts {
-		opt(result)
-	}
-	return result
 }

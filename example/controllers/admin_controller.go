@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"github.com/zsy619/yyhertz/framework/yyhertz"
+	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
 type AdminController struct {
-	yyhertz.BaseController
+	mvc.BaseController
 }
 
 func (c *AdminController) Prepare() {

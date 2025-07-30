@@ -1,4 +1,4 @@
-package util
+package handler
 
 import (
 	"context"
@@ -15,25 +15,25 @@ import (
 type GenericHandler[T any, R any] interface {
 	// Handle 核心处理方法
 	Handle(ctx context.Context, input T) (*GenericResult[R], error)
-	
+
 	// Validate 验证输入参数
 	Validate(input T) error
-	
+
 	// PreProcess 预处理
 	PreProcess(ctx context.Context, input T) (T, error)
-	
+
 	// PostProcess 后处理
 	PostProcess(ctx context.Context, result R) (R, error)
 }
 
 // GenericResult 通用结果结构
 type GenericResult[T any] struct {
-	Data      T             `json:"data"`
-	Success   bool          `json:"success"`
-	Message   string        `json:"message"`
-	Code      int           `json:"code"`
-	RequestID string        `json:"request_id,omitempty"`
-	Timestamp int64         `json:"timestamp"`
+	Data      T              `json:"data"`
+	Success   bool           `json:"success"`
+	Message   string         `json:"message"`
+	Code      int            `json:"code"`
+	RequestID string         `json:"request_id,omitempty"`
+	Timestamp int64          `json:"timestamp"`
 	Meta      map[string]any `json:"meta,omitempty"`
 }
 
@@ -62,11 +62,11 @@ func NewErrorResult[T any](message string, code int) *GenericResult[T] {
 
 // BaseGenericHandler 基础泛型处理器实现
 type BaseGenericHandler[T any, R any] struct {
-	Name        string
-	Description string
-	validator   func(T) error
-	preProcessor func(context.Context, T) (T, error)
-	processor   func(context.Context, T) (R, error)
+	Name          string
+	Description   string
+	validator     func(T) error
+	preProcessor  func(context.Context, T) (T, error)
+	processor     func(context.Context, T) (R, error)
 	postProcessor func(context.Context, R) (R, error)
 }
 
@@ -105,10 +105,10 @@ func (h *BaseGenericHandler[T, R]) WithPostProcessor(postProcessor func(context.
 // Handle 实现核心处理逻辑
 func (h *BaseGenericHandler[T, R]) Handle(ctx context.Context, input T) (*GenericResult[R], error) {
 	start := time.Now()
-	
+
 	// 记录处理开始
 	config.WithFields(map[string]any{
-		"handler": h.Name,
+		"handler":    h.Name,
 		"input_type": reflect.TypeOf(input).String(),
 		"start_time": start.Format(time.RFC3339),
 	}).Debug("Generic handler processing started")
@@ -116,22 +116,22 @@ func (h *BaseGenericHandler[T, R]) Handle(ctx context.Context, input T) (*Generi
 	// 1. 验证输入
 	if err := h.Validate(input); err != nil {
 		config.WithFields(map[string]any{
-			"handler": h.Name,
-			"error": err.Error(),
+			"handler":  h.Name,
+			"error":    err.Error(),
 			"duration": time.Since(start).String(),
 		}).Warn("Generic handler validation failed")
-		return NewErrorResult[R]("Validation failed: " + err.Error(), 400), err
+		return NewErrorResult[R]("Validation failed: "+err.Error(), 400), err
 	}
 
 	// 2. 预处理
 	processedInput, err := h.PreProcess(ctx, input)
 	if err != nil {
 		config.WithFields(map[string]any{
-			"handler": h.Name,
-			"error": err.Error(),
+			"handler":  h.Name,
+			"error":    err.Error(),
 			"duration": time.Since(start).String(),
 		}).Error("Generic handler pre-processing failed")
-		return NewErrorResult[R]("Pre-processing failed: " + err.Error(), 500), err
+		return NewErrorResult[R]("Pre-processing failed: "+err.Error(), 500), err
 	}
 
 	// 3. 核心处理
@@ -139,7 +139,7 @@ func (h *BaseGenericHandler[T, R]) Handle(ctx context.Context, input T) (*Generi
 		err := errors.New("processor not configured")
 		config.WithFields(map[string]any{
 			"handler": h.Name,
-			"error": err.Error(),
+			"error":   err.Error(),
 		}).Error("Generic handler processor not configured")
 		return NewErrorResult[R]("Processor not configured", 500), err
 	}
@@ -147,38 +147,38 @@ func (h *BaseGenericHandler[T, R]) Handle(ctx context.Context, input T) (*Generi
 	result, err := h.processor(ctx, processedInput)
 	if err != nil {
 		config.WithFields(map[string]any{
-			"handler": h.Name,
-			"error": err.Error(),
+			"handler":  h.Name,
+			"error":    err.Error(),
 			"duration": time.Since(start).String(),
 		}).Error("Generic handler processing failed")
-		return NewErrorResult[R]("Processing failed: " + err.Error(), 500), err
+		return NewErrorResult[R]("Processing failed: "+err.Error(), 500), err
 	}
 
 	// 4. 后处理
 	finalResult, err := h.PostProcess(ctx, result)
 	if err != nil {
 		config.WithFields(map[string]any{
-			"handler": h.Name,
-			"error": err.Error(),
+			"handler":  h.Name,
+			"error":    err.Error(),
 			"duration": time.Since(start).String(),
 		}).Error("Generic handler post-processing failed")
-		return NewErrorResult[R]("Post-processing failed: " + err.Error(), 500), err
+		return NewErrorResult[R]("Post-processing failed: "+err.Error(), 500), err
 	}
 
 	duration := time.Since(start)
-	
+
 	// 记录处理成功
 	config.WithFields(map[string]any{
-		"handler": h.Name,
-		"duration": duration.String(),
+		"handler":     h.Name,
+		"duration":    duration.String(),
 		"duration_ms": duration.Milliseconds(),
-		"success": true,
+		"success":     true,
 	}).Info("Generic handler processing completed successfully")
 
 	successResult := NewSuccessResult(finalResult, "Processing completed successfully")
 	successResult.Meta["duration"] = duration.String()
 	successResult.Meta["handler"] = h.Name
-	
+
 	return successResult, nil
 }
 
@@ -230,9 +230,9 @@ func (c *GenericChain[T]) Add(handler func(context.Context, T) (T, error)) *Gene
 func (c *GenericChain[T]) Execute(ctx context.Context, input T) (T, error) {
 	start := time.Now()
 	current := input
-	
+
 	config.WithFields(map[string]any{
-		"chain": c.name,
+		"chain":          c.name,
 		"handlers_count": len(c.handlers),
 	}).Debug("Generic chain execution started")
 
@@ -240,31 +240,31 @@ func (c *GenericChain[T]) Execute(ctx context.Context, input T) (T, error) {
 		stepStart := time.Now()
 		result, err := handler(ctx, current)
 		stepDuration := time.Since(stepStart)
-		
+
 		if err != nil {
 			config.WithFields(map[string]any{
-				"chain": c.name,
-				"step": i + 1,
-				"error": err.Error(),
-				"step_duration": stepDuration.String(),
+				"chain":          c.name,
+				"step":           i + 1,
+				"error":          err.Error(),
+				"step_duration":  stepDuration.String(),
 				"total_duration": time.Since(start).String(),
 			}).Error("Generic chain step failed")
 			return current, fmt.Errorf("chain step %d failed: %w", i+1, err)
 		}
-		
+
 		config.WithFields(map[string]any{
-			"chain": c.name,
-			"step": i + 1,
+			"chain":         c.name,
+			"step":          i + 1,
 			"step_duration": stepDuration.String(),
 		}).Debug("Generic chain step completed")
-		
+
 		current = result
 	}
 
 	totalDuration := time.Since(start)
 	config.WithFields(map[string]any{
-		"chain": c.name,
-		"total_duration": totalDuration.String(),
+		"chain":           c.name,
+		"total_duration":  totalDuration.String(),
 		"steps_completed": len(c.handlers),
 	}).Info("Generic chain execution completed")
 
@@ -295,80 +295,80 @@ func (p *GenericPipeline[T, R]) AddStage(stage func(context.Context, any) (any, 
 func (p *GenericPipeline[T, R]) Execute(ctx context.Context, input T) (R, error) {
 	start := time.Now()
 	var current any = input
-	
+
 	config.WithFields(map[string]any{
-		"pipeline": p.name,
+		"pipeline":     p.name,
 		"stages_count": len(p.stages),
-		"input_type": reflect.TypeOf(input).String(),
+		"input_type":   reflect.TypeOf(input).String(),
 	}).Debug("Generic pipeline execution started")
 
 	for i, stage := range p.stages {
 		stepStart := time.Now()
 		result, err := stage(ctx, current)
 		stepDuration := time.Since(stepStart)
-		
+
 		if err != nil {
 			config.WithFields(map[string]any{
-				"pipeline": p.name,
-				"stage": i + 1,
-				"error": err.Error(),
-				"step_duration": stepDuration.String(),
+				"pipeline":       p.name,
+				"stage":          i + 1,
+				"error":          err.Error(),
+				"step_duration":  stepDuration.String(),
 				"total_duration": time.Since(start).String(),
 			}).Error("Generic pipeline stage failed")
 			var zero R
 			return zero, fmt.Errorf("pipeline stage %d failed: %w", i+1, err)
 		}
-		
+
 		config.WithFields(map[string]any{
-			"pipeline": p.name,
-			"stage": i + 1,
+			"pipeline":      p.name,
+			"stage":         i + 1,
 			"step_duration": stepDuration.String(),
 		}).Debug("Generic pipeline stage completed")
-		
+
 		current = result
 	}
 
 	totalDuration := time.Since(start)
-	
+
 	// 类型断言到结果类型
 	if result, ok := current.(R); ok {
 		config.WithFields(map[string]any{
-			"pipeline": p.name,
-			"total_duration": totalDuration.String(),
+			"pipeline":         p.name,
+			"total_duration":   totalDuration.String(),
 			"stages_completed": len(p.stages),
-			"output_type": reflect.TypeOf(result).String(),
+			"output_type":      reflect.TypeOf(result).String(),
 		}).Info("Generic pipeline execution completed successfully")
 		return result, nil
 	}
-	
+
 	// 如果类型断言失败，尝试JSON序列化/反序列化转换
 	resultBytes, err := json.Marshal(current)
 	if err != nil {
 		config.WithFields(map[string]any{
 			"pipeline": p.name,
-			"error": "type conversion failed: " + err.Error(),
+			"error":    "type conversion failed: " + err.Error(),
 		}).Error("Generic pipeline type conversion failed")
 		var zero R
 		return zero, fmt.Errorf("type conversion failed: %w", err)
 	}
-	
+
 	var result R
 	if err := json.Unmarshal(resultBytes, &result); err != nil {
 		config.WithFields(map[string]any{
 			"pipeline": p.name,
-			"error": "JSON conversion failed: " + err.Error(),
+			"error":    "JSON conversion failed: " + err.Error(),
 		}).Error("Generic pipeline JSON conversion failed")
 		var zero R
 		return zero, fmt.Errorf("JSON conversion failed: %w", err)
 	}
-	
+
 	config.WithFields(map[string]any{
-		"pipeline": p.name,
-		"total_duration": totalDuration.String(),
-		"stages_completed": len(p.stages),
-		"output_type": reflect.TypeOf(result).String(),
+		"pipeline":          p.name,
+		"total_duration":    totalDuration.String(),
+		"stages_completed":  len(p.stages),
+		"output_type":       reflect.TypeOf(result).String(),
 		"conversion_method": "json",
 	}).Info("Generic pipeline execution completed with type conversion")
-	
+
 	return result, nil
 }

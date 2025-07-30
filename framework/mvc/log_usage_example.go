@@ -1,4 +1,4 @@
-package yyhertz
+package mvc
 
 import (
 	"github.com/zsy619/yyhertz/framework/config"

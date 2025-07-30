@@ -1,4 +1,4 @@
-package yyhertz
+package mvc
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/types"
+	"github.com/zsy619/yyhertz/framework/response"
 )
 
 // BaseController 基础控制器结构
@@ -76,17 +76,17 @@ func (c *BaseController) JSONWithStatus(status int, data any) {
 
 // JSONSuccess 返回成功的JSON响应
 func (c *BaseController) JSONSuccess(message string, data any) {
-	c.JSON(types.Success(message, data))
+	c.JSON(response.Success(message, data))
 }
 
 // JSONError 返回错误的JSON响应
 func (c *BaseController) JSONError(message string) {
-	c.JSON(types.Error(message))
+	c.JSON(response.Error(message))
 }
 
 // JSONPage 返回分页JSON响应
 func (c *BaseController) JSONPage(message string, data any, count int64) {
-	c.JSON(types.SuccessPage(message, data, count))
+	c.JSON(response.SuccessPage(message, data, count))
 }
 
 // String 返回字符串响应
@@ -683,29 +683,54 @@ func (c *BaseController) GetSession(key string) any {
 
 // ============= 增强日志方法 =============
 
-// LogInfo 记录信息日志
-func (c *BaseController) LogInfo(format string, args ...any) {
+// LogInfof 记录信息日志
+func (c *BaseController) LogInfof(format string, args ...any) {
 	config.Infof(format, args...)
 }
 
-// LogError 记录错误日志
-func (c *BaseController) LogError(format string, args ...any) {
+// LogInfo 记录信息日志
+func (c *BaseController) LogInfo(args ...any) {
+	config.Info(args...)
+}
+
+// LogErrorf 记录错误日志
+func (c *BaseController) LogErrorf(format string, args ...any) {
 	config.Errorf(format, args...)
 }
 
-// LogDebug 记录调试日志
-func (c *BaseController) LogDebug(format string, args ...any) {
+// LogError 记录错误日志
+func (c *BaseController) LogError(args ...any) {
+	config.Error(args...)
+}
+
+// LogDebugf 记录调试日志
+func (c *BaseController) LogDebugf(format string, args ...any) {
 	config.Debugf(format, args...)
 }
 
-// LogWarn 记录警告日志
-func (c *BaseController) LogWarn(format string, args ...any) {
+// LogDebug 记录调试日志
+func (c *BaseController) LogDebug(args ...any) {
+	config.Debug(args...)
+}
+
+// LogWarnf 记录警告日志
+func (c *BaseController) LogWarnf(format string, args ...any) {
 	config.Warnf(format, args...)
 }
 
-// LogFatal 记录致命错误日志
-func (c *BaseController) LogFatal(format string, args ...any) {
+// LogWarn 记录警告日志
+func (c *BaseController) LogWarn(args ...any) {
+	config.Warn(args...)
+}
+
+// LogFatalf 记录致命错误日志
+func (c *BaseController) LogFatalf(format string, args ...any) {
 	config.Fatalf(format, args...)
+}
+
+// LogFatal 记录致命错误日志
+func (c *BaseController) LogFatal(args ...any) {
+	config.Fatal(args...)
 }
 
 // LogWithFields 带字段的日志记录

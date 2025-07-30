@@ -11,7 +11,7 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/middleware"
-	"github.com/zsy619/yyhertz/framework/yyhertz"
+	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
 const (
@@ -197,7 +197,7 @@ func CheckDependencies() bool {
 
 // 系统控制器 - 版本和健康检查接口
 type SystemController struct {
-	yyhertz.BaseController
+	mvc.BaseController
 }
 
 func (c *SystemController) GetVersion() {
@@ -221,7 +221,7 @@ func (c *SystemController) GetInfo() {
 
 // 用户控制器
 type UserController struct {
-	yyhertz.BaseController
+	mvc.BaseController
 }
 
 type User struct {
@@ -315,7 +315,7 @@ func (c *UserController) PostCreate() {
 
 // 首页控制器
 type HomeController struct {
-	yyhertz.BaseController
+	mvc.BaseController
 }
 
 func (c *HomeController) GetIndex() {
@@ -334,8 +334,8 @@ func (c *HomeController) GetIndex() {
 // =============== 中间件定义 ===============
 
 // 日志中间件
-func LoggerMiddleware() yyhertz.HandlerFunc {
-	return func(c context.Context, ctx *yyhertz.RequestContext) {
+func LoggerMiddleware() mvc.HandlerFunc {
+	return func(c context.Context, ctx *mvc.RequestContext) {
 		start := time.Now()
 		method := string(ctx.Method())
 		path := string(ctx.Path())
@@ -436,7 +436,7 @@ func main() {
 	}).Info("应用配置加载完成")
 
 	// 创建应用实例
-	app := yyhertz.NewApp()
+	app := mvc.NewApp()
 
 	// 添加中间件
 	// TLS安全中间件
@@ -480,7 +480,7 @@ func main() {
 	app.RegisterController("/system", systemController)
 
 	// 首页路由
-	app.GET("/", yyhertz.HandlerFunc(func(ctx context.Context, c *yyhertz.RequestContext) {
+	app.GET("/", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {
 		homeCtrl := &HomeController{}
 		homeCtrl.Ctx = c
 		homeCtrl.Data = make(map[string]any)
@@ -488,7 +488,7 @@ func main() {
 	}))
 
 	// API文档路由
-	app.GET("/api", yyhertz.HandlerFunc(func(ctx context.Context, c *yyhertz.RequestContext) {
+	app.GET("/api", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {
 		c.JSON(consts.StatusOK, map[string]any{
 			"title":   "Hertz MVC API 文档",
 			"version": GetVersionString(),

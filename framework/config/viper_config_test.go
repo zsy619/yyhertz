@@ -248,7 +248,7 @@ func TestCreateDefaultConfigFile(t *testing.T) {
 
 	cm := NewViperConfigManager()
 	// 设置配置搜索路径为临时目录
-	cm.configPaths = []string{tempDir}
+	cm.configPaths = []string{"./config", tempDir, "/etc/yyhertz", "$HOME/.yyhertz"}
 	// 清空已存在的全局配置管理器，确保独立测试
 	viperConfigManagerMap = sync.Map{}
 

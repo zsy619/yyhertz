@@ -137,6 +137,8 @@ type AppConfig struct {
 // DefaultViperConfigManager 全局配置管理器实例
 var defaultViperConfigManager *ViperConfigManager
 
+var defaultAppConfig *AppConfig
+
 // 全局配置管理器map实例
 var viperConfigManagerMap sync.Map
 
@@ -145,7 +147,7 @@ func NewViperConfigManager() *ViperConfigManager {
 	return &ViperConfigManager{
 		viper:       viper.New(),
 		configPaths: []string{".", "./config", "/etc/yyhertz", "$HOME/.yyhertz"},
-		configName:  "config",
+		configName:  DefaultConfigName,
 		configType:  "yaml",
 		envPrefix:   "YYHERTZ",
 		initialized: false,
@@ -212,7 +214,7 @@ func (cm *ViperConfigManager) Initialize() error {
 				"config_name": cm.configName,
 				"config_type": cm.configType,
 				"paths":       cm.configPaths,
-			}).Warn("配置文件未找到，使用默认配置")
+			}).Warn("配置文件未找到，使用默认配置" + cm.configName + "." + cm.configPaths[0] + "，并尝试创建示例配置文件")
 
 			if err := cm.createDefaultConfigFile(); err != nil {
 				GetGlobalLogger().WithFields(map[string]any{

@@ -1,8 +1,11 @@
-package types
+package errors
 
 import (
+	"errors"
 	"fmt"
 )
+
+// =============== 错误处理类型定义 ===============
 
 // ErrNo 自定义错误类型(来自FreeCar项目)
 type ErrNo struct {
@@ -99,31 +102,6 @@ var (
 	ConfigNotFound = NewErrNo(90002, "Configuration not found")
 )
 
-// BuildBaseResp 构建基础响应(来自FreeCar项目)
-func BuildBaseResp(err error) *JSONResponse {
-	if err == nil {
-		return &JSONResponse{
-			Code:    CodeSuccess,
-			Message: "success",
-		}
-	}
-
-	errNo := ParamError
-	if e, ok := err.(ErrNo); ok {
-		errNo = e
-	}
-
-	return &JSONResponse{
-		Code:    CodeResult(errNo.ErrCode),
-		Message: errNo.ErrMsg,
-	}
-}
-
-// ParseBaseResp 解析基础响应
-func ParseBaseResp(resp *JSONResponse) error {
-	if resp.Code == CodeSuccess {
-		return nil
-	}
-
-	return NewErrNo(int64(resp.Code), resp.Message)
+func NewSystemError(msg string) error {
+	return errors.New(msg)
 }

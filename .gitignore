@@ -52,9 +52,9 @@ temp/
 *.sqlite3
 
 # Configuration files (keep example files)
-config.yaml
-config.json
-config.toml
+# config.yaml
+# config.json
+# config.toml
 *.env
 .env
 .env.local

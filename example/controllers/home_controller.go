@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"github.com/zsy619/yyhertz/framework/yyhertz"
+	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
 type HomeController struct {
-	yyhertz.BaseController
+	mvc.BaseController
 }
 
 func (c *HomeController) GetIndex() {

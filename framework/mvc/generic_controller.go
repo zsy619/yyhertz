@@ -1,11 +1,11 @@
-package yyhertz
+package mvc
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/handler"
 )
 
 // GenericController 基于泛型的通用控制器
@@ -23,7 +23,7 @@ func NewGenericController() *GenericController {
 // =============== 泛型处理器集成方法 ===============
 
 // HandleWithGenericHandler 使用泛型处理器处理请求 (类型安全版本)
-func HandleWithGenericHandler[T any, R any](c *GenericController, handler util.HTTPGenericHandler[T, R]) {
+func HandleWithGenericHandler[T any, R any](c *GenericController, handler handler.HTTPGenericHandler[T, R]) {
 	if c.Ctx == nil {
 		config.Error("GenericController: Context is nil")
 		return
@@ -51,7 +51,7 @@ func HandleWithGenericHandler[T any, R any](c *GenericController, handler util.H
 }
 
 // ProcessWithChain 使用处理链处理数据
-func ProcessWithChain[T any](c *GenericController, chain *util.GenericChain[T], input T) (T, error) {
+func ProcessWithChain[T any](c *GenericController, chain *handler.GenericChain[T], input T) (T, error) {
 	// 记录链处理开始
 	c.LogBusinessLogic("chain_processing_start", map[string]any{
 		"chain_name": getChainName(chain),
@@ -60,7 +60,7 @@ func ProcessWithChain[T any](c *GenericController, chain *util.GenericChain[T], 
 
 	if chain == nil {
 		err := fmt.Errorf("chain is nil")
-		c.LogError("ProcessWithChain failed: %v", err)
+		c.LogErrorf("ProcessWithChain failed: %v", err)
 		return input, err
 	}
 
@@ -84,7 +84,7 @@ func ProcessWithChain[T any](c *GenericController, chain *util.GenericChain[T], 
 }
 
 // ProcessWithPipeline 使用管道处理数据
-func ProcessWithPipeline[T any, R any](c *GenericController, pipeline *util.GenericPipeline[T, R], input T) (R, error) {
+func ProcessWithPipeline[T any, R any](c *GenericController, pipeline *handler.GenericPipeline[T, R], input T) (R, error) {
 	// 记录管道处理开始
 	c.LogBusinessLogic("pipeline_processing_start", map[string]any{
 		"pipeline_name": getPipelineName(pipeline),
@@ -94,7 +94,7 @@ func ProcessWithPipeline[T any, R any](c *GenericController, pipeline *util.Gene
 	var zero R
 	if pipeline == nil {
 		err := fmt.Errorf("pipeline is nil")
-		c.LogError("ProcessWithPipeline failed: %v", err)
+		c.LogErrorf("ProcessWithPipeline failed: %v", err)
 		return zero, err
 	}
 
@@ -121,8 +121,8 @@ func ProcessWithPipeline[T any, R any](c *GenericController, pipeline *util.Gene
 // =============== 便捷方法 ===============
 
 // CreateGenericHandler 创建泛型处理器的工厂方法
-func CreateGenericHandler[T any, R any](name string) *util.BaseHTTPGenericHandler[T, R] {
-	return util.NewBaseHTTPGenericHandler[T, R](name)
+func CreateGenericHandler[T any, R any](name string) *handler.BaseHTTPGenericHandler[T, R] {
+	return handler.NewBaseHTTPGenericHandler[T, R](name)
 }
 
 // =============== 示例控制器方法 ===============
@@ -130,14 +130,14 @@ func CreateGenericHandler[T any, R any](name string) *util.BaseHTTPGenericHandle
 // ExampleUserCreate 用户创建示例（使用泛型处理器）
 func (c *GenericController) ExampleUserCreate() {
 	// 使用预定义的泛型处理器
-	handler := util.CreateUserGenericHandler()
+	handler := handler.CreateUserGenericHandler()
 	HandleWithGenericHandler(c, handler)
 }
 
 // ExampleUserQuery 用户查询示例（使用泛型处理器）
 func (c *GenericController) ExampleUserQuery() {
 	// 使用预定义的泛型处理器
-	handler := util.QueryUsersGenericHandler()
+	handler := handler.QueryUsersGenericHandler()
 	HandleWithGenericHandler(c, handler)
 }
 
@@ -154,7 +154,7 @@ func (c *GenericController) ExampleInlineHandler() {
 	}
 
 	// 创建内联处理器
-	handler := util.NewBaseHTTPGenericHandler[SimpleRequest, SimpleResponse]("EchoMessage")
+	handler := handler.NewBaseHTTPGenericHandler[SimpleRequest, SimpleResponse]("EchoMessage")
 	handler.BaseGenericHandler = handler.BaseGenericHandler.
 		WithValidator(func(req SimpleRequest) error {
 			if req.Message == "" {
@@ -163,7 +163,7 @@ func (c *GenericController) ExampleInlineHandler() {
 			return nil
 		}).
 		WithProcessor(func(ctx context.Context, req SimpleRequest) (SimpleResponse, error) {
-			c.LogInfo("Processing echo request: %s", req.Message)
+			c.LogInfof("Processing echo request: %s", req.Message)
 
 			return SimpleResponse{
 				Echo:      fmt.Sprintf("Echo: %s", req.Message),
@@ -190,7 +190,7 @@ func (c *GenericController) ExampleChainProcessing() {
 	}
 
 	// 创建处理链
-	chain := util.NewGenericChain[ChainInput]("ExampleChain").
+	chain := handler.NewGenericChain[ChainInput]("ExampleChain").
 		Add(func(ctx context.Context, data ChainInput) (ChainInput, error) {
 			// 步骤1: 验证
 			if data.Value == "" {
@@ -236,7 +236,7 @@ func (c *GenericController) ExamplePipelineProcessing() {
 	}
 
 	// 创建处理管道
-	pipeline := util.NewGenericPipeline[PipelineInput, PipelineOutput]("StatisticsPipeline").
+	pipeline := handler.NewGenericPipeline[PipelineInput, PipelineOutput]("StatisticsPipeline").
 		AddStage(func(ctx context.Context, data any) (any, error) {
 			// 阶段1: 验证和预处理
 			input := data.(PipelineInput)
@@ -285,7 +285,7 @@ func (c *GenericController) ExamplePipelineProcessing() {
 
 // =============== 辅助函数 ===============
 
-func getChainName[T any](chain *util.GenericChain[T]) string {
+func getChainName[T any](chain *handler.GenericChain[T]) string {
 	if chain == nil {
 		return "unknown"
 	}
@@ -294,7 +294,7 @@ func getChainName[T any](chain *util.GenericChain[T]) string {
 	return "chain"
 }
 
-func getPipelineName[T any, R any](pipeline *util.GenericPipeline[T, R]) string {
+func getPipelineName[T any, R any](pipeline *handler.GenericPipeline[T, R]) string {
 	if pipeline == nil {
 		return "unknown"
 	}

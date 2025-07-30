@@ -1,38 +1,39 @@
-package util
+package handler
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/types"
+	"github.com/zsy619/yyhertz/framework/errors"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // HTTPGenericRequest 通用HTTP请求结构
 type HTTPGenericRequest[T any] struct {
-	Data      T             `json:"data"`
-	RequestID string        `json:"request_id,omitempty"`
-	UserID    string        `json:"user_id,omitempty"`
-	ClientIP  string        `json:"client_ip,omitempty"`
-	UserAgent string        `json:"user_agent,omitempty"`
+	Data      T                 `json:"data"`
+	RequestID string            `json:"request_id,omitempty"`
+	UserID    string            `json:"user_id,omitempty"`
+	ClientIP  string            `json:"client_ip,omitempty"`
+	UserAgent string            `json:"user_agent,omitempty"`
 	Headers   map[string]string `json:"headers,omitempty"`
 	Meta      map[string]any    `json:"meta,omitempty"`
 }
 
 // HTTPGenericResponse 通用HTTP响应结构
 type HTTPGenericResponse[T any] struct {
-	Data      T             `json:"data"`
-	Success   bool          `json:"success"`
-	Message   string        `json:"message"`
-	Code      int           `json:"code"`
-	RequestID string        `json:"request_id,omitempty"`
-	Timestamp int64         `json:"timestamp"`
+	Data      T              `json:"data"`
+	Success   bool           `json:"success"`
+	Message   string         `json:"message"`
+	Code      int            `json:"code"`
+	RequestID string         `json:"request_id,omitempty"`
+	Timestamp int64          `json:"timestamp"`
 	Meta      map[string]any `json:"meta,omitempty"`
 }
 
@@ -40,13 +41,13 @@ type HTTPGenericResponse[T any] struct {
 type HTTPGenericHandler[T any, R any] interface {
 	// HandleHTTP 处理HTTP请求
 	HandleHTTP(ctx *app.RequestContext) (*HTTPGenericResponse[R], error)
-	
+
 	// ParseRequest 解析请求
 	ParseRequest(ctx *app.RequestContext) (*HTTPGenericRequest[T], error)
-	
+
 	// BuildResponse 构建响应
 	BuildResponse(result *GenericResult[R], requestID string) *HTTPGenericResponse[R]
-	
+
 	// HandleError 处理错误
 	HandleError(ctx *app.RequestContext, err error, requestID string)
 }
@@ -54,14 +55,14 @@ type HTTPGenericHandler[T any, R any] interface {
 // BaseHTTPGenericHandler 基础HTTP泛型处理器
 type BaseHTTPGenericHandler[T any, R any] struct {
 	*BaseGenericHandler[T, R]
-	
+
 	// HTTP特定配置
-	RequireAuth   bool
-	RateLimit     *RateLimitConfig
-	CacheConfig   *CacheConfig
-	ValidateJSON  bool
-	LogRequest    bool
-	LogResponse   bool
+	RequireAuth  bool
+	RateLimit    *RateLimitConfig
+	CacheConfig  *CacheConfig
+	ValidateJSON bool
+	LogRequest   bool
+	LogResponse  bool
 }
 
 // RateLimitConfig 速率限制配置
@@ -125,7 +126,7 @@ func (h *BaseHTTPGenericHandler[T, R]) HandleHTTP(ctx *app.RequestContext) (*HTT
 	start := time.Now()
 	requestID := string(ctx.GetHeader("X-Request-ID"))
 	if requestID == "" {
-		requestID = ShortID()
+		requestID = util.ShortID()
 		ctx.Set("request_id", requestID)
 	}
 
@@ -195,7 +196,7 @@ func (h *BaseHTTPGenericHandler[T, R]) HandleHTTP(ctx *app.RequestContext) (*HTT
 
 	// 7. 构建响应
 	response := h.BuildResponse(result, requestID)
-	
+
 	// 记录处理完成
 	if h.LogResponse {
 		duration := time.Since(start)
@@ -268,7 +269,7 @@ func (h *BaseHTTPGenericHandler[T, R]) parseQueryParams(ctx *app.RequestContext,
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
-		
+
 		// 跳过未导出的字段
 		if !field.CanSet() {
 			continue
@@ -300,7 +301,7 @@ func (h *BaseHTTPGenericHandler[T, R]) parseQueryParams(ctx *app.RequestContext,
 // parseRequestBody 解析请求体
 func (h *BaseHTTPGenericHandler[T, R]) parseRequestBody(ctx *app.RequestContext, data *T) error {
 	contentType := string(ctx.GetHeader("Content-Type"))
-	
+
 	switch {
 	case contentType == "application/json" || contentType == "":
 		return ctx.BindJSON(data)
@@ -376,8 +377,8 @@ func (h *BaseHTTPGenericHandler[T, R]) HandleError(ctx *app.RequestContext, err 
 	// 根据错误类型设置HTTP状态码
 	statusCode := 500
 	message := "Internal Server Error"
-	
-	if errNo, ok := err.(*types.ErrNo); ok {
+
+	if errNo, ok := err.(*errors.ErrNo); ok {
 		statusCode = int(errNo.ErrCode)
 		message = errNo.ErrMsg
 	}
@@ -398,15 +399,15 @@ func (h *BaseHTTPGenericHandler[T, R]) HandleError(ctx *app.RequestContext, err 
 func (h *BaseHTTPGenericHandler[T, R]) checkAuth(ctx *app.RequestContext) error {
 	token := string(ctx.GetHeader("Authorization"))
 	if token == "" {
-		return errors.New("Missing authorization token")
+		return errors.NewSystemError("Missing authorization token")
 	}
-	
+
 	// 这里应该实现实际的认证逻辑
 	// 简化版本，实际应用中需要JWT验证等
 	if token != "Bearer valid-token" {
-		return errors.New("Invalid authorization token")
+		return errors.NewSystemError("Invalid authorization token")
 	}
-	
+
 	return nil
 }
 
@@ -415,10 +416,10 @@ func (h *BaseHTTPGenericHandler[T, R]) checkRateLimit(ctx *app.RequestContext) e
 	// 这里应该实现实际的速率限制逻辑
 	// 可以使用Redis或内存缓存
 	key := h.RateLimit.KeyFunc(ctx)
-	
+
 	// 简化实现，实际应用中需要更复杂的逻辑
 	_ = key
-	
+
 	return nil
 }
 

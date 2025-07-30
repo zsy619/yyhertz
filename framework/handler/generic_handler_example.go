@@ -1,4 +1,4 @@
-package util
+package handler
 
 import (
 	"context"
@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // =============== 示例数据结构 ===============
@@ -53,7 +55,7 @@ func CreateUserGenericHandler() *BaseHTTPGenericHandler[UserCreateRequest, UserC
 	handler := NewBaseHTTPGenericHandler[UserCreateRequest, UserCreateResponse]("CreateUser").
 		WithAuth(true).
 		WithRateLimit(10, time.Minute)
-	
+
 	handler.BaseGenericHandler = handler.BaseGenericHandler.
 		WithValidator(func(req UserCreateRequest) error {
 			if req.Name == "" {
@@ -73,14 +75,14 @@ func CreateUserGenericHandler() *BaseHTTPGenericHandler[UserCreateRequest, UserC
 		WithPreProcessor(func(ctx context.Context, req UserCreateRequest) (UserCreateRequest, error) {
 			// 预处理：密码加密、数据清理等
 			config.Debug("Pre-processing user creation request")
-			
+
 			// 清理空格
 			req.Name = fmt.Sprintf("%s", req.Name)
 			req.Email = fmt.Sprintf("%s", req.Email)
-			
+
 			// 这里可以添加密码加密逻辑
 			// req.Password = hashPassword(req.Password)
-			
+
 			return req, nil
 		}).
 		WithProcessor(func(ctx context.Context, req UserCreateRequest) (UserCreateResponse, error) {
@@ -90,24 +92,24 @@ func CreateUserGenericHandler() *BaseHTTPGenericHandler[UserCreateRequest, UserC
 				"email": req.Email,
 				"age":   req.Age,
 			}).Info("Creating user")
-			
+
 			// 模拟数据库操作
 			time.Sleep(100 * time.Millisecond)
-			
+
 			// 模拟邮箱重复检查
 			if req.Email == "duplicate@example.com" {
 				return UserCreateResponse{}, errors.New("email already exists")
 			}
-			
+
 			// 创建用户响应
 			response := UserCreateResponse{
-				ID:       ShortID(),
+				ID:       util.ShortID(),
 				Name:     req.Name,
 				Email:    req.Email,
 				Age:      req.Age,
 				CreateAt: time.Now(),
 			}
-			
+
 			return response, nil
 		}).
 		WithPostProcessor(func(ctx context.Context, resp UserCreateResponse) (UserCreateResponse, error) {
@@ -116,13 +118,13 @@ func CreateUserGenericHandler() *BaseHTTPGenericHandler[UserCreateRequest, UserC
 				"user_id": resp.ID,
 				"email":   resp.Email,
 			}).Info("User created successfully, sending welcome email")
-			
+
 			// 这里可以添加异步任务，如发送邮件
 			// emailService.SendWelcomeEmail(resp.Email)
-			
+
 			return resp, nil
 		})
-	
+
 	return handler
 }
 
@@ -131,7 +133,7 @@ func QueryUsersGenericHandler() *BaseHTTPGenericHandler[UserQueryRequest, UserQu
 	handler := NewBaseHTTPGenericHandler[UserQueryRequest, UserQueryResponse]("QueryUsers").
 		WithAuth(false).
 		WithCache(5 * time.Minute)
-	
+
 	handler.BaseGenericHandler = handler.BaseGenericHandler.
 		WithValidator(func(req UserQueryRequest) error {
 			if req.Page < 1 {
@@ -149,10 +151,10 @@ func QueryUsersGenericHandler() *BaseHTTPGenericHandler[UserQueryRequest, UserQu
 				"keyword":   req.Keyword,
 				"status":    req.Status,
 			}).Debug("Querying users")
-			
+
 			// 模拟数据库查询
 			time.Sleep(50 * time.Millisecond)
-			
+
 			// 模拟查询结果
 			users := []UserCreateResponse{
 				{
@@ -170,7 +172,7 @@ func QueryUsersGenericHandler() *BaseHTTPGenericHandler[UserQueryRequest, UserQu
 					CreateAt: time.Now().Add(-48 * time.Hour),
 				},
 			}
-			
+
 			// 如果有关键词，进行过滤
 			if req.Keyword != "" {
 				filtered := make([]UserCreateResponse, 0)
@@ -181,17 +183,17 @@ func QueryUsersGenericHandler() *BaseHTTPGenericHandler[UserQueryRequest, UserQu
 				}
 				users = filtered
 			}
-			
+
 			response := UserQueryResponse{
 				Users: users,
 				Total: len(users),
 				Page:  req.Page,
 				Size:  req.PageSize,
 			}
-			
+
 			return response, nil
 		})
-	
+
 	return handler
 }
 
@@ -232,38 +234,38 @@ func UserProcessingPipeline() *GenericPipeline[UserCreateRequest, UserCreateResp
 			// 阶段1: 数据验证和清理
 			req := input.(UserCreateRequest)
 			config.Debug("Pipeline stage 1: Data validation and cleaning")
-			
+
 			// 清理数据
 			req.Name = fmt.Sprintf("%s", req.Name)
 			req.Email = fmt.Sprintf("%s", req.Email)
-			
+
 			return req, nil
 		}).
 		AddStage(func(ctx context.Context, input any) (any, error) {
 			// 阶段2: 业务逻辑处理
 			req := input.(UserCreateRequest)
 			config.Debug("Pipeline stage 2: Business logic processing")
-			
+
 			// 模拟业务处理
 			time.Sleep(50 * time.Millisecond)
-			
+
 			// 转换为中间结果
 			intermediate := map[string]any{
-				"id":         ShortID(),
-				"name":       req.Name,
-				"email":      req.Email,
-				"age":        req.Age,
-				"create_at":  time.Now(),
-				"processed":  true,
+				"id":        util.ShortID(),
+				"name":      req.Name,
+				"email":     req.Email,
+				"age":       req.Age,
+				"create_at": time.Now(),
+				"processed": true,
 			}
-			
+
 			return intermediate, nil
 		}).
 		AddStage(func(ctx context.Context, input any) (any, error) {
 			// 阶段3: 结果构建
 			intermediate := input.(map[string]any)
 			config.Debug("Pipeline stage 3: Result building")
-			
+
 			response := UserCreateResponse{
 				ID:       intermediate["id"].(string),
 				Name:     intermediate["name"].(string),
@@ -271,7 +273,7 @@ func UserProcessingPipeline() *GenericPipeline[UserCreateRequest, UserCreateResp
 				Age:      intermediate["age"].(int),
 				CreateAt: intermediate["create_at"].(time.Time),
 			}
-			
+
 			return response, nil
 		})
 }
@@ -286,13 +288,13 @@ func WrapHTTPGenericHandler[T any, R any](handler HTTPGenericHandler[T, R]) app.
 			// 错误已经在HandleError中处理了
 			return
 		}
-		
+
 		// 设置响应
 		statusCode := 200
 		if !response.Success {
 			statusCode = response.Code
 		}
-		
+
 		c.JSON(statusCode, response)
 	}
 }
@@ -304,17 +306,17 @@ func ExampleUsage() {
 	// 1. 创建处理器实例
 	createHandler := CreateUserGenericHandler()
 	queryHandler := QueryUsersGenericHandler()
-	
+
 	// 2. 包装为HTTP处理函数
 	createUserFunc := WrapHTTPGenericHandler[UserCreateRequest, UserCreateResponse](createHandler)
 	queryUsersFunc := WrapHTTPGenericHandler[UserQueryRequest, UserQueryResponse](queryHandler)
-	
+
 	// 3. 注册路由（示例）
 	_ = createUserFunc
 	_ = queryUsersFunc
-	
+
 	config.Info("Generic handlers created and wrapped successfully")
-	
+
 	// 4. 演示处理链使用
 	chain := UserValidationChain()
 	testRequest := UserCreateRequest{
@@ -323,7 +325,7 @@ func ExampleUsage() {
 		Age:      25,
 		Password: "password123",
 	}
-	
+
 	validatedRequest, err := chain.Execute(context.Background(), testRequest)
 	if err != nil {
 		config.Errorf("Chain validation failed: %v", err)
@@ -333,7 +335,7 @@ func ExampleUsage() {
 			"email": validatedRequest.Email,
 		}).Info("Chain validation successful")
 	}
-	
+
 	// 5. 演示管道使用
 	pipeline := UserProcessingPipeline()
 	result, err := pipeline.Execute(context.Background(), testRequest)

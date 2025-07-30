@@ -1,7 +1,8 @@
-package yyhertz
+package mvc
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/middleware"
@@ -22,7 +24,19 @@ var (
 
 // 类型别名定义
 type RequestContext = app.RequestContext
+
+// HandlerFunc 定义处理函数类型
+// 这里的HandlerFunc是一个函数类型，接收context.Context和*RequestContext
+// 返回值为void（即没有返回值），用于处理HTTP请求。
 type HandlerFunc = func(context.Context, *RequestContext)
+
+// AdaptHandler 将HandlerFunc适配为app.HandlerFunc
+// 这个函数将自定义的HandlerFunc适配为Hertz框架所需的app.HandlerFunc类型。
+func AdaptHandler(handler HandlerFunc) app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
+		handler(ctx, (*RequestContext)(c))
+	}
+}
 
 // 控制器接口定义
 type IController interface {
@@ -58,7 +72,18 @@ func NewApp() *App {
 
 // NewAppWithLogConfig 使用指定日志配置创建应用实例
 func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
-	h := server.Default()
+	// 创建Hertz服务器实例
+	port := config.GetConfigInt("app.port")
+	if port == 0 {
+		port = 8080 // 默认端口
+	}
+	host := config.GetConfigString("app.host")
+	if host == "" {
+		host = "0.0.0.0"
+	}
+	// 创建Hertz服务器实例，使用指定的端口
+	// 这里使用了server.WithHostPorts来指定监听的地址和端口
+	h := server.Default(server.WithHostPorts(host + ":" + strconv.Itoa(port)))
 
 	// 初始化全局日志管理器
 	loggerManager := config.InitGlobalLogger(logConfig)
@@ -73,8 +98,8 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	}
 
 	// 配置视图和静态文件路径
-	app.SetViewPath("example/views")
-	app.SetStaticPath("example/static")
+	app.SetViewPath("/views")
+	app.SetStaticPath("/static")
 
 	// 配置增强的日志中间件
 	loggerConfig := &middleware.MiddlewareLoggerConfig{
@@ -114,10 +139,18 @@ func (app *App) SetViewPath(path string) {
 	app.ViewPath = path
 }
 
+func (app *App) GetViewPath() string {
+	return app.ViewPath
+}
+
 // SetStaticPath 设置静态文件路径
 func (app *App) SetStaticPath(path string) {
 	app.StaticPath = path
 	app.Static("/static", path)
+}
+
+func (app *App) GetStaticPath() string {
+	return app.StaticPath
 }
 
 // Use 添加中间件
@@ -160,98 +193,142 @@ func (app *App) UpdateLogLevel(level config.LogLevel) {
 }
 
 // LogInfo 记录信息日志
-func (app *App) LogInfo(format string, args ...any) {
+func (app *App) LogInfof(format string, args ...any) {
 	config.Infof(format, args...)
 }
 
+// LogInfo 记录信息日志
+func (app *App) LogInfo(args ...any) {
+	config.Info(args...)
+}
+
 // LogError 记录错误日志
-func (app *App) LogError(format string, args ...any) {
+func (app *App) LogErrorf(format string, args ...any) {
 	config.Errorf(format, args...)
 }
 
+// LogError 记录错误日志
+func (app *App) LogError(args ...any) {
+	config.Error(args...)
+}
+
 // LogWarn 记录警告日志
-func (app *App) LogWarn(format string, args ...any) {
+func (app *App) LogWarnf(format string, args ...any) {
 	config.Warnf(format, args...)
 }
 
+// LogWarn 记录警告日志
+func (app *App) LogWarn(args ...any) {
+	config.Warn(args...)
+}
+
 // LogDebug 记录调试日志
-func (app *App) LogDebug(format string, args ...any) {
+func (app *App) LogDebugf(format string, args ...any) {
 	config.Debugf(format, args...)
 }
 
+// LogDebug 记录调试日志
+func (app *App) LogDebug(args ...any) {
+	config.Debug(args...)
+}
+
 // LogFatal 记录致命错误日志
-func (app *App) LogFatal(format string, args ...any) {
+func (app *App) LogFatalf(format string, args ...any) {
 	config.Fatalf(format, args...)
 }
 
+// LogFatal 记录致命错误日志
+func (app *App) LogFatal(args ...any) {
+	config.Fatal(args...)
+}
+
 // LogPanic 记录恐慌日志
-func (app *App) LogPanic(format string, args ...any) {
+func (app *App) LogPanicf(format string, args ...any) {
 	config.Panicf(format, args...)
+}
+
+// LogPanic 记录恐慌日志
+func (app *App) LogPanic(args ...any) {
+	config.Panic(args...)
 }
 
 // LogWithFields 记录带字段的日志
 func (app *App) LogWithFields(level config.LogLevel, msg string, fields map[string]any) {
 	entry := config.WithFields(fields)
 
-	switch level {
-	case config.LogLevelDebug:
-		entry.Debug(msg)
-	case config.LogLevelInfo:
-		entry.Info(msg)
-	case config.LogLevelWarn:
-		entry.Warn(msg)
-	case config.LogLevelError:
-		entry.Error(msg)
-	case config.LogLevelFatal:
-		entry.Fatal(msg)
-	case config.LogLevelPanic:
-		entry.Panic(msg)
-	default:
-		entry.Info(msg)
-	}
+	app.log(entry, level, "", msg)
+}
+
+// LogfWithFields 记录带上下文的格式日志
+func (app *App) LogfWithFields(level config.LogLevel, format, msg string, fields map[string]any) {
+	entry := config.WithFields(fields)
+
+	app.log(entry, level, format, msg)
 }
 
 // LogWithRequestID 记录带请求ID的日志
 func (app *App) LogWithRequestID(level config.LogLevel, msg string, requestID string) {
 	entry := config.WithRequestID(requestID)
 
-	switch level {
-	case config.LogLevelDebug:
-		entry.Debug(msg)
-	case config.LogLevelInfo:
-		entry.Info(msg)
-	case config.LogLevelWarn:
-		entry.Warn(msg)
-	case config.LogLevelError:
-		entry.Error(msg)
-	case config.LogLevelFatal:
-		entry.Fatal(msg)
-	case config.LogLevelPanic:
-		entry.Panic(msg)
-	default:
-		entry.Info(msg)
-	}
+	app.log(entry, level, "", msg)
+}
+
+// LogfWithContext 记录带上下文的格式日志
+func (app *App) LogfWithContext(level config.LogLevel, format, msg string, requestID string) {
+	entry := config.WithRequestID(requestID)
+
+	app.log(entry, level, format, msg)
 }
 
 // LogWithUserID 记录带用户ID的日志
 func (app *App) LogWithUserID(level config.LogLevel, msg string, userID string) {
 	entry := config.WithUserID(userID)
 
-	switch level {
-	case config.LogLevelDebug:
-		entry.Debug(msg)
-	case config.LogLevelInfo:
-		entry.Info(msg)
-	case config.LogLevelWarn:
-		entry.Warn(msg)
-	case config.LogLevelError:
-		entry.Error(msg)
-	case config.LogLevelFatal:
-		entry.Fatal(msg)
-	case config.LogLevelPanic:
-		entry.Panic(msg)
-	default:
-		entry.Info(msg)
+	app.log(entry, level, "", msg)
+}
+
+// LogfWithUserID 记录带用户ID的格式日志
+func (app *App) LogfWithUserID(level config.LogLevel, format, msg string, userID string) {
+	entry := config.WithUserID(userID)
+
+	app.log(entry, level, format, msg)
+}
+
+func (app *App) log(entry *logrus.Entry, level config.LogLevel, format, msg string) {
+	if format == "" {
+		switch level {
+		case config.LogLevelDebug:
+			entry.Debug(msg)
+		case config.LogLevelInfo:
+			entry.Info(msg)
+		case config.LogLevelWarn:
+			entry.Warn(msg)
+		case config.LogLevelError:
+			entry.Error(msg)
+		case config.LogLevelFatal:
+			entry.Fatal(msg)
+		case config.LogLevelPanic:
+			entry.Panic(msg)
+		default:
+			entry.Info(msg)
+		}
+	} else {
+		switch level {
+		case config.LogLevelDebug:
+			entry.Debugf(format, msg)
+		case config.LogLevelInfo:
+			entry.Infof(format, msg)
+		case config.LogLevelWarn:
+			entry.Warnf(format, msg)
+		case config.LogLevelError:
+			entry.Errorf(format, msg)
+		case config.LogLevelFatal:
+			entry.Fatalf(format, msg)
+		case config.LogLevelPanic:
+			entry.Panicf(format, msg)
+		default:
+			entry.Infof(format, msg)
+		}
 	}
 }
 

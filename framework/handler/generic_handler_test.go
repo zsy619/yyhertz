@@ -1,4 +1,4 @@
-package util
+package handler
 
 import (
 	"context"
@@ -215,7 +215,7 @@ func TestGenericPipeline(t *testing.T) {
 				intermediate := data.(map[string]any)
 				sum := intermediate["sum"].(int)
 				count := intermediate["count"].(int)
-				
+
 				return PipelineOutput{
 					Sum:     sum,
 					Average: float64(sum) / float64(count),
