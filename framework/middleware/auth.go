@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"hertz-controller/framework/config"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // AuthMiddleware 认证中间件 - 进行身份验证

@@ -3,7 +3,7 @@ package controller
 import (
 	"time"
 
-	"hertz-controller/framework/config"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // 示例：创建开发环境日志配置
@@ -23,7 +23,7 @@ func ExampleDevelopmentLogConfig() *App {
 		TimestampFormat: "2006-01-02 15:04:05",
 		Fields: map[string]any{
 			"env":     "development",
-			"service": "hertz-controller",
+			"service": "yyhertz",
 		},
 	}
 
@@ -47,7 +47,7 @@ func ExampleProductionLogConfig() *App {
 		TimestampFormat: time.RFC3339,
 		Fields: map[string]any{
 			"env":     "production",
-			"service": "hertz-controller",
+			"service": "yyhertz",
 			"version": "1.0.0",
 		},
 	}

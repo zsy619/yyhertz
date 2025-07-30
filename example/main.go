@@ -7,36 +7,35 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"hertz-controller/example/controllers"
-	"hertz-controller/framework/config"
-	"hertz-controller/framework/controller"
-	"hertz-controller/framework/middleware"
+	"github.com/zsy619/yyhertz/example/controllers"
+	"github.com/zsy619/yyhertz/framework/controller"
+	"github.com/zsy619/yyhertz/framework/middleware"
 )
 
 func main() {
-	// 创建增强的日志配置
-	logConfig := &config.LogConfig{
-		Level:           config.LogLevelDebug,
-		Format:          config.LogFormatJSON,
-		EnableConsole:   true,
-		EnableFile:      true,
-		FilePath:        "logs/hertz-mvc.log",
-		MaxSize:         50,
-		MaxAge:          7,
-		MaxBackups:      5,
-		Compress:        true,
-		ShowCaller:      true,
-		ShowTimestamp:   true,
-		TimestampFormat: time.RFC3339,
-		Fields: map[string]any{
-			"service": "hertz-mvc-framework",
-			"version": "1.0.0",
-			"env":     "demo",
-		},
-	}
+	// // 创建增强的日志配置
+	// logConfig := &config.LogConfig{
+	// 	Level:           config.LogLevelDebug,
+	// 	Format:          config.LogFormatJSON,
+	// 	EnableConsole:   true,
+	// 	EnableFile:      true,
+	// 	FilePath:        "logs/hertz-mvc.log",
+	// 	MaxSize:         50,
+	// 	MaxAge:          7,
+	// 	MaxBackups:      5,
+	// 	Compress:        true,
+	// 	ShowCaller:      true,
+	// 	ShowTimestamp:   true,
+	// 	TimestampFormat: time.RFC3339,
+	// 	Fields: map[string]any{
+	// 		"service": "hertz-mvc-framework",
+	// 		"version": "1.0.0",
+	// 		"env":     "demo",
+	// 	},
+	// }
 
 	// 使用增强日志配置创建应用
-	app := controller.NewAppWithLogConfig(logConfig)
+	app := controller.NewApp()
 
 	// 配置视图和静态文件路径
 	app.SetViewPath("example/views")

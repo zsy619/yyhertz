@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"hertz-controller/framework/controller"
+	"github.com/zsy619/yyhertz/framework/controller"
 )
 
 type AdminController struct {

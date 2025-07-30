@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"hertz-controller/framework/controller"
+	"github.com/zsy619/yyhertz/framework/controller"
 )
 
 type UserController struct {

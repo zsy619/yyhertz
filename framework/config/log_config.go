@@ -189,7 +189,7 @@ func DevelopmentLogConfig() *LogConfig {
 		TimestampFormat: "2006-01-02 15:04:05",
 		Fields: map[string]any{
 			"env":     "development",
-			"service": "hertz-controller",
+			"service": "yyhertz",
 		},
 	}
 }
@@ -211,7 +211,7 @@ func ProductionLogConfig() *LogConfig {
 		TimestampFormat: time.RFC3339,
 		Fields: map[string]any{
 			"env":     "production",
-			"service": "hertz-controller",
+			"service": "yyhertz",
 			"version": "1.0.0",
 		},
 	}

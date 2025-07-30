@@ -1,7 +1,7 @@
 package util
 
 import (
-	"hertz-controller/framework/types"
+	"github.com/zsy619/yyhertz/framework/types"
 )
 
 // BuildSuccessResp 构建成功响应

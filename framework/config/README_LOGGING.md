@@ -12,7 +12,7 @@
 package main
 
 import (
-    "hertz-controller/framework/controller"
+    "github.com/zsy619/yyhertz/framework/controller"
 )
 
 func main() {
@@ -31,8 +31,8 @@ package main
 
 import (
     "time"
-    "hertz-controller/framework/config"
-    "hertz-controller/framework/controller"
+    "github.com/zsy619/yyhertz/framework/config"
+    "github.com/zsy619/yyhertz/framework/controller"
 )
 
 func main() {
@@ -147,7 +147,7 @@ func (c *UserController) PostCreate() {
 ### 3. 日志中间件配置
 
 ```go
-import "hertz-controller/framework/middleware"
+import "github.com/zsy619/yyhertz/framework/middleware"
 
 // 使用默认配置
 app.Use(middleware.LoggerMiddleware())

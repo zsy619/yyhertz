@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"runtime"
 	"time"
+
+	"github.com/zsy619/yyhertz/framework/controller"
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/middleware"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
 const (
@@ -183,6 +190,316 @@ func CheckDependencies() bool {
 	
 	fmt.Printf("✅ Go version %s is supported\n", goVer)
 	return true
+}
+
+// =============== 控制器定义 ===============
+
+// 系统控制器 - 版本和健康检查接口
+type SystemController struct {
+	controller.BaseController
+}
+
+func (c *SystemController) GetVersion() {
+	config.Info("获取版本信息请求")
+	c.JSON(GetVersionInfo())
+}
+
+func (c *SystemController) GetHealth() {
+	config.Info("健康检查请求")
+	c.JSON(GetHealthStatus())
+}
+
+func (c *SystemController) GetInfo() {
+	config.Info("获取系统信息请求")
+	c.JSON(map[string]any{
+		"version":  GetVersionInfo(),
+		"system":   GetSystemInfo(),
+		"features": GetFeatures(),
+	})
+}
+
+// 用户控制器
+type UserController struct {
+	controller.BaseController
+}
+
+type User struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	CreatedAt string `json:"created_at"`
+}
+
+func (c *UserController) GetIndex() {
+	config.Info("获取用户列表请求")
+	users := []User{
+		{ID: 1, Name: "张三", Email: "zhangsan@example.com", CreatedAt: "2024-01-15"},
+		{ID: 2, Name: "李四", Email: "lisi@example.com", CreatedAt: "2024-02-20"},
+		{ID: 3, Name: "王五", Email: "wangwu@example.com", CreatedAt: "2024-03-10"},
+	}
+	
+	config.WithFields(map[string]any{
+		"user_count": len(users),
+	}).Info("用户列表获取成功")
+	
+	c.JSON(map[string]any{
+		"success": true,
+		"message": "用户列表获取成功",
+		"data":    users,
+		"total":   len(users),
+	})
+}
+
+func (c *UserController) GetInfo() {
+	userId := c.GetString("id", "1")
+	name := c.GetString("name", "默认用户")
+	
+	config.WithFields(map[string]any{
+		"user_id": userId,
+		"name":    name,
+	}).Info("获取用户信息请求")
+	
+	user := User{
+		ID:        1,
+		Name:      name,
+		Email:     "user@example.com",
+		CreatedAt: "2024-01-15",
+	}
+	
+	c.JSON(map[string]any{
+		"success":  true,
+		"message":  "用户信息获取成功",
+		"data":     user,
+		"query_id": userId,
+	})
+}
+
+func (c *UserController) PostCreate() {
+	name := c.GetForm("name")
+	email := c.GetForm("email")
+	
+	config.WithFields(map[string]any{
+		"name":  name,
+		"email": email,
+	}).Info("创建用户请求")
+	
+	if name == "" || email == "" {
+		config.Warn("用户创建失败：用户名和邮箱不能为空")
+		c.JSON(map[string]any{
+			"success": false,
+			"message": "用户名和邮箱不能为空",
+		})
+		return
+	}
+	
+	user := User{
+		ID:        4,
+		Name:      name,
+		Email:     email,
+		CreatedAt: time.Now().Format("2006-01-02"),
+	}
+	
+	config.WithFields(map[string]any{
+		"user_id": user.ID,
+		"name":    user.Name,
+		"email":   user.Email,
+	}).Info("用户创建成功")
+	
+	c.JSON(map[string]any{
+		"success": true,
+		"message": "用户创建成功",
+		"data":    user,
+	})
+}
+
+// 首页控制器
+type HomeController struct {
+	controller.BaseController
+}
+
+func (c *HomeController) GetIndex() {
+	config.Info("获取首页信息请求")
+	c.JSON(map[string]any{
+		"message":    "🚀 欢迎使用Hertz MVC框架！",
+		"framework":  FrameworkName,
+		"version":    FrameworkVersion,
+		"powered_by": "CloudWeGo-Hertz " + HertzVersion,
+		"features":   GetFeatures(),
+		"timestamp":  time.Now().Format("2006-01-02 15:04:05"),
+		"build_info": GetBuildInfo(),
+	})
+}
+
+// =============== 中间件定义 ===============
+
+// 日志中间件
+func LoggerMiddleware() controller.HandlerFunc {
+	return func(c context.Context, ctx *controller.RequestContext) {
+		start := time.Now()
+		method := string(ctx.Method())
+		path := string(ctx.Path())
+		clientIP := ctx.ClientIP()
+		
+		// 使用单例日志系统记录请求开始
+		config.WithFields(map[string]any{
+			"method":    method,
+			"path":      path,
+			"client_ip": clientIP,
+			"time":      time.Now().Format("15:04:05"),
+		}).Info("📝 HTTP Request Start")
+		
+		ctx.Next(c)
+		
+		latency := time.Since(start)
+		status := ctx.Response.StatusCode()
+		
+		// 使用单例日志系统记录请求完成
+		config.WithFields(map[string]any{
+			"method":   method,
+			"path":     path,
+			"status":   status,
+			"latency":  latency,
+			"duration": latency.String(),
+		}).Info("✅ HTTP Request Complete")
+	}
+}
+
+// =============== 主函数 ===============
+
+func main() {
+	var (
+		showVersion   = flag.Bool("version", false, "显示版本信息")
+		showBanner    = flag.Bool("banner", true, "显示启动横幅")
+		port          = flag.String("port", "8888", "服务器端口")
+		enableHTTPS   = flag.Bool("https", false, "启用HTTPS")
+		certFile      = flag.String("cert", "", "TLS证书文件路径")
+		keyFile       = flag.String("key", "", "TLS私钥文件路径")
+		requireHTTPS  = flag.Bool("require-https", false, "强制要求HTTPS连接")
+	)
+	flag.Parse()
+	
+	// 显示版本信息并退出
+	if *showVersion {
+		PrintVersion()
+		return
+	}
+	
+	// 显示启动横幅
+	if *showBanner {
+		PrintBanner()
+	}
+	
+	// 创建应用实例
+	app := controller.NewApp()
+
+	// 添加中间件
+	// TLS安全中间件
+	tlsConfig := middleware.DefaultTLSConfig()
+	tlsConfig.Enable = *enableHTTPS
+	tlsConfig.CertFile = *certFile
+	tlsConfig.KeyFile = *keyFile
+	tlsConfig.RequireHTTPS = *requireHTTPS
+	tlsConfig.HSTSEnabled = true // 启用HSTS
+	
+	// 验证TLS配置
+	if err := middleware.ValidateTLSConfig(tlsConfig); err != nil {
+		config.WithFields(map[string]any{
+			"error": err.Error(),
+		}).Fatal("TLS配置验证失败")
+	}
+	
+	app.Use(middleware.TLSSupportMiddleware(tlsConfig))
+	
+	// 日志中间件
+	app.Use(LoggerMiddleware())
+
+	// 注册控制器
+	userController := &UserController{}
+	homeController := &HomeController{}
+	systemController := &SystemController{}
+	
+	app.RegisterController("/user", userController)
+	app.RegisterController("/home", homeController)
+	app.RegisterController("/system", systemController)
+
+	// 首页路由
+	app.GET("/", controller.HandlerFunc(func(ctx context.Context, c *controller.RequestContext) {
+		homeCtrl := &HomeController{}
+		homeCtrl.Ctx = c
+		homeCtrl.Data = make(map[string]any)
+		homeCtrl.GetIndex()
+	}))
+
+	// API文档路由
+	app.GET("/api", controller.HandlerFunc(func(ctx context.Context, c *controller.RequestContext) {
+		c.JSON(consts.StatusOK, map[string]any{
+			"title":   "Hertz MVC API 文档",
+			"version": GetVersionString(),
+			"build":   GetBuildInfo(),
+			"endpoints": map[string]any{
+				"系统接口": map[string]string{
+					"GET /":               "首页信息",
+					"GET /api":            "API文档",
+					"GET /system/version": "版本信息",
+					"GET /system/health":  "健康检查",
+					"GET /system/info":    "系统信息",
+				},
+				"业务接口": map[string]string{
+					"GET /home/index":   "首页",
+					"GET /user/index":   "用户列表",
+					"GET /user/info":    "用户详情 (参数: id, name)",
+					"POST /user/create": "创建用户 (参数: name, email)",
+				},
+			},
+		})
+	}))
+
+	// 使用单例日志系统记录服务器启动信息
+	config.WithFields(map[string]any{
+		"framework":     GetVersionString(),
+		"port":          *port,
+		"https_enabled": *enableHTTPS,
+		"require_https": *requireHTTPS,
+		"time":          time.Now().Format("2006-01-02 15:04:05"),
+	}).Info("🚀 服务器启动成功")
+	
+	// 显示服务器地址（根据HTTPS状态）
+	protocol := "http"
+	if *enableHTTPS {
+		protocol = "https"
+	}
+	config.Infof("📍 服务器地址: %s://localhost:%s", protocol, *port)
+	config.Infof("🕐 启动时间: %s", time.Now().Format("2006-01-02 15:04:05"))
+	
+	// 显示TLS状态
+	if *enableHTTPS {
+		config.WithFields(map[string]any{
+			"cert_file":     *certFile,
+			"key_file":      *keyFile,
+			"require_https": *requireHTTPS,
+		}).Info("🔒 HTTPS已启用")
+	}
+	
+	config.Info("📋 可用路由:")
+	config.Info("系统接口:")
+	config.Info("  GET    /                 - 首页")
+	config.Info("  GET    /api              - API文档")
+	config.Info("  GET    /system/version   - 版本信息")
+	config.Info("  GET    /system/health    - 健康检查")
+	config.Info("  GET    /system/info      - 系统信息")
+	config.Info("业务接口:")
+	config.Info("  GET    /home/index       - 首页信息")
+	config.Info("  GET    /user/index       - 用户列表")
+	config.Info("  GET    /user/info        - 用户信息")
+	config.Info("  POST   /user/create      - 创建用户")
+	
+	config.Info("💡 测试命令:")
+	config.Infof("curl http://localhost:%s/", *port)
+	config.Infof("curl http://localhost:%s/system/version", *port)
+	config.Infof("curl http://localhost:%s/user/index", *port)
+	config.Infof("curl -X POST http://localhost:%s/user/create -d 'name=张三&email=test@example.com'", *port)
+
+	app.Spin()
 }
 
 // init 初始化函数

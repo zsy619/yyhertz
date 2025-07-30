@@ -1,4 +1,4 @@
-module hertz-controller
+module github.com/zsy619/yyhertz
 
 go 1.24.5
 
@@ -6,6 +6,7 @@ require (
 	github.com/cloudwego/hertz v0.10.1
 	github.com/hertz-contrib/logger/logrus v1.0.1
 	github.com/mojocn/base64Captcha v1.3.8
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel/trace v1.37.0
 )
@@ -23,7 +24,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/nyaruka/phonenumbers v1.6.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

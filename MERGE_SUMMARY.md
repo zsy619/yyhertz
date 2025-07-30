@@ -70,7 +70,7 @@
 创建了 `main_with_framework.go` 来展示框架使用：
 
 ```go
-import "hertz-controller/framework/controller"
+import "github.com/zsy619/yyhertz/framework/controller"
 
 // 使用框架
 app := controller.NewApp()
@@ -117,7 +117,7 @@ go build -o hertz-mvc-framework main_with_framework.go version.go
 
 ### 1. 导入框架
 ```go
-import "hertz-controller/framework/controller"
+import "github.com/zsy619/yyhertz/framework/controller"
 ```
 
 ### 2. 创建控制器

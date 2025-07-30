@@ -8,7 +8,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
 
-	"hertz-controller/framework/config"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // 类型别名定义

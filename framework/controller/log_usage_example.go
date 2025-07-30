@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"hertz-controller/framework/config"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // LogUsageExample 展示各种日志使用方法的示例

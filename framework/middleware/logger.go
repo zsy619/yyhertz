@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"hertz-controller/framework/config"
-	"hertz-controller/framework/util"
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // MiddlewareLoggerConfig 日志中间件配置

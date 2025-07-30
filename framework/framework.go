@@ -15,9 +15,9 @@
 //
 // 示例用法：
 //
-//	import "hertz-controller/framework"
-//	import "hertz-controller/framework/controller"
-//	import "hertz-controller/framework/middleware"
+//	import "github.com/zsy619/yyhertz/framework"
+//	import "github.com/zsy619/yyhertz/framework/controller"
+//	import "github.com/zsy619/yyhertz/framework/middleware"
 //
 //	func main() {
 //	    app := controller.NewApp()
@@ -28,13 +28,13 @@
 package framework
 
 import (
-	_ "hertz-controller/framework/cache"     // 缓存管理
-	_ "hertz-controller/framework/captcha"   // 验证码支持
-	_ "hertz-controller/framework/config"    // 配置管理
-	_ "hertz-controller/framework/session"   // 会话管理
-	_ "hertz-controller/framework/types"     // 通用类型
-	_ "hertz-controller/framework/util"      // 工具函数
-	_ "hertz-controller/framework/view"      // 视图模板
+	_ "github.com/zsy619/yyhertz/framework/cache"     // 缓存管理
+	_ "github.com/zsy619/yyhertz/framework/captcha"   // 验证码支持
+	_ "github.com/zsy619/yyhertz/framework/config"    // 配置管理
+	_ "github.com/zsy619/yyhertz/framework/session"   // 会话管理
+	_ "github.com/zsy619/yyhertz/framework/types"     // 通用类型
+	_ "github.com/zsy619/yyhertz/framework/util"      // 工具函数
+	_ "github.com/zsy619/yyhertz/framework/view"      // 视图模板
 )
 
 const (

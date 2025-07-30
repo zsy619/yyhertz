@@ -6,8 +6,8 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"go.opentelemetry.io/otel/trace"
-	"hertz-controller/framework/config"
-	"hertz-controller/framework/util"
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 func generateTraceID() string {

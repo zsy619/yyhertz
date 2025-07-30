@@ -14,8 +14,8 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"hertz-controller/framework/config"
-	"hertz-controller/framework/types"
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/types"
 )
 
 // BaseController 基础控制器结构

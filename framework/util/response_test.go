@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"hertz-controller/framework/types"
+	"github.com/zsy619/yyhertz/framework/types"
 )
 
 func TestBuildSuccessResp(t *testing.T) {

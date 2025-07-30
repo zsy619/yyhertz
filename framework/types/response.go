@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // JSONResponse 标准JSON响应结构
 type JSONResponse struct {
 	Code    CodeResult `json:"code"`
@@ -147,17 +149,17 @@ func NewTreeResponse(code int, msg string, data any) *TreeResponse {
 
 // SelectResponse 下拉选择响应结构
 type SelectResponse struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
+	Code int          `json:"code"`
+	Msg  string       `json:"msg"`
 	Data []SelectItem `json:"data"`
 }
 
 // SelectItem 下拉选择项
 type SelectItem struct {
-	Value string `json:"value"`
-	Label string `json:"label"`
-	Selected bool `json:"selected,omitempty"`
-	Disabled bool `json:"disabled,omitempty"`
+	Value    string `json:"value"`
+	Label    string `json:"label"`
+	Selected bool   `json:"selected,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
 }
 
 // NewSelectResponse 创建下拉选择响应
@@ -196,6 +198,11 @@ type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 	Value   any    `json:"value,omitempty"`
+}
+
+// Error 实现error接口
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("validation error in field '%s': %s", e.Field, e.Message)
 }
 
 // ValidationResponse 验证错误响应

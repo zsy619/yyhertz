@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"hertz-controller/framework/config"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // RateLimitMiddleware 限流中间件 - 限制请求频率

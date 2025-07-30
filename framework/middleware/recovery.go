@@ -6,9 +6,9 @@ import (
 	"runtime/debug"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"hertz-controller/framework/config"
-	"hertz-controller/framework/types"
-	"hertz-controller/framework/util"
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/types"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // RecoveryMiddleware 恢复中间件 - 捕获panic并恢复(参考FreeCar项目)

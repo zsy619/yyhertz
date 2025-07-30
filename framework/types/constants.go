@@ -22,6 +22,13 @@ const (
 	CodeFatal                        // 严重错误
 )
 
+// 安全相关错误代码
+const (
+	CodeHTTPSRequired CodeResult = 1000 + iota // HTTPS连接是必需的
+	CodeTLSError                               // TLS错误
+	CodeCertError                              // 证书错误
+)
+
 // HTTP状态码常量
 const (
 	Code400 CodeResult = 400 + iota // Bad Request
