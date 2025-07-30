@@ -7,10 +7,12 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/controller"
-	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/middleware"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
+	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/controller"
+	"github.com/zsy619/yyhertz/framework/middleware"
+	"github.com/zsy619/yyhertz/framework/yyhertz"
 )
 
 const (
@@ -18,50 +20,50 @@ const (
 	FrameworkName    = "Hertz MVC"
 	FrameworkVersion = "1.0.0"
 	BuildDate        = "2024-07-29"
-	
+
 	// 依赖版本
 	HertzVersion = "v0.10.1"
 	GoVersion    = "1.24+"
-	
+
 	// 作者信息
-	Author      = "CloudWeGo Team"
-	License     = "Apache 2.0"
-	Repository  = "https://github.com/cloudwego/hertz"
-	Homepage    = "https://www.cloudwego.io/zh/docs/hertz/"
-	
+	Author     = "CloudWeGo Team"
+	License    = "Apache 2.0"
+	Repository = "https://github.com/cloudwego/hertz"
+	Homepage   = "https://www.cloudwego.io/zh/docs/hertz/"
+
 	// 构建信息
 	BuildMode = "release"
 )
 
 // VersionInfo 版本信息结构体
 type VersionInfo struct {
-	Framework   string            `json:"framework"`
-	Version     string            `json:"version"`
-	BuildDate   string            `json:"build_date"`
-	BuildTime   string            `json:"build_time"`
-	GoVersion   string            `json:"go_version"`
-	Platform    string            `json:"platform"`
-	Arch        string            `json:"arch"`
+	Framework    string            `json:"framework"`
+	Version      string            `json:"version"`
+	BuildDate    string            `json:"build_date"`
+	BuildTime    string            `json:"build_time"`
+	GoVersion    string            `json:"go_version"`
+	Platform     string            `json:"platform"`
+	Arch         string            `json:"arch"`
 	Dependencies map[string]string `json:"dependencies"`
-	Author      string            `json:"author"`
-	License     string            `json:"license"`
-	Repository  string            `json:"repository"`
-	Homepage    string            `json:"homepage"`
+	Author       string            `json:"author"`
+	License      string            `json:"license"`
+	Repository   string            `json:"repository"`
+	Homepage     string            `json:"homepage"`
 }
 
 // GetVersionInfo 获取完整版本信息
 func GetVersionInfo() *VersionInfo {
 	return &VersionInfo{
-		Framework:  FrameworkName,
-		Version:    FrameworkVersion,
-		BuildDate:  BuildDate,
-		BuildTime:  time.Now().Format("2006-01-02 15:04:05"),
-		GoVersion:  runtime.Version(),
-		Platform:   runtime.GOOS,
-		Arch:       runtime.GOARCH,
+		Framework: FrameworkName,
+		Version:   FrameworkVersion,
+		BuildDate: BuildDate,
+		BuildTime: time.Now().Format("2006-01-02 15:04:05"),
+		GoVersion: runtime.Version(),
+		Platform:  runtime.GOOS,
+		Arch:      runtime.GOARCH,
 		Dependencies: map[string]string{
-			"hertz":   HertzVersion,
-			"go":      runtime.Version(),
+			"hertz": HertzVersion,
+			"go":    runtime.Version(),
 		},
 		Author:     Author,
 		License:    License,
@@ -137,18 +139,18 @@ func GetFeatures() []string {
 func GetSystemInfo() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	return map[string]any{
-		"go_version":     runtime.Version(),
-		"go_os":          runtime.GOOS,
-		"go_arch":        runtime.GOARCH,
-		"cpu_count":      runtime.NumCPU(),
+		"go_version":      runtime.Version(),
+		"go_os":           runtime.GOOS,
+		"go_arch":         runtime.GOARCH,
+		"cpu_count":       runtime.NumCPU(),
 		"goroutine_count": runtime.NumGoroutine(),
 		"memory_usage": map[string]any{
-			"alloc_mb":      bToMb(m.Alloc),
+			"alloc_mb":       bToMb(m.Alloc),
 			"total_alloc_mb": bToMb(m.TotalAlloc),
-			"sys_mb":        bToMb(m.Sys),
-			"num_gc":        m.NumGC,
+			"sys_mb":         bToMb(m.Sys),
+			"num_gc":         m.NumGC,
 		},
 		"framework": map[string]string{
 			"name":    FrameworkName,
@@ -187,7 +189,7 @@ func CheckDependencies() bool {
 		fmt.Printf("⚠️  Warning: Go version %s may not be fully supported. Recommend Go 1.18+\n", goVer)
 		return false
 	}
-	
+
 	fmt.Printf("✅ Go version %s is supported\n", goVer)
 	return true
 }
@@ -196,7 +198,7 @@ func CheckDependencies() bool {
 
 // 系统控制器 - 版本和健康检查接口
 type SystemController struct {
-	controller.BaseController
+	yyhertz.BaseController
 }
 
 func (c *SystemController) GetVersion() {
@@ -237,11 +239,11 @@ func (c *UserController) GetIndex() {
 		{ID: 2, Name: "李四", Email: "lisi@example.com", CreatedAt: "2024-02-20"},
 		{ID: 3, Name: "王五", Email: "wangwu@example.com", CreatedAt: "2024-03-10"},
 	}
-	
+
 	config.WithFields(map[string]any{
 		"user_count": len(users),
 	}).Info("用户列表获取成功")
-	
+
 	c.JSON(map[string]any{
 		"success": true,
 		"message": "用户列表获取成功",
@@ -253,19 +255,19 @@ func (c *UserController) GetIndex() {
 func (c *UserController) GetInfo() {
 	userId := c.GetString("id", "1")
 	name := c.GetString("name", "默认用户")
-	
+
 	config.WithFields(map[string]any{
 		"user_id": userId,
 		"name":    name,
 	}).Info("获取用户信息请求")
-	
+
 	user := User{
 		ID:        1,
 		Name:      name,
 		Email:     "user@example.com",
 		CreatedAt: "2024-01-15",
 	}
-	
+
 	c.JSON(map[string]any{
 		"success":  true,
 		"message":  "用户信息获取成功",
@@ -277,12 +279,12 @@ func (c *UserController) GetInfo() {
 func (c *UserController) PostCreate() {
 	name := c.GetForm("name")
 	email := c.GetForm("email")
-	
+
 	config.WithFields(map[string]any{
 		"name":  name,
 		"email": email,
 	}).Info("创建用户请求")
-	
+
 	if name == "" || email == "" {
 		config.Warn("用户创建失败：用户名和邮箱不能为空")
 		c.JSON(map[string]any{
@@ -291,20 +293,20 @@ func (c *UserController) PostCreate() {
 		})
 		return
 	}
-	
+
 	user := User{
 		ID:        4,
 		Name:      name,
 		Email:     email,
 		CreatedAt: time.Now().Format("2006-01-02"),
 	}
-	
+
 	config.WithFields(map[string]any{
 		"user_id": user.ID,
 		"name":    user.Name,
 		"email":   user.Email,
 	}).Info("用户创建成功")
-	
+
 	c.JSON(map[string]any{
 		"success": true,
 		"message": "用户创建成功",
@@ -339,7 +341,7 @@ func LoggerMiddleware() controller.HandlerFunc {
 		method := string(ctx.Method())
 		path := string(ctx.Path())
 		clientIP := ctx.ClientIP()
-		
+
 		// 使用单例日志系统记录请求开始
 		config.WithFields(map[string]any{
 			"method":    method,
@@ -347,12 +349,12 @@ func LoggerMiddleware() controller.HandlerFunc {
 			"client_ip": clientIP,
 			"time":      time.Now().Format("15:04:05"),
 		}).Info("📝 HTTP Request Start")
-		
+
 		ctx.Next(c)
-		
+
 		latency := time.Since(start)
 		status := ctx.Response.StatusCode()
-		
+
 		// 使用单例日志系统记录请求完成
 		config.WithFields(map[string]any{
 			"method":   method,
@@ -368,27 +370,72 @@ func LoggerMiddleware() controller.HandlerFunc {
 
 func main() {
 	var (
-		showVersion   = flag.Bool("version", false, "显示版本信息")
-		showBanner    = flag.Bool("banner", true, "显示启动横幅")
-		port          = flag.String("port", "8888", "服务器端口")
-		enableHTTPS   = flag.Bool("https", false, "启用HTTPS")
-		certFile      = flag.String("cert", "", "TLS证书文件路径")
-		keyFile       = flag.String("key", "", "TLS私钥文件路径")
-		requireHTTPS  = flag.Bool("require-https", false, "强制要求HTTPS连接")
+		showVersion  = flag.Bool("version", false, "显示版本信息")
+		showBanner   = flag.Bool("banner", true, "显示启动横幅")
+		port         = flag.String("port", "", "服务器端口")
+		enableHTTPS  = flag.Bool("https", false, "启用HTTPS")
+		certFile     = flag.String("cert", "", "TLS证书文件路径")
+		keyFile      = flag.String("key", "", "TLS私钥文件路径")
+		requireHTTPS = flag.Bool("require-https", false, "强制要求HTTPS连接")
+		configFile   = flag.String("config", "", "配置文件路径")
 	)
 	flag.Parse()
-	
+
 	// 显示版本信息并退出
 	if *showVersion {
 		PrintVersion()
 		return
 	}
-	
+
+	// 初始化配置管理器
+	configManager := config.GetViperConfigManager()
+	if *configFile != "" {
+		configManager.SetConfigFile(*configFile)
+	}
+
+	if err := configManager.Initialize(); err != nil {
+		config.GetGlobalLogger().WithFields(map[string]any{
+			"error": err.Error(),
+		}).Fatal("配置初始化失败")
+	}
+
+	// 启用配置文件监听
+	configManager.WatchConfig()
+
+	// 获取应用配置
+	appConfig, err := configManager.GetConfig()
+	if err != nil {
+		config.GetGlobalLogger().WithFields(map[string]any{
+			"error": err.Error(),
+		}).Fatal("获取配置失败")
+	}
+
+	// 命令行参数优先级高于配置文件
+	if *port == "" {
+		*port = fmt.Sprintf("%d", appConfig.App.Port)
+	}
+	if !*enableHTTPS && appConfig.TLS.Enable {
+		*enableHTTPS = appConfig.TLS.Enable
+		if *certFile == "" {
+			*certFile = appConfig.TLS.CertFile
+		}
+		if *keyFile == "" {
+			*keyFile = appConfig.TLS.KeyFile
+		}
+	}
+
 	// 显示启动横幅
 	if *showBanner {
 		PrintBanner()
 	}
-	
+
+	config.GetGlobalLogger().WithFields(map[string]any{
+		"config_file": configManager.ConfigFileUsed(),
+		"app_name":    appConfig.App.Name,
+		"environment": appConfig.App.Environment,
+		"debug_mode":  appConfig.App.Debug,
+	}).Info("应用配置加载完成")
+
 	// 创建应用实例
 	app := controller.NewApp()
 
@@ -400,16 +447,27 @@ func main() {
 	tlsConfig.KeyFile = *keyFile
 	tlsConfig.RequireHTTPS = *requireHTTPS
 	tlsConfig.HSTSEnabled = true // 启用HSTS
-	
+
+	// 从配置文件合并TLS设置
+	if appConfig.TLS.Enable {
+		tlsConfig.Enable = appConfig.TLS.Enable
+		if tlsConfig.CertFile == "" {
+			tlsConfig.CertFile = appConfig.TLS.CertFile
+		}
+		if tlsConfig.KeyFile == "" {
+			tlsConfig.KeyFile = appConfig.TLS.KeyFile
+		}
+	}
+
 	// 验证TLS配置
 	if err := middleware.ValidateTLSConfig(tlsConfig); err != nil {
-		config.WithFields(map[string]any{
+		config.GetGlobalLogger().WithFields(map[string]any{
 			"error": err.Error(),
 		}).Fatal("TLS配置验证失败")
 	}
-	
+
 	app.Use(middleware.TLSSupportMiddleware(tlsConfig))
-	
+
 	// 日志中间件
 	app.Use(LoggerMiddleware())
 
@@ -417,7 +475,7 @@ func main() {
 	userController := &UserController{}
 	homeController := &HomeController{}
 	systemController := &SystemController{}
-	
+
 	app.RegisterController("/user", userController)
 	app.RegisterController("/home", homeController)
 	app.RegisterController("/system", systemController)
@@ -462,7 +520,7 @@ func main() {
 		"require_https": *requireHTTPS,
 		"time":          time.Now().Format("2006-01-02 15:04:05"),
 	}).Info("🚀 服务器启动成功")
-	
+
 	// 显示服务器地址（根据HTTPS状态）
 	protocol := "http"
 	if *enableHTTPS {
@@ -470,7 +528,7 @@ func main() {
 	}
 	config.Infof("📍 服务器地址: %s://localhost:%s", protocol, *port)
 	config.Infof("🕐 启动时间: %s", time.Now().Format("2006-01-02 15:04:05"))
-	
+
 	// 显示TLS状态
 	if *enableHTTPS {
 		config.WithFields(map[string]any{
@@ -479,7 +537,7 @@ func main() {
 			"require_https": *requireHTTPS,
 		}).Info("🔒 HTTPS已启用")
 	}
-	
+
 	config.Info("📋 可用路由:")
 	config.Info("系统接口:")
 	config.Info("  GET    /                 - 首页")
@@ -492,7 +550,7 @@ func main() {
 	config.Info("  GET    /user/index       - 用户列表")
 	config.Info("  GET    /user/info        - 用户信息")
 	config.Info("  POST   /user/create      - 创建用户")
-	
+
 	config.Info("💡 测试命令:")
 	config.Infof("curl http://localhost:%s/", *port)
 	config.Infof("curl http://localhost:%s/system/version", *port)

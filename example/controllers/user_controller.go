@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/controller"
+	"github.com/zsy619/yyhertz/framework/yyhertz"
 )
 
 type UserController struct {
-	controller.BaseController
+	yyhertz.BaseController
 }
 
 type User struct {

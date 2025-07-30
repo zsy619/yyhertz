@@ -57,7 +57,7 @@ type LogConfig struct {
 // DefaultLogConfig 返回默认日志配置
 func DefaultLogConfig() *LogConfig {
 	return &LogConfig{
-		Level:           LogLevelPanic,
+		Level:           LogLevelInfo,
 		Format:          LogFormatJSON,
 		EnableConsole:   true,
 		EnableFile:      true,
@@ -220,13 +220,13 @@ func ProductionLogConfig() *LogConfig {
 // TestLogConfig 测试环境日志配置
 func TestLogConfig() *LogConfig {
 	return &LogConfig{
-		Level:           LogLevelWarn,
-		Format:          LogFormatText,
-		EnableConsole:   true,
-		EnableFile:      false,
-		ShowCaller:      false,
-		ShowTimestamp:   false,
-		Fields:          map[string]any{},
+		Level:         LogLevelWarn,
+		Format:        LogFormatText,
+		EnableConsole: true,
+		EnableFile:    false,
+		ShowCaller:    false,
+		ShowTimestamp: false,
+		Fields:        map[string]any{},
 	}
 }
 

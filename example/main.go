@@ -8,34 +8,35 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
 	"github.com/zsy619/yyhertz/example/controllers"
-	"github.com/zsy619/yyhertz/framework/controller"
+	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/middleware"
+	"github.com/zsy619/yyhertz/framework/yyhertz"
 )
 
 func main() {
-	// // 创建增强的日志配置
-	// logConfig := &config.LogConfig{
-	// 	Level:           config.LogLevelDebug,
-	// 	Format:          config.LogFormatJSON,
-	// 	EnableConsole:   true,
-	// 	EnableFile:      true,
-	// 	FilePath:        "logs/hertz-mvc.log",
-	// 	MaxSize:         50,
-	// 	MaxAge:          7,
-	// 	MaxBackups:      5,
-	// 	Compress:        true,
-	// 	ShowCaller:      true,
-	// 	ShowTimestamp:   true,
-	// 	TimestampFormat: time.RFC3339,
-	// 	Fields: map[string]any{
-	// 		"service": "hertz-mvc-framework",
-	// 		"version": "1.0.0",
-	// 		"env":     "demo",
-	// 	},
-	// }
+	// 创建增强的日志配置
+	logConfig := &config.LogConfig{
+		Level:           config.LogLevelDebug,
+		Format:          config.LogFormatJSON,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        "logs/hertz-mvc.log",
+		MaxSize:         50,
+		MaxAge:          7,
+		MaxBackups:      5,
+		Compress:        true,
+		ShowCaller:      true,
+		ShowTimestamp:   true,
+		TimestampFormat: time.RFC3339,
+		Fields: map[string]any{
+			"service": "hertz-mvc-framework",
+			"version": "1.0.0",
+			"env":     "demo",
+		},
+	}
 
 	// 使用增强日志配置创建应用
-	app := controller.NewApp()
+	app := yyhertz.NewAppWithLogConfig(logConfig)
 
 	// 配置视图和静态文件路径
 	app.SetViewPath("example/views")
@@ -95,12 +96,12 @@ func main() {
 	app.LogWarn("这是一个警告 - Warn级别日志")
 
 	// 健康检查路由（会被日志中间件跳过）
-	app.GET("/health", func(c context.Context, ctx *controller.RequestContext) {
+	app.GET("/health", func(c context.Context, ctx *yyhertz.RequestContext) {
 		ctx.JSON(consts.StatusOK, map[string]string{"status": "ok", "timestamp": time.Now().Format(time.RFC3339)})
 	})
 
 	// ping路由（也会被跳过）
-	app.GET("/ping", func(c context.Context, ctx *controller.RequestContext) {
+	app.GET("/ping", func(c context.Context, ctx *yyhertz.RequestContext) {
 		ctx.JSON(consts.StatusOK, map[string]string{"message": "pong"})
 	})
 

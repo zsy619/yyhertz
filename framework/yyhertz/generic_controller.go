@@ -1,4 +1,4 @@
-package controller
+package yyhertz
 
 import (
 	"context"
@@ -147,7 +147,7 @@ func (c *GenericController) ExampleInlineHandler() {
 	type SimpleRequest struct {
 		Message string `json:"message" binding:"required"`
 	}
-	
+
 	type SimpleResponse struct {
 		Echo      string `json:"echo"`
 		Timestamp int64  `json:"timestamp"`
@@ -164,7 +164,7 @@ func (c *GenericController) ExampleInlineHandler() {
 		}).
 		WithProcessor(func(ctx context.Context, req SimpleRequest) (SimpleResponse, error) {
 			c.LogInfo("Processing echo request: %s", req.Message)
-			
+
 			return SimpleResponse{
 				Echo:      fmt.Sprintf("Echo: %s", req.Message),
 				Timestamp: c.CreateTime(),
@@ -221,7 +221,7 @@ func (c *GenericController) ExamplePipelineProcessing() {
 	type PipelineInput struct {
 		Numbers []int `json:"numbers"`
 	}
-	
+
 	type PipelineOutput struct {
 		Sum     int     `json:"sum"`
 		Average float64 `json:"average"`
@@ -252,7 +252,7 @@ func (c *GenericController) ExamplePipelineProcessing() {
 			for _, num := range input.Numbers {
 				sum += num
 			}
-			
+
 			intermediate := map[string]any{
 				"sum":   sum,
 				"count": len(input.Numbers),
@@ -264,7 +264,7 @@ func (c *GenericController) ExamplePipelineProcessing() {
 			intermediate := data.(map[string]any)
 			sum := intermediate["sum"].(int)
 			count := intermediate["count"].(int)
-			
+
 			output := PipelineOutput{
 				Sum:     sum,
 				Average: float64(sum) / float64(count),

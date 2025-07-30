@@ -16,7 +16,7 @@ func TestDefaultLogConfig(t *testing.T) {
 	assert.Equal(t, LogFormatJSON, config.Format)
 	assert.True(t, config.EnableConsole)
 	assert.True(t, config.EnableFile)
-	assert.Equal(t, "logs/app.log", config.FilePath)
+	assert.Equal(t, "./logs/app.log", config.FilePath)
 	assert.True(t, config.ShowCaller)
 	assert.True(t, config.ShowTimestamp)
 }

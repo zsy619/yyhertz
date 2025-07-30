@@ -1,14 +1,23 @@
-package controller
+package yyhertz
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/middleware"
+)
+
+var (
+	appInstance *App
+	once        sync.Once
+	appMutex    sync.Mutex
 )
 
 // 类型别名定义
@@ -32,6 +41,16 @@ type App struct {
 	loggerManager *config.LoggerManager
 }
 
+// GetAppInstance 获取单例应用实例
+func GetAppInstance() *App {
+	once.Do(func() {
+		appMutex.Lock()
+		defer appMutex.Unlock()
+		appInstance = NewAppWithLogConfig(config.DefaultLogConfig())
+	})
+	return appInstance
+}
+
 // NewApp 创建新的应用实例
 func NewApp() *App {
 	return NewAppWithLogConfig(config.DefaultLogConfig())
@@ -44,7 +63,7 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	// 初始化全局日志管理器
 	loggerManager := config.InitGlobalLogger(logConfig)
 
-	return &App{
+	app := &App{
 		Hertz:         h,
 		ViewPath:      "views",
 		StaticPath:    "static",
@@ -52,6 +71,42 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 		address:       ":8080",
 		loggerManager: loggerManager,
 	}
+
+	// 配置视图和静态文件路径
+	app.SetViewPath("example/views")
+	app.SetStaticPath("example/static")
+
+	// 配置增强的日志中间件
+	loggerConfig := &middleware.MiddlewareLoggerConfig{
+		EnableRequestBody:  true,  // 启用请求体记录用于演示
+		EnableResponseBody: false, // 不记录响应体以提高性能
+		SkipPaths:          []string{"/health", "/ping"},
+		MaxBodySize:        512, // 限制记录的请求体大小
+	}
+
+	// 添加全局中间件
+	app.Use(
+		middleware.RecoveryMiddleware(),
+		middleware.TracingMiddleware(),
+		middleware.LoggerMiddlewareWithConfig(loggerConfig),
+		middleware.CORSMiddleware(),
+		middleware.RateLimitMiddleware(100, time.Minute),
+	)
+
+	// 设置路由
+	{
+		// 健康检查路由（会被日志中间件跳过）
+		app.GET("/health", func(c context.Context, ctx *RequestContext) {
+			ctx.JSON(consts.StatusOK, map[string]string{"status": "ok", "timestamp": time.Now().Format(time.RFC3339)})
+		})
+
+		// ping路由（也会被跳过）
+		app.GET("/ping", func(c context.Context, ctx *RequestContext) {
+			ctx.JSON(consts.StatusOK, map[string]string{"message": "pong"})
+		})
+	}
+
+	return app
 }
 
 // SetViewPath 设置视图路径
