@@ -10,7 +10,6 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/controller"
 	"github.com/zsy619/yyhertz/framework/middleware"
 	"github.com/zsy619/yyhertz/framework/yyhertz"
 )
@@ -222,7 +221,7 @@ func (c *SystemController) GetInfo() {
 
 // 用户控制器
 type UserController struct {
-	controller.BaseController
+	yyhertz.BaseController
 }
 
 type User struct {
@@ -316,7 +315,7 @@ func (c *UserController) PostCreate() {
 
 // 首页控制器
 type HomeController struct {
-	controller.BaseController
+	yyhertz.BaseController
 }
 
 func (c *HomeController) GetIndex() {
@@ -335,8 +334,8 @@ func (c *HomeController) GetIndex() {
 // =============== 中间件定义 ===============
 
 // 日志中间件
-func LoggerMiddleware() controller.HandlerFunc {
-	return func(c context.Context, ctx *controller.RequestContext) {
+func LoggerMiddleware() yyhertz.HandlerFunc {
+	return func(c context.Context, ctx *yyhertz.RequestContext) {
 		start := time.Now()
 		method := string(ctx.Method())
 		path := string(ctx.Path())
@@ -437,7 +436,7 @@ func main() {
 	}).Info("应用配置加载完成")
 
 	// 创建应用实例
-	app := controller.NewApp()
+	app := yyhertz.NewApp()
 
 	// 添加中间件
 	// TLS安全中间件
@@ -481,7 +480,7 @@ func main() {
 	app.RegisterController("/system", systemController)
 
 	// 首页路由
-	app.GET("/", controller.HandlerFunc(func(ctx context.Context, c *controller.RequestContext) {
+	app.GET("/", yyhertz.HandlerFunc(func(ctx context.Context, c *yyhertz.RequestContext) {
 		homeCtrl := &HomeController{}
 		homeCtrl.Ctx = c
 		homeCtrl.Data = make(map[string]any)
@@ -489,7 +488,7 @@ func main() {
 	}))
 
 	// API文档路由
-	app.GET("/api", controller.HandlerFunc(func(ctx context.Context, c *controller.RequestContext) {
+	app.GET("/api", yyhertz.HandlerFunc(func(ctx context.Context, c *yyhertz.RequestContext) {
 		c.JSON(consts.StatusOK, map[string]any{
 			"title":   "Hertz MVC API 文档",
 			"version": GetVersionString(),
