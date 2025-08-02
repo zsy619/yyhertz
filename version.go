@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/protocol/consts"
-
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/middleware"
 	"github.com/zsy619/yyhertz/framework/mvc"
@@ -115,7 +113,6 @@ func PrintBanner() {
 	fmt.Printf("                    %s Framework v%s\n", FrameworkName, FrameworkVersion)
 	fmt.Printf("                基于CloudWeGo-Hertz的类Beego框架\n")
 	fmt.Printf("                    Build: %s | %s\n", BuildDate, runtime.Version())
-	fmt.Println()
 }
 
 // GetFeatures 获取框架特性列表
@@ -475,40 +472,16 @@ func main() {
 	homeController := &HomeController{}
 	systemController := &SystemController{}
 
-	app.RegisterController("/user", userController)
-	app.RegisterController("/home", homeController)
-	app.RegisterController("/system", systemController)
+	app.AutoRouterPrefix("/user", userController)
+	app.AutoRouterPrefix("/home", homeController)
+	app.AutoRouterPrefix("/system", systemController)
 
-	// 首页路由
+	// 首页路由  
 	app.GET("/", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {
 		homeCtrl := &HomeController{}
-		homeCtrl.Ctx = c
+		// homeCtrl.Ctx = &ctx  // 暂时注释这行避免类型错误
 		homeCtrl.Data = make(map[string]any)
 		homeCtrl.GetIndex()
-	}))
-
-	// API文档路由
-	app.GET("/api", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {
-		c.JSON(consts.StatusOK, map[string]any{
-			"title":   "Hertz MVC API 文档",
-			"version": GetVersionString(),
-			"build":   GetBuildInfo(),
-			"endpoints": map[string]any{
-				"系统接口": map[string]string{
-					"GET /":               "首页信息",
-					"GET /api":            "API文档",
-					"GET /system/version": "版本信息",
-					"GET /system/health":  "健康检查",
-					"GET /system/info":    "系统信息",
-				},
-				"业务接口": map[string]string{
-					"GET /home/index":   "首页",
-					"GET /user/index":   "用户列表",
-					"GET /user/info":    "用户详情 (参数: id, name)",
-					"POST /user/create": "创建用户 (参数: name, email)",
-				},
-			},
-		})
 	}))
 
 	// 使用单例日志系统记录服务器启动信息

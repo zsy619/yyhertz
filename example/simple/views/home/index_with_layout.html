@@ -1,0 +1,141 @@
+{{define "content"}}
+<!-- Hero Section -->
+<div class="bg-primary text-white py-5 mt-n4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Hertz MVC框架</h1>
+                <p class="lead">基于CloudWeGo-Hertz的类Beego框架，让Go Web开发更简单、更高效</p>
+                <div class="mt-4">
+                    <a href="/home/docs" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-book"></i> 查看文档
+                    </a>
+                    <a href="https://github.com/cloudwego/hertz" class="btn btn-outline-light btn-lg">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="fas fa-rocket fa-10x text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 特性介绍 -->
+<div class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2>框架特性</h2>
+                <p class="text-muted">现代化的Go Web开发框架，结合了Hertz的高性能和Beego的易用性</p>
+            </div>
+        </div>
+        <div class="row">
+            {{range .Features}}
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="{{.Icon}} fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">{{.Title}}</h5>
+                        <p class="card-text">{{.Description}}</p>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+
+<!-- 统计数据 -->
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <h2>框架数据</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 col-6 text-center mb-4">
+                <div class="card border-0 bg-transparent">
+                    <div class="card-body">
+                        <h3 class="text-primary">{{.Statistics.Controllers}}</h3>
+                        <p class="text-muted">控制器</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 text-center mb-4">
+                <div class="card border-0 bg-transparent">
+                    <div class="card-body">
+                        <h3 class="text-success">{{.Statistics.Routes}}</h3>
+                        <p class="text-muted">路由</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 text-center mb-4">
+                <div class="card border-0 bg-transparent">
+                    <div class="card-body">
+                        <h3 class="text-warning">{{.Statistics.Middleware}}</h3>
+                        <p class="text-muted">中间件</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 text-center mb-4">
+                <div class="card border-0 bg-transparent">
+                    <div class="card-body">
+                        <h3 class="text-info">{{.Statistics.Templates}}</h3>
+                        <p class="text-muted">模板</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速开始 -->
+<div class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="text-center mb-5">
+                    <h2>快速开始</h2>
+                    <p class="text-muted">几行代码即可创建一个完整的Web应用</p>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <pre><code class="language-go">package main
+
+import (
+    "hertz-mvc/framework/controller"
+    "hertz-mvc/framework/middleware"
+)
+
+type HomeController struct {
+    controller.BaseController
+}
+
+func (c *HomeController) GetIndex() {
+    c.SetData("Title", "Hello World")
+    c.Render("index.html")
+}
+
+func main() {
+    app := controller.NewApp()
+    app.Use(middleware.LoggerMiddleware())
+    
+    homeController := &HomeController{}
+    app.Include(homeController)
+    
+    app.Run()
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

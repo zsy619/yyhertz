@@ -1,0 +1,8 @@
+linters:
+  enable:
+    - ineffassign
+linters-settings:
+  unused:
+    check-exported: false # 不检查导出函数
+    check-exports: false  # 不检查未使用的导出
+    check-unused-type-casts: true # 如果有需要，检查未使用的类型转换

@@ -78,12 +78,6 @@ func IsIPAddress(ip string) bool {
 	return ipPattern.MatchString(ip)
 }
 
-// IsNumeric 检查字符串是否为数字
-func IsNumeric(s string) bool {
-	_, err := strconv.ParseFloat(s, 64)
-	return err == nil
-}
-
 // IsInteger 检查字符串是否为整数
 func IsInteger(s string) bool {
 	_, err := strconv.Atoi(s)

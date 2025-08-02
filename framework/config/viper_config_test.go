@@ -248,7 +248,7 @@ func TestCreateDefaultConfigFile(t *testing.T) {
 
 	cm := NewViperConfigManager()
 	// 设置配置搜索路径为临时目录
-	cm.configPaths = []string{"./config", tempDir, "/etc/yyhertz", "$HOME/.yyhertz"}
+	cm.configPaths = []string{"./conf", tempDir, "/etc/yyhertz", "$HOME/.yyhertz"}
 	// 清空已存在的全局配置管理器，确保独立测试
 	viperConfigManagerMap = sync.Map{}
 
@@ -256,8 +256,8 @@ func TestCreateDefaultConfigFile(t *testing.T) {
 	err := cm.Initialize()
 	assert.NoError(t, err)
 
-	// 检查配置文件是否创建 - 配置文件应该在 tempDir/config/config.yaml
-	configFile := filepath.Join(tempDir, "config", "config.yaml")
+	// 检查配置文件是否创建 - 配置文件应该在 tempDir/conf/app.yaml
+	configFile := filepath.Join(tempDir, "conf", "app.yaml")
 
 	// 如果文件不存在，手动调用创建方法
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
@@ -275,4 +275,89 @@ func TestCreateDefaultConfigFile(t *testing.T) {
 	assert.Contains(t, string(content), "YYHertz Framework Configuration")
 	assert.Contains(t, string(content), "app:")
 	assert.Contains(t, string(content), "database:")
+}
+
+// 新增测试用例
+func TestViperConfigManagerConcurrentAccess(t *testing.T) {
+	cm := NewViperConfigManager()
+	err := cm.Initialize()
+	assert.NoError(t, err)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			key := "concurrent.key"
+			cm.Set(key, i)
+			val := cm.GetInt(key)
+			assert.Equal(t, i, val)
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestViperConfigManagerInvalidConfigFile(t *testing.T) {
+	// 创建临时配置目录
+	tempDir := t.TempDir()
+	configFile := filepath.Join(tempDir, "invalid_config.yaml")
+
+	// 创建无效的配置文件
+	err := os.WriteFile(configFile, []byte("invalid: yaml: content"), 0644)
+	require.NoError(t, err)
+
+	cm := NewViperConfigManager()
+	cm.viper.SetConfigFile(configFile)
+
+	// 读取无效配置文件
+	err = cm.Initialize()
+	assert.Error(t, err)
+}
+
+func TestViperConfigManagerUnsupportedType(t *testing.T) {
+	cm := NewViperConfigManager()
+	err := cm.Initialize()
+	require.NoError(t, err)
+
+	// 设置不支持的配置类型
+	cm.SetConfigType("unsupported")
+	err = cm.Initialize()
+	assert.Error(t, err)
+}
+
+func TestViperConfigManagerWatchConfig(t *testing.T) {
+	// 创建临时配置目录
+	tempDir := t.TempDir()
+	configFile := filepath.Join(tempDir, "watch_config.yaml")
+
+	// 创建初始配置文件
+	configContent := `app:
+  name: "InitialApp"
+  port: 8080
+`
+	err := os.WriteFile(configFile, []byte(configContent), 0644)
+	require.NoError(t, err)
+
+	cm := NewViperConfigManager()
+	cm.viper.SetConfigFile(configFile)
+	err = cm.Initialize()
+	require.NoError(t, err)
+
+	// 启动配置监听
+	cm.WatchConfig()
+
+	// 修改配置文件
+	updatedContent := `app:
+  name: "UpdatedApp"
+  port: 9090
+`
+	err = os.WriteFile(configFile, []byte(updatedContent), 0644)
+	require.NoError(t, err)
+
+	// 等待配置更新
+	time.Sleep(1 * time.Second)
+
+	// 验证配置已更新
+	assert.Equal(t, "UpdatedApp", cm.GetString("app.name"))
+	assert.Equal(t, 9090, cm.GetInt("app.port"))
 }

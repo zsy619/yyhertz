@@ -311,19 +311,6 @@ func GenerateRandomString(length int, charset string) string {
 	return string(b)
 }
 
-// Base64Encode Base64编码
-func Base64Encode(data string) string {
-	return base64.StdEncoding.EncodeToString([]byte(data))
-}
-
-// Base64Decode Base64解码
-func Base64Decode(data string) (string, error) {
-	decoded, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return "", err
-	}
-	return string(decoded), nil
-}
 
 // PathExistsWithError 检查路径是否存在并返回错误信息
 func PathExistsWithError(path string) (bool, error) {

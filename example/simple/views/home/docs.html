@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Hertz MVC框架</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-bolt"></i> Hertz MVC
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/docs">文档</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/user">用户管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">管理后台</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/home/about">关于</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 页面标题 -->
+    <div class="bg-primary text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-0">
+                        <i class="fas fa-book me-2"></i>{{.Title}}
+                    </h1>
+                    <p class="lead mb-0 mt-2">Hertz MVC框架开发文档和指南</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 面包屑导航 -->
+    <div class="bg-light py-2">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/">首页</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">文档</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="container my-5">
+        <div class="row">
+            <!-- 侧边栏导航 -->
+            <div class="col-lg-3 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>文档导航
+                        </h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <a href="#quick-start" class="list-group-item list-group-item-action">
+                            <i class="fas fa-play-circle me-2"></i>快速开始
+                        </a>
+                        <a href="#installation" class="list-group-item list-group-item-action">
+                            <i class="fas fa-download me-2"></i>安装配置
+                        </a>
+                        <a href="#controllers" class="list-group-item list-group-item-action">
+                            <i class="fas fa-cogs me-2"></i>控制器
+                        </a>
+                        <a href="#routing" class="list-group-item list-group-item-action">
+                            <i class="fas fa-route me-2"></i>路由系统
+                        </a>
+                        <a href="#middleware" class="list-group-item list-group-item-action">
+                            <i class="fas fa-layer-group me-2"></i>中间件
+                        </a>
+                        <a href="#templates" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-code me-2"></i>模板引擎
+                        </a>
+                        <a href="#database" class="list-group-item list-group-item-action">
+                            <i class="fas fa-database me-2"></i>数据库集成
+                        </a>
+                        <a href="#deployment" class="list-group-item list-group-item-action">
+                            <i class="fas fa-rocket me-2"></i>部署上线
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文档内容 -->
+            <div class="col-lg-9">
+                <!-- 文档列表 -->
+                <div class="row">
+                    {{range .Docs}}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-file-alt text-primary me-2"></i>{{.Title}}
+                                </h5>
+                                <p class="card-text">{{.Description}}</p>
+                                <a href="{{.Link}}" class="btn btn-outline-primary">
+                                    阅读更多 <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+
+                <!-- 快速开始部分 -->
+                <section id="quick-start" class="mt-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0">
+                                <i class="fas fa-play-circle text-success me-2"></i>快速开始
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <h5>1. 创建项目</h5>
+                            <pre class="bg-light p-3 rounded"><code>mkdir my-hertz-app
+cd my-hertz-app
+go mod init my-hertz-app</code></pre>
+
+                            <h5 class="mt-4">2. 安装依赖</h5>
+                            <pre class="bg-light p-3 rounded"><code>go get github.com/zsy619/yyhertz</code></pre>
+
+                            <h5 class="mt-4">3. 创建控制器</h5>
+                            <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "github.com/zsy619/yyhertz/framework/mvc"
+)
+
+type HomeController struct {
+    mvc.BaseController
+}
+
+func (c *HomeController) GetIndex() {
+    c.SetData("Message", "Hello Hertz MVC!")
+    c.RenderHTML("index.html")
+}
+
+func main() {
+    app := mvc.HertzApp
+    homeController := &HomeController{}
+    app.Include(homeController)
+    app.Run()
+}</code></pre>
+
+                            <h5 class="mt-4">4. 运行应用</h5>
+                            <pre class="bg-light p-3 rounded"><code>go run main.go</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- API参考 -->
+                <section id="api-reference" class="mt-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0">
+                                <i class="fas fa-code text-info me-2"></i>API参考
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>控制器方法</h5>
+                                    <ul class="list-unstyled">
+                                        <li><code>SetData(key, value)</code> - 设置模板数据</li>
+                                        <li><code>GetData(key)</code> - 获取模板数据</li>
+                                        <li><code>RenderHTML(template)</code> - 渲染HTML模板</li>
+                                        <li><code>JSON(data)</code> - 返回JSON响应</li>
+                                        <li><code>Redirect(url)</code> - 重定向</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>请求方法</h5>
+                                    <ul class="list-unstyled">
+                                        <li><code>GetForm(key)</code> - 获取表单参数</li>
+                                        <li><code>GetQuery(key)</code> - 获取查询参数</li>
+                                        <li><code>GetParam(key)</code> - 获取路径参数</li>
+                                        <li><code>GetHeader(key)</code> - 获取请求头</li>
+                                        <li><code>GetFile(key)</code> - 获取上传文件</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 示例代码 -->
+                <section id="examples" class="mt-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0">
+                                <i class="fas fa-code-branch text-warning me-2"></i>代码示例
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="exampleAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#restapi">
+                                            RESTful API示例
+                                        </button>
+                                    </h2>
+                                    <div id="restapi" class="accordion-collapse collapse show">
+                                        <div class="accordion-body">
+                                            <pre class="bg-light p-3 rounded"><code>type UserController struct {
+    mvc.BaseController
+}
+
+func (c *UserController) GetIndex() {
+    users := []User{...} // 获取用户列表
+    c.JSON(users)
+}
+
+func (c *UserController) PostCreate() {
+    name := c.GetForm("name")
+    email := c.GetForm("email")
+    // 创建用户逻辑
+    c.JSON(map[string]interface{}{
+        "success": true,
+        "message": "用户创建成功",
+    })
+}
+
+func (c *UserController) PutUpdate() {
+    id := c.GetParam("id")
+    // 更新用户逻辑
+    c.JSON(map[string]interface{}{
+        "success": true,
+        "message": "用户更新成功",
+    })
+}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#middleware">
+                                            中间件示例
+                                        </button>
+                                    </h2>
+                                    <div id="middleware" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <pre class="bg-light p-3 rounded"><code>import "github.com/zsy619/yyhertz/framework/middleware"
+
+func main() {
+    app := mvc.HertzApp
+    
+    // 添加全局中间件
+    app.Use(
+        middleware.LoggerMiddleware(),
+        middleware.RecoveryMiddleware(),
+        middleware.CORSMiddleware(),
+    )
+    
+    // 添加控制器
+    app.Include(&UserController{})
+    
+    app.Run()
+}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Hertz MVC Framework</h5>
+                    <p class="text-muted">基于CloudWeGo-Hertz构建的高性能Go Web框架</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>链接</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/docs" class="text-muted">文档</a></li>
+                        <li><a href="https://github.com/cloudwego/hertz" class="text-muted">GitHub</a></li>
+                        <li><a href="/home/about" class="text-muted">关于我们</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="mb-0">© 2024 CloudWeGo Team. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 平滑滚动到锚点
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

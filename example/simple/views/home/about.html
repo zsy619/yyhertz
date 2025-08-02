@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Hertz MVC框架</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-bolt"></i> Hertz MVC
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs">文档</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/user">用户管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">管理后台</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/home/about">关于</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 页面标题 -->
+    <div class="bg-primary text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>{{.Title}}
+                    </h1>
+                    <p class="lead mb-0 mt-2">了解Hertz MVC框架的发展历程和团队信息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 面包屑导航 -->
+    <div class="bg-light py-2">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/">首页</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">关于我们</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="container my-5">
+        <!-- 框架介绍 -->
+        <div class="row mb-5">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="text-center mb-5">
+                    <i class="fas fa-bolt fa-5x text-primary mb-3"></i>
+                    <h2>{{.About.Framework}}</h2>
+                    <p class="lead text-muted">高性能、易用的Go Web开发框架</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 框架信息卡片 -->
+        <div class="row mb-5">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tag fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">版本信息</h5>
+                        <h3 class="text-success">{{.About.Version}}</h3>
+                        <p class="card-text">当前稳定版本，持续更新优化</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-certificate fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">开源协议</h5>
+                        <h3 class="text-warning">{{.About.License}}</h3>
+                        <p class="card-text">开源免费，商业友好的Apache协议</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 特性介绍 -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="text-center mb-4">
+                    <i class="fas fa-star text-primary me-2"></i>框架特性
+                </h3>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-rocket fa-3x text-primary mb-3"></i>
+                        <h5>高性能</h5>
+                        <p class="text-muted">基于CloudWeGo-Hertz构建，拥有出色的性能表现和低延迟</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-puzzle-piece fa-3x text-success mb-3"></i>
+                        <h5>易用性</h5>
+                        <p class="text-muted">类Beego的API设计，降低学习成本，提高开发效率</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-cogs fa-3x text-info mb-3"></i>
+                        <h5>可扩展</h5>
+                        <p class="text-muted">丰富的中间件生态，支持插件化开发和自定义扩展</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 团队信息 -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-users text-primary me-2"></i>开发团队
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{{.About.Author}}</h5>
+                                <p class="text-muted">CloudWeGo是字节跳动开源的云原生计算框架集合，致力于为企业提供高性能、高扩展性、高可靠性的微服务中间件解决方案。</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>企业级稳定性</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>大规模生产实践</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>持续技术创新</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>技术支持</h5>
+                                <p class="text-muted">我们提供全方位的技术支持和文档资源，帮助开发者快速上手和解决问题。</p>
+                                <div class="d-grid gap-2">
+                                    <a href="{{.About.Github}}" class="btn btn-outline-dark" target="_blank">
+                                        <i class="fab fa-github me-2"></i>GitHub仓库
+                                    </a>
+                                    <a href="{{.About.Docs}}" class="btn btn-outline-primary" target="_blank">
+                                        <i class="fas fa-book me-2"></i>官方文档
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 生态系统 -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="text-center mb-4">
+                    <i class="fas fa-sitemap text-primary me-2"></i>生态系统
+                </h3>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center border-0">
+                    <div class="card-body">
+                        <i class="fas fa-server fa-2x text-primary mb-2"></i>
+                        <h6>Hertz</h6>
+                        <small class="text-muted">HTTP框架</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center border-0">
+                    <div class="card-body">
+                        <i class="fas fa-exchange-alt fa-2x text-success mb-2"></i>
+                        <h6>Kitex</h6>
+                        <small class="text-muted">RPC框架</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center border-0">
+                    <div class="card-body">
+                        <i class="fas fa-network-wired fa-2x text-info mb-2"></i>
+                        <h6>Netpoll</h6>
+                        <small class="text-muted">网络库</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card text-center border-0">
+                    <div class="card-body">
+                        <i class="fas fa-tools fa-2x text-warning mb-2"></i>
+                        <h6>生态工具</h6>
+                        <small class="text-muted">开发工具集</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 联系我们 -->
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h4 class="mb-3">
+                            <i class="fas fa-envelope text-primary me-2"></i>联系我们
+                        </h4>
+                        <p class="mb-4">有任何问题或建议？我们很乐意听到您的声音！</p>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <a href="{{.About.Github}}/issues" class="btn btn-outline-primary w-100" target="_blank">
+                                    <i class="fas fa-bug me-2"></i>报告问题
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="{{.About.Github}}/discussions" class="btn btn-outline-success w-100" target="_blank">
+                                    <i class="fas fa-comments me-2"></i>技术讨论
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="{{.About.Github}}/pulls" class="btn btn-outline-info w-100" target="_blank">
+                                    <i class="fas fa-code-branch me-2"></i>贡献代码
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Hertz MVC Framework</h5>
+                    <p class="text-muted">基于CloudWeGo-Hertz构建的高性能Go Web框架</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>链接</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/docs" class="text-muted">文档</a></li>
+                        <li><a href="{{.About.Github}}" class="text-muted" target="_blank">GitHub</a></li>
+                        <li><a href="/home/about" class="text-muted">关于我们</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="mb-0">© 2024 CloudWeGo Team. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 添加一些交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 卡片悬停效果
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.transition = 'transform 0.3s ease';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<!-- MyBatis主配置文件 -->
+<configuration>
+    
+    <!-- 属性配置 -->
+    <properties resource="database.properties">
+        <property name="username" value="root"/>
+        <property name="password" value="123456"/>
+    </properties>
+    
+    <!-- 设置 -->
+    <settings>
+        <!-- 是否开启自动驼峰命名规则映射 -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!-- 是否开启延迟加载 -->
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <!-- 是否允许单一语句返回多结果集 -->
+        <setting name="multipleResultSetsEnabled" value="true"/>
+        <!-- 是否允许在嵌套语句中使用分页 -->
+        <setting name="safeRowBoundsEnabled" value="false"/>
+        <!-- 是否开启自动生成主键 -->
+        <setting name="useGeneratedKeys" value="true"/>
+        <!-- 配置默认的执行器 -->
+        <setting name="defaultExecutorType" value="SIMPLE"/>
+        <!-- 设置超时时间 -->
+        <setting name="defaultStatementTimeout" value="25000"/>
+        <!-- 设置查询结果集数量 -->
+        <setting name="defaultFetchSize" value="100"/>
+        <!-- 是否开启自动映射 -->
+        <setting name="autoMappingBehavior" value="PARTIAL"/>
+        <!-- 是否开启自动映射未知列 -->
+        <setting name="autoMappingUnknownColumnBehavior" value="WARNING"/>
+        <!-- 配置默认枚举处理器 -->
+        <setting name="defaultEnumTypeHandler" value="org.apache.ibatis.type.EnumTypeHandler"/>
+        <!-- 是否开启缓存 -->
+        <setting name="cacheEnabled" value="true"/>
+        <!-- 是否调用setter方法当属性为null -->
+        <setting name="callSettersOnNulls" value="false"/>
+        <!-- 当返回行的所有列都是空时，MyBatis默认返回 null -->
+        <setting name="returnInstanceForEmptyRow" value="false"/>
+        <!-- 指定 MyBatis 增加到日志名称的前缀 -->
+        <setting name="logPrefix" value="MyBatis-Go."/>
+        <!-- 指定 MyBatis 所用日志的具体实现 -->
+        <setting name="logImpl" value="SLF4J"/>
+        <!-- 指定代理对象 -->
+        <setting name="proxyFactory" value="CGLIB"/>
+        <!-- 指定VFS的实现 -->
+        <setting name="vfsImpl" value=""/>
+        <!-- 允许使用方法签名中的名称作为语句参数名称 -->
+        <setting name="useActualParamName" value="true"/>
+        <!-- 指定当结果集中值为 null 的时候是否调用映射对象的 setter（map 对象时为 put）方法 -->
+        <setting name="configurationFactory" value=""/>
+    </settings>
+    
+    <!-- 类型别名 -->
+    <typeAliases>
+        <!-- 指定一个包名，MyBatis会在包名下面搜索需要的Go Bean -->
+        <package name="mybatis_tests"/>
+        
+        <!-- 具体的类型别名 -->
+        <typeAlias alias="User" type="mybatis_tests.User"/>
+        <typeAlias alias="UserQuery" type="mybatis_tests.UserQuery"/>
+        <typeAlias alias="UserStats" type="mybatis_tests.UserStats"/>
+        <typeAlias alias="UserProfile" type="mybatis_tests.UserProfile"/>
+        <typeAlias alias="UserRole" type="mybatis_tests.UserRole"/>
+        <typeAlias alias="Article" type="mybatis_tests.Article"/>
+        <typeAlias alias="Category" type="mybatis_tests.Category"/>
+        <typeAlias alias="UserArticleView" type="mybatis_tests.UserArticleView"/>
+        <typeAlias alias="ComplexQueryResult" type="mybatis_tests.ComplexQueryResult"/>
+        <typeAlias alias="AggregationResult" type="mybatis_tests.AggregationResult"/>
+        <typeAlias alias="PaginationResult" type="mybatis_tests.PaginationResult"/>
+        <typeAlias alias="BatchInsertRequest" type="mybatis_tests.BatchInsertRequest"/>
+        <typeAlias alias="BatchUpdateRequest" type="mybatis_tests.BatchUpdateRequest"/>
+    </typeAliases>
+    
+    <!-- 类型处理器 -->
+    <typeHandlers>
+        <package name="mybatis_tests.handlers"/>
+    </typeHandlers>
+    
+    <!-- 对象工厂 -->
+    <objectFactory type="org.apache.ibatis.reflection.factory.DefaultObjectFactory">
+        <property name="someProperty" value="100"/>
+    </objectFactory>
+    
+    <!-- 插件 -->
+    <plugins>
+        <!-- 分页插件 -->
+        <plugin interceptor="com.github.pagehelper.PageInterceptor">
+            <property name="helperDialect" value="mysql"/>
+            <property name="reasonable" value="true"/>
+            <property name="supportMethodsArguments" value="true"/>
+            <property name="params" value="count=countSql"/>
+        </plugin>
+        
+        <!-- SQL性能监控插件 -->
+        <plugin interceptor="mybatis_tests.plugins.SqlPerformanceInterceptor">
+            <property name="maxTime" value="1000"/>
+            <property name="format" value="true"/>
+        </plugin>
+        
+        <!-- SQL日志插件 -->
+        <plugin interceptor="mybatis_tests.plugins.SqlLogInterceptor">
+            <property name="logLevel" value="DEBUG"/>
+            <property name="slowSqlTime" value="500"/>
+        </plugin>
+    </plugins>
+    
+    <!-- 环境配置 -->
+    <environments default="development">
+        
+        <!-- 开发环境 -->
+        <environment id="development">
+            <!-- 事务管理器 -->
+            <transactionManager type="JDBC"/>
+            <!-- 数据源 -->
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/mybatis_test?useUnicode=true&amp;characterEncoding=utf8&amp;serverTimezone=GMT%2B8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"/>
+                <property name="username" value="${username}"/>
+                <property name="password" value="${password}"/>
+                <!-- 连接池配置 -->
+                <property name="poolMaximumActiveConnections" value="100"/>
+                <property name="poolMaximumIdleConnections" value="10"/>
+                <property name="poolMaximumCheckoutTime" value="20000"/>
+                <property name="poolTimeToWait" value="20000"/>
+                <property name="poolPingEnabled" value="true"/>
+                <property name="poolPingQuery" value="SELECT 1"/>
+                <property name="poolPingConnectionsNotUsedFor" value="19000"/>
+            </dataSource>
+        </environment>
+        
+        <!-- 测试环境 -->
+        <environment id="test">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/mybatis_test_db?useUnicode=true&amp;characterEncoding=utf8&amp;serverTimezone=GMT%2B8&amp;useSSL=false"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+                <property name="poolMaximumActiveConnections" value="50"/>
+                <property name="poolMaximumIdleConnections" value="5"/>
+            </dataSource>
+        </environment>
+        
+        <!-- 生产环境 -->
+        <environment id="production">
+            <transactionManager type="JDBC"/>
+            <dataSource type="JNDI">
+                <property name="data_source" value="java:comp/env/jdbc/MyBatisGoDataSource"/>
+            </dataSource>
+        </environment>
+        
+    </environments>
+    
+    <!-- 数据库厂商标识 -->
+    <databaseIdProvider type="DB_VENDOR">
+        <property name="MySQL" value="mysql"/>
+        <property name="Oracle" value="oracle"/>
+        <property name="PostgreSQL" value="postgresql"/>
+        <property name="SQL Server" value="sqlserver"/>
+        <property name="SQLite" value="sqlite"/>
+    </databaseIdProvider>
+    
+    <!-- 映射器 -->
+    <mappers>
+        <!-- 使用相对于类路径的资源引用 -->
+        <mapper resource="mappers/UserMapper.xml"/>
+        
+        <!-- 使用完全限定资源定位符（URL） -->
+        <!-- <mapper url="file:///var/mappers/UserMapper.xml"/> -->
+        
+        <!-- 使用映射器接口实现类的完全限定类名 -->
+        <!-- <mapper class="mybatis_tests.UserMapper"/> -->
+        
+        <!-- 将包内的映射器接口实现全部注册为映射器 -->
+        <package name="mybatis_tests.mappers"/>
+    </mappers>
+    
+</configuration>

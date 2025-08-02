@@ -12,7 +12,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-const DefaultConfigName = "config"
+// 默认配置文件名和类型
+const DefaultConfigName = "app"
+
+// 默认引擎配置名
+const EngineConfigName = "engine"
 
 // ViperConfigManager Viper配置管理器
 type ViperConfigManager struct {
@@ -146,7 +150,7 @@ var viperConfigManagerMap sync.Map
 func NewViperConfigManager() *ViperConfigManager {
 	return &ViperConfigManager{
 		viper:       viper.New(),
-		configPaths: []string{".", "./config", "/etc/yyhertz", "$HOME/.yyhertz"},
+		configPaths: []string{".", "./conf", "/etc/yyhertz", "$HOME/.yyhertz"},
 		configName:  DefaultConfigName,
 		configType:  "yaml",
 		envPrefix:   "YYHERTZ",
@@ -154,11 +158,17 @@ func NewViperConfigManager() *ViperConfigManager {
 	}
 }
 
+func init() {
+	// 初始化默认配置管理器
+	defaultViperConfigManager = GetViperConfigManager()
+	// defaultAppConfig = defaultViperConfigManager.GetDefaultConfig()
+}
+
 // 根据configName创建新的配置管理器
 func NewViperConfigManagerWithName(name string) *ViperConfigManager {
 	return &ViperConfigManager{
 		viper:       viper.New(),
-		configPaths: []string{".", "./config", "/etc/yyhertz", "$HOME/.yyhertz"},
+		configPaths: []string{".", "./conf", "/etc/yyhertz", "$HOME/.yyhertz"},
 		configName:  name,
 		configType:  "yaml",
 		envPrefix:   "YYHERTZ",
@@ -168,7 +178,7 @@ func NewViperConfigManagerWithName(name string) *ViperConfigManager {
 
 // GetViperConfigManager 获取全局配置管理器实例
 func GetViperConfigManager() *ViperConfigManager {
-	return GetViperConfigManagerWithName("config")
+	return GetViperConfigManagerWithName(DefaultConfigName)
 }
 
 // 根据 configName获取配置管理器实例
@@ -314,10 +324,10 @@ func (cm *ViperConfigManager) setDefaults() {
 
 // createDefaultConfigFile 创建默认配置文件
 func (cm *ViperConfigManager) createDefaultConfigFile() error {
-	// 使用第一个配置路径，或默认使用 ./config
-	configDir := "./config"
+	// 使用第一个配置路径，或默认使用 ./conf
+	configDir := "./conf"
 	if len(cm.configPaths) > 0 {
-		configDir = filepath.Join(cm.configPaths[0], "config")
+		configDir = filepath.Join(cm.configPaths[0], "conf")
 	}
 	configFile := filepath.Join(configDir, cm.configName+"."+cm.configType)
 
@@ -507,12 +517,83 @@ func (cm *ViperConfigManager) GetInt(key string) int {
 	return cm.viper.GetInt(key)
 }
 
+func (cm *ViperConfigManager) GetIntSlice(key string) []int {
+	if !cm.initialized {
+		cm.Initialize()
+	}
+	// 尝试直接获取 []int
+	if slice, ok := cm.Get(key).([]int); ok {
+		return slice
+	}
+
+	// 尝试从其他类型转换
+	value := cm.Get(key)
+	if value == nil {
+		return []int{} // 返回空切片
+	}
+
+	// 使用反射处理其他类型
+	out, _ := convertToIntSlice(value)
+	if out == nil {
+		return []int{} // 返回空切片
+	}
+	return out
+}
+
 // GetBool 获取布尔配置值
 func (cm *ViperConfigManager) GetBool(key string) bool {
 	if !cm.initialized {
 		cm.Initialize()
 	}
 	return cm.viper.GetBool(key)
+}
+
+func (cm *ViperConfigManager) GetBoolSlice(key string) []bool {
+	if !cm.initialized {
+		cm.Initialize()
+	}
+	// 尝试直接获取 []bool
+	if slice, ok := cm.Get(key).([]bool); ok {
+		return slice
+	}
+
+	// 尝试从 []any 转换
+	if ifaceSlice, ok := cm.Get(key).([]any); ok {
+		out, _ := convertInterfaceSliceToBool(ifaceSlice)
+		if out == nil {
+			return []bool{} // 返回空切片
+		}
+		return out
+	}
+
+	// 尝试从字符串解析
+	if str, ok := cm.Get(key).(string); ok {
+		out, _ := parseBoolSliceFromString(str)
+		if out == nil {
+			return []bool{} // 返回空切片
+		}
+		return out
+	}
+
+	// 尝试从其他类型转换
+	value := cm.Get(key)
+	if value == nil {
+		return []bool{} // 返回空切片
+	}
+
+	// 使用反射处理其他类型
+	out, _ := convertToBoolSlice(value)
+	if out == nil {
+		return []bool{} // 返回空切片
+	}
+	return out
+}
+
+func (cm *ViperConfigManager) GetStringMap(key string) map[string]any {
+	if !cm.initialized {
+		cm.Initialize()
+	}
+	return cm.viper.GetStringMap(key)
 }
 
 // GetStringSlice 获取字符串数组配置值
@@ -529,6 +610,30 @@ func (cm *ViperConfigManager) GetDuration(key string) time.Duration {
 		cm.Initialize()
 	}
 	return cm.viper.GetDuration(key)
+}
+
+// GetDateTime 获取时间配置值
+func (cm *ViperConfigManager) GetDateTime(key string) time.Time {
+	if !cm.initialized {
+		cm.Initialize()
+	}
+	value := cm.viper.Get(key)
+	if value == nil {
+		return time.Time{} // 返回零值时间
+	}
+	// 尝试将值转换为时间
+	switch v := value.(type) {
+	case time.Time:
+		return v
+	case string:
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return time.Time{} // 返回零值时间
+		}
+		return t
+	default:
+		return time.Time{} // 返回零值时间
+	}
 }
 
 // Set 设置配置值
@@ -643,16 +748,33 @@ func GetConfigString(key string, configName ...string) string {
 	return GetViperConfigManagerWithName(name).GetString(key)
 }
 
+func GetConfigStringSlice(key string, configName ...string) []string {
+	name := getConfigName(configName...)
+	return GetViperConfigManagerWithName(name).GetStringSlice(key)
+}
+
 // GetConfigInt 获取全局整数配置值
 func GetConfigInt(key string, configName ...string) int {
 	name := getConfigName(configName...)
 	return GetViperConfigManagerWithName(name).GetInt(key)
 }
 
+// GetConfigIntSlice 获取全局整数数组配置值
+func GetConfigIntSlice(key string, configName ...string) []int {
+	name := getConfigName(configName...)
+	return GetViperConfigManagerWithName(name).GetIntSlice(key)
+}
+
 // GetConfigBool 获取全局布尔配置值
 func GetConfigBool(key string, configName ...string) bool {
 	name := getConfigName(configName...)
 	return GetViperConfigManagerWithName(name).GetBool(key)
+}
+
+// GetConfigBoolSlice 获取全局布尔数组配置值
+func GetConfigBoolSlice(key string, configName ...string) []bool {
+	name := getConfigName(configName...)
+	return GetViperConfigManagerWithName(name).GetBoolSlice(key)
 }
 
 func getConfigName(configName ...string) string {

@@ -10,6 +10,7 @@ func TestGetVersionInfo(t *testing.T) {
 	info := GetVersionInfo()
 
 	if info.Framework != FrameworkName {
+
 		t.Errorf("Expected framework name '%s', got '%s'", FrameworkName, info.Framework)
 	}
 

@@ -170,17 +170,6 @@ func PathExists(path string) bool {
 	return err == nil
 }
 
-// IsDir 检查路径是否为目录
-func IsDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
-
-// IsFile 检查路径是否为文件
-func IsFile(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
-}
 
 // CreateDir 创建目录
 func CreateDir(path string) error {
