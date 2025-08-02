@@ -18,7 +18,7 @@ type TemplateManager struct {
 var (
 	templateManager *TemplateManager
 	templateOnce    sync.Once
-	configEngine    = config.GetViperConfigManagerWithName(config.EngineConfigName)
+	configEngine    = config.GetViperConfigManagerWithName(config.TemplateConfigName)
 )
 
 // GetTemplateManager 获取模板管理器单实例

@@ -16,7 +16,7 @@ import (
 const DefaultConfigName = "app"
 
 // 默认引擎配置名
-const EngineConfigName = "engine"
+const TemplateConfigName = "template"
 
 // ViperConfigManager Viper配置管理器
 type ViperConfigManager struct {
