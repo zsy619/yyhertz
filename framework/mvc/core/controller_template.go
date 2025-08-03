@@ -117,7 +117,7 @@ func (c *BaseController) RenderString() (string, error) {
 	return string(bytes), nil
 }
 
-// RenderHTML 直接渲染HTML模板（兼容旧版本）
+// RenderHTML 直接渲染HTML模板（兼容旧版本，现已增强支持template函数）
 func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 	if len(data) > 0 {
 		for k, v := range data[0] {
@@ -125,6 +125,29 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 		}
 	}
 
+	// 优先使用增强的模板引擎来支持template include功能
+	c.initializeEnhancedTemplateEngine()
+	
+	// 如果有include引擎，使用它来支持{{template}}函数
+	if c.includeEngine != nil {
+		content, err := c.includeEngine.RenderTemplate(viewName, c.Data)
+		if err != nil {
+			// 如果增强引擎失败，降级到基础渲染
+			c.renderHTMLFallback(viewName)
+			return
+		}
+		
+		c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
+		c.Ctx.RequestContext.Write([]byte(content))
+		return
+	}
+	
+	// 降级到原始方法
+	c.renderHTMLFallback(viewName)
+}
+
+// renderHTMLFallback 降级的HTML渲染方法
+func (c *BaseController) renderHTMLFallback(viewName string) {
 	// 设置模板名称，不使用布局
 	c.TplName = viewName
 	originalLayout := c.Layout
@@ -289,8 +312,16 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 		}
 	}
 
-	// 只解析视图文件
-	tmpl, err = tmpl.ParseFiles(viewPath)
+	// 解析视图文件和相关子模板
+	templateFiles := []string{viewPath}
+	
+	// 尝试找到同目录下的子模板文件
+	dir := filepath.Dir(viewPath)
+	if files, err := filepath.Glob(filepath.Join(dir, "_*.html")); err == nil {
+		templateFiles = append(templateFiles, files...)
+	}
+	
+	tmpl, err = tmpl.ParseFiles(templateFiles...)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %v", err)
 	}

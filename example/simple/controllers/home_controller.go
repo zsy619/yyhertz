@@ -32,19 +32,19 @@ func (c *HomeController) GetIndex() {
 			"Icon":        "fas fa-route",
 		},
 	}
-	
+
 	statistics := map[string]any{
 		"Controllers": 15,
 		"Routes":      45,
 		"Middleware":  8,
 		"Templates":   12,
 	}
-	
+
 	c.SetData("Title", "首页")
 	c.SetData("Features", features)
 	c.SetData("Statistics", statistics)
 	c.SetData("Message", "欢迎使用Hertz MVC框架！")
-	
+
 	// 暂时使用完整HTML版本，确保页面正常显示
 	c.RenderHTML("home/index.html")
 }
@@ -58,7 +58,7 @@ func (c *HomeController) GetAbout() {
 		"Github":    "https://github.com/cloudwego/hertz",
 		"Docs":      "https://www.cloudwego.io/zh/docs/hertz/",
 	}
-	
+
 	c.SetData("Title", "关于我们")
 	c.SetData("About", about)
 	c.RenderHTML("home/about.html")
@@ -69,30 +69,30 @@ func (c *HomeController) GetDocs() {
 		{
 			"Title":       "快速开始",
 			"Description": "学习如何快速搭建一个Hertz MVC应用",
-			"Link":        "/docs/quickstart",
+			"Link":        "/home/quickstart",
 		},
 		{
 			"Title":       "控制器",
 			"Description": "了解如何创建和使用控制器",
-			"Link":        "/docs/controller",
+			"Link":        "/home/controller",
 		},
 		{
 			"Title":       "路由",
 			"Description": "掌握路由配置和RESTful API设计",
-			"Link":        "/docs/routing",
+			"Link":        "/home/routing",
 		},
 		{
 			"Title":       "中间件",
 			"Description": "学习中间件的使用和自定义开发",
-			"Link":        "/docs/middleware",
+			"Link":        "/home/middleware",
 		},
 		{
 			"Title":       "模板",
 			"Description": "了解模板引擎的使用方法",
-			"Link":        "/docs/templates",
+			"Link":        "/home/template",
 		},
 	}
-	
+
 	c.SetData("Title", "文档")
 	c.SetData("Docs", docs)
 	c.RenderHTML("home/docs.html")
@@ -102,7 +102,7 @@ func (c *HomeController) PostContact() {
 	name := c.GetForm("name")
 	email := c.GetForm("email")
 	message := c.GetForm("message")
-	
+
 	if name == "" || email == "" || message == "" {
 		c.JSON(map[string]any{
 			"success": false,
@@ -110,7 +110,7 @@ func (c *HomeController) PostContact() {
 		})
 		return
 	}
-	
+
 	// 这里应该是发送邮件或保存留言的逻辑
 	c.JSON(map[string]any{
 		"success": true,
@@ -121,4 +121,55 @@ func (c *HomeController) PostContact() {
 			"message": message,
 		},
 	})
+}
+
+// ============= 文档系统路由 =============
+
+// 快速开始文档
+func (c *HomeController) GetQuickstart() {
+	c.SetData("Title", "快速开始")
+	c.SetData("CurrentDoc", "quickstart")
+	c.RenderHTML("home/docs/quickstart.html")
+}
+
+// 控制器文档
+func (c *HomeController) GetController() {
+	c.SetData("Title", "控制器")
+	c.SetData("CurrentDoc", "controller")
+	c.RenderHTML("home/docs/controller.html")
+}
+
+// 路由文档
+func (c *HomeController) GetRouting() {
+	c.SetData("Title", "路由")
+	c.SetData("CurrentDoc", "routing")
+	c.RenderHTML("home/docs/routing.html")
+}
+
+// 中间件文档
+func (c *HomeController) GetMiddleware() {
+	c.SetData("Title", "中间件")
+	c.SetData("CurrentDoc", "middleware")
+	c.RenderHTML("home/docs/middleware.html")
+}
+
+// 模板文档
+func (c *HomeController) GetTemplate() {
+	c.SetData("Title", "模板")
+	c.SetData("CurrentDoc", "template")
+	c.RenderHTML("home/docs/template.html")
+}
+
+// 数据库集成文档
+func (c *HomeController) GetDatabase() {
+	c.SetData("Title", "数据库集成")
+	c.SetData("CurrentDoc", "database")
+	c.RenderHTML("home/docs/database.html")
+}
+
+// 部署文档
+func (c *HomeController) GetDeployment() {
+	c.SetData("Title", "部署上线")
+	c.SetData("CurrentDoc", "deployment")
+	c.RenderHTML("home/docs/deployment.html")
 }

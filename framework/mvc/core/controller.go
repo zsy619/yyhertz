@@ -59,9 +59,10 @@ type BaseController struct {
 	ViewsPath    string // 视图根路径（兼容性）
 
 	// 辅助工具
-	cookieHelper   *cookie.Helper       // Cookie辅助工具
-	sessionHelper  *session.Manager     // Session管理器
-	templateEngine *view.TemplateEngine // 模板引擎实例
+	cookieHelper   *cookie.Helper                // Cookie辅助工具
+	sessionHelper  *session.Manager              // Session管理器
+	templateEngine *view.TemplateEngine          // 模板引擎实例
+	includeEngine  *view.TemplateIncludeEngine   // 支持include的模板引擎
 
 	// 内部控制字段
 	initialized bool // 控制器名称是否已初始化（内部使用）

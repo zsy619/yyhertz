@@ -237,6 +237,11 @@ func (app *App) AutoRouters(controllers ...IController) *App {
 	return app.AutoRoutersPrefix("", controllers...)
 }
 
+// Include 向后兼容的别名方法，自动注册多个控制器路由
+func (app *App) Include(controllers ...IController) *App {
+	return app.AutoRouters(controllers...)
+}
+
 // AutoRoutersPrefix 自动注册多个控制器路由，使用指定的路径前缀
 func (app *App) AutoRoutersPrefix(prefix string, ctrls ...IController) *App {
 	for _, ctrl := range ctrls {

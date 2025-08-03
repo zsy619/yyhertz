@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Hertz MVC框架</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
+</head>
+<body>
+    {{template "head" .}}
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-lg-3 col-md-4">
+                {{template "docs-sidebar" .}}
+            </div>
+            
+            <!-- 主要内容 -->
+            <div class="col-lg-9 col-md-8">
+                <!-- 面包屑导航 -->
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">首页</a></li>
+                        <li class="breadcrumb-item"><a href="/home/docs">文档</a></li>
+                        <li class="breadcrumb-item active">{{.Title}}</li>
+                    </ol>
+                </nav>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title">
+                            <i class="fas fa-rocket text-primary"></i> 部署上线
+                        </h1>
+                        
+                        <p class="lead">本文档将指导您将Hertz MVC应用从开发环境部署到生产环境，包括编译打包、服务器配置、容器化部署等多种方式。</p>
+
+                        <h2>部署准备</h2>
+
+                        <h3>1. 环境检查</h3>
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> 部署前确认清单</h6>
+                            <ul class="mb-0">
+                                <li>Go 版本 1.18+ （用于编译）</li>
+                                <li>目标服务器操作系统和架构</li>
+                                <li>数据库连接配置</li>
+                                <li>静态文件和模板文件</li>
+                                <li>环境变量配置</li>
+                                <li>日志和监控配置</li>
+                            </ul>
+                        </div>
+
+                        <h3>2. 配置管理</h3>
+                        <pre><code class="language-go">package config
+
+import (
+    "os"
+    "strconv"
+)
+
+// Config 应用配置
+type Config struct {
+    // 服务器配置
+    Host string
+    Port int
+    Mode string // dev, test, prod
+    
+    // 数据库配置
+    Database DatabaseConfig
+    
+    // Redis配置
+    Redis RedisConfig
+    
+    // 日志配置
+    Log LogConfig
+    
+    // 静态文件配置
+    Static StaticConfig
+}
+
+// LoadConfig 加载配置
+func LoadConfig() *Config {
+    return &Config{
+        Host: getEnv("SERVER_HOST", "0.0.0.0"),
+        Port: getEnvInt("SERVER_PORT", 8080),
+        Mode: getEnv("APP_MODE", "dev"),
+        
+        Database: DatabaseConfig{
+            Type:     getEnv("DB_TYPE", "mysql"),
+            Host:     getEnv("DB_HOST", "localhost"),
+            Port:     getEnvInt("DB_PORT", 3306),
+            Username: getEnv("DB_USERNAME", "root"),
+            Password: getEnv("DB_PASSWORD", ""),
+            Database: getEnv("DB_DATABASE", "hertz_mvc"),
+        },
+        
+        Redis: RedisConfig{
+            Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
+            Password: getEnv("REDIS_PASSWORD", ""),
+            DB:       getEnvInt("REDIS_DB", 0),
+        },
+        
+        Log: LogConfig{
+            Level:    getEnv("LOG_LEVEL", "info"),
+            Format:   getEnv("LOG_FORMAT", "json"),
+            Output:   getEnv("LOG_OUTPUT", "stdout"),
+            FilePath: getEnv("LOG_FILE_PATH", "./logs/app.log"),
+        },
+        
+        Static: StaticConfig{
+            Path:   getEnv("STATIC_PATH", "./static"),
+            MaxAge: getEnvInt("STATIC_MAX_AGE", 3600),
+        },
+    }
+}
+
+// getEnv 获取环境变量
+func getEnv(key, defaultValue string) string {
+    if value := os.Getenv(key); value != "" {
+        return value
+    }
+    return defaultValue
+}
+
+// getEnvInt 获取整型环境变量
+func getEnvInt(key string, defaultValue int) int {
+    if value := os.Getenv(key); value != "" {
+        if intValue, err := strconv.Atoi(value); err == nil {
+            return intValue
+        }
+    }
+    return defaultValue
+}</code></pre>
+
+                        <h2>编译打包</h2>
+
+                        <h3>1. 单平台编译</h3>
+                        <pre><code class="language-bash"># 编译当前平台
+go build -o app ./cmd/main.go
+
+# 编译时包含版本信息
+VERSION=$(git describe --tags --always)
+BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" -o app ./cmd/main.go</code></pre>
+
+                        <h3>2. 交叉编译</h3>
+                        <pre><code class="language-bash"># 编译 Linux 64位
+GOOS=linux GOARCH=amd64 go build -o app-linux-amd64 ./cmd/main.go
+
+# 编译 Windows 64位
+GOOS=windows GOARCH=amd64 go build -o app-windows-amd64.exe ./cmd/main.go
+
+# 编译 macOS 64位
+GOOS=darwin GOARCH=amd64 go build -o app-darwin-amd64 ./cmd/main.go
+
+# 编译 ARM64 (Apple Silicon)
+GOOS=darwin GOARCH=arm64 go build -o app-darwin-arm64 ./cmd/main.go</code></pre>
+
+                        <h3>3. 构建脚本</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+# build.sh
+
+APP_NAME="hertz-mvc-app"
+VERSION=$(git describe --tags --always)
+BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+GIT_COMMIT=$(git rev-parse HEAD)
+
+# 设置编译标志
+LDFLAGS="-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}"
+
+# 创建输出目录
+mkdir -p dist
+
+# 编译不同平台版本
+echo "Building for Linux..."
+GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-linux-amd64 ./cmd/main.go
+
+echo "Building for Windows..."
+GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-windows-amd64.exe ./cmd/main.go
+
+echo "Building for macOS..."
+GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-darwin-amd64 ./cmd/main.go
+
+echo "Building for macOS ARM64..."
+GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/${APP_NAME}-darwin-arm64 ./cmd/main.go
+
+# 复制必要文件
+cp -r views dist/
+cp -r static dist/
+cp config.yaml.example dist/
+
+echo "Build completed!"
+echo "Version: ${VERSION}"
+echo "Build Time: ${BUILD_TIME}"</code></pre>
+
+                        <h2>传统服务器部署</h2>
+
+                        <h3>1. 系统服务配置</h3>
+                        <pre><code class="language-ini"># /etc/systemd/system/hertz-mvc.service
+
+[Unit]
+Description=Hertz MVC Application
+After=network.target
+
+[Service]
+Type=simple
+User=hertz
+Group=hertz
+WorkingDirectory=/opt/hertz-mvc
+ExecStart=/opt/hertz-mvc/app
+Restart=always
+RestartSec=5
+
+# 环境变量
+Environment=APP_MODE=prod
+Environment=SERVER_HOST=0.0.0.0
+Environment=SERVER_PORT=8080
+Environment=DB_HOST=localhost
+Environment=DB_USERNAME=hertz_user
+Environment=DB_PASSWORD=your_password
+Environment=DB_DATABASE=hertz_mvc_prod
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=65536
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+                        <h3>2. 部署脚本</h3>
+                        <pre><code class="language-bash">#!/bin/bash
+# deploy.sh
+
+APP_NAME="hertz-mvc"
+APP_DIR="/opt/${APP_NAME}"
+BACKUP_DIR="/opt/${APP_NAME}-backup"
+SERVICE_NAME="${APP_NAME}.service"
+
+echo "开始部署 ${APP_NAME}..."
+
+# 停止服务
+echo "停止服务..."
+sudo systemctl stop ${SERVICE_NAME}
+
+# 备份当前版本
+if [ -d "${APP_DIR}" ]; then
+    echo "备份当前版本..."
+    sudo rm -rf ${BACKUP_DIR}
+    sudo mv ${APP_DIR} ${BACKUP_DIR}
+fi
+
+# 创建新目录
+echo "创建应用目录..."
+sudo mkdir -p ${APP_DIR}
+
+# 复制新版本文件
+echo "复制新版本文件..."
+sudo cp app-linux-amd64 ${APP_DIR}/app
+sudo cp -r views ${APP_DIR}/
+sudo cp -r static ${APP_DIR}/
+sudo cp config.yaml ${APP_DIR}/
+
+# 设置权限
+echo "设置权限..."
+sudo chown -R hertz:hertz ${APP_DIR}
+sudo chmod +x ${APP_DIR}/app
+
+# 创建日志目录
+sudo mkdir -p ${APP_DIR}/logs
+sudo chown hertz:hertz ${APP_DIR}/logs
+
+# 重新加载服务配置
+echo "重新加载服务配置..."
+sudo systemctl daemon-reload
+
+# 启动服务
+echo "启动服务..."
+sudo systemctl start ${SERVICE_NAME}
+sudo systemctl enable ${SERVICE_NAME}
+
+# 检查服务状态
+echo "检查服务状态..."
+sleep 3
+if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
+    echo "✅ 部署成功！服务正在运行"
+    sudo systemctl status ${SERVICE_NAME}
+else
+    echo "❌ 部署失败！正在回滚..."
+    sudo systemctl stop ${SERVICE_NAME}
+    sudo rm -rf ${APP_DIR}
+    sudo mv ${BACKUP_DIR} ${APP_DIR}
+    sudo systemctl start ${SERVICE_NAME}
+    exit 1
+fi</code></pre>
+
+                        <h3>3. Nginx反向代理</h3>
+                        <pre><code class="language-nginx"># /etc/nginx/sites-available/hertz-mvc
+
+upstream hertz_mvc {
+    server 127.0.0.1:8080;
+    # 如果有多个实例，可以添加负载均衡
+    # server 127.0.0.1:8081;
+    # server 127.0.0.1:8082;
+}
+
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com;
+    
+    # 重定向到HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com www.your-domain.com;
+    
+    # SSL证书配置
+    ssl_certificate /path/to/your/certificate.crt;
+    ssl_certificate_key /path/to/your/private.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    
+    # 安全头
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";
+    
+    # 日志
+    access_log /var/log/nginx/hertz-mvc-access.log;
+    error_log /var/log/nginx/hertz-mvc-error.log;
+    
+    # 静态文件
+    location /static/ {
+        alias /opt/hertz-mvc/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        
+        # 启用gzip压缩
+        gzip on;
+        gzip_types text/css application/javascript image/svg+xml;
+    }
+    
+    # API和动态内容
+    location / {
+        proxy_pass http://hertz_mvc;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # 超时设置
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # 缓冲设置
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+    }
+    
+    # 健康检查
+    location /health {
+        proxy_pass http://hertz_mvc/health;
+        access_log off;
+    }
+}</code></pre>
+
+                        <h2>Docker容器化部署</h2>
+
+                        <h3>1. Dockerfile</h3>
+                        <pre><code class="language-dockerfile"># 多阶段构建
+# 第一阶段：构建
+FROM golang:1.21-alpine AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制go mod文件
+COPY go.mod go.sum ./
+
+# 下载依赖
+RUN go mod download
+
+# 复制源代码
+COPY . .
+
+# 构建应用
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app ./cmd/main.go
+
+# 第二阶段：运行
+FROM alpine:latest
+
+# 安装必要的包
+RUN apk --no-cache add ca-certificates tzdata
+
+# 设置时区
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+# 创建用户
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+# 设置工作目录
+WORKDIR /app
+
+# 从builder阶段复制二进制文件
+COPY --from=builder /app/app .
+
+# 复制静态文件和模板
+COPY --from=builder /app/views ./views
+COPY --from=builder /app/static ./static
+
+# 创建日志目录
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app
+
+# 切换到非root用户
+USER appuser
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# 启动应用
+CMD ["./app"]</code></pre>
+
+                        <h3>2. Docker Compose</h3>
+                        <pre><code class="language-yaml"># docker-compose.yml
+version: '3.8'
+
+services:
+  # 应用服务
+  app:
+    build: .
+    container_name: hertz-mvc-app
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_MODE=prod
+      - DB_HOST=mysql
+      - DB_USERNAME=hertz_user
+      - DB_PASSWORD=your_password
+      - DB_DATABASE=hertz_mvc
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    networks:
+      - hertz-network
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: hertz-mvc-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=hertz_mvc
+      - MYSQL_USER=hertz_user
+      - MYSQL_PASSWORD=your_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    networks:
+      - hertz-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: hertz-mvc-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - hertz-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: hertz-mvc-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - hertz-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  hertz-network:
+    driver: bridge</code></pre>
+
+                        <h3>3. 生产环境 Docker Compose</h3>
+                        <pre><code class="language-yaml"># docker-compose.prod.yml
+version: '3.8'
+
+services:
+  app:
+    image: your-registry.com/hertz-mvc:latest
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    environment:
+      - APP_MODE=prod
+      - DB_HOST=mysql
+      - LOG_LEVEL=warn
+    secrets:
+      - db_password
+      - jwt_secret
+    networks:
+      - hertz-network
+
+  mysql:
+    image: mysql:8.0
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql_root_password
+      - MYSQL_PASSWORD_FILE=/run/secrets/db_password
+    secrets:
+      - mysql_root_password
+      - db_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - hertz-network
+
+secrets:
+  db_password:
+    external: true
+  mysql_root_password:
+    external: true
+  jwt_secret:
+    external: true
+
+networks:
+  hertz-network:
+    external: true
+
+volumes:
+  mysql_data:
+    external: true</code></pre>
+
+                        <h2>Kubernetes部署</h2>
+
+                        <h3>1. 应用部署清单</h3>
+                        <pre><code class="language-yaml"># k8s-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hertz-mvc-app
+  namespace: production
+  labels:
+    app: hertz-mvc
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hertz-mvc
+  template:
+    metadata:
+      labels:
+        app: hertz-mvc
+    spec:
+      containers:
+      - name: hertz-mvc
+        image: your-registry.com/hertz-mvc:v1.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_MODE
+          value: "prod"
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: hertz-mvc-config
+      - name: logs-volume
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hertz-mvc-service
+  namespace: production
+spec:
+  selector:
+    app: hertz-mvc
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hertz-mvc-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  tls:
+  - hosts:
+    - your-domain.com
+    secretName: hertz-mvc-tls
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hertz-mvc-service
+            port:
+              number: 80</code></pre>
+
+                        <h2>监控和日志</h2>
+
+                        <h3>1. 应用监控</h3>
+                        <pre><code class="language-go">package monitoring
+
+import (
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
+    "time"
+)
+
+var (
+    // HTTP请求总数
+    httpRequestsTotal = promauto.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "http_requests_total",
+            Help: "Total number of HTTP requests",
+        },
+        []string{"method", "path", "status"},
+    )
+    
+    // HTTP请求延迟
+    httpRequestDuration = promauto.NewHistogramVec(
+        prometheus.HistogramOpts{
+            Name: "http_request_duration_seconds",
+            Help: "HTTP request duration in seconds",
+            Buckets: prometheus.DefBuckets,
+        },
+        []string{"method", "path"},
+    )
+    
+    // 当前在线用户数
+    activeUsers = promauto.NewGauge(
+        prometheus.GaugeOpts{
+            Name: "active_users",
+            Help: "Number of active users",
+        },
+    )
+)
+
+// RecordHTTPRequest 记录HTTP请求指标
+func RecordHTTPRequest(method, path, status string, duration time.Duration) {
+    httpRequestsTotal.WithLabelValues(method, path, status).Inc()
+    httpRequestDuration.WithLabelValues(method, path).Observe(duration.Seconds())
+}
+
+// SetActiveUsers 设置活跃用户数
+func SetActiveUsers(count float64) {
+    activeUsers.Set(count)
+}</code></pre>
+
+                        <h3>2. 健康检查端点</h3>
+                        <pre><code class="language-go">package controllers
+
+// HealthController 健康检查控制器
+type HealthController struct {
+    mvc.BaseController
+}
+
+// GetHealth 健康检查
+func (c *HealthController) GetHealth() {
+    status := map[string]interface{}{
+        "status":    "ok",
+        "timestamp": time.Now(),
+        "version":   Version,
+        "uptime":    time.Since(StartTime).String(),
+    }
+    
+    // 检查数据库连接
+    if err := database.DB.Exec("SELECT 1").Error; err != nil {
+        status["status"] = "error"
+        status["database"] = "disconnected"
+        c.Ctx.Response.SetStatusCode(503)
+    } else {
+        status["database"] = "connected"
+    }
+    
+    // 检查Redis连接
+    if err := redis.Client.Ping().Err(); err != nil {
+        status["status"] = "error"
+        status["redis"] = "disconnected"
+        c.Ctx.Response.SetStatusCode(503)
+    } else {
+        status["redis"] = "connected"
+    }
+    
+    c.RenderJSON(status)
+}
+
+// GetMetrics Prometheus指标端点
+func (c *HealthController) GetMetrics() {
+    promhttp.Handler().ServeHTTP(c.Ctx.Response, c.Ctx.Request)
+}</code></pre>
+
+                        <h2>性能优化</h2>
+
+                        <h3>生产环境优化建议</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-server"></i> 服务器优化</h6>
+                                    <ul class="mb-0">
+                                        <li>启用HTTP/2</li>
+                                        <li>配置Gzip压缩</li>
+                                        <li>设置静态文件缓存</li>
+                                        <li>优化数据库连接池</li>
+                                        <li>使用CDN加速静态资源</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-warning">
+                                    <h6><i class="fas fa-shield-alt"></i> 安全配置</h6>
+                                    <ul class="mb-0">
+                                        <li>启用HTTPS</li>
+                                        <li>配置防火墙规则</li>
+                                        <li>设置安全响应头</li>
+                                        <li>定期更新依赖</li>
+                                        <li>配置访问限制</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2>故障排查</h2>
+
+                        <h3>常见问题及解决方案</h3>
+                        <div class="accordion" id="troubleshootingAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                        应用启动失败
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li>检查端口是否被占用：<code>netstat -tlnp | grep :8080</code></li>
+                                            <li>检查配置文件是否正确</li>
+                                            <li>查看应用日志：<code>journalctl -u hertz-mvc.service -f</code></li>
+                                            <li>验证数据库连接是否正常</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                        数据库连接问题
+                                    </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li>检查数据库服务状态：<code>systemctl status mysql</code></li>
+                                            <li>验证连接参数：主机、端口、用户名、密码</li>
+                                            <li>检查防火墙规则</li>
+                                            <li>测试网络连通性：<code>telnet db_host 3306</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                        性能问题
+                                    </button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li>监控系统资源使用情况：<code>htop</code>, <code>iotop</code></li>
+                                            <li>分析慢查询日志</li>
+                                            <li>检查数据库索引是否合理</li>
+                                            <li>使用性能分析工具：<code>go tool pprof</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2>下一步</h2>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-database text-primary"></i> 数据库集成
+                                        </h5>
+                                        <p class="card-text">学习数据库配置和ORM使用。</p>
+                                        <a href="/home/database" class="btn btn-primary btn-sm">
+                                            查看文档 <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-layer-group text-success"></i> 中间件
+                                        </h5>
+                                        <p class="card-text">了解中间件的使用和自定义开发。</p>
+                                        <a href="/home/middleware" class="btn btn-success btn-sm">
+                                            查看文档 <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="text-center">
+                <p class="mb-0">© 2025 元曜. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

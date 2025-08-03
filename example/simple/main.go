@@ -160,5 +160,5 @@ func main() {
 	log.Println("curl http://localhost:8888/api/v2/users/profile")
 	log.Println("curl http://localhost:8888/api/v2/admin/system/config")
 
-	app.Run(":8888")
+	app.Run(":8890")
 }

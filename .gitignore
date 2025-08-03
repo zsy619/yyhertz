@@ -226,3 +226,5 @@ TODO.md
 NOTES.md
 framework/mvc/conf
 framework/config/conf
+example/simple/conf
+example/simple/logs

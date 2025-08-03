@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Hertz MVC框架</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet">
+</head>
+<body>
+    {{template "head" .}}
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-lg-3 col-md-4">
+                {{template "docs-sidebar" .}}
+            </div>
+            
+            <!-- 主要内容 -->
+            <div class="col-lg-9 col-md-8">
+                <!-- 面包屑导航 -->
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">首页</a></li>
+                        <li class="breadcrumb-item"><a href="/home/docs">文档</a></li>
+                        <li class="breadcrumb-item active">{{.Title}}</li>
+                    </ol>
+                </nav>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="card-title">
+                            <i class="fas fa-rocket text-primary"></i> 快速开始
+                        </h1>
+                        
+                        <p class="lead">几分钟内搭建你的第一个Hertz MVC应用。</p>
+
+                        <h2>环境要求</h2>
+                        <ul>
+                            <li>Go 1.19 或更高版本</li>
+                            <li>Git（用于下载依赖）</li>
+                        </ul>
+
+                        <h2>安装框架</h2>
+                        <p>使用 go mod 初始化项目并安装Hertz MVC框架：</p>
+                        <pre><code class="language-bash">mkdir my-hertz-app
+cd my-hertz-app
+go mod init my-hertz-app
+go get github.com/zsy619/yyhertz</code></pre>
+
+                        <h2>创建第一个应用</h2>
+                        <p>创建 <code>main.go</code> 文件：</p>
+                        <pre><code class="language-go">package main
+
+import (
+    "github.com/zsy619/yyhertz/framework/mvc"
+    "github.com/zsy619/yyhertz/framework/middleware"
+)
+
+// 定义控制器
+type HomeController struct {
+    mvc.BaseController
+}
+
+func (c *HomeController) GetIndex() {
+    c.SetData("Title", "Hello World")
+    c.SetData("Message", "欢迎使用Hertz MVC框架！")
+    c.RenderHTML("home/index.html")
+}
+
+func (c *HomeController) GetAPI() {
+    c.JSON(map[string]any{
+        "success": true,
+        "message": "API响应成功",
+        "data": map[string]any{
+            "framework": "Hertz MVC",
+            "version":   "1.0.0",
+        },
+    })
+}
+
+func main() {
+    // 创建应用实例
+    app := mvc.HertzApp
+
+    // 添加中间件
+    app.Use(
+        middleware.LoggerMiddleware(),
+        middleware.RecoveryMiddleware(),
+    )
+
+    // 创建控制器实例
+    homeController := &HomeController{}
+
+    // 自动注册路由
+    app.AutoRouters(homeController)
+
+    // 启动应用
+    app.Run(":8888")
+}</code></pre>
+
+                        <h2>创建视图模板</h2>
+                        <p>创建目录结构和HTML模板：</p>
+                        <pre><code class="language-bash">mkdir -p views/home</code></pre>
+
+                        <p>创建 <code>views/home/index.html</code>：</p>
+                        <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;{{.Title}}&lt;/title&gt;
+    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container mt-5"&gt;
+        &lt;div class="row justify-content-center"&gt;
+            &lt;div class="col-md-6"&gt;
+                &lt;div class="card"&gt;
+                    &lt;div class="card-body text-center"&gt;
+                        &lt;h1 class="card-title"&gt;{{.Title}}&lt;/h1&gt;
+                        &lt;p class="card-text"&gt;{{.Message}}&lt;/p&gt;
+                        &lt;a href="/home/api" class="btn btn-primary"&gt;测试API&lt;/a&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+                        <h2>运行应用</h2>
+                        <p>执行以下命令启动应用：</p>
+                        <pre><code class="language-bash">go run main.go</code></pre>
+
+                        <p>打开浏览器访问：</p>
+                        <ul>
+                            <li><a href="http://localhost:8888/" target="_blank">http://localhost:8888/</a> - 主页</li>
+                            <li><a href="http://localhost:8888/home/api" target="_blank">http://localhost:8888/home/api</a> - API接口</li>
+                        </ul>
+
+                        <h2>项目结构</h2>
+                        <p>推荐的项目目录结构：</p>
+                        <pre><code>my-hertz-app/
+├── controllers/         # 控制器
+│   ├── home_controller.go
+│   └── user_controller.go
+├── views/              # 视图模板
+│   ├── home/
+│   │   └── index.html
+│   └── layout/
+│       └── layout.html
+├── static/             # 静态资源
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── middleware/         # 自定义中间件
+├── models/            # 数据模型
+├── config/            # 配置文件
+├── main.go            # 入口文件
+└── go.mod</code></pre>
+
+                        <h2>下一步</h2>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-cogs text-primary"></i> 学习控制器
+                                        </h5>
+                                        <p class="card-text">深入了解控制器的创建和使用方法。</p>
+                                        <a href="/home/controller" class="btn btn-primary btn-sm">
+                                            查看文档 <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-route text-success"></i> 配置路由
+                                        </h5>
+                                        <p class="card-text">掌握路由配置和RESTful API设计。</p>
+                                        <a href="/home/routing" class="btn btn-success btn-sm">
+                                            查看文档 <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="text-center">
+                <p class="mb-0">© 2025 元曜. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>

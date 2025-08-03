@@ -53,7 +53,7 @@
                         <a href="/home/docs" class="btn btn-light btn-lg me-3">
                             <i class="fas fa-book"></i> 查看文档
                         </a>
-                        <a href="https://github.com/cloudwego/hertz" class="btn btn-outline-light btn-lg" target="_blank">
+                        <a href="https://github.com/zsy619/yyhertz" class="btn btn-outline-light btn-lg" target="_blank">
                             <i class="fab fa-github"></i> GitHub
                         </a>
                     </div>
@@ -153,27 +153,27 @@
                             <pre><code class="language-go">package main
 
 import (
-    "hertz-mvc/framework/controller"
-    "hertz-mvc/framework/middleware"
+    "https://github.com/zsy619/yyhertz/framework/mvc"
+    "https://github.com/zsy619/yyhertz/framework/middleware"
 )
 
 type HomeController struct {
-    controller.BaseController
+    mvc.BaseController
 }
 
 func (c *HomeController) GetIndex() {
     c.SetData("Title", "Hello World")
-    c.Render("index.html")
+    c.RenderHTML("home/index.html")
 }
 
 func main() {
-    app := controller.NewApp()
+    app := mvc.HertzApp
     app.Use(middleware.LoggerMiddleware())
     
     homeController := &HomeController{}
-    app.Include(homeController)
+    app.AutoRouters(homeController)
     
-    app.Run()
+    app.Run(":8888")
 }</code></pre>
                         </div>
                     </div>
@@ -194,14 +194,14 @@ func main() {
                     <h5>链接</h5>
                     <ul class="list-unstyled">
                         <li><a href="/docs" class="text-muted">文档</a></li>
-                        <li><a href="https://github.com/cloudwego/hertz" class="text-muted">GitHub</a></li>
+                        <li><a href="https://github.com/zsy619/yyhertz" class="text-muted">GitHub</a></li>
                         <li><a href="/home/about" class="text-muted">关于我们</a></li>
                     </ul>
                 </div>
             </div>
             <hr class="my-4">
             <div class="text-center">
-                <p class="mb-0">© 2025 CloudWeGo Team. All rights reserved.</p>
+                <p class="mb-0">© 2025 元曜. All rights reserved.</p>
             </div>
         </div>
     </footer>
