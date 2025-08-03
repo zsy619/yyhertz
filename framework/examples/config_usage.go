@@ -147,6 +147,53 @@ func ExampleAuthConfig() {
 	fmt.Printf("密码最小长度: %d\n", passwordMinLength)
 }
 
+func ExampleLogConfig() {
+	fmt.Println("\n=== 日志配置示例 ===")
+
+	// 方式1：使用便捷函数获取完整配置
+	logConfig, err := config.GetLogConfig()
+	if err != nil {
+		log.Printf("获取日志配置失败: %v", err)
+		return
+	}
+
+	fmt.Printf("日志级别: %s\n", logConfig.Level)
+	fmt.Printf("日志格式: %s\n", logConfig.Format)
+	fmt.Printf("启用控制台输出: %v\n", logConfig.EnableConsole)
+	fmt.Printf("启用文件输出: %v\n", logConfig.EnableFile)
+	fmt.Printf("日志文件路径: %s\n", logConfig.FilePath)
+	fmt.Printf("最大文件大小: %d MB\n", logConfig.MaxSize)
+	fmt.Printf("文件保留天数: %d天\n", logConfig.MaxAge)
+
+	// 方式2：使用配置管理器
+	manager := config.GetLogConfigManager()
+	timestampFormat := manager.GetString("timestamp_format")
+	showCaller := manager.GetBool("show_caller")
+	compress := manager.GetBool("compress")
+
+	fmt.Printf("时间戳格式: %s\n", timestampFormat)
+	fmt.Printf("显示调用位置: %v\n", showCaller)
+	fmt.Printf("压缩旧日志: %v\n", compress)
+
+	// 方式3：使用泛型便捷函数
+	level := config.GetConfigString(config.LogConfig{}, "level")
+	enableFile := config.GetConfigBool(config.LogConfig{}, "enable_file")
+	maxBackups := config.GetConfigInt(config.LogConfig{}, "max_backups")
+
+	fmt.Printf("泛型方式 - 日志级别: %s\n", level)
+	fmt.Printf("泛型方式 - 启用文件: %v\n", enableFile)
+	fmt.Printf("泛型方式 - 最大备份数: %d\n", maxBackups)
+
+	// 方式4：使用便捷函数
+	logLevel := config.GetLogConfigString("level")
+	logFormat := config.GetLogConfigString("format")
+	consoleEnabled := config.GetLogConfigBool("enable_console")
+
+	fmt.Printf("便捷函数 - 日志级别: %s\n", logLevel)
+	fmt.Printf("便捷函数 - 日志格式: %s\n", logFormat)
+	fmt.Printf("便捷函数 - 控制台输出: %v\n", consoleEnabled)
+}
+
 func ExampleCustomConfig() {
 	fmt.Println("\n=== 自定义配置示例 ===")
 
@@ -192,6 +239,10 @@ func ExampleConfigWatching() {
 	// 监听认证配置变化
 	config.WatchConfig(config.AuthConfig{})
 	fmt.Println("开始监听认证配置文件变化...")
+
+	// 监听日志配置变化
+	config.WatchConfig(config.LogConfig{})
+	fmt.Println("开始监听日志配置文件变化...")
 
 	// 监听自定义配置变化
 	config.WatchConfig(CustomDatabaseConfig{})
@@ -243,6 +294,22 @@ func ExampleDynamicConfiguration() {
 	fmt.Printf("动态设置后 - CAS主机: %s\n", casHost)
 	fmt.Printf("动态设置后 - JWT生存时间: %d小时\n", jwtTTL)
 	fmt.Printf("动态设置后 - 认证环境: %s\n", authEnv)
+
+	// 动态设置日志配置
+	config.SetConfigValue(config.LogConfig{}, "level", "debug")
+	config.SetConfigValue(config.LogConfig{}, "format", "text")
+	config.SetConfigValue(config.LogConfig{}, "enable_console", true)
+	config.SetConfigValue(config.LogConfig{}, "max_size", 200)
+
+	logLevel := config.GetConfigString(config.LogConfig{}, "level")
+	logFormat := config.GetConfigString(config.LogConfig{}, "format")
+	enableConsole := config.GetConfigBool(config.LogConfig{}, "enable_console")
+	maxSize := config.GetConfigInt(config.LogConfig{}, "max_size")
+
+	fmt.Printf("动态设置后 - 日志级别: %s\n", logLevel)
+	fmt.Printf("动态设置后 - 日志格式: %s\n", logFormat)
+	fmt.Printf("动态设置后 - 控制台输出: %v\n", enableConsole)
+	fmt.Printf("动态设置后 - 最大文件大小: %d MB\n", maxSize)
 }
 
 // ExampleGetStringSlice 演示GetConfigStringSlice的使用
@@ -397,6 +464,7 @@ func RunAllExamples() {
 	ExampleAppConfig()
 	ExampleTemplateConfig()
 	ExampleAuthConfig()
+	ExampleLogConfig()
 	ExampleCustomConfig()
 	ExampleConfigWatching()
 	ExampleDynamicConfiguration()

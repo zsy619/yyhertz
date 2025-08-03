@@ -32,6 +32,12 @@ func GetTLSConfig() (*TLSServerConfig, error) {
 	return manager.GetConfig()
 }
 
+// GetLogConfig 获取日志配置
+func GetLogConfig() (*LogConfig, error) {
+	manager := GetViperConfigManager(LogConfig{})
+	return manager.GetConfig()
+}
+
 // GetAppConfigManager 获取应用配置管理器
 func GetAppConfigManager() *ViperConfigManager[AppConfig] {
 	return GetViperConfigManager(AppConfig{})
@@ -50,6 +56,11 @@ func GetAuthConfigManager() *ViperConfigManager[AuthConfig] {
 // GetTLSConfigManager 获取TLS配置管理器
 func GetTLSConfigManager() *ViperConfigManager[TLSServerConfig] {
 	return GetViperConfigManager(TLSServerConfig{})
+}
+
+// GetLogConfigManager 获取日志配置管理器
+func GetLogConfigManager() *ViperConfigManager[LogConfig] {
+	return GetViperConfigManager(LogConfig{})
 }
 
 // 泛型配置函数 - 主要API
@@ -128,6 +139,7 @@ func init() {
 	RegisterConfigName[TemplateConfig](TemplateConfigName)
 	RegisterConfigName[AuthConfig](AuthConfigName)
 	RegisterConfigName[TLSServerConfig]("tls")
+	RegisterConfigName[LogConfig](LogConfigName)
 }
 
 // GetConfigBoolSlice 获取指定配置的布尔切片值（泛型版本）
@@ -227,6 +239,26 @@ func GetAppConfigDurationSlice(key string) []time.Duration {
 // GetAppConfigTimeSlice 获取应用配置的时间切片值
 func GetAppConfigTimeSlice(key string) []time.Time {
 	return GetConfigTimeSlice(AppConfig{}, key)
+}
+
+// GetLogConfigString 获取日志配置的字符串值
+func GetLogConfigString(key string) string {
+	return GetConfigString(LogConfig{}, key)
+}
+
+// GetLogConfigInt 获取日志配置的整数值
+func GetLogConfigInt(key string) int {
+	return GetConfigInt(LogConfig{}, key)
+}
+
+// GetLogConfigBool 获取日志配置的布尔值
+func GetLogConfigBool(key string) bool {
+	return GetConfigBool(LogConfig{}, key)
+}
+
+// GetLogConfigStringSlice 获取日志配置的字符串切片值
+func GetLogConfigStringSlice(key string) []string {
+	return GetConfigStringSlice(LogConfig{}, key)
 }
 
 

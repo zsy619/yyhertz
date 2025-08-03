@@ -100,6 +100,16 @@ func init() {
 
 		config.WatchConfig(authConfig)
 	}
+	logConf := path.Join(".", "conf", "log.yaml")
+	if isExists := util.FileExists(logConf); !isExists {
+		// 文件不存在，生成默认配置
+		logConfig := config.LogConfig{}
+		cm := config.NewViperConfigManager(logConfig)
+		_ = cm.Initialize()
+
+		config.WatchConfig(logConfig)
+	}
+
 	// 初始化全局Hertz应用实例
 	once.Do(func() {
 		mutex.Lock()

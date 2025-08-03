@@ -1,64 +1,14 @@
 package config
 
 import (
-	"io"
-	"os"
-	"path/filepath"
 	"time"
-
-	hertzlogrus "github.com/hertz-contrib/logger/logrus"
-	"github.com/sirupsen/logrus"
 )
-
-// LogLevel 日志级别
-type LogLevel string
-
-const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
-	LogLevelFatal LogLevel = "fatal"
-	LogLevelPanic LogLevel = "panic"
-)
-
-// LogFormat 日志格式
-type LogFormat string
-
-const (
-	LogFormatJSON LogFormat = "json"
-	LogFormatText LogFormat = "text"
-)
-
-// LogConfig 日志配置结构
-type LogConfig struct {
-	// 基础配置
-	Level  LogLevel  `json:"level" yaml:"level"`   // 日志级别
-	Format LogFormat `json:"format" yaml:"format"` // 日志格式
-
-	// 输出配置
-	EnableConsole bool   `json:"enable_console" yaml:"enable_console"` // 是否输出到控制台
-	EnableFile    bool   `json:"enable_file" yaml:"enable_file"`       // 是否输出到文件
-	FilePath      string `json:"file_path" yaml:"file_path"`           // 日志文件路径
-	MaxSize       int    `json:"max_size" yaml:"max_size"`             // 单个日志文件最大大小(MB)
-	MaxAge        int    `json:"max_age" yaml:"max_age"`               // 日志文件保留天数
-	MaxBackups    int    `json:"max_backups" yaml:"max_backups"`       // 最大备份数量
-	Compress      bool   `json:"compress" yaml:"compress"`             // 是否压缩旧日志
-
-	// 高级配置
-	ShowCaller      bool   `json:"show_caller" yaml:"show_caller"`           // 是否显示调用位置
-	ShowTimestamp   bool   `json:"show_timestamp" yaml:"show_timestamp"`     // 是否显示时间戳
-	TimestampFormat string `json:"timestamp_format" yaml:"timestamp_format"` // 时间戳格式
-
-	// 字段配置
-	Fields map[string]any `json:"fields" yaml:"fields"` // 全局字段
-}
 
 // DefaultLogConfig 返回默认日志配置
 func DefaultLogConfig() *LogConfig {
 	return &LogConfig{
 		Level:           LogLevelInfo,
-		Format:          LogFormatJSON,
+		Format:          LogFormatBeego,
 		EnableConsole:   true,
 		EnableFile:      true,
 		FilePath:        "./logs/app.log",
@@ -68,115 +18,18 @@ func DefaultLogConfig() *LogConfig {
 		Compress:        true,
 		ShowCaller:      true,
 		ShowTimestamp:   true,
-		TimestampFormat: time.RFC3339,
+		TimestampFormat: "2006/01/02 15:04:05.000",
 		Fields:          make(map[string]any),
+		Outputs:         []string{"console", "file"},
+		OutputConfig:    make(map[string]OutputConfig),
 	}
 }
-
-// CreateLogger 根据配置创建logrus logger
-func (cfg *LogConfig) CreateLogger() *hertzlogrus.Logger {
-	logger := hertzlogrus.NewLogger()
-	logrusLogger := logger.Logger()
-
-	// 设置日志级别
-	switch cfg.Level {
-	case LogLevelDebug:
-		logrusLogger.SetLevel(logrus.DebugLevel)
-	case LogLevelInfo:
-		logrusLogger.SetLevel(logrus.InfoLevel)
-	case LogLevelWarn:
-		logrusLogger.SetLevel(logrus.WarnLevel)
-	case LogLevelError:
-		logrusLogger.SetLevel(logrus.ErrorLevel)
-	case LogLevelFatal:
-		logrusLogger.SetLevel(logrus.FatalLevel)
-	case LogLevelPanic:
-		logrusLogger.SetLevel(logrus.PanicLevel)
-	default:
-		logrusLogger.SetLevel(logrus.InfoLevel)
-	}
-
-	// 设置日志格式
-	if cfg.Format == LogFormatJSON {
-		formatter := &logrus.JSONFormatter{
-			TimestampFormat: cfg.TimestampFormat,
-		}
-		logrusLogger.SetFormatter(formatter)
-	} else {
-		formatter := &logrus.TextFormatter{
-			FullTimestamp:   cfg.ShowTimestamp,
-			TimestampFormat: cfg.TimestampFormat,
-			DisableColors:   false,
-		}
-		logrusLogger.SetFormatter(formatter)
-	}
-
-	// 设置是否显示调用位置
-	logrusLogger.SetReportCaller(cfg.ShowCaller)
-
-	// 配置输出
-	var writers []io.Writer
-
-	if cfg.EnableConsole {
-		writers = append(writers, os.Stdout)
-	}
-
-	if cfg.EnableFile && cfg.FilePath != "" {
-		// 确保日志目录存在
-		if err := os.MkdirAll(filepath.Dir(cfg.FilePath), 0755); err != nil {
-			logrusLogger.Errorf("Failed to create log directory: %v", err)
-		} else {
-			// 创建或打开日志文件
-			file, err := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-			if err != nil {
-				logrusLogger.Errorf("Failed to open log file: %v", err)
-			} else {
-				writers = append(writers, file)
-			}
-		}
-	}
-
-	if len(writers) > 0 {
-		if len(writers) == 1 {
-			logrusLogger.SetOutput(writers[0])
-		} else {
-			logrusLogger.SetOutput(io.MultiWriter(writers...))
-		}
-	}
-
-	// 设置全局字段
-	if len(cfg.Fields) > 0 {
-		entry := logrusLogger.WithFields(logrus.Fields(cfg.Fields))
-		// 注意：我们不能直接替换logger，而是通过hertz-logrus的方式添加字段
-		// 这里暂时跳过全局字段设置，可以在使用时添加
-		_ = entry
-	}
-
-	return logger
-}
-
-// LoggerWithRequestID 为logger添加请求ID
-func LoggerWithRequestID(logger *logrus.Logger, requestID string) *logrus.Entry {
-	return logger.WithField("request_id", requestID)
-}
-
-// LoggerWithUserID 为logger添加用户ID
-func LoggerWithUserID(logger *logrus.Logger, userID string) *logrus.Entry {
-	return logger.WithField("user_id", userID)
-}
-
-// LoggerWithFields 为logger添加多个字段
-func LoggerWithFields(logger *logrus.Logger, fields map[string]any) *logrus.Entry {
-	return logger.WithFields(logrus.Fields(fields))
-}
-
-// ============= 配置便捷方法 =============
 
 // DevelopmentLogConfig 开发环境日志配置
 func DevelopmentLogConfig() *LogConfig {
 	return &LogConfig{
 		Level:           LogLevelDebug,
-		Format:          LogFormatText,
+		Format:          LogFormatBeego,
 		EnableConsole:   true,
 		EnableFile:      true,
 		FilePath:        "./logs/dev.log",
@@ -186,11 +39,13 @@ func DevelopmentLogConfig() *LogConfig {
 		Compress:        false,
 		ShowCaller:      true,
 		ShowTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
+		TimestampFormat: "2006/01/02 15:04:05.000",
 		Fields: map[string]any{
 			"env":     "development",
 			"service": "yyhertz",
 		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
 	}
 }
 
@@ -198,7 +53,7 @@ func DevelopmentLogConfig() *LogConfig {
 func ProductionLogConfig() *LogConfig {
 	return &LogConfig{
 		Level:           LogLevelInfo,
-		Format:          LogFormatJSON,
+		Format:          LogFormatLogstash,
 		EnableConsole:   false,
 		EnableFile:      true,
 		FilePath:        "./logs/prod.log",
@@ -214,19 +69,34 @@ func ProductionLogConfig() *LogConfig {
 			"service": "yyhertz",
 			"version": "1.0.0",
 		},
+		Outputs: []string{"file", "fluentd"},
+		OutputConfig: map[string]OutputConfig{
+			"fluentd": FluentdConfig{
+				Host:    "localhost",
+				Port:    24224,
+				Tag:     "yyhertz.prod",
+				Timeout: 3 * time.Second,
+				Extra: map[string]string{
+					"environment": "production",
+				},
+			},
+		},
 	}
 }
 
 // TestLogConfig 测试环境日志配置
 func TestLogConfig() *LogConfig {
 	return &LogConfig{
-		Level:         LogLevelWarn,
-		Format:        LogFormatText,
-		EnableConsole: true,
-		EnableFile:    false,
-		ShowCaller:    false,
-		ShowTimestamp: false,
-		Fields:        map[string]any{},
+		Level:           LogLevelWarn,
+		Format:          LogFormatBeego,
+		EnableConsole:   true,
+		EnableFile:      false,
+		ShowCaller:      false,
+		ShowTimestamp:   true,
+		TimestampFormat: "2006/01/02 15:04:05.000",
+		Fields:          map[string]any{},
+		Outputs:         []string{"console"},
+		OutputConfig:    make(map[string]OutputConfig),
 	}
 }
 
@@ -246,6 +116,46 @@ func HighPerformanceLogConfig() *LogConfig {
 		ShowTimestamp: true,
 		Fields: map[string]any{
 			"mode": "high-performance",
+		},
+		Outputs:      []string{"file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
+}
+
+// CloudLogConfig 云端日志配置（支持多种云服务）
+func CloudLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           LogLevelInfo,
+		Format:          LogFormatCloudWatch,
+		EnableConsole:   false,
+		EnableFile:      true,
+		FilePath:        "./logs/cloud.log",
+		MaxSize:         100,
+		MaxAge:          30,
+		MaxBackups:      10,
+		Compress:        true,
+		ShowCaller:      true,
+		ShowTimestamp:   true,
+		TimestampFormat: time.RFC3339,
+		Fields: map[string]any{
+			"service":     "yyhertz",
+			"version":     "1.0.0",
+			"deployment":  "cloud",
+		},
+		Outputs: []string{"file", "cloudwatch", "azure_insights"},
+		OutputConfig: map[string]OutputConfig{
+			"cloudwatch": CloudWatchConfig{
+				Region:        "us-east-1",
+				LogGroupName:  "/aws/yyhertz/application",
+				LogStreamName: "yyhertz-instance-001",
+			},
+			"azure_insights": AzureInsightsConfig{
+				Endpoint: "https://dc.services.visualstudio.com/v2/track",
+				Properties: map[string]string{
+					"application": "yyhertz",
+					"environment": "cloud",
+				},
+			},
 		},
 	}
 }
@@ -274,4 +184,85 @@ func (cfg *LogConfig) AddConfigFields(fields map[string]any) *LogConfig {
 		newConfig.Fields[k] = v
 	}
 	return &newConfig
+}
+
+// AddOutput 添加输出目标
+func (cfg *LogConfig) AddOutput(output string, config OutputConfig) *LogConfig {
+	newConfig := *cfg // 复制配置
+	
+	// 添加输出类型
+	found := false
+	for _, o := range newConfig.Outputs {
+		if o == output {
+			found = true
+			break
+		}
+	}
+	if !found {
+		newConfig.Outputs = append(newConfig.Outputs, output)
+	}
+	
+	// 添加输出配置
+	if newConfig.OutputConfig == nil {
+		newConfig.OutputConfig = make(map[string]OutputConfig)
+	}
+	if config != nil {
+		newConfig.OutputConfig[output] = config
+	}
+	
+	return &newConfig
+}
+
+// RemoveOutput 移除输出目标
+func (cfg *LogConfig) RemoveOutput(output string) *LogConfig {
+	newConfig := *cfg // 复制配置
+	
+	// 移除输出类型
+	newOutputs := make([]string, 0, len(newConfig.Outputs))
+	for _, o := range newConfig.Outputs {
+		if o != output {
+			newOutputs = append(newOutputs, o)
+		}
+	}
+	newConfig.Outputs = newOutputs
+	
+	// 移除输出配置
+	if newConfig.OutputConfig != nil {
+		delete(newConfig.OutputConfig, output)
+	}
+	
+	return &newConfig
+}
+
+// HasOutput 检查是否包含指定输出
+func (cfg *LogConfig) HasOutput(output string) bool {
+	for _, o := range cfg.Outputs {
+		if o == output {
+			return true
+		}
+	}
+	return false
+}
+
+// GetOutputConfig 获取指定输出的配置
+func (cfg *LogConfig) GetOutputConfig(output string) (OutputConfig, bool) {
+	if cfg.OutputConfig == nil {
+		return nil, false
+	}
+	config, exists := cfg.OutputConfig[output]
+	return config, exists
+}
+
+// ValidateConfig 验证配置的有效性
+func (cfg *LogConfig) ValidateConfig() error {
+	// 验证各输出配置
+	for output, config := range cfg.OutputConfig {
+		if config != nil {
+			if err := config.Validate(); err != nil {
+				return err
+			}
+		}
+		_ = output // 可以添加更多验证逻辑
+	}
+	return nil
 }
