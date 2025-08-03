@@ -67,11 +67,11 @@ func NewApp() *App {
 // NewAppWithLogConfig 使用指定日志配置创建应用实例
 func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	// 创建Hertz服务器实例
-	port := config.GetConfigInt("app.port")
+	port := config.GetAppConfigInt("app.port")
 	if port == 0 {
 		port = 8080 // 默认端口
 	}
-	host := config.GetConfigString("app.host")
+	host := config.GetAppConfigString("app.host")
 	if host == "" {
 		host = "0.0.0.0"
 	}

@@ -82,7 +82,7 @@ func GetDefaultORM() *ORM {
 		dbConfig := DefaultDatabaseConfig()
 
 		// 尝试从全局配置获取数据库配置
-		if configManager := config.GetViperConfigManager(); configManager != nil {
+		if configManager := config.GetAppConfigManager(); configManager != nil {
 			if appConfig, err := configManager.GetConfig(); err == nil {
 				// 映射配置字段
 				if appConfig.Database.Driver != "" {

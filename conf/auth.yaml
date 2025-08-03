@@ -1,0 +1,129 @@
+# YYHertz Authentication Configuration
+# 认证系统配置文件
+
+# CAS认证配置
+cas:
+  enabled: false                              # 是否启用CAS认证
+  host: "https://cas.example.com"             # CAS服务器地址
+  login_path: "/cas/login"                    # CAS登录路径
+  logout_path: "/cas/logout"                  # CAS登出路径
+  validate_path: "/cas/validate"              # CAS验证路径
+  service_validate_path: "/cas/serviceValidate" # CAS服务验证路径
+  ticket_validation_url: ""                   # Ticket验证URL
+  service_url: ""                            # 服务URL
+  version: "3.0"                             # CAS版本: 1.0, 2.0, 3.0
+  sso_enabled: true                          # 启用单点登录
+  proxy_receptor_url: ""                     # 代理接收URL
+  renew_enabled: false                       # 强制重新认证
+  gateway_enabled: false                     # 网关模式
+
+# 登录路径配置
+login_paths:
+  school:
+    path: "/login/school"                    # 学校登录路径
+    cas_path: "/cas/login/school"            # 学校CAS登录路径
+  admin:
+    path: "/login/admin"                     # 管理员登录路径
+    cas_path: "/cas/login/admin"             # 管理员CAS登录路径
+  common:
+    login_uri: "/login"                      # 通用登录URI
+    login_mobile_uri: "/mobile/login"        # 移动端登录URI
+    logout_uri: "/logout"                    # 登出URI
+
+# JWT配置
+jwt:
+  secret: "your-jwt-secret-key-change-me"    # JWT密钥
+  token_ttl: 24                              # Token生存时间(小时)
+  refresh_ttl: 168                           # 刷新Token生存时间(小时)
+  issuer: "YYHertz"                          # 签发者
+  signing_method: "HS256"                    # 签名方法: HS256, RS256
+  public_key_path: ""                        # 公钥文件路径(RS256使用)
+  private_key_path: ""                       # 私钥文件路径(RS256使用)
+
+# Session配置
+session:
+  name: "YYHERTZ_SESSION"                    # Session名称
+  secret: "your-session-secret-change-me"    # Session密钥
+  max_age: 3600                              # Session最大生存时间(秒)
+  path: "/"                                  # Session路径
+  domain: ""                                 # Session域名
+  secure: false                              # 是否只能通过HTTPS传输
+  http_only: true                            # 是否HttpOnly
+  same_site: "Lax"                           # SameSite策略: Strict, Lax, None
+  store: "cookie"                            # 存储方式: cookie, memory, redis
+  key_pairs: []                              # 加密密钥对
+
+# OAuth配置
+oauth:
+  providers:
+    github:
+      client_id: ""
+      client_secret: ""
+      redirect_url: "/auth/github/callback"
+      scopes: ["user:email"]
+      auth_url: "https://github.com/login/oauth/authorize"
+      token_url: "https://github.com/login/oauth/access_token"
+      user_info_url: "https://api.github.com/user"
+      enable: false
+    google:
+      client_id: ""
+      client_secret: ""
+      redirect_url: "/auth/google/callback"
+      scopes: ["openid", "profile", "email"]
+      auth_url: "https://accounts.google.com/o/oauth2/auth"
+      token_url: "https://oauth2.googleapis.com/token"
+      user_info_url: "https://www.googleapis.com/oauth2/v2/userinfo"
+      enable: false
+
+# 权限配置
+authorization:
+  enable: true                               # 启用权限控制
+  default_role: "user"                       # 默认角色
+  admin_roles: ["admin", "superadmin"]       # 管理员角色列表
+  guest_paths: ["/", "/login", "/register", "/forgot-password"] # 游客可访问路径
+  public_paths: ["/public", "/assets", "/static"] # 公开路径
+  protected_paths: ["/admin", "/dashboard", "/profile"] # 受保护路径
+  role_based_access: true                    # 基于角色的访问控制
+
+# 安全配置
+security:
+  # 密码策略
+  password_policy:
+    min_length: 8                            # 最小长度
+    require_uppercase: true                  # 需要大写字母
+    require_lowercase: true                  # 需要小写字母
+    require_numbers: true                    # 需要数字
+    require_symbols: false                   # 需要特殊符号
+    max_age: 90                              # 密码最大使用天数
+  
+  # 登录尝试限制
+  login_attempts:
+    max_attempts: 5                          # 最大尝试次数
+    lockout_time: 15                         # 锁定时间(分钟)
+    reset_time: 60                           # 重置时间(分钟)
+  
+  # 双因子认证
+  two_factor_auth:
+    enable: false                            # 启用2FA
+    issuer: "YYHertz"                        # 签发者名称
+    secret_length: 32                        # 密钥长度
+    qr_code_service: "google-charts"         # 二维码服务
+
+# 应用配置
+application:
+  name: "YYHertz Auth"                       # 应用名称
+  local_domain: "localhost"                  # 本地域名
+  base_url: "http://localhost:8888"          # 基础URL
+  environment: "development"                 # 环境: development, testing, production
+  debug: true                                # 调试模式
+  version: "1.0.0"                           # 版本号
+
+# 日志配置
+logging:
+  enable: true                               # 启用日志
+  level: "info"                              # 日志级别: debug, info, warn, error
+  format: "json"                             # 日志格式: json, text
+  log_file: "./logs/auth.log"                # 日志文件路径
+  log_login_events: true                     # 记录登录事件
+  log_auth_events: true                      # 记录认证事件
+  log_error_events: true                     # 记录错误事件

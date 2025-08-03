@@ -18,7 +18,9 @@ type TemplateManager struct {
 var (
 	templateManager *TemplateManager
 	templateOnce    sync.Once
-	configEngine    = config.GetViperConfigManagerWithName(config.TemplateConfigName)
+
+	cnf          = config.TemplateConfig{}
+	configEngine = config.GetViperConfigManager(cnf)
 )
 
 // GetTemplateManager 获取模板管理器单实例
@@ -71,28 +73,21 @@ func loadTemplateConfigFromFile() (*view.TemplateConfig, error) {
 	cfg.Themes = view.DefaultTemplateConfig().Themes
 
 	// 尝试从配置文件读取模板配置 (如果配置文件存在的话)
-	if viewPaths := configEngine.GetStringSlice("template.view_paths"); len(viewPaths) > 0 {
-		cfg.ViewPaths = viewPaths
-	}
-
-	if layoutPath := configEngine.GetString("template.layout_path"); layoutPath != "" {
+	if layoutPath := configEngine.GetString("engine.layout_dir"); layoutPath != "" {
 		cfg.LayoutPath = layoutPath
 	}
 
-	if componentPath := configEngine.GetString("template.component_path"); componentPath != "" {
-		cfg.ComponentPath = componentPath
-	}
-
-	if extension := configEngine.GetString("template.extension"); extension != "" {
+	if extension := configEngine.GetString("engine.extension"); extension != "" {
 		cfg.Extension = extension
 	}
 
-	if delimLeft := configEngine.GetString("template.delim_left"); delimLeft != "" {
-		cfg.DelimLeft = delimLeft
+	if delimiters := configEngine.GetStringSlice("engine.delimiters"); len(delimiters) == 2 {
+		cfg.DelimLeft = delimiters[0]
+		cfg.DelimRight = delimiters[1]
 	}
 
-	if delimRight := configEngine.GetString("template.delim_right"); delimRight != "" {
-		cfg.DelimRight = delimRight
+	if viewPaths := configEngine.GetStringSlice("engine.directory"); len(viewPaths) > 0 {
+		cfg.ViewPaths = viewPaths
 	}
 
 	// 性能配置

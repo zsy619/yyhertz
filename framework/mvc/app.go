@@ -71,26 +71,50 @@ func init() {
 	// 请帮忙实现如下需求：
 	// 1. 判断根目录下是否存在 conf/app.yaml 文件，如果不存在按照默认配置生成
 	// 2. 判断根目录下是否存在 conf/log.yaml 文件，如果不存在按照默认配置生成
-	// 3. 如果根目录下是否存在 conf/engine.yaml 文件，如果不存在则加载默认配置生成
+	// 3. 如果根目录下是否存在 conf/template.yaml 文件，如果不存在则加载默认配置生成
 	appConf := path.Join(".", "conf", "app.yaml")
 	// 判断文件是否存在
 	if isExists := util.FileExists(appConf); !isExists {
 		// 文件不存在，生成默认配置
-		cm := config.NewViperConfigManager()
-		cm.Initialize()
+		appConfig := config.AppConfig{}
+		cm := config.NewViperConfigManager(appConfig)
+		_ = cm.Initialize()
+
+		config.WatchConfig(appConfig)
+	}
+	templateConf := path.Join(".", "conf", "template.yaml")
+	if isExists := util.FileExists(templateConf); !isExists {
+		// 文件不存在，生成默认配置
+		templateConfig := config.TemplateConfig{}
+		cm := config.NewViperConfigManager(templateConfig)
+		_ = cm.Initialize()
+
+		config.WatchConfig(templateConfig)
+	}
+	authConf := path.Join(".", "conf", "auth.yaml")
+	if isExists := util.FileExists(authConf); !isExists {
+		// 文件不存在，生成默认配置
+		authConfig := config.AuthConfig{}
+		cm := config.NewViperConfigManager(authConfig)
+		_ = cm.Initialize()
+
+		config.WatchConfig(authConfig)
 	}
 	// 初始化全局Hertz应用实例
 	once.Do(func() {
 		mutex.Lock()
 		defer mutex.Unlock()
 
+		// 创建全局Hertz应用实例
 		HertzApp = GetAppInstance()
+
 		// 创建注解应用
 		AnnotationApp = annotation.NewAnnotationWithApp(HertzApp)
 
 		// 创建注释注解应用
 		CommentApp = comment.NewCommentWithApp(HertzApp)
 
+		// 注释注解应用
 		IsInitComplete = true
 	})
 }

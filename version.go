@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"runtime"
 	"time"
 
@@ -373,7 +374,7 @@ func main() {
 		certFile     = flag.String("cert", "", "TLS证书文件路径")
 		keyFile      = flag.String("key", "", "TLS私钥文件路径")
 		requireHTTPS = flag.Bool("require-https", false, "强制要求HTTPS连接")
-		configFile   = flag.String("config", "", "配置文件路径")
+		// configFile   = flag.String("config", "", "配置文件路径")
 	)
 	flag.Parse()
 
@@ -384,19 +385,15 @@ func main() {
 	}
 
 	// 初始化配置管理器
-	configManager := config.GetViperConfigManager()
-	if *configFile != "" {
-		configManager.SetConfigFile(*configFile)
-	}
+	configManager := config.GetAppConfigManager()
 
 	if err := configManager.Initialize(); err != nil {
-		config.GetGlobalLogger().WithFields(map[string]any{
-			"error": err.Error(),
-		}).Fatal("配置初始化失败")
+		log.Printf("配置初始化失败: %v", err)
+		return
 	}
 
 	// 启用配置文件监听
-	configManager.WatchConfig()
+	config.WatchConfig(config.AppConfig{})
 
 	// 获取应用配置
 	appConfig, err := configManager.GetConfig()
@@ -410,13 +407,13 @@ func main() {
 	if *port == "" {
 		*port = fmt.Sprintf("%d", appConfig.App.Port)
 	}
-	if !*enableHTTPS && appConfig.TLS.Enable {
-		*enableHTTPS = appConfig.TLS.Enable
+	if !*enableHTTPS && appConfig.TLS.Basic.Enable {
+		*enableHTTPS = appConfig.TLS.Basic.Enable
 		if *certFile == "" {
-			*certFile = appConfig.TLS.CertFile
+			*certFile = appConfig.TLS.Certificate.CertFile
 		}
 		if *keyFile == "" {
-			*keyFile = appConfig.TLS.KeyFile
+			*keyFile = appConfig.TLS.Certificate.KeyFile
 		}
 	}
 
@@ -425,12 +422,11 @@ func main() {
 		PrintBanner()
 	}
 
-	config.GetGlobalLogger().WithFields(map[string]any{
-		"config_file": configManager.ConfigFileUsed(),
-		"app_name":    appConfig.App.Name,
-		"environment": appConfig.App.Environment,
-		"debug_mode":  appConfig.App.Debug,
-	}).Info("应用配置加载完成")
+	log.Printf("应用配置加载完成: config_file=%s, app_name=%s, environment=%s, debug_mode=%v",
+		configManager.ConfigFileUsed(),
+		appConfig.App.Name,
+		appConfig.App.Environment,
+		appConfig.App.Debug)
 
 	// 创建应用实例
 	app := mvc.NewApp()
@@ -445,13 +441,13 @@ func main() {
 	tlsConfig.HSTSEnabled = true // 启用HSTS
 
 	// 从配置文件合并TLS设置
-	if appConfig.TLS.Enable {
-		tlsConfig.Enable = appConfig.TLS.Enable
+	if appConfig.TLS.Basic.Enable {
+		tlsConfig.Enable = appConfig.TLS.Basic.Enable
 		if tlsConfig.CertFile == "" {
-			tlsConfig.CertFile = appConfig.TLS.CertFile
+			tlsConfig.CertFile = appConfig.TLS.Certificate.CertFile
 		}
 		if tlsConfig.KeyFile == "" {
-			tlsConfig.KeyFile = appConfig.TLS.KeyFile
+			tlsConfig.KeyFile = appConfig.TLS.Certificate.KeyFile
 		}
 	}
 
@@ -476,7 +472,7 @@ func main() {
 	app.AutoRouterPrefix("/home", homeController)
 	app.AutoRouterPrefix("/system", systemController)
 
-	// 首页路由  
+	// 首页路由
 	app.GET("/", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {
 		homeCtrl := &HomeController{}
 		// homeCtrl.Ctx = &ctx  // 暂时注释这行避免类型错误
