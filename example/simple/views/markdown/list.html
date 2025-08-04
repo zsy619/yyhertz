@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - YYHertz Markdown</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fafafa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            margin-top: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .files-header {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .files-header h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .files-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .files-list {
+            padding: 0;
+        }
+
+        .file-item {
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: #f8f9fa;
+        }
+
+        .file-link {
+            display: block;
+            padding: 20px 30px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .file-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .file-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            font-size: 1.5em;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .file-summary {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-top: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: #666;
+        }
+
+        .empty-state .icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .file-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .file-actions {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+
+            .file-link {
+                padding: 15px 20px;
+            }
+
+            .files-header {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>📚 Markdown 文档库</h1>
+                <p>基于 YYHertz 框架的 Markdown 文件管理系统</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="files-header">
+                <h2>📁 文档列表</h2>
+                <div class="files-count">共找到 {{.FileCount}} 个文档</div>
+            </div>
+
+            <div class="files-list">
+                {{if .Files}}
+                    {{range .Files}}
+                    <div class="file-item">
+                        <a href="/markdown/markdown?path={{.Path}}" class="file-link">
+                            <div class="file-header">
+                                <div class="file-title">
+                                    <span class="file-icon">📄</span>
+                                    {{.Name}}
+                                </div>
+                                <div class="file-actions">
+                                    <a href="/markdown/markdown?path={{.Path}}" class="btn btn-primary" onclick="event.stopPropagation();">
+                                        👁️ 预览
+                                    </a>
+                                    <a href="/markdown/exportpdf?path={{.Path}}" class="btn btn-success" target="_blank" onclick="event.stopPropagation();">
+                                        📥 下载
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="file-summary">{{.Summary}}</div>
+                        </a>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="empty-state">
+                        <div class="icon">📄</div>
+                        <h3>暂无文档</h3>
+                        <p>请在 example/sample/docs 目录下添加 Markdown 文件</p>
+                    </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Markdown file list loaded successfully');
+            
+            // 添加键盘快捷键支持
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // ESC 键返回首页或其他操作
+                    console.log('ESC pressed');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

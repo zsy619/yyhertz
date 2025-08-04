@@ -83,3 +83,23 @@ func (c *BaseController) Redirect(url string, code ...int) {
 func (c *BaseController) Error(code int, msg string) {
 	c.Ctx.String(code, "%s", msg)
 }
+
+// ============= 响应头和原始数据方法 =============
+
+// SetHeader 设置响应头
+func (c *BaseController) SetHeader(key, value string) {
+	if c.Ctx == nil {
+		config.Error("Context is nil when trying to set header")
+		return
+	}
+	c.Ctx.Header(key, value)
+}
+
+// Write 写入原始字节数据
+func (c *BaseController) Write(data []byte) {
+	if c.Ctx == nil {
+		config.Error("Context is nil when trying to write data")
+		return
+	}
+	c.Ctx.Write(data)
+}

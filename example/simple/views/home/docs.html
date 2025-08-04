@@ -24,14 +24,14 @@
                         <a class="nav-link" href="/">首页</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/docs">文档</a>
+                        <a class="nav-link active" href="/home/docs">文档</a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="/user">用户管理</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/dashboard">管理后台</a>
-                    </li>
+                    </li> -->
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -80,28 +80,25 @@
                         </h5>
                     </div>
                     <div class="list-group list-group-flush">
-                        <a href="#quick-start" class="list-group-item list-group-item-action">
-                            <i class="fas fa-play-circle me-2"></i>快速开始
+                        <a href="/home/quickstart" class="list-group-item list-group-item-action {{if eq .CurrentDoc " quickstart"}}active{{end}}">
+                            <i class="fas fa-rocket me-2"></i>快速开始
                         </a>
-                        <a href="#installation" class="list-group-item list-group-item-action">
-                            <i class="fas fa-download me-2"></i>安装配置
-                        </a>
-                        <a href="#controllers" class="list-group-item list-group-item-action">
+                        <a href="/home/controller" class="list-group-item list-group-item-action {{if eq .CurrentDoc " controller"}}active{{end}}">
                             <i class="fas fa-cogs me-2"></i>控制器
                         </a>
-                        <a href="#routing" class="list-group-item list-group-item-action">
+                        <a href="/home/routing" class="list-group-item list-group-item-action {{if eq .CurrentDoc " routing"}}active{{end}}">
                             <i class="fas fa-route me-2"></i>路由系统
                         </a>
-                        <a href="#middleware" class="list-group-item list-group-item-action">
+                        <a href="/home/middleware" class="list-group-item list-group-item-action {{if eq .CurrentDoc " middleware"}}active{{end}}">
                             <i class="fas fa-layer-group me-2"></i>中间件
                         </a>
-                        <a href="#templates" class="list-group-item list-group-item-action">
+                        <a href="/home/template" class="list-group-item list-group-item-action {{if eq .CurrentDoc " template"}}active{{end}}">
                             <i class="fas fa-file-code me-2"></i>模板引擎
                         </a>
-                        <a href="#database" class="list-group-item list-group-item-action">
+                        <a href="/home/database" class="list-group-item list-group-item-action {{if eq .CurrentDoc " database"}}active{{end}}">
                             <i class="fas fa-database me-2"></i>数据库集成
                         </a>
-                        <a href="#deployment" class="list-group-item list-group-item-action">
+                        <a href="/home/deployment" class="list-group-item list-group-item-action {{if eq .CurrentDoc " deployment"}}active{{end}}">
                             <i class="fas fa-rocket me-2"></i>部署上线
                         </a>
                     </div>

@@ -1,0 +1,400 @@
+/* YYHertz Framework - Juejin Style Markdown */
+/* 基于掘金社区的Markdown样式设计 */
+
+/* 基础样式 */
+.markdown-content {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", STHeiti, "Microsoft YaHei", "Microsoft JhengHei", "Source Han Sans SC", "Noto Sans CJK SC", "Source Han Sans CN", "Noto Sans SC", "Source Han Sans TC", "Noto Sans CJK TC", "WenQuanYi Micro Hei", SimSun, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    color: #2e3135;
+    background-color: #ffffff;
+    word-wrap: break-word;
+}
+
+/* 标题样式 */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    margin: 1.2em 0 0.6em 0;
+    font-weight: bold;
+    color: #1f2328;
+    position: relative;
+}
+
+.markdown-content h1 {
+    font-size: 1.8em;
+    border-bottom: 2px solid #1e80ff;
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+}
+
+.markdown-content h1::before {
+    content: "#";
+    color: #1e80ff;
+    margin-right: 0.5em;
+    font-weight: normal;
+}
+
+.markdown-content h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #e4e6ea;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h2::before {
+    content: "##";
+    color: #1e80ff;
+    margin-right: 0.5em;
+    font-weight: normal;
+    font-size: 0.8em;
+}
+
+.markdown-content h3 {
+    font-size: 1.3em;
+    color: #1f2328;
+}
+
+.markdown-content h3::before {
+    content: "###";
+    color: #1e80ff;
+    margin-right: 0.5em;
+    font-weight: normal;
+    font-size: 0.7em;
+}
+
+.markdown-content h4 {
+    font-size: 1.1em;
+}
+
+.markdown-content h5 {
+    font-size: 1em;
+}
+
+.markdown-content h6 {
+    font-size: 1em;
+    color: #8a919f;
+}
+
+/* 段落和文本 */
+.markdown-content p {
+    margin: 1em 0;
+    text-align: justify;
+}
+
+.markdown-content blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.5em;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #1e80ff;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+
+.markdown-content blockquote::before {
+    content: """;
+    position: absolute;
+    left: 0.5em;
+    top: -0.2em;
+    font-size: 3em;
+    color: #1e80ff;
+    opacity: 0.3;
+    font-family: Georgia, serif;
+}
+
+.markdown-content blockquote p {
+    margin: 0.5em 0;
+    color: #515767;
+    font-style: italic;
+}
+
+/* 链接 */
+.markdown-content a {
+    color: #1e80ff;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.markdown-content a:hover {
+    color: #1171ee;
+    border-bottom: 1px solid #1e80ff;
+    background: rgba(30, 128, 255, 0.1);
+}
+
+/* 强调文本 */
+.markdown-content strong {
+    font-weight: 700;
+    color: #1f2328;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+.markdown-content em {
+    font-style: italic;
+    color: #1e80ff;
+}
+
+/* 删除线 */
+.markdown-content del {
+    text-decoration: line-through;
+    color: #8a919f;
+}
+
+/* 行内代码 */
+.markdown-content code {
+    padding: 0.2em 0.4em;
+    margin: 0 0.1em;
+    font-size: 0.9em;
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+    color: #d73a49;
+    border-radius: 4px;
+    font-family: "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", Menlo, Consolas, "Liberation Mono", monospace;
+    font-weight: 500;
+}
+
+/* 代码块 */
+.markdown-content pre {
+    margin: 1.5em 0;
+    padding: 1.5em;
+    overflow-x: auto;
+    background: linear-gradient(135deg, #282c34 0%, #21252b 100%);
+    color: #abb2bf;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+.markdown-content pre::before {
+    content: "";
+    position: absolute;
+    top: 1em;
+    left: 1em;
+    width: 12px;
+    height: 12px;
+    background: #ff5f56;
+    border-radius: 50%;
+    box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27ca3f;
+}
+
+.markdown-content pre code {
+    display: block;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    color: inherit;
+    border-radius: 0;
+    font-size: 0.9em;
+    line-height: 1.5;
+    font-family: "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Source Code Pro", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* 掘金特色语法高亮 */
+.markdown-content pre.language-go,
+.markdown-content pre.language-golang {
+    border-left: 4px solid #00add8;
+    background: linear-gradient(135deg, #1a1d23 0%, #16191f 100%);
+}
+
+.markdown-content pre.language-javascript,
+.markdown-content pre.language-js {
+    border-left: 4px solid #f7df1e;
+    background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+}
+
+.markdown-content pre.language-python {
+    border-left: 4px solid #3776ab;
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+
+.markdown-content pre.language-vue {
+    border-left: 4px solid #4fc08d;
+    background: linear-gradient(135deg, #0f1419 0%, #1a1f2b 100%);
+}
+
+.markdown-content pre.language-react,
+.markdown-content pre.language-jsx {
+    border-left: 4px solid #61dafb;
+    background: linear-gradient(135deg, #0d1421 0%, #1a202c 100%);
+}
+
+/* 列表 */
+.markdown-content ul, .markdown-content ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.markdown-content li {
+    margin: 0.5em 0;
+    line-height: 1.6;
+}
+
+.markdown-content ul li {
+    list-style: none;
+    position: relative;
+}
+
+.markdown-content ul li::before {
+    content: "▪";
+    color: #1e80ff;
+    font-size: 1.2em;
+    position: absolute;
+    left: -1.5em;
+    top: 0;
+}
+
+.markdown-content ol li {
+    list-style: none;
+    counter-increment: item;
+    position: relative;
+}
+
+.markdown-content ol {
+    counter-reset: item;
+}
+
+.markdown-content ol li::before {
+    content: counter(item) ".";
+    color: #1e80ff;
+    font-weight: bold;
+    position: absolute;
+    left: -2em;
+    top: 0;
+}
+
+/* 表格 */
+.markdown-content table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin: 1.5em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-content table th {
+    background: linear-gradient(135deg, #1e80ff 0%, #1171ee 100%);
+    color: white;
+    font-weight: 600;
+    padding: 1em;
+    text-align: left;
+    border: none;
+}
+
+.markdown-content table td {
+    padding: 0.8em 1em;
+    border-bottom: 1px solid #e4e6ea;
+    background: white;
+}
+
+.markdown-content table tr:nth-child(even) td {
+    background: #f8f9fa;
+}
+
+.markdown-content table tr:hover td {
+    background: rgba(30, 128, 255, 0.05);
+}
+
+/* 分割线 */
+.markdown-content hr {
+    height: 2px;
+    border: none;
+    background: linear-gradient(90deg, transparent 0%, #1e80ff 50%, transparent 100%);
+    margin: 2em 0;
+}
+
+/* 图片 */
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 1em 0;
+    transition: transform 0.3s ease;
+}
+
+.markdown-content img:hover {
+    transform: scale(1.02);
+}
+
+/* 掘金特色元素 */
+.markdown-content .tip {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: linear-gradient(135deg, #e6f3ff 0%, #cce7ff 100%);
+    border-left: 4px solid #1e80ff;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+
+.markdown-content .tip::before {
+    content: "💡";
+    position: absolute;
+    left: -0.5em;
+    top: 0.8em;
+    background: #1e80ff;
+    color: white;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+}
+
+.markdown-content .warning {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-left: 4px solid #f39c12;
+    border-radius: 0 8px 8px 0;
+}
+
+.markdown-content .error {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+    border-left: 4px solid #e74c3c;
+    border-radius: 0 8px 8px 0;
+}
+
+/* 标签系统 */
+.markdown-content .tag {
+    display: inline-block;
+    padding: 0.2em 0.8em;
+    margin: 0.2em;
+    background: linear-gradient(135deg, #1e80ff 0%, #1171ee 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.markdown-content .tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(30, 128, 255, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .markdown-content {
+        padding: 1em;
+        font-size: 14px;
+    }
+    
+    .markdown-content pre {
+        padding: 1em;
+        margin-left: -1em;
+        margin-right: -1em;
+        border-radius: 0;
+    }
+    
+    .markdown-content table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

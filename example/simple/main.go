@@ -14,6 +14,9 @@ func main() {
 	// 创建应用实例
 	app := mvc.HertzApp
 
+	// 修正框架的静态文件路径问题
+	app.StaticPath = "./static"
+
 	// 添加全局中间件
 	app.Use(
 		middleware.RecoveryMiddleware(),
@@ -27,11 +30,13 @@ func main() {
 	homeController := &controllers.HomeController{}
 	userController := &controllers.UserController{}
 	adminController := &controllers.AdminController{}
+	markdownController := &controllers.MarkdownController{}
 
 	// 自动注册路由 (使用新的AutoRouters方法)
-	app.AutoRouters(homeController, userController, adminController)
+	app.AutoRouters(homeController, userController, adminController, markdownController)
 
 	app.RouterPrefix("/", homeController, "GetIndex", "*:/")
+	app.RouterPrefix("/", markdownController, "GetIndex", "*:/")
 
 	fmt.Println("🚀 YYHertz Namespace功能演示启动...", homeController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", homeController.GetControllerName())

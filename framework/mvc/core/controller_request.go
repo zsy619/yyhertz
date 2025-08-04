@@ -16,6 +16,15 @@ func (c *BaseController) GetString(key string, def ...string) string {
 		}
 		return ""
 	}
+	
+	// 直接从Hertz RequestContext获取查询参数
+	if c.Ctx.RequestContext != nil {
+		if pathBytes := c.Ctx.RequestContext.QueryArgs().Peek(key); pathBytes != nil {
+			return string(pathBytes)
+		}
+	}
+	
+	// 备用方法
 	if val := c.Ctx.Query(key); val != "" {
 		return val
 	}

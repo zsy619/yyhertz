@@ -1,11 +1,68 @@
 package controllers
 
 import (
+	"bytes"
+	"fmt"
+	"html/template"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
+
 	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
 type HomeController struct {
 	mvc.BaseController
+}
+
+// 渲染Markdown文档的辅助方法
+func (c *HomeController) renderMarkdownDoc(docName, title string) {
+	// 构建markdown文件路径
+	docPath := filepath.Join("./docs", docName+".md")
+
+	// 读取markdown文件
+	content, err := os.ReadFile(docPath)
+	if err != nil {
+		log.Printf("读取文档失败: %s, 错误: %v", docPath, err)
+		c.Error(404, fmt.Sprintf("文档不存在: %s", docName))
+		return
+	}
+
+	// 配置Goldmark解析器
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,            // GitHub Flavored Markdown
+			extension.Table,          // 表格支持
+			extension.Strikethrough,  // 删除线
+			extension.TaskList,       // 任务列表
+			extension.DefinitionList, // 定义列表
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(), // 硬换行
+			html.WithXHTML(),     // XHTML兼容
+			html.WithUnsafe(),    // 允许HTML标签
+		),
+	)
+
+	// 解析Markdown为HTML
+	var htmlBuf bytes.Buffer
+	if err := md.Convert(content, &htmlBuf); err != nil {
+		log.Printf("Markdown解析失败: %v", err)
+		c.Error(500, "文档解析失败")
+		return
+	}
+
+	// 设置模板数据
+	c.SetData("Title", title)
+	c.SetData("CurrentDoc", docName)
+	c.SetData("Content", template.HTML(htmlBuf.String()))
+
+	// 渲染统一模板
+	c.RenderHTML("home/docs/unified-doc.html")
 }
 
 func (c *HomeController) GetIndex() {
@@ -127,49 +184,35 @@ func (c *HomeController) PostContact() {
 
 // 快速开始文档
 func (c *HomeController) GetQuickstart() {
-	c.SetData("Title", "快速开始")
-	c.SetData("CurrentDoc", "quickstart")
-	c.RenderHTML("home/docs/quickstart.html")
+	c.renderMarkdownDoc("quickstart", "快速开始")
 }
 
 // 控制器文档
 func (c *HomeController) GetController() {
-	c.SetData("Title", "控制器")
-	c.SetData("CurrentDoc", "controller")
-	c.RenderHTML("home/docs/controller.html")
+	c.renderMarkdownDoc("controller", "控制器")
 }
 
 // 路由文档
 func (c *HomeController) GetRouting() {
-	c.SetData("Title", "路由")
-	c.SetData("CurrentDoc", "routing")
-	c.RenderHTML("home/docs/routing.html")
+	c.renderMarkdownDoc("routing", "路由系统")
 }
 
 // 中间件文档
 func (c *HomeController) GetMiddleware() {
-	c.SetData("Title", "中间件")
-	c.SetData("CurrentDoc", "middleware")
-	c.RenderHTML("home/docs/middleware.html")
+	c.renderMarkdownDoc("middleware", "中间件系统")
 }
 
 // 模板文档
 func (c *HomeController) GetTemplate() {
-	c.SetData("Title", "模板")
-	c.SetData("CurrentDoc", "template")
-	c.RenderHTML("home/docs/template.html")
+	c.renderMarkdownDoc("template", "模板引擎")
 }
 
 // 数据库集成文档
 func (c *HomeController) GetDatabase() {
-	c.SetData("Title", "数据库集成")
-	c.SetData("CurrentDoc", "database")
-	c.RenderHTML("home/docs/database.html")
+	c.renderMarkdownDoc("database", "数据库集成")
 }
 
 // 部署文档
 func (c *HomeController) GetDeployment() {
-	c.SetData("Title", "部署上线")
-	c.SetData("CurrentDoc", "deployment")
-	c.RenderHTML("home/docs/deployment.html")
+	c.renderMarkdownDoc("deployment", "部署上线")
 }

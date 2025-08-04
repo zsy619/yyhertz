@@ -1,0 +1,407 @@
+/* YYHertz Framework - GitLab Style Markdown */
+/* 基于GitLab平台的Markdown样式设计 */
+
+/* 基础样式 */
+.markdown-content {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 14px;
+    line-height: 1.5;
+    color: #303030;
+    background-color: #fff;
+    word-wrap: break-word;
+}
+
+/* 标题样式 */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    font-weight: 600;
+    line-height: 1.25;
+    margin-top: 1.5em;
+    margin-bottom: 0.25em;
+    color: #303030;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child {
+    margin-top: 0;
+}
+
+.markdown-content h1 {
+    font-size: 2.25em;
+    border-bottom: 1px solid #dbdbdb;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+    font-size: 1.75em;
+    border-bottom: 1px solid #dbdbdb;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h3 {
+    font-size: 1.5em;
+}
+
+.markdown-content h4 {
+    font-size: 1.25em;
+}
+
+.markdown-content h5 {
+    font-size: 1em;
+}
+
+.markdown-content h6 {
+    font-size: 1em;
+    color: #666;
+}
+
+/* 段落和文本 */
+.markdown-content p {
+    margin-top: 0;
+    margin-bottom: 0.75em;
+}
+
+.markdown-content blockquote {
+    padding: 0 1em;
+    color: #666;
+    border-left: 0.25em solid #fc6d26;
+    margin: 0 0 16px;
+    background-color: #fdf4f0;
+}
+
+.markdown-content blockquote > :first-child {
+    margin-top: 0;
+}
+
+.markdown-content blockquote > :last-child {
+    margin-bottom: 0;
+}
+
+/* 链接 */
+.markdown-content a {
+    color: #1068bf;
+    text-decoration: none;
+}
+
+.markdown-content a:hover {
+    color: #0b5cad;
+    text-decoration: underline;
+}
+
+/* 强调文本 */
+.markdown-content strong {
+    font-weight: 600;
+}
+
+.markdown-content em {
+    font-style: italic;
+}
+
+/* 删除线 */
+.markdown-content del {
+    text-decoration: line-through;
+}
+
+/* 行内代码 */
+.markdown-content code {
+    padding: 0.125em 0.25em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(175, 184, 193, 0.2);
+    border-radius: 3px;
+    font-family: "GitLab Mono", "JetBrains Mono", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "andale mono", "lucida console", monospace;
+}
+
+/* 代码块 */
+.markdown-content pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    margin: 0 0 16px;
+    font-family: "GitLab Mono", "JetBrains Mono", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "andale mono", "lucida console", monospace;
+}
+
+.markdown-content pre code {
+    display: inline;
+    max-width: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    line-height: inherit;
+    word-wrap: normal;
+    background-color: transparent;
+    border: 0;
+}
+
+/* GitLab特色语法高亮 */
+.markdown-content pre.language-yaml,
+.markdown-content pre.language-yml {
+    background-color: #fdf6e3;
+    border-left: 4px solid #fc6d26;
+    color: #586e75;
+}
+
+.markdown-content pre.language-dockerfile,
+.markdown-content pre.language-docker {
+    background-color: #e8f4fd;
+    border-left: 4px solid #2496ed;
+    color: #24292e;
+}
+
+.markdown-content pre.language-bash,
+.markdown-content pre.language-shell {
+    background-color: #f0f6ff;
+    border-left: 4px solid #1068bf;
+    color: #24292e;
+}
+
+.markdown-content pre.language-json {
+    background-color: #f8f8f2;
+    border-left: 4px solid #6f42c1;
+    color: #24292e;
+}
+
+.markdown-content pre.language-javascript,
+.markdown-content pre.language-js {
+    background-color: #fffbf0;
+    border-left: 4px solid #f1e05a;
+    color: #24292e;
+}
+
+.markdown-content pre.language-go,
+.markdown-content pre.language-golang {
+    background-color: #f0f9ff;
+    border-left: 4px solid #00add8;
+    color: #24292e;
+}
+
+/* 列表 */
+.markdown-content ul, .markdown-content ol {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-left: 2em;
+}
+
+.markdown-content li {
+    word-wrap: break-all;
+}
+
+.markdown-content li + li {
+    margin-top: 0.25em;
+}
+
+.markdown-content ul ul, .markdown-content ul ol,
+.markdown-content ol ol, .markdown-content ol ul {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* 任务列表 */
+.markdown-content input[type="checkbox"] {
+    margin: 0 0.2em 0.25em -1.6em;
+    vertical-align: middle;
+}
+
+/* 表格 */
+.markdown-content table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin-top: 0;
+    margin-bottom: 16px;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow: auto;
+}
+
+.markdown-content table tr {
+    background-color: #fff;
+    border-top: 1px solid #c6cbd1;
+}
+
+.markdown-content table tr:nth-child(2n) {
+    background-color: #f6f8fa;
+}
+
+.markdown-content table th, .markdown-content table td {
+    padding: 6px 13px;
+    border: 1px solid #dfe2e5;
+}
+
+.markdown-content table th {
+    font-weight: 600;
+    background-color: #f1f3f4;
+}
+
+/* 分割线 */
+.markdown-content hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #e1e4e8;
+    border: 0;
+}
+
+/* 图片 */
+.markdown-content img {
+    max-width: 100%;
+    box-sizing: content-box;
+}
+
+/* GitLab特色元素 */
+.markdown-content .alert {
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.markdown-content .alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.markdown-content .alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.markdown-content .alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.markdown-content .alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+/* 标签 */
+.markdown-content .label {
+    display: inline;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.markdown-content .label-primary {
+    color: #fff;
+    background-color: #1068bf;
+}
+
+.markdown-content .label-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+
+.markdown-content .label-success {
+    color: #fff;
+    background-color: #217645;
+}
+
+.markdown-content .label-danger {
+    color: #fff;
+    background-color: #dd2d44;
+}
+
+.markdown-content .label-warning {
+    color: #212529;
+    background-color: #fc6d26;
+}
+
+.markdown-content .label-info {
+    color: #fff;
+    background-color: #1aaa55;
+}
+
+/* GitLab Issue/MR引用 */
+.markdown-content .gfm-issue, .markdown-content .gfm-merge_request {
+    color: #1068bf;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.markdown-content .gfm-issue::before {
+    content: "#";
+}
+
+.markdown-content .gfm-merge_request::before {
+    content: "!";
+}
+
+/* GitLab用户提及 */
+.markdown-content .gfm-project_member {
+    color: #1068bf;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.markdown-content .gfm-project_member::before {
+    content: "@";
+}
+
+/* 差异显示 */
+.markdown-content .diff-added {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.markdown-content .diff-removed {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+/* 折叠内容 */
+.markdown-content details {
+    margin-bottom: 16px;
+}
+
+.markdown-content details summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 8px;
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+}
+
+.markdown-content details[open] summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.markdown-content details[open] > *:not(summary) {
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    border-top: 0;
+    border-radius: 0 0 6px 6px;
+    background-color: #fff;
+}
+
+/* 响应式设计 */
+@media (max-width: 767px) {
+    .markdown-content {
+        padding: 15px;
+    }
+    
+    .markdown-content table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

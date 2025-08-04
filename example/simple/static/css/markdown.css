@@ -1,0 +1,652 @@
+/* YYHertz Framework - Markdown Styles */
+/* GitHub风格的Markdown样式，适用于文档展示 */
+
+/* 基础Markdown样式 */
+.markdown-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+/* 标题样式 */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    margin: 20px 0 10px 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.markdown-content h1 {
+    font-size: 2em;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.markdown-content h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.markdown-content h3 {
+    font-size: 1.3em;
+    margin: 18px 0 8px 0;
+}
+
+.markdown-content h4 {
+    font-size: 1.1em;
+    margin: 16px 0 6px 0;
+}
+
+.markdown-content h5 {
+    font-size: 1em;
+    margin: 14px 0 4px 0;
+}
+
+.markdown-content h6 {
+    font-size: 0.9em;
+    margin: 12px 0 4px 0;
+    color: #666;
+}
+
+/* 段落样式 */
+.markdown-content p {
+    margin: 15px 0;
+}
+
+/* 链接样式 */
+.markdown-content a {
+    color: #667eea;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.markdown-content a:hover {
+    color: #5a6fd8;
+    border-bottom: 1px solid #5a6fd8;
+}
+
+/* 强调文本 */
+.markdown-content strong {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.markdown-content em {
+    font-style: italic;
+    color: #4a5568;
+}
+
+/* 删除线 */
+.markdown-content del {
+    text-decoration: line-through;
+    color: #718096;
+}
+
+/* 行内代码样式 */
+.markdown-content code {
+    background: #e2e8f0;
+    color: #2d3748;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+/* 代码块样式 */
+.markdown-content pre {
+    background: #1a202c;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    line-height: 1.4;
+}
+
+.markdown-content pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.9em;
+    font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    white-space: pre;
+    display: block;
+}
+
+/* 语言标签样式 */
+.markdown-content pre[data-lang]::before {
+    content: attr(data-lang);
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: #4a5568;
+    color: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* 不同语言的代码高亮 */
+.markdown-content pre.language-go,
+.markdown-content pre.language-golang {
+    border-left: 4px solid #00add8;
+}
+
+.markdown-content pre.language-javascript,
+.markdown-content pre.language-js {
+    border-left: 4px solid #f7df1e;
+}
+
+.markdown-content pre.language-python {
+    border-left: 4px solid #3776ab;
+}
+
+.markdown-content pre.language-bash,
+.markdown-content pre.language-shell {
+    border-left: 4px solid #4eaa25;
+}
+
+.markdown-content pre.language-yaml,
+.markdown-content pre.language-yml {
+    border-left: 4px solid #cb171e;
+}
+
+.markdown-content pre.language-json {
+    border-left: 4px solid #292929;
+}
+
+.markdown-content pre.language-html {
+    border-left: 4px solid #e34c26;
+}
+
+.markdown-content pre.language-css {
+    border-left: 4px solid #1572b6;
+}
+
+.markdown-content pre.language-sql {
+    border-left: 4px solid #336791;
+}
+
+.markdown-content pre.language-docker,
+.markdown-content pre.language-dockerfile {
+    border-left: 4px solid #2496ed;
+}
+
+/* 表格样式 */
+.markdown-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-content th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    padding: 15px 12px;
+    text-align: left;
+}
+
+.markdown-content td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    background: white;
+}
+
+.markdown-content tr:nth-child(even) td {
+    background: #f7fafc;
+}
+
+.markdown-content tr:hover td {
+    background: #edf2f7;
+}
+
+/* 引用块样式 */
+.markdown-content blockquote {
+    border-left: 4px solid #667eea;
+    margin: 20px 0;
+    padding: 15px 25px;
+    background: linear-gradient(to right, #f7fafc, #ffffff);
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.markdown-content blockquote::before {
+    content: '"';
+    font-size: 4em;
+    color: #667eea;
+    opacity: 0.2;
+    position: absolute;
+    left: 10px;
+    top: -10px;
+    font-family: Georgia, serif;
+}
+
+.markdown-content blockquote p {
+    margin: 8px 0;
+    font-style: italic;
+    color: #4a5568;
+}
+
+/* 列表样式 */
+.markdown-content ul, .markdown-content ol {
+    margin: 16px 0;
+    padding-left: 32px;
+}
+
+.markdown-content li {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.markdown-content ul li {
+    list-style-type: none;
+    position: relative;
+}
+
+.markdown-content ul li::before {
+    content: "•";
+    color: #667eea;
+    font-size: 1.2em;
+    position: absolute;
+    left: -20px;
+}
+
+/* 任务列表 */
+.markdown-content input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.2);
+}
+
+/* 分割线 */
+.markdown-content hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #667eea, transparent);
+    margin: 30px 0;
+}
+
+/* 图片样式 */
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 15px 0;
+    display: block;
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+.markdown-content img:hover {
+    transform: scale(1.02);
+}
+
+/* 图片容器 */
+.markdown-content .image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.markdown-content .image-container img {
+    display: inline-block;
+}
+
+.markdown-content .image-caption {
+    font-size: 0.9em;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 8px;
+    text-align: center;
+}
+
+/* 图片懒加载占位符 */
+.markdown-content img[loading="lazy"] {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 修复图片显示问题 */
+.markdown-content img {
+    object-fit: contain;
+    max-height: 500px;
+}
+
+.markdown-content img.full-width {
+    width: 100%;
+    max-height: none;
+}
+
+.markdown-content img.small {
+    max-width: 300px;
+}
+
+.markdown-content img.medium {
+    max-width: 500px;
+}
+
+.markdown-content img.large {
+    max-width: 800px;
+}
+
+/* 示例块样式 */
+.markdown-content .example-block {
+    background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
+    border: 1px solid #b3d9ff;
+    border-left: 4px solid #007acc;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.markdown-content .example-block::before {
+    content: "💡 示例";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #007acc;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.markdown-content .example-block h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #007acc;
+}
+
+.markdown-content .example-block p:last-child {
+    margin-bottom: 0;
+}
+
+/* 警告块样式 */
+.markdown-content .warning-block {
+    background: linear-gradient(135deg, #fff3cd 0%, #fefcf3 100%);
+    border: 1px solid #ffeaa7;
+    border-left: 4px solid #fdcb6e;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.markdown-content .warning-block::before {
+    content: "⚠️ 警告";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #fdcb6e;
+    color: #2d3436;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* 提示块样式 */
+.markdown-content .info-block {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f8fff8 100%);
+    border: 1px solid #a8e6a8;
+    border-left: 4px solid #27ae60;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.markdown-content .info-block::before {
+    content: "ℹ️ 提示";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #27ae60;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* 错误块样式 */
+.markdown-content .error-block {
+    background: linear-gradient(135deg, #ffe8e8 0%, #fff8f8 100%);
+    border: 1px solid #ffb3b3;
+    border-left: 4px solid #e74c3c;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.markdown-content .error-block::before {
+    content: "❌ 错误";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #e74c3c;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* 成功块样式 */
+.markdown-content .success-block {
+    background: linear-gradient(135deg, #e8f8f5 0%, #f8fff8 100%);
+    border: 1px solid #a8e6a8;
+    border-left: 4px solid #00b894;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.markdown-content .success-block::before {
+    content: "✅ 成功";
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background: #00b894;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* 高亮文本 */
+.markdown-content mark {
+    background: #fff3cd;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* 键盘按键样式 */
+.markdown-content kbd {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85em;
+    border: 1px solid #4a5568;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 徽章样式 */
+.markdown-content .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 4px;
+    margin: 0 4px;
+}
+
+.markdown-content .badge.primary {
+    background: #667eea;
+    color: white;
+}
+
+.markdown-content .badge.success {
+    background: #27ae60;
+    color: white;
+}
+
+.markdown-content .badge.warning {
+    background: #fdcb6e;
+    color: #2d3436;
+}
+
+.markdown-content .badge.error {
+    background: #e74c3c;
+    color: white;
+}
+
+.markdown-content .badge.info {
+    background: #3498db;
+    color: white;
+}
+
+/* 标题锚点链接 */
+.markdown-content h1:hover .anchor,
+.markdown-content h2:hover .anchor,
+.markdown-content h3:hover .anchor,
+.markdown-content h4:hover .anchor,
+.markdown-content h5:hover .anchor,
+.markdown-content h6:hover .anchor {
+    opacity: 1;
+}
+
+.markdown-content .anchor {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    margin-left: 8px;
+    color: #667eea;
+    text-decoration: none;
+}
+
+.markdown-content .anchor:before {
+    content: '#';
+}
+
+/* 响应式改进 */
+@media (max-width: 768px) {
+    .markdown-content {
+        font-size: 16px;
+        line-height: 1.7;
+    }
+    
+    .markdown-content h1 {
+        font-size: 1.8em;
+    }
+    
+    .markdown-content h2 {
+        font-size: 1.4em;
+    }
+    
+    .markdown-content pre {
+        padding: 15px;
+        margin: 15px -15px;
+        border-radius: 0;
+    }
+    
+    .markdown-content table {
+        font-size: 14px;
+    }
+}
+
+/* 复制按钮样式 */
+.markdown-content .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #4a5568;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.markdown-content pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.markdown-content .copy-btn:hover {
+    background: #667eea;
+}
+
+.markdown-content .copy-btn.copied {
+    background: #27ae60;
+}
+
+/* 图片模态框样式 */
+.image-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    cursor: zoom-out;
+}
+
+.image-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+}
+
+.image-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.image-modal-close:hover {
+    color: #667eea;
+}

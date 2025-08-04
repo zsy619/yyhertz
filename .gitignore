@@ -228,3 +228,4 @@ framework/mvc/conf
 framework/config/conf
 example/simple/conf
 example/simple/logs
+example/simple/app

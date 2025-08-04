@@ -1,0 +1,532 @@
+/* YYHertz Framework - DarkReader Style Markdown */
+/* 基于DarkReader深色主题的Markdown样式设计 */
+/* 参考: https://github.com/darkreader/darkreader */
+
+/* 基础暗色样式 */
+.markdown-content {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #e8e6e3;
+    background-color: #181a1b;
+    word-wrap: break-word;
+}
+
+/* 标题样式 - 暗色主题 */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    margin: 1.5em 0 0.5em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #e8e6e3;
+}
+
+.markdown-content h1 {
+    font-size: 2.25em;
+    border-bottom: 2px solid #4285f4;
+    padding-bottom: 0.5em;
+    color: #e8e6e3;
+}
+
+.markdown-content h2 {
+    font-size: 1.75em;
+    border-bottom: 1px solid #3c4043;
+    padding-bottom: 0.3em;
+    margin-top: 2em;
+}
+
+.markdown-content h3 {
+    font-size: 1.5em;
+    color: #9aa0a6;
+}
+
+.markdown-content h4 {
+    font-size: 1.25em;
+    color: #9aa0a6;
+}
+
+.markdown-content h5 {
+    font-size: 1.1em;
+    color: #9aa0a6;
+}
+
+.markdown-content h6 {
+    font-size: 1em;
+    color: #80868b;
+}
+
+/* 段落和文本 */
+.markdown-content p {
+    margin: 1em 0;
+    color: #e8e6e3;
+}
+
+.markdown-content blockquote {
+    margin: 1.5em 0;
+    padding: 0.8em 1.5em;
+    border-left: 4px solid #4285f4;
+    background-color: #202124;
+    color: #9aa0a6;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+
+.markdown-content blockquote::before {
+    content: """;
+    position: absolute;
+    left: 0.5em;
+    top: -0.2em;
+    font-size: 3em;
+    color: #4285f4;
+    opacity: 0.3;
+    font-family: Georgia, serif;
+}
+
+.markdown-content blockquote p {
+    margin: 0.5em 0;
+    color: #bdc1c6;
+}
+
+/* 链接 - DarkReader蓝色主题 */
+.markdown-content a {
+    color: #8ab4f8;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.markdown-content a:hover {
+    color: #aecbfa;
+    border-bottom: 1px solid #8ab4f8;
+    background-color: rgba(138, 180, 248, 0.1);
+}
+
+/* 强调文本 */
+.markdown-content strong {
+    font-weight: 700;
+    color: #e8e6e3;
+    background: rgba(251, 188, 5, 0.2);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+.markdown-content em {
+    font-style: italic;
+    color: #f28b82;
+}
+
+/* 删除线 */
+.markdown-content del {
+    text-decoration: line-through;
+    color: #80868b;
+}
+
+/* 行内代码 - 暗色主题 */
+.markdown-content code {
+    color: #f28b82;
+    padding: 0.2em 0.4em;
+    margin: 0 0.1em;
+    background-color: #292a2d;
+    border: 1px solid #3c4043;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9em;
+}
+
+/* 代码块 - DarkReader风格 */
+.markdown-content pre {
+    margin: 1.5em 0;
+    padding: 1.5em;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d1117 100%);
+    color: #e8e6e3;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", "Fira Code", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.markdown-content pre::before {
+    content: '';
+    position: absolute;
+    top: 1em;
+    left: 1em;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff605c;
+    box-shadow: 20px 0 0 #ffbd44, 40px 0 0 #00ca4e;
+}
+
+.markdown-content pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    font-size: 0.85em;
+    display: block;
+    white-space: pre;
+    margin-top: 10px;
+}
+
+/* DarkReader特色语法高亮 */
+.markdown-content pre.language-javascript,
+.markdown-content pre.language-js {
+    background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%);
+    border-left: 4px solid #f7df1e;
+    color: #d4d4d4;
+}
+
+.markdown-content pre.language-typescript,
+.markdown-content pre.language-ts {
+    background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+    border-left: 4px solid #007acc;
+    color: #d4d4d4;
+}
+
+.markdown-content pre.language-python {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+    border-left: 4px solid #3776ab;
+    color: #f0f6fc;
+}
+
+.markdown-content pre.language-go,
+.markdown-content pre.language-golang {
+    background: linear-gradient(135deg, #0f1419 0%, #1a1f2b 100%);
+    border-left: 4px solid #00add8;
+    color: #e6edf3;
+}
+
+.markdown-content pre.language-rust {
+    background: linear-gradient(135deg, #1a1a1a 0%, #21252b 100%);
+    border-left: 4px solid #ce422b;
+    color: #abb2bf;
+}
+
+.markdown-content pre.language-java {
+    background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%);
+    border-left: 4px solid #ed8b00;
+    color: #d4d4d4;
+}
+
+.markdown-content pre.language-css {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+    border-left: 4px solid #1572b6;
+    color: #f0f6fc;
+}
+
+.markdown-content pre.language-html {
+    background: linear-gradient(135deg, #1a1a1a 0%, #21252b 100%);
+    border-left: 4px solid #e34c26;
+    color: #abb2bf;
+}
+
+.markdown-content pre.language-json {
+    background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+    border-left: 4px solid #cbcb41;
+    color: #d4d4d4;
+}
+
+.markdown-content pre.language-bash,
+.markdown-content pre.language-shell {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+    border-left: 4px solid #4eaa25;
+    color: #f0f6fc;
+}
+
+/* DarkReader语法高亮颜色 */
+.markdown-content pre .token.comment,
+.markdown-content pre .token.prolog,
+.markdown-content pre .token.doctype,
+.markdown-content pre .token.cdata {
+    color: #6a737d;
+    font-style: italic;
+}
+
+.markdown-content pre .token.punctuation {
+    color: #e1e4e8;
+}
+
+.markdown-content pre .token.property,
+.markdown-content pre .token.tag,
+.markdown-content pre .token.boolean,
+.markdown-content pre .token.number,
+.markdown-content pre .token.constant,
+.markdown-content pre .token.symbol,
+.markdown-content pre .token.deleted {
+    color: #79c0ff;
+}
+
+.markdown-content pre .token.selector,
+.markdown-content pre .token.attr-name,
+.markdown-content pre .token.string,
+.markdown-content pre .token.char,
+.markdown-content pre .token.builtin,
+.markdown-content pre .token.inserted {
+    color: #a5d6ff;
+}
+
+.markdown-content pre .token.operator,
+.markdown-content pre .token.entity,
+.markdown-content pre .token.url,
+.markdown-content pre .language-css .token.string,
+.markdown-content pre .style .token.string {
+    color: #ff7b72;
+}
+
+.markdown-content pre .token.atrule,
+.markdown-content pre .token.attr-value,
+.markdown-content pre .token.keyword {
+    color: #ff7b72;
+    font-weight: bold;
+}
+
+.markdown-content pre .token.function,
+.markdown-content pre .token.class-name {
+    color: #d2a8ff;
+}
+
+.markdown-content pre .token.regex,
+.markdown-content pre .token.important,
+.markdown-content pre .token.variable {
+    color: #ffa657;
+}
+
+/* 列表 - 暗色主题 */
+.markdown-content ul, .markdown-content ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.markdown-content li {
+    margin: 0.5em 0;
+    line-height: 1.6;
+    color: #e8e6e3;
+}
+
+.markdown-content ul li {
+    list-style: none;
+    position: relative;
+}
+
+.markdown-content ul li::before {
+    content: "●";
+    color: #4285f4;
+    font-size: 1.2em;
+    position: absolute;
+    left: -1.5em;
+    top: 0;
+}
+
+/* 表格 - 暗色主题 */
+.markdown-content table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin: 1.5em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #202124;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.markdown-content table th {
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+    color: white;
+    font-weight: 600;
+    padding: 1em;
+    text-align: left;
+    border: none;
+}
+
+.markdown-content table td {
+    padding: 0.8em 1em;
+    border-bottom: 1px solid #3c4043;
+    background: #181a1b;
+    color: #e8e6e3;
+}
+
+.markdown-content table tr:nth-child(even) td {
+    background: #202124;
+}
+
+.markdown-content table tr:hover td {
+    background: rgba(66, 133, 244, 0.1);
+}
+
+/* 分割线 */
+.markdown-content hr {
+    height: 2px;
+    border: none;
+    background: linear-gradient(90deg, transparent, #4285f4, transparent);
+    margin: 2em 0;
+}
+
+/* 图片 - 暗色主题 */
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin: 1em 0;
+    filter: brightness(0.9);
+    transition: all 0.3s ease;
+}
+
+.markdown-content img:hover {
+    filter: brightness(1);
+    transform: scale(1.02);
+}
+
+/* DarkReader特色提示框 */
+.markdown-content .tip {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: rgba(66, 133, 244, 0.1);
+    border-left: 4px solid #4285f4;
+    border-radius: 0 8px 8px 0;
+    color: #aecbfa;
+}
+
+.markdown-content .warning {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: rgba(251, 188, 5, 0.1);
+    border-left: 4px solid #fbbc05;
+    border-radius: 0 8px 8px 0;
+    color: #fce8b2;
+}
+
+.markdown-content .error {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: rgba(234, 67, 53, 0.1);
+    border-left: 4px solid #ea4335;
+    border-radius: 0 8px 8px 0;
+    color: #f28b82;
+}
+
+.markdown-content .success {
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: rgba(52, 168, 83, 0.1);
+    border-left: 4px solid #34a853;
+    border-radius: 0 8px 8px 0;
+    color: #81c995;
+}
+
+/* 标签 - 暗色主题 */
+.markdown-content .tag {
+    display: inline-block;
+    padding: 0.3em 0.8em;
+    margin: 0.2em;
+    background: rgba(66, 133, 244, 0.2);
+    color: #aecbfa;
+    border: 1px solid #4285f4;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.markdown-content .tag:hover {
+    background: rgba(66, 133, 244, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+    color: #aecbfa;
+}
+
+/* 复制按钮 - 暗色主题 */
+.markdown-content .copy-btn {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    background: #3c4043;
+    color: #e8e6e3;
+    border: 1px solid #5f6368;
+    border-radius: 4px;
+    padding: 0.3em 0.8em;
+    font-size: 0.75em;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.markdown-content pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.markdown-content .copy-btn:hover {
+    background: #4285f4;
+    border-color: #4285f4;
+}
+
+.markdown-content .copy-btn.copied {
+    background: #34a853;
+    border-color: #34a853;
+}
+
+/* 滚动条样式 - 暗色主题 */
+.markdown-content pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+.markdown-content pre::-webkit-scrollbar-track {
+    background: #202124;
+    border-radius: 4px;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb {
+    background: #3c4043;
+    border-radius: 4px;
+}
+
+.markdown-content pre::-webkit-scrollbar-thumb:hover {
+    background: #5f6368;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .markdown-content {
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 1em;
+    }
+    
+    .markdown-content h1 {
+        font-size: 2em;
+    }
+    
+    .markdown-content h2 {
+        font-size: 1.6em;
+    }
+    
+    .markdown-content pre {
+        padding: 1em;
+        margin-left: -1em;
+        margin-right: -1em;
+        border-radius: 0;
+    }
+    
+    .markdown-content table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* 暗色主题动画效果 */
+@keyframes darkGlow {
+    0% { box-shadow: 0 0 5px rgba(66, 133, 244, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(66, 133, 244, 0.6); }
+    100% { box-shadow: 0 0 5px rgba(66, 133, 244, 0.3); }
+}
+
+.markdown-content pre:hover {
+    animation: darkGlow 2s ease-in-out infinite;
+}

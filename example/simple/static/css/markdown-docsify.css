@@ -1,0 +1,341 @@
+/* YYHertz Framework - Docsify Style Markdown */
+/* 基于Docsify文档系统的Markdown样式设计 */
+
+/* 基础样式 */
+.markdown-content {
+    font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2c3e50;
+    background-color: #ffffff;
+    word-wrap: break-word;
+    letter-spacing: 0;
+}
+
+/* 标题样式 */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+    font-weight: 600;
+    line-height: 1.25;
+    color: #2c3e50;
+    margin: 1.5em 0 0.5em;
+    position: relative;
+}
+
+.markdown-content h1 {
+    font-size: 2.2em;
+    margin: 0 0 1rem;
+    color: #34495e;
+    border-bottom: none;
+}
+
+.markdown-content h1:first-child {
+    margin-top: 0;
+    font-size: 2.5em;
+}
+
+.markdown-content h2 {
+    font-size: 1.75em;
+    margin-top: 45px;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #eaecef;
+}
+
+.markdown-content h3 {
+    font-size: 1.5em;
+    margin-top: 40px;
+}
+
+.markdown-content h4 {
+    font-size: 1.25em;
+    margin-top: 35px;
+}
+
+.markdown-content h5 {
+    font-size: 1em;
+    margin-top: 30px;
+}
+
+.markdown-content h6 {
+    font-size: 1em;
+    margin-top: 30px;
+    color: #777;
+}
+
+/* 锚点链接 */
+.markdown-content h1:hover .anchor,
+.markdown-content h2:hover .anchor,
+.markdown-content h3:hover .anchor {
+    opacity: 1;
+}
+
+.markdown-content .anchor {
+    float: left;
+    line-height: 1;
+    margin-left: -20px;
+    padding-right: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.markdown-content .anchor:focus {
+    outline: none;
+}
+
+/* 段落和文本 */
+.markdown-content p {
+    margin: 0 0 16px;
+    word-spacing: 0.05em;
+}
+
+.markdown-content blockquote {
+    margin: 2em 0;
+    padding: 0.25em 0 0.25em 1em;
+    border-left: 4px solid #42b983;
+    background-color: #f8f8f8;
+    color: #858585;
+    border-radius: 0 2px 2px 0;
+}
+
+.markdown-content blockquote p {
+    font-weight: 400;
+    font-size: inherit;
+}
+
+/* 链接 */
+.markdown-content a {
+    color: #42b983;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-bottom 0.3s ease;
+}
+
+.markdown-content a:hover {
+    border-bottom: 1px solid #42b983;
+}
+
+/* 强调文本 */
+.markdown-content strong {
+    font-weight: 600;
+}
+
+.markdown-content em {
+    font-style: italic;
+}
+
+/* 删除线 */
+.markdown-content del {
+    text-decoration: line-through;
+}
+
+/* 行内代码 */
+.markdown-content code {
+    color: #e96900;
+    font-size: 0.8rem;
+    padding: 3px 5px;
+    margin: 0 2px;
+    border-radius: 2px;
+    white-space: pre-wrap;
+    background-color: #f8f8f8;
+    font-family: "Roboto Mono", Monaco, courier, monospace;
+}
+
+/* 代码块 */
+.markdown-content pre {
+    position: relative;
+    background-color: #f8f8f8;
+    border-radius: 2px;
+    font-family: "Roboto Mono", Monaco, courier, monospace;
+    line-height: 1.5rem;
+    margin: 2em 0;
+    overflow: auto;
+    padding: 0 1.4rem;
+    word-wrap: normal;
+}
+
+.markdown-content pre > code {
+    color: #525252;
+    font-size: 0.8rem;
+    background-color: transparent;
+    border-radius: 0;
+    display: block;
+    margin: 0;
+    padding: 2.5em 0 1em;
+    white-space: pre;
+    overflow: inherit;
+}
+
+/* 代码块语言标签 */
+.markdown-content pre[data-lang] {
+    position: relative;
+}
+
+.markdown-content pre[data-lang]::after {
+    position: absolute;
+    top: 0.6em;
+    right: 1em;
+    color: #ccc;
+    text-align: right;
+    font-size: 0.6rem;
+    font-weight: 600;
+    height: 15px;
+    line-height: 15px;
+    padding: 5px 10px 0;
+    content: attr(data-lang);
+}
+
+/* Docsify特色语法高亮 */
+.markdown-content pre.lang-go,
+.markdown-content pre.lang-golang {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 3px solid #00add8;
+}
+
+.markdown-content pre.lang-javascript,
+.markdown-content pre.lang-js {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-left: 3px solid #f7df1e;
+}
+
+.markdown-content pre.lang-css {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+    border-left: 3px solid #1572b6;
+}
+
+.markdown-content pre.lang-html {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border-left: 3px solid #e34c26;
+}
+
+/* 列表 */
+.markdown-content ul, .markdown-content ol {
+    margin: 1em 0;
+    padding-left: 1.5em;
+}
+
+.markdown-content li {
+    margin: 0.25em 0;
+    line-height: 1.6;
+    word-break: break-all;
+}
+
+.markdown-content li p {
+    margin: 0.5em 0;
+}
+
+/* 任务列表 */
+.markdown-content input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+
+/* 表格 */
+.markdown-content table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    display: block;
+    margin-bottom: 1rem;
+    overflow: auto;
+    width: 100%;
+}
+
+.markdown-content table th {
+    font-weight: 600;
+    background-color: #42b983;
+    color: white;
+}
+
+.markdown-content table th, .markdown-content table td {
+    border: 1px solid #dfe2e5;
+    padding: 0.6em 1em;
+}
+
+.markdown-content table tr {
+    background-color: #fff;
+    border-top: 1px solid #ccc;
+}
+
+.markdown-content table tr:nth-child(2n) {
+    background-color: #f8f8f8;
+}
+
+/* 分割线 */
+.markdown-content hr {
+    border: none;
+    border-bottom: 1px solid #eee;
+    margin: 2em 0;
+}
+
+/* 图片 */
+.markdown-content img {
+    max-width: 100%;
+    border-radius: 2px;
+}
+
+/* Docsify特色提示框 */
+.markdown-content .tip {
+    padding: 0.1rem 1.5rem;
+    border-left-width: 0.5rem;
+    border-left-style: solid;
+    margin: 1rem 0;
+}
+
+.markdown-content .tip.tip {
+    background-color: #f3f5f7;
+    border-color: #42b983;
+}
+
+.markdown-content .tip.warn {
+    background-color: rgba(255, 229, 100, 0.3);
+    border-color: #e7c000;
+    color: #6b5900;
+}
+
+.markdown-content .tip.danger {
+    background-color: #ffe6e6;
+    border-color: #c00;
+    color: #4d0000;
+}
+
+/* 覆盖框 */
+.markdown-content .cover {
+    align-items: center;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 100vh;
+    display: none;
+}
+
+/* 标签 */
+.markdown-content .tag {
+    background: #42b983;
+    border-radius: 2em;
+    color: #fff;
+    display: inline-block;
+    font-size: 12px;
+    line-height: 1;
+    margin: 0 0.5em 0.5em 0;
+    padding: 0.5em 1em;
+    text-decoration: none !important;
+}
+
+/* 媒体查询 */
+@media screen and (max-width: 768px) {
+    .markdown-content {
+        padding: 0 1rem;
+    }
+    
+    .markdown-content h1 {
+        font-size: 1.8em;
+    }
+    
+    .markdown-content h2 {
+        font-size: 1.5em;
+    }
+    
+    .markdown-content pre {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
