@@ -21,7 +21,7 @@ import (
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
-	Type         string `json:"type" yaml:"type"`                     // 数据库类型: mysql, postgres, sqlite
+	Type         string `json:"type" yaml:"type"`                     // 数据库类型: mysql, postgres, sqlite, sqlserver, oracle, dm, db2
 	Host         string `json:"host" yaml:"host"`                     // 主机地址
 	Port         int    `json:"port" yaml:"port"`                     // 端口
 	Username     string `json:"username" yaml:"username"`             // 用户名
@@ -34,6 +34,16 @@ type DatabaseConfig struct {
 	MaxLifetime  int    `json:"max_lifetime" yaml:"max_lifetime"`     // 连接最大生存时间(秒)
 	LogLevel     string `json:"log_level" yaml:"log_level"`           // 日志级别
 	SlowQuery    int    `json:"slow_query" yaml:"slow_query"`         // 慢查询阈值(毫秒)
+	
+	// 扩展配置
+	SSLMode      string `json:"ssl_mode" yaml:"ssl_mode"`             // SSL模式: disable, require, verify-ca, verify-full
+	Schema       string `json:"schema" yaml:"schema"`                 // 数据库schema(PostgreSQL)
+	TablePrefix  string `json:"table_prefix" yaml:"table_prefix"`     // 表前缀
+	SingularTable bool  `json:"singular_table" yaml:"singular_table"` // 禁用表名复数形式
+	
+	// 读写分离配置
+	IsMaster     bool   `json:"is_master" yaml:"is_master"`           // 是否为主库
+	Weight       int    `json:"weight" yaml:"weight"`                 // 权重(负载均衡)
 }
 
 // DefaultDatabaseConfig 默认数据库配置

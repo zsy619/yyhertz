@@ -229,9 +229,14 @@ NOTES.md
 
 framework/mvc/conf
 framework/config/conf
+
+!example/ormx/test
 example/simple/conf
 example/simple/logs
 example/simple/app
 example/annotations/conf
 example/comments/conf
 example/mybat/conf
+example/ormx/conf/
+example/ormx/test/conf
+example/ormx/conf
