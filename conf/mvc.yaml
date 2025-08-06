@@ -1,0 +1,84 @@
+# YYHertz MVC Framework Configuration
+# MVC框架高级配置
+
+# 中间件配置
+middleware:
+  enable_optimization: true        # 启用中间件优化
+  compile_on_startup: true        # 启动时预编译中间件
+  precompile_chains: true         # 预编译常用中间件链
+  cache_size: 500                 # 中间件缓存大小
+  compile_timeout: "30s"          # 编译超时时间
+  max_concurrency: 100            # 最大并发处理数
+  enable_dependency_analysis: true # 启用依赖分析
+
+# 错误处理配置
+error_handling:
+  enable_intelligent: true        # 启用智能错误处理
+  enable_auto_recovery: true      # 启用自动恢复
+  enable_classification: true     # 启用错误分类
+  enable_circuit_breaker: true    # 启用熔断器
+  retry_max_count: 3              # 最大重试次数
+  retry_interval: "1s"            # 重试间隔
+  circuit_breaker_threshold: 10   # 熔断器阈值
+  circuit_breaker_timeout: "30s"  # 熔断器超时时间
+  enable_stack_trace: true        # 启用堆栈跟踪
+
+# 性能监控配置
+performance:
+  enable_monitoring: true         # 启用性能监控
+  enable_statistics: true         # 启用统计信息
+  stats_report_interval: "5m"     # 统计报告间隔
+  metrics_endpoint: "/metrics"    # 监控指标端点
+  enable_profiler: false          # 启用性能分析器
+  profiler_endpoint: "/debug/pprof" # 性能分析端点
+  health_check_interval: "1m"     # 健康检查间隔
+  max_concurrent_recoveries: 100  # 最大并发恢复数
+
+# 调试配置
+debug:
+  enable_mode: false              # 启用调试模式
+  print_middleware: false         # 打印中间件信息
+  print_error: false              # 打印错误信息
+  print_statistics: false         # 打印统计信息
+  log_level: "info"               # 日志级别 (debug, info, warn, error)
+  enable_trace: false             # 启用调用链跟踪
+  show_request_details: false     # 显示请求详细信息
+
+# 上下文配置
+context:
+  enable_pooling: true            # 启用对象池化
+  pool_size: 1000                 # 池大小
+  max_pool_size: 10000            # 最大池大小
+  pool_timeout: "10s"             # 池超时时间
+  enable_batch_release: true      # 启用批量释放
+  batch_size: 100                 # 批处理大小
+
+# 路由配置
+router:
+  enable_caching: true            # 启用路由缓存
+  cache_size: 1000                # 路由缓存大小
+  cache_timeout: "1h"             # 缓存超时时间
+  enable_compression: true        # 启用压缩
+  max_param_count: 50             # 最大参数数量
+  enable_regex_optim: true        # 启用正则优化
+
+# 环境特定配置示例:
+# development:
+#   debug:
+#     enable_mode: true
+#     print_middleware: true
+#     print_error: true
+#     log_level: "debug"
+#
+# production:
+#   debug:
+#     enable_mode: false
+#     log_level: "warn"
+#   performance:
+#     stats_report_interval: "30m"
+#
+# testing:
+#   debug:
+#     log_level: "debug"
+#   error_handling:
+#     retry_max_count: 1

@@ -35,14 +35,14 @@ type RouterTree struct {
 
 // RouterNode 路由节点
 type RouterNode struct {
-	path       string                          // 路径段
-	isParam    bool                           // 是否为参数节点(:id)
-	isCatchAll bool                           // 是否为捕获所有节点(*path)
-	paramName  string                         // 参数名称
-	handlers   map[string]core.HandlerFunc    // HTTP方法对应的处理器
-	children   map[string]*RouterNode         // 子节点映射
-	paramChild *RouterNode                    // 参数子节点
-	catchChild *RouterNode                    // 捕获所有子节点
+	path       string                      // 路径段
+	isParam    bool                        // 是否为参数节点(:id)
+	isCatchAll bool                        // 是否为捕获所有节点(*path)
+	paramName  string                      // 参数名称
+	handlers   map[string]core.HandlerFunc // HTTP方法对应的处理器
+	children   map[string]*RouterNode      // 子节点映射
+	paramChild *RouterNode                 // 参数子节点
+	catchChild *RouterNode                 // 捕获所有子节点
 }
 
 // RouterCache 路由缓存
@@ -95,7 +95,8 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 			continue
 		}
 
-		if segment[0] == ':' {
+		switch segment[0] {
+		case ':':
 			// 参数节点
 			paramName := segment[1:]
 			if current.paramChild == nil {
@@ -108,7 +109,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 				}
 			}
 			current = current.paramChild
-		} else if segment[0] == '*' {
+		case '*':
 			// 捕获所有节点
 			paramName := segment[1:]
 			if current.catchChild == nil {
@@ -121,7 +122,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 				}
 			}
 			current = current.catchChild
-		} else {
+		default:
 			// 静态节点
 			child, exists := current.children[segment]
 			if !exists {

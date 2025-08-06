@@ -64,6 +64,7 @@ type EnhancedContext struct {
 	handlers []HandlerFunc  // 处理器链
 	mu       sync.RWMutex   // 读写锁
 	aborted  bool           // 是否中止
+	errors   []error        // 错误列表
 	
 	// 池化标识
 	pooled   bool           // 是否来自池
@@ -164,6 +165,7 @@ func (ctx *EnhancedContext) Reset() {
 	ctx.index = -1
 	ctx.handlers = ctx.handlers[:0]
 	ctx.aborted = false
+	ctx.errors = ctx.errors[:0]
 }
 
 // NewContext 创建新的增强Context（使用池化）
@@ -407,4 +409,50 @@ func (batch *BatchContexts) ForEach(fn func(*EnhancedContext)) {
 func (ctx *EnhancedContext) SetHandlers(handlers []HandlerFunc) {
 	ctx.handlers = handlers
 	ctx.index = -1
+}
+
+// ============= 错误处理方法 =============
+
+// AddError 添加错误
+func (ctx *EnhancedContext) AddError(err error) {
+	if err != nil {
+		ctx.mu.Lock()
+		ctx.errors = append(ctx.errors, err)
+		ctx.mu.Unlock()
+	}
+}
+
+// GetErrors 获取所有错误
+func (ctx *EnhancedContext) GetErrors() []error {
+	ctx.mu.RLock()
+	errors := make([]error, len(ctx.errors))
+	copy(errors, ctx.errors)
+	ctx.mu.RUnlock()
+	return errors
+}
+
+// HasErrors 是否有错误
+func (ctx *EnhancedContext) HasErrors() bool {
+	ctx.mu.RLock()
+	hasErr := len(ctx.errors) > 0
+	ctx.mu.RUnlock()
+	return hasErr
+}
+
+// ClearErrors 清除所有错误
+func (ctx *EnhancedContext) ClearErrors() {
+	ctx.mu.Lock()
+	ctx.errors = ctx.errors[:0]
+	ctx.mu.Unlock()
+}
+
+// LastError 获取最后一个错误
+func (ctx *EnhancedContext) LastError() error {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+	
+	if len(ctx.errors) == 0 {
+		return nil
+	}
+	return ctx.errors[len(ctx.errors)-1]
 }

@@ -83,12 +83,12 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	loggerManager := config.InitGlobalLogger(logConfig)
 
 	app := &App{
-		Hertz:         h,
-		ViewPath:      "views",
-		StaticPath:    "static",
-		startTime:     time.Now(),
-		address:       ":8080",
-		loggerManager: loggerManager,
+		Hertz:         h,                                // 使用Hertz服务器实例
+		ViewPath:      "views",                          // 默认视图路径
+		StaticPath:    "static",                         // 默认静态文件路径
+		startTime:     time.Now(),                       // 记录应用启动时间
+		address:       fmt.Sprintf("%s:%d", host, port), // 应用监听地址
+		loggerManager: loggerManager,                    // 日志管理器
 	}
 
 	// 配置视图和静态文件路径

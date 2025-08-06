@@ -130,13 +130,13 @@ func InitConfig[T ConfigInterface](cnf T) {
 // 初始化配置注册表
 func init() {
 	// 打印启动banner
-	go func() {
-		stdout := version.NewColorWriter(os.Stderr)
-		coloredBanner := fmt.Sprintf(version.VerboseVersionBanner, "\x1b[35m", "\x1b[1m",
-			"\x1b[0m", "\x1b[32m", "\x1b[1m", "\x1b[0m")
-		version.InitBanner(stdout, bytes.NewBufferString(coloredBanner))
-		fmt.Println()
-	}()
+	// go func() {
+	stdout := version.NewColorWriter(os.Stderr)
+	coloredBanner := fmt.Sprintf(version.VerboseVersionBanner, "\x1b[35m", "\x1b[1m",
+		"\x1b[0m", "\x1b[32m", "\x1b[1m", "\x1b[0m")
+	version.InitBanner(stdout, bytes.NewBufferString(coloredBanner))
+	fmt.Println()
+	// }()
 
 	InitConfig(&AppConfig{})
 	InitConfig(&TemplateConfig{})
@@ -147,6 +147,7 @@ func init() {
 	InitConfig(&SessionConfig{})
 	InitConfig(&TLSServerConfig{})
 	InitConfig(&MyBatisConfig{})
+	InitConfig(&MVCConfig{})
 
 	RegisterConfigName[AppConfig](AppConfigName)
 	RegisterConfigName[TemplateConfig](TemplateConfigName)
@@ -157,6 +158,7 @@ func init() {
 	RegisterConfigName[SessionConfig](SessionConfigName)
 	RegisterConfigName[RedisConfig](RedisConfigName)
 	RegisterConfigName[MyBatisConfig](MyBatisConfigName)
+	RegisterConfigName[MVCConfig](MVCConfigName)
 }
 
 // 全局便捷函数，用于快速获取不同类型的配置
@@ -208,6 +210,12 @@ func GetMyBatisConfig() (*MyBatisConfig, error) {
 	return manager.GetConfig()
 }
 
+// GetMVCConfig 获取MVC配置
+func GetMVCConfig() (*MVCConfig, error) {
+	manager := GetViperConfigManager(MVCConfig{})
+	return manager.GetConfig()
+}
+
 // GetAppConfigManager 获取应用配置管理器
 func GetAppConfigManager() *ViperConfigManager[AppConfig] {
 	return GetViperConfigManager(AppConfig{})
@@ -246,6 +254,11 @@ func GetRedisConfigManager() *ViperConfigManager[RedisConfig] {
 // GetMyBatisConfigManager 获取MyBatis配置管理器
 func GetMyBatisConfigManager() *ViperConfigManager[MyBatisConfig] {
 	return GetViperConfigManager(MyBatisConfig{})
+}
+
+// GetMVCConfigManager 获取MVC配置管理器
+func GetMVCConfigManager() *ViperConfigManager[MVCConfig] {
+	return GetViperConfigManager(MVCConfig{})
 }
 
 // 泛型配置函数 - 主要API
