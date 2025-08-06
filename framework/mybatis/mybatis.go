@@ -21,8 +21,8 @@
 //	session := factory.OpenSession()
 //	defer session.Close()
 //
-//	// 方式2: 简化GORM版本
-//	mb := mybatis.NewSimpleMyBatis(gormDB, nil)
+//	// 方式2: GORM集成版本
+//	mb := mybatis.NewMyBatisGorm(gormDB, nil)
 //	session := mb.OpenSession()
 //	defer session.Close()
 //
@@ -413,35 +413,35 @@ func GetInfo() map[string]string {
 
 // 为完整版MyBatis添加简化API支持
 
-// GetSimpleSession 获取简化会话（从完整版MyBatis）
-func (mb *MyBatis) GetSimpleSession() SimpleSqlSession {
+// GetGormSession 获取GORM会话（从完整版MyBatis）
+func (mb *MyBatis) GetGormSession() SqlSession {
 	sqlSession := mb.OpenSession()
-	return &SimpleSqlSessionAdapter{
+	return &SqlSessionAdapter{
 		sqlSession: sqlSession,
 		mybatis:    mb,
 	}
 }
 
-// GetSimpleSessionWithTx 获取带事务的简化会话（从完整版MyBatis）
-func (mb *MyBatis) GetSimpleSessionWithTx() SimpleSqlSession {
+// GetGormSessionWithTx 获取带事务的GORM会话（从完整版MyBatis）
+func (mb *MyBatis) GetGormSessionWithTx() SqlSession {
 	sqlSession := mb.OpenSessionWithAutoCommit(false)
-	return &SimpleSqlSessionAdapter{
+	return &SqlSessionAdapter{
 		sqlSession: sqlSession,
 		mybatis:    mb,
 	}
 }
 
-// SimpleMyBatis 简化版MyBatis实例 (基于GORM)
-type SimpleMyBatis struct {
+// MyBatisGorm GORM集成版MyBatis实例
+type MyBatisGorm struct {
 	db      *gorm.DB
-	config  *SimpleConfig
-	mappers map[string]*SimpleMapperInfo
-	cache   *SimpleCache
+	config  *GormConfig
+	mappers map[string]*MapperInfo
+	cache   *Cache
 	mutex   sync.RWMutex
 }
 
-// SimpleConfig MyBatis简化配置
-type SimpleConfig struct {
+// GormConfig MyBatis GORM集成配置
+type GormConfig struct {
 	// 数据库配置
 	DatabaseConfig *frameworkConfig.DatabaseConfig
 	
@@ -458,19 +458,19 @@ type SimpleConfig struct {
 	LogLevel                 string
 }
 
-// SimpleMapperInfo 简化映射器信息
-type SimpleMapperInfo struct {
+// MapperInfo 映射器信息
+type MapperInfo struct {
 	Namespace   string
-	Statements  map[string]*SimpleStatement
-	ResultMaps  map[string]*SimpleResultMap
+	Statements  map[string]*Statement
+	ResultMaps  map[string]*ResultMap
 }
 
-// SimpleStatement 简化SQL语句定义
-type SimpleStatement struct {
+// Statement SQL语句定义
+type Statement struct {
 	ID            string
 	Namespace     string
 	SQL           string
-	StatementType SimpleStatementType
+	StatementType StatementType
 	ParameterType reflect.Type
 	ResultType    reflect.Type
 	ResultMap     string
@@ -478,39 +478,39 @@ type SimpleStatement struct {
 	Timeout       int
 }
 
-// SimpleStatementType 简化语句类型
-type SimpleStatementType int
+// StatementType 语句类型
+type StatementType int
 
 const (
-	SimpleStatementTypeSelect SimpleStatementType = iota
-	SimpleStatementTypeInsert
-	SimpleStatementTypeUpdate
-	SimpleStatementTypeDelete
+	StatementTypeSelect StatementType = iota
+	StatementTypeInsert
+	StatementTypeUpdate
+	StatementTypeDelete
 )
 
-// SimpleResultMap 简化结果映射
-type SimpleResultMap struct {
+// ResultMap 结果映射
+type ResultMap struct {
 	ID       string
 	Type     reflect.Type
-	Columns  []SimpleColumnMapping
+	Columns  []ColumnMapping
 }
 
-// SimpleColumnMapping 简化列映射
-type SimpleColumnMapping struct {
+// ColumnMapping 列映射
+type ColumnMapping struct {
 	Property string
 	Column   string
 	JavaType reflect.Type
 }
 
-// SimpleCache 简单缓存实现
-type SimpleCache struct {
+// Cache 缓存实现
+type Cache struct {
 	data    map[string]interface{}
 	mutex   sync.RWMutex
 	maxSize int
 }
 
-// SimpleSqlSession 简化SQL会话接口
-type SimpleSqlSession interface {
+// SqlSession SQL会话接口
+type SqlSession interface {
 	SelectOne(statement string, parameter interface{}) (interface{}, error)
 	SelectList(statement string, parameter interface{}) ([]interface{}, error)
 	Insert(statement string, parameter interface{}) (int64, error)
@@ -522,38 +522,38 @@ type SimpleSqlSession interface {
 	Close() error
 }
 
-// DefaultSimpleSqlSession 默认简化SQL会话实现
-type DefaultSimpleSqlSession struct {
-	mybatis *SimpleMyBatis
+// DefaultSqlSession 默认SQL会话实现
+type DefaultSqlSession struct {
+	mybatis *MyBatisGorm
 	db      *gorm.DB
 	tx      *gorm.DB // 事务数据库连接
 }
 
-// SimpleSqlSessionAdapter 简化会话适配器（完整版MyBatis到简化版的桥接）
-type SimpleSqlSessionAdapter struct {
+// SqlSessionAdapter 会话适配器（完整版MyBatis到GORM版的桥接）
+type SqlSessionAdapter struct {
 	sqlSession session.SqlSession
 	mybatis    *MyBatis
 }
 
-// NewSimpleMyBatis 创建简化MyBatis实例
-func NewSimpleMyBatis(db *gorm.DB, config *SimpleConfig) *SimpleMyBatis {
+// NewMyBatisGorm 创建GORM集成版MyBatis实例
+func NewMyBatisGorm(db *gorm.DB, config *GormConfig) *MyBatisGorm {
 	if config == nil {
-		config = DefaultSimpleConfig()
+		config = DefaultGormConfig()
 	}
 	
-	mb := &SimpleMyBatis{
+	mb := &MyBatisGorm{
 		db:      db,
 		config:  config,
-		mappers: make(map[string]*SimpleMapperInfo),
-		cache:   NewSimpleCache(config.CacheSize),
+		mappers: make(map[string]*MapperInfo),
+		cache:   NewCache(config.CacheSize),
 	}
 	
 	return mb
 }
 
-// DefaultSimpleConfig 默认简化配置
-func DefaultSimpleConfig() *SimpleConfig {
-	return &SimpleConfig{
+// DefaultGormConfig 默认GORM集成配置
+func DefaultGormConfig() *GormConfig {
+	return &GormConfig{
 		CacheEnabled:             true,
 		CacheSize:               1000,
 		MapUnderscoreToCamelCase: true,
@@ -563,55 +563,55 @@ func DefaultSimpleConfig() *SimpleConfig {
 	}
 }
 
-// NewSimpleCache 创建简单缓存
-func NewSimpleCache(maxSize int) *SimpleCache {
-	return &SimpleCache{
+// NewCache 创建缓存
+func NewCache(maxSize int) *Cache {
+	return &Cache{
 		data:    make(map[string]interface{}),
 		maxSize: maxSize,
 	}
 }
 
-// OpenSession 打开简化会话
-func (mb *SimpleMyBatis) OpenSession() SimpleSqlSession {
-	return &DefaultSimpleSqlSession{
+// OpenSession 打开会话
+func (mb *MyBatisGorm) OpenSession() SqlSession {
+	return &DefaultSqlSession{
 		mybatis: mb,
 		db:      mb.db,
 	}
 }
 
-// OpenSessionWithTx 打开带事务的简化会话
-func (mb *SimpleMyBatis) OpenSessionWithTx() SimpleSqlSession {
+// OpenSessionWithTx 打开带事务的会话
+func (mb *MyBatisGorm) OpenSessionWithTx() SqlSession {
 	tx := mb.db.Begin()
-	return &DefaultSimpleSqlSession{
+	return &DefaultSqlSession{
 		mybatis: mb,
 		db:      mb.db,
 		tx:      tx,
 	}
 }
 
-// RegisterSimpleMapper 注册简化映射器
-func (mb *SimpleMyBatis) RegisterSimpleMapper(namespace string, statements map[string]*SimpleStatement) {
+// RegisterMapper 注册映射器
+func (mb *MyBatisGorm) RegisterMapper(namespace string, statements map[string]*Statement) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
 	
-	mb.mappers[namespace] = &SimpleMapperInfo{
+	mb.mappers[namespace] = &MapperInfo{
 		Namespace:  namespace,
 		Statements: statements,
-		ResultMaps: make(map[string]*SimpleResultMap),
+		ResultMaps: make(map[string]*ResultMap),
 	}
 }
 
-// LoadMapperFromXML 从XML加载映射器（简化实现）
-func (mb *SimpleMyBatis) LoadMapperFromXML(xmlPath string) error {
+// LoadMapperFromXML 从XML加载映射器
+func (mb *MyBatisGorm) LoadMapperFromXML(xmlPath string) error {
 	// TODO: 实现XML解析
 	// 现在先提供编程式注册方法
 	return nil
 }
 
-// 实现SimpleSqlSession接口
+// 实现SqlSession接口
 
 // SelectOne 查询单条记录
-func (session *DefaultSimpleSqlSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (session *DefaultSqlSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
 	results, err := session.SelectList(statement, parameter)
 	if err != nil {
 		return nil, err
@@ -629,13 +629,13 @@ func (session *DefaultSimpleSqlSession) SelectOne(statement string, parameter in
 }
 
 // SelectList 查询多条记录
-func (session *DefaultSimpleSqlSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (session *DefaultSqlSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
 	stmt, err := session.getStatement(statement)
 	if err != nil {
 		return nil, err
 	}
 	
-	if stmt.StatementType != SimpleStatementTypeSelect {
+	if stmt.StatementType != StatementTypeSelect {
 		return nil, fmt.Errorf("statement %s is not a select statement", statement)
 	}
 	
@@ -678,22 +678,22 @@ func (session *DefaultSimpleSqlSession) SelectList(statement string, parameter i
 }
 
 // Insert 插入记录
-func (session *DefaultSimpleSqlSession) Insert(statement string, parameter interface{}) (int64, error) {
-	return session.executeUpdate(statement, parameter, SimpleStatementTypeInsert)
+func (session *DefaultSqlSession) Insert(statement string, parameter interface{}) (int64, error) {
+	return session.executeUpdate(statement, parameter, StatementTypeInsert)
 }
 
 // Update 更新记录
-func (session *DefaultSimpleSqlSession) Update(statement string, parameter interface{}) (int64, error) {
-	return session.executeUpdate(statement, parameter, SimpleStatementTypeUpdate)
+func (session *DefaultSqlSession) Update(statement string, parameter interface{}) (int64, error) {
+	return session.executeUpdate(statement, parameter, StatementTypeUpdate)
 }
 
 // Delete 删除记录
-func (session *DefaultSimpleSqlSession) Delete(statement string, parameter interface{}) (int64, error) {
-	return session.executeUpdate(statement, parameter, SimpleStatementTypeDelete)
+func (session *DefaultSqlSession) Delete(statement string, parameter interface{}) (int64, error) {
+	return session.executeUpdate(statement, parameter, StatementTypeDelete)
 }
 
 // executeUpdate 执行更新操作
-func (session *DefaultSimpleSqlSession) executeUpdate(statement string, parameter interface{}, expectedType SimpleStatementType) (int64, error) {
+func (session *DefaultSqlSession) executeUpdate(statement string, parameter interface{}, expectedType StatementType) (int64, error) {
 	stmt, err := session.getStatement(statement)
 	if err != nil {
 		return 0, err
@@ -720,14 +720,14 @@ func (session *DefaultSimpleSqlSession) executeUpdate(statement string, paramete
 }
 
 // GetMapper 获取映射器代理
-func (session *DefaultSimpleSqlSession) GetMapper(mapperType reflect.Type) interface{} {
+func (session *DefaultSqlSession) GetMapper(mapperType reflect.Type) interface{} {
 	// 简化实现：返回一个包含session的映射器实例
 	// 实际应该创建动态代理
-	return NewSimpleMapperProxy(mapperType, session)
+	return NewMapperProxy(mapperType, session)
 }
 
 // Commit 提交事务
-func (session *DefaultSimpleSqlSession) Commit() error {
+func (session *DefaultSqlSession) Commit() error {
 	if session.tx != nil {
 		return session.tx.Commit().Error
 	}
@@ -735,7 +735,7 @@ func (session *DefaultSimpleSqlSession) Commit() error {
 }
 
 // Rollback 回滚事务
-func (session *DefaultSimpleSqlSession) Rollback() error {
+func (session *DefaultSqlSession) Rollback() error {
 	if session.tx != nil {
 		return session.tx.Rollback().Error
 	}
@@ -743,7 +743,7 @@ func (session *DefaultSimpleSqlSession) Rollback() error {
 }
 
 // Close 关闭会话
-func (session *DefaultSimpleSqlSession) Close() error {
+func (session *DefaultSqlSession) Close() error {
 	if session.tx != nil {
 		// 如果事务还没有提交或回滚，则回滚
 		if err := session.tx.Rollback().Error; err != nil && err != gorm.ErrInvalidTransaction {
@@ -756,7 +756,7 @@ func (session *DefaultSimpleSqlSession) Close() error {
 // 辅助方法
 
 // getStatement 获取语句定义
-func (session *DefaultSimpleSqlSession) getStatement(statementId string) (*SimpleStatement, error) {
+func (session *DefaultSqlSession) getStatement(statementId string) (*Statement, error) {
 	parts := strings.SplitN(statementId, ".", 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid statement id: %s", statementId)
@@ -782,7 +782,7 @@ func (session *DefaultSimpleSqlSession) getStatement(statementId string) (*Simpl
 }
 
 // getDB 获取数据库连接
-func (session *DefaultSimpleSqlSession) getDB() *gorm.DB {
+func (session *DefaultSqlSession) getDB() *gorm.DB {
 	if session.tx != nil {
 		return session.tx
 	}
@@ -790,7 +790,7 @@ func (session *DefaultSimpleSqlSession) getDB() *gorm.DB {
 }
 
 // buildSQL 构建SQL和参数
-func (session *DefaultSimpleSqlSession) buildSQL(stmt *SimpleStatement, parameter interface{}) (string, []interface{}, error) {
+func (session *DefaultSqlSession) buildSQL(stmt *Statement, parameter interface{}) (string, []interface{}, error) {
 	sql := stmt.SQL
 	var args []interface{}
 	
@@ -803,7 +803,7 @@ func (session *DefaultSimpleSqlSession) buildSQL(stmt *SimpleStatement, paramete
 }
 
 // extractParameters 提取参数
-func (session *DefaultSimpleSqlSession) extractParameters(parameter interface{}, sql string) []interface{} {
+func (session *DefaultSqlSession) extractParameters(parameter interface{}, sql string) []interface{} {
 	// 计算SQL中的参数占位符数量
 	paramCount := strings.Count(sql, "?")
 	
@@ -861,7 +861,7 @@ func (session *DefaultSimpleSqlSession) extractParameters(parameter interface{},
 }
 
 // convertResult 转换查询结果
-func (session *DefaultSimpleSqlSession) convertResult(result map[string]interface{}, stmt *SimpleStatement) interface{} {
+func (session *DefaultSqlSession) convertResult(result map[string]interface{}, stmt *Statement) interface{} {
 	if !session.mybatis.config.MapUnderscoreToCamelCase {
 		return result
 	}
@@ -877,7 +877,7 @@ func (session *DefaultSimpleSqlSession) convertResult(result map[string]interfac
 }
 
 // buildCacheKey 构建缓存键
-func (session *DefaultSimpleSqlSession) buildCacheKey(statement string, parameter interface{}) string {
+func (session *DefaultSqlSession) buildCacheKey(statement string, parameter interface{}) string {
 	return fmt.Sprintf("%s:%v", statement, parameter)
 }
 
@@ -892,17 +892,17 @@ func underscoreToCamelCase(name string) string {
 	return strings.Join(parts, "")
 }
 
-// SimpleCache方法实现
+// Cache方法实现
 
 // Get 获取缓存
-func (cache *SimpleCache) Get(key string) interface{} {
+func (cache *Cache) Get(key string) interface{} {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 	return cache.data[key]
 }
 
 // Put 放入缓存
-func (cache *SimpleCache) Put(key string, value interface{}) {
+func (cache *Cache) Put(key string, value interface{}) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	
@@ -920,37 +920,37 @@ func (cache *SimpleCache) Put(key string, value interface{}) {
 }
 
 // Clear 清空缓存
-func (cache *SimpleCache) Clear() {
+func (cache *Cache) Clear() {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	cache.data = make(map[string]interface{})
 }
 
-// SimpleMapperProxy 简化映射器代理
-type SimpleMapperProxy struct {
+// MapperProxy 映射器代理
+type MapperProxy struct {
 	mapperType reflect.Type
-	session    SimpleSqlSession
+	session    SqlSession
 }
 
-// NewSimpleMapperProxy 创建简化映射器代理
-func NewSimpleMapperProxy(mapperType reflect.Type, session SimpleSqlSession) *SimpleMapperProxy {
-	return &SimpleMapperProxy{
+// NewMapperProxy 创建映射器代理
+func NewMapperProxy(mapperType reflect.Type, session SqlSession) *MapperProxy {
+	return &MapperProxy{
 		mapperType: mapperType,
 		session:    session,
 	}
 }
 
-// 简化版便捷的构建器函数
+// 便捷的构建器函数
 
-// SimpleStatementBuilder 简化语句构建器
-type SimpleStatementBuilder struct {
-	statement *SimpleStatement
+// StatementBuilder 语句构建器
+type StatementBuilder struct {
+	statement *Statement
 }
 
-// NewSimpleStatement 创建新的简化语句
-func NewSimpleStatement(id, namespace string) *SimpleStatementBuilder {
-	return &SimpleStatementBuilder{
-		statement: &SimpleStatement{
+// NewStatement 创建新的语句
+func NewStatement(id, namespace string) *StatementBuilder {
+	return &StatementBuilder{
+		statement: &Statement{
 			ID:        id,
 			Namespace: namespace,
 			UseCache:  true,
@@ -960,70 +960,70 @@ func NewSimpleStatement(id, namespace string) *SimpleStatementBuilder {
 }
 
 // SQL 设置SQL
-func (builder *SimpleStatementBuilder) SQL(sql string) *SimpleStatementBuilder {
+func (builder *StatementBuilder) SQL(sql string) *StatementBuilder {
 	builder.statement.SQL = sql
 	return builder
 }
 
 // Type 设置类型
-func (builder *SimpleStatementBuilder) Type(statementType SimpleStatementType) *SimpleStatementBuilder {
+func (builder *StatementBuilder) Type(statementType StatementType) *StatementBuilder {
 	builder.statement.StatementType = statementType
 	return builder
 }
 
 // ParameterType 设置参数类型
-func (builder *SimpleStatementBuilder) ParameterType(paramType reflect.Type) *SimpleStatementBuilder {
+func (builder *StatementBuilder) ParameterType(paramType reflect.Type) *StatementBuilder {
 	builder.statement.ParameterType = paramType
 	return builder
 }
 
 // ResultType 设置结果类型
-func (builder *SimpleStatementBuilder) ResultType(resultType reflect.Type) *SimpleStatementBuilder {
+func (builder *StatementBuilder) ResultType(resultType reflect.Type) *StatementBuilder {
 	builder.statement.ResultType = resultType
 	return builder
 }
 
 // Cache 设置缓存
-func (builder *SimpleStatementBuilder) Cache(useCache bool) *SimpleStatementBuilder {
+func (builder *StatementBuilder) Cache(useCache bool) *StatementBuilder {
 	builder.statement.UseCache = useCache
 	return builder
 }
 
 // Build 构建语句
-func (builder *SimpleStatementBuilder) Build() *SimpleStatement {
+func (builder *StatementBuilder) Build() *Statement {
 	return builder.statement
 }
 
 // 简化版全局便捷函数
 
-// QuickSetup 快速设置简化MyBatis
-func QuickSetup(db *gorm.DB) *SimpleMyBatis {
-	config := DefaultSimpleConfig()
-	return NewSimpleMyBatis(db, config)
+// QuickSetup 快速设置MyBatis GORM集成版
+func QuickSetup(db *gorm.DB) *MyBatisGorm {
+	config := DefaultGormConfig()
+	return NewMyBatisGorm(db, config)
 }
 
 // WithContext 带上下文的操作
-type ContextualSimpleSession struct {
-	session SimpleSqlSession
+type ContextualSession struct {
+	session SqlSession
 	ctx     context.Context
 }
 
-// WithContext 为简化会话添加上下文
-func (session *DefaultSimpleSqlSession) WithContext(ctx context.Context) *ContextualSimpleSession {
-	return &ContextualSimpleSession{
+// WithContext 为会话添加上下文
+func (session *DefaultSqlSession) WithContext(ctx context.Context) *ContextualSession {
+	return &ContextualSession{
 		session: session,
 		ctx:     ctx,
 	}
 }
 
 // SelectOne 带上下文的查询单条
-func (cs *ContextualSimpleSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (cs *ContextualSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
 	// TODO: 实现超时和取消
 	return cs.session.SelectOne(statement, parameter)
 }
 
 // SelectList 带上下文的查询多条
-func (cs *ContextualSimpleSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (cs *ContextualSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
 	// TODO: 实现超时和取消
 	return cs.session.SelectList(statement, parameter)
 }
@@ -1033,12 +1033,12 @@ func (cs *ContextualSimpleSession) SelectList(statement string, parameter interf
 // ===============================================
 
 // SelectOne 查询单条记录（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (adapter *SqlSessionAdapter) SelectOne(statement string, parameter interface{}) (interface{}, error) {
 	return adapter.sqlSession.SelectOne(statement, parameter)
 }
 
 // SelectList 查询多条记录（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (adapter *SqlSessionAdapter) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
 	result, err := adapter.sqlSession.SelectList(statement, parameter)
 	if err != nil {
 		return nil, err
@@ -1047,38 +1047,38 @@ func (adapter *SimpleSqlSessionAdapter) SelectList(statement string, parameter i
 }
 
 // Insert 插入记录（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Insert(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Insert(statement string, parameter interface{}) (int64, error) {
 	return adapter.sqlSession.Insert(statement, parameter)
 }
 
 // Update 更新记录（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Update(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Update(statement string, parameter interface{}) (int64, error) {
 	return adapter.sqlSession.Update(statement, parameter)
 }
 
 // Delete 删除记录（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Delete(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Delete(statement string, parameter interface{}) (int64, error) {
 	return adapter.sqlSession.Delete(statement, parameter)
 }
 
 // GetMapper 获取映射器（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) GetMapper(mapperType reflect.Type) interface{} {
+func (adapter *SqlSessionAdapter) GetMapper(mapperType reflect.Type) interface{} {
 	mapper, _ := adapter.sqlSession.GetMapper(mapperType)
 	return mapper
 }
 
 // Commit 提交事务（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Commit() error {
+func (adapter *SqlSessionAdapter) Commit() error {
 	return adapter.sqlSession.Commit()
 }
 
 // Rollback 回滚事务（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Rollback() error {
+func (adapter *SqlSessionAdapter) Rollback() error {
 	return adapter.sqlSession.Rollback()
 }
 
 // Close 关闭会话（适配器实现）
-func (adapter *SimpleSqlSessionAdapter) Close() error {
+func (adapter *SqlSessionAdapter) Close() error {
 	return adapter.sqlSession.Close()
 }
 
@@ -1086,38 +1086,38 @@ func (adapter *SimpleSqlSessionAdapter) Close() error {
 // 统一的便捷方法
 // ===============================================
 
-// NewMyBatisWithSimpleConfig 使用简化配置创建完整版MyBatis
-func NewMyBatisWithSimpleConfig(db *gorm.DB, simpleConfig *SimpleConfig) (*MyBatis, error) {
-	if simpleConfig == nil {
-		simpleConfig = DefaultSimpleConfig()
+// NewMyBatisWithGormConfig 使用GORM配置创建完整版MyBatis
+func NewMyBatisWithGormConfig(db *gorm.DB, gormConfig *GormConfig) (*MyBatis, error) {
+	if gormConfig == nil {
+		gormConfig = DefaultGormConfig()
 	}
 	
 	// 创建完整版配置
 	configuration := config.NewConfiguration()
 	
 	// 如果有数据库配置，设置到完整版配置中
-	if simpleConfig.DatabaseConfig != nil {
-		configuration.SetDatabaseConfig(simpleConfig.DatabaseConfig)
+	if gormConfig.DatabaseConfig != nil {
+		configuration.SetDatabaseConfig(gormConfig.DatabaseConfig)
 	}
 	
 	// 设置其他配置项
-	configuration.CacheEnabled = simpleConfig.CacheEnabled
-	configuration.MapUnderscoreToCamelCase = simpleConfig.MapUnderscoreToCamelCase
+	configuration.CacheEnabled = gormConfig.CacheEnabled
+	configuration.MapUnderscoreToCamelCase = gormConfig.MapUnderscoreToCamelCase
 	
 	// 创建完整版MyBatis
 	return NewMyBatis(configuration)
 }
 
-// CreateUnifiedMyBatis 创建统一的MyBatis实例（同时支持完整版和简化版API）
-func CreateUnifiedMyBatis(db *gorm.DB, simpleConfig *SimpleConfig) (*MyBatis, *SimpleMyBatis, error) {
+// CreateUnifiedMyBatis 创建统一的MyBatis实例（同时支持完整版和GORM集成版API）
+func CreateUnifiedMyBatis(db *gorm.DB, gormConfig *GormConfig) (*MyBatis, *MyBatisGorm, error) {
 	// 创建完整版
-	fullMyBatis, err := NewMyBatisWithSimpleConfig(db, simpleConfig)
+	fullMyBatis, err := NewMyBatisWithGormConfig(db, gormConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create full MyBatis: %w", err)
 	}
 	
-	// 创建简化版
-	simpleMyBatis := NewSimpleMyBatis(db, simpleConfig)
+	// 创建GORM集成版
+	gormMyBatis := NewMyBatisGorm(db, gormConfig)
 	
-	return fullMyBatis, simpleMyBatis, nil
+	return fullMyBatis, gormMyBatis, nil
 }

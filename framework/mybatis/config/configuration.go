@@ -62,7 +62,7 @@ const (
 type ExecutorType int
 
 const (
-	ExecutorTypeSimple ExecutorType = iota
+	ExecutorTypeDefault ExecutorType = iota
 	ExecutorTypeReuse
 	ExecutorTypeBatch
 )
@@ -259,7 +259,7 @@ func NewConfiguration() *Configuration {
 			Properties:     make(map[string]any),
 		},
 
-		DefaultExecutorType:              ExecutorTypeSimple,
+		DefaultExecutorType:              ExecutorTypeDefault,
 		LazyLoadingEnabled:               false,
 		AggressiveLazyLoading:            false,
 		MultipleResultSetsEnabled:        true,

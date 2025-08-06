@@ -123,7 +123,7 @@ func (factory *DefaultSqlSessionFactory) OpenSession() SqlSession {
 
 // OpenSessionWithAutoCommit 打开带自动提交的会话
 func (factory *DefaultSqlSessionFactory) OpenSessionWithAutoCommit(autoCommit bool) SqlSession {
-	return factory.OpenSessionWithExecutorTypeAndAutoCommit(config.ExecutorTypeSimple, autoCommit)
+	return factory.OpenSessionWithExecutorTypeAndAutoCommit(config.ExecutorTypeDefault, autoCommit)
 }
 
 // OpenSessionWithConnection 打开带连接的会话
@@ -161,7 +161,7 @@ func (factory *DefaultSqlSessionFactory) createExecutor(execType config.Executor
 	case config.ExecutorTypeBatch:
 		executor = NewBatchExecutor(factory.configuration, factory.orm.DB())
 	default:
-		executor = NewSimpleExecutor(factory.configuration, factory.orm.DB())
+		executor = NewDefaultExecutor(factory.configuration, factory.orm.DB())
 	}
 
 	// 应用插件
@@ -296,7 +296,7 @@ func (factory *ExecutorFactory) CreateExecutor(execType config.ExecutorType, db 
 	case config.ExecutorTypeBatch:
 		return NewBatchExecutor(factory.configuration, db)
 	default:
-		return NewSimpleExecutor(factory.configuration, db)
+		return NewDefaultExecutor(factory.configuration, db)
 	}
 }
 
@@ -316,7 +316,7 @@ type ExceptionTranslator interface {
 func NewSqlSessionTemplate(sqlSessionFactory SqlSessionFactory) *SqlSessionTemplate {
 	return &SqlSessionTemplate{
 		sqlSessionFactory: sqlSessionFactory,
-		executorType:      config.ExecutorTypeSimple,
+		executorType:      config.ExecutorTypeDefault,
 	}
 }
 

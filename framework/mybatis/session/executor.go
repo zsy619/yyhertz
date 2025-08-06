@@ -24,8 +24,8 @@ type BaseExecutor struct {
 	mutex        sync.RWMutex
 }
 
-// SimpleExecutor 简单执行器
-type SimpleExecutor struct {
+// DefaultExecutor 默认执行器
+type DefaultExecutor struct {
 	*BaseExecutor
 }
 
@@ -62,16 +62,16 @@ type DynamicSqlBuilder struct {
 	parameters []any
 }
 
-// NewSimpleExecutor 创建简单执行器
-func NewSimpleExecutor(configuration *config.Configuration, db any) *SimpleExecutor {
+// NewDefaultExecutor 创建默认执行器
+func NewDefaultExecutor(configuration *config.Configuration, db any) *DefaultExecutor {
 	baseExecutor := &BaseExecutor{
 		configuration: configuration,
 		db:           db,
-		localCache:   cache.NewLruCache(cache.NewPerpetualCache("simple"), 256), // 本地缓存
+		localCache:   cache.NewLruCache(cache.NewPerpetualCache("default"), 256), // 本地缓存
 		closed:       false,
 	}
 	
-	return &SimpleExecutor{
+	return &DefaultExecutor{
 		BaseExecutor: baseExecutor,
 	}
 }
@@ -404,15 +404,15 @@ func (executor *BaseExecutor) rollback(required bool) error {
 	return nil
 }
 
-// SimpleExecutor特有方法
+// DefaultExecutor特有方法
 
-// doUpdate 简单执行器的更新实现
-func (executor *SimpleExecutor) doUpdate(ms *MappedStatement, parameter any) (int64, error) {
+// doUpdate 默认执行器的更新实现
+func (executor *DefaultExecutor) doUpdate(ms *MappedStatement, parameter any) (int64, error) {
 	return executor.BaseExecutor.doUpdate(ms, parameter)
 }
 
-// doQuery 简单执行器的查询实现
-func (executor *SimpleExecutor) doQuery(ms *MappedStatement, parameter any, rowBounds *RowBounds,
+// doQuery 默认执行器的查询实现
+func (executor *DefaultExecutor) doQuery(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, boundSql *BoundSql) ([]any, error) {
 	
 	return executor.BaseExecutor.doQuery(ms, parameter, rowBounds, resultHandler, boundSql)
