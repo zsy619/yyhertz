@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"path"
 	"reflect"
 	"runtime"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/version"
 )
 
 // 控制台颜色常量
@@ -52,13 +55,14 @@ func colorPrint(text string, color string) string {
 func printBanner() {
 	// 使用大号ASCII艺术字体
 	banner := `
-
-	██╗   ██╗██╗   ██╗██╗  ██╗███████╗██████╗ ████████╗███████╗
-	╚██╗ ██╔╝╚██╗ ██╔╝██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚══███╔╝
-	 ╚████╔╝  ╚████╔╝ ███████║█████╗  ██████╔╝   ██║     ███╔╝ 
-	  ╚██╔╝    ╚██╔╝  ██╔══██║██╔══╝  ██╔══██╗   ██║    ███╔╝  
-	   ██║      ██║   ██║  ██║███████╗██║  ██║   ██║   ███████╗
-	   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+Y88b   d88P Y88b   d88P 888    888                  888             
+ Y88b d88P   Y88b d88P  888    888                  888             
+  Y88o88P     Y88o88P   888    888                  888             
+   Y888P       Y888P    8888888888  .d88b.  888d888 888888 88888888 
+    888         888     888    888 d8P  Y8b 888P"   888       d88P  
+    888         888     888    888 88888888 888     888      d88P   
+    888         888     888    888 Y8b.     888     Y88b.   d88P    
+    888         888     888    888  "Y8888  888      "Y888 88888888 
 `
 
 	// 定义不同颜色 - 使用浅色为主
@@ -127,7 +131,11 @@ func InitConfig[T ConfigInterface](cnf T) {
 func init() {
 	// 打印启动banner
 	go func() {
-		printBanner()
+		stdout := version.NewColorWriter(os.Stderr)
+		coloredBanner := fmt.Sprintf(version.VerboseVersionBanner, "\x1b[35m", "\x1b[1m",
+			"\x1b[0m", "\x1b[32m", "\x1b[1m", "\x1b[0m")
+		version.InitBanner(stdout, bytes.NewBufferString(coloredBanner))
+		fmt.Println()
 	}()
 
 	InitConfig(&AppConfig{})
