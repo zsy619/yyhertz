@@ -90,7 +90,7 @@ func main() {
 		}
 		fmt.Printf("%-25s", method)
 	}
-	fmt.Println("\n")
+	fmt.Println("")
 	
 	fmt.Printf("遗漏的方法 (%d个):\n", len(missingMethods))
 	for _, method := range missingMethods {

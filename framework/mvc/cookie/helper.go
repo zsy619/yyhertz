@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // Options Cookie配置选项
@@ -50,6 +51,30 @@ func DefaultConfig() *Config {
 	}
 }
 
+// LoadFromConfig 从配置文件加载Cookie配置
+func LoadFromConfig() *Config {
+	// 获取session配置
+	sessionConfig, err := config.LoadConfigWithGeneric[config.SessionConfig]("session")
+	if err != nil {
+		config.Warnf("Failed to load session config, using defaults: %v", err)
+		return DefaultConfig()
+	}
+
+	cookieConfig := &Config{
+		DefaultMaxAge: sessionConfig.Cookie.MaxAge,
+		DefaultPath:   sessionConfig.Cookie.Path,
+		DefaultDomain: sessionConfig.Cookie.Domain,
+		DefaultSecure: sessionConfig.Cookie.Secure,
+		HttpOnly:      sessionConfig.Cookie.HttpOnly,
+		SameSite:      sessionConfig.Cookie.SameSite,
+	}
+
+	config.Infof("Cookie config loaded from session.yaml: maxAge=%d, path=%s, secure=%t", 
+		cookieConfig.DefaultMaxAge, cookieConfig.DefaultPath, cookieConfig.DefaultSecure)
+	
+	return cookieConfig
+}
+
 // Helper Cookie辅助工具
 type Helper struct {
 	config *Config
@@ -60,6 +85,14 @@ func NewHelper(config *Config) *Helper {
 	if config == nil {
 		config = DefaultConfig()
 	}
+	return &Helper{
+		config: config,
+	}
+}
+
+// NewHelperFromConfig 从配置文件创建Cookie辅助工具
+func NewHelperFromConfig() *Helper {
+	config := LoadFromConfig()
 	return &Helper{
 		config: config,
 	}

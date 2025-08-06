@@ -9,19 +9,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/orm"
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // Configuration MyBatis核心配置
 type Configuration struct {
 	// 数据库配置
-	DatabaseConfig *orm.DatabaseConfig
+	DatabaseConfig *config.DatabaseConfig
 
 	// 映射器配置
 	MapperRegistry *MapperRegistry
 
 	// 类型系统
-	TypeAliasRegistry  *TypeAliasRegistry
+	TypeAliasRegistry   *TypeAliasRegistry
 	TypeHandlerRegistry *TypeHandlerRegistry
 
 	// 缓存配置
@@ -30,22 +30,22 @@ type Configuration struct {
 	DefaultCacheConfig *CacheConfig
 
 	// 执行器配置
-	DefaultExecutorType ExecutorType
-	LazyLoadingEnabled  bool
+	DefaultExecutorType   ExecutorType
+	LazyLoadingEnabled    bool
 	AggressiveLazyLoading bool
 
 	// 其他配置
-	MultipleResultSetsEnabled bool
-	UseColumnLabel           bool
-	UseGeneratedKeys         bool
-	AutoMappingBehavior      AutoMappingBehavior
+	MultipleResultSetsEnabled        bool
+	UseColumnLabel                   bool
+	UseGeneratedKeys                 bool
+	AutoMappingBehavior              AutoMappingBehavior
 	AutoMappingUnknownColumnBehavior AutoMappingUnknownColumnBehavior
-	DefaultStatementTimeout  *time.Duration
-	DefaultFetchSize         *int
-	MapUnderscoreToCamelCase bool
-	CallSettersOnNulls       bool
-	UseActualParamName       bool
-	
+	DefaultStatementTimeout          *time.Duration
+	DefaultFetchSize                 *int
+	MapUnderscoreToCamelCase         bool
+	CallSettersOnNulls               bool
+	UseActualParamName               bool
+
 	// 内部状态
 	mutex sync.RWMutex
 }
@@ -87,12 +87,12 @@ const (
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
-	Implementation string        `json:"implementation" yaml:"implementation"` // 缓存实现类型
-	Enabled        bool          `json:"enabled" yaml:"enabled"`               // 是否启用
-	Size           int           `json:"size" yaml:"size"`                     // 缓存大小
-	FlushInterval  time.Duration `json:"flush_interval" yaml:"flush_interval"` // 刷新间隔
-	ReadWrite      bool          `json:"read_write" yaml:"read_write"`         // 是否读写
-	Properties     map[string]any `json:"properties" yaml:"properties"`       // 其他属性
+	Implementation string         `json:"implementation" yaml:"implementation"` // 缓存实现类型
+	Enabled        bool           `json:"enabled" yaml:"enabled"`               // 是否启用
+	Size           int            `json:"size" yaml:"size"`                     // 缓存大小
+	FlushInterval  time.Duration  `json:"flush_interval" yaml:"flush_interval"` // 刷新间隔
+	ReadWrite      bool           `json:"read_write" yaml:"read_write"`         // 是否读写
+	Properties     map[string]any `json:"properties" yaml:"properties"`         // 其他属性
 }
 
 // MapperRegistry 映射器注册表
@@ -132,7 +132,7 @@ type TypeHandler interface {
 
 // MapperMethod 映射器方法
 type MapperMethod struct {
-	Command      *SqlCommand
+	Command         *SqlCommand
 	MethodSignature *MethodSignature
 }
 
@@ -156,12 +156,12 @@ const (
 
 // MethodSignature 方法签名
 type MethodSignature struct {
-	ReturnsMany   bool
-	ReturnsMap    bool
-	ReturnsVoid   bool
-	ReturnsCursor bool
-	ReturnsOptional bool
-	MapKey        string
+	ReturnsMany        bool
+	ReturnsMap         bool
+	ReturnsVoid        bool
+	ReturnsCursor      bool
+	ReturnsOptional    bool
+	MapKey             string
 	ResultHandlerIndex *int
 	RowBoundsIndex     *int
 	ParamNameResolver  *ParamNameResolver
@@ -169,20 +169,87 @@ type MethodSignature struct {
 
 // ParamNameResolver 参数名解析器
 type ParamNameResolver struct {
-	names    []string
+	names              []string
 	hasParamAnnotation bool
+}
+
+// getDefaultDatabaseConfig 获取默认数据库配置
+func getDefaultDatabaseConfig() *config.DatabaseConfig {
+	cfg := &config.DatabaseConfig{}
+	
+	// 设置主数据库默认配置
+	cfg.Primary.Driver = "mysql"
+	cfg.Primary.Host = "localhost"
+	cfg.Primary.Port = 3306
+	cfg.Primary.Database = "yyhertz"
+	cfg.Primary.Username = "root"
+	cfg.Primary.Password = ""
+	cfg.Primary.Charset = "utf8mb4"
+	cfg.Primary.Collation = "utf8mb4_unicode_ci"
+	cfg.Primary.Timezone = "Local"
+	cfg.Primary.MaxOpenConns = 100
+	cfg.Primary.MaxIdleConns = 10
+	cfg.Primary.ConnMaxLifetime = "1h"
+	cfg.Primary.ConnMaxIdleTime = "30m"
+	cfg.Primary.SlowQueryThreshold = "200ms"
+	cfg.Primary.LogLevel = "warn"
+	cfg.Primary.EnableMetrics = true
+	cfg.Primary.EnableAutoMigration = false
+	cfg.Primary.MigrationTableName = "schema_migrations"
+	cfg.Primary.SSLMode = "disable"
+	
+	// 设置GORM默认配置
+	cfg.GORM.Enable = true
+	cfg.GORM.DisableForeignKeyConstrain = false
+	cfg.GORM.SkipDefaultTransaction = false
+	cfg.GORM.FullSaveAssociations = false
+	cfg.GORM.DryRun = false
+	cfg.GORM.PrepareStmt = true
+	cfg.GORM.DisableNestedTransaction = false
+	cfg.GORM.AllowGlobalUpdate = false
+	cfg.GORM.QueryFields = true
+	cfg.GORM.CreateBatchSize = 1000
+	cfg.GORM.NamingStrategy = "snake_case"
+	cfg.GORM.TablePrefix = ""
+	cfg.GORM.SingularTable = false
+	
+	// 设置MyBatis默认配置
+	cfg.MyBatis.Enable = true
+	cfg.MyBatis.ConfigFile = "./config/mybatis-config.xml"
+	cfg.MyBatis.MapperLocations = "./mappers/*.xml"
+	cfg.MyBatis.TypeAliasesPath = "./models"
+	cfg.MyBatis.CacheEnabled = true
+	cfg.MyBatis.LazyLoading = false
+	cfg.MyBatis.LogImpl = "STDOUT_LOGGING"
+	cfg.MyBatis.MapUnderscoreMap = true
+	
+	// 设置连接池默认配置
+	cfg.Pool.Enable = true
+	cfg.Pool.Type = "default"
+	cfg.Pool.MaxActiveConns = 100
+	cfg.Pool.MaxIdleConns = 10
+	cfg.Pool.MinIdleConns = 5
+	cfg.Pool.MaxWaitTime = "30s"
+	cfg.Pool.TimeBetweenEviction = "30s"
+	cfg.Pool.MinEvictableTime = "5m"
+	cfg.Pool.TestOnBorrow = true
+	cfg.Pool.TestOnReturn = false
+	cfg.Pool.TestWhileIdle = true
+	cfg.Pool.ValidationQuery = "SELECT 1"
+	
+	return cfg
 }
 
 // NewConfiguration 创建默认配置
 func NewConfiguration() *Configuration {
-	config := &Configuration{
-		DatabaseConfig:      orm.DefaultDatabaseConfig(),
+	cfg := &Configuration{
+		DatabaseConfig:      getDefaultDatabaseConfig(),
 		MapperRegistry:      NewMapperRegistry(),
 		TypeAliasRegistry:   NewTypeAliasRegistry(),
 		TypeHandlerRegistry: NewTypeHandlerRegistry(),
-		
-		CacheEnabled:       true,
-		LocalCacheScope:    LocalCacheScopeSession,
+
+		CacheEnabled:    true,
+		LocalCacheScope: LocalCacheScopeSession,
 		DefaultCacheConfig: &CacheConfig{
 			Implementation: "LRU",
 			Enabled:        true,
@@ -191,26 +258,26 @@ func NewConfiguration() *Configuration {
 			ReadWrite:      true,
 			Properties:     make(map[string]any),
 		},
-		
-		DefaultExecutorType:        ExecutorTypeSimple,
-		LazyLoadingEnabled:         false,
-		AggressiveLazyLoading:      false,
-		MultipleResultSetsEnabled:  true,
-		UseColumnLabel:             true,
-		UseGeneratedKeys:           false,
-		AutoMappingBehavior:        AutoMappingBehaviorPartial,
+
+		DefaultExecutorType:              ExecutorTypeSimple,
+		LazyLoadingEnabled:               false,
+		AggressiveLazyLoading:            false,
+		MultipleResultSetsEnabled:        true,
+		UseColumnLabel:                   true,
+		UseGeneratedKeys:                 false,
+		AutoMappingBehavior:              AutoMappingBehaviorPartial,
 		AutoMappingUnknownColumnBehavior: AutoMappingUnknownColumnBehaviorNone,
-		MapUnderscoreToCamelCase:   false,
-		CallSettersOnNulls:         false,
-		UseActualParamName:         false,
+		MapUnderscoreToCamelCase:         false,
+		CallSettersOnNulls:               false,
+		UseActualParamName:               false,
 	}
-	
+
 	// 注册默认类型别名
-	config.registerDefaultTypeAliases()
+	cfg.registerDefaultTypeAliases()
 	// 注册默认类型处理器
-	config.registerDefaultTypeHandlers()
-	
-	return config
+	cfg.registerDefaultTypeHandlers()
+
+	return cfg
 }
 
 // NewMapperRegistry 创建映射器注册表
@@ -240,20 +307,20 @@ func NewTypeHandlerRegistry() *TypeHandlerRegistry {
 func (mr *MapperRegistry) RegisterMapper(mapperType reflect.Type) error {
 	mr.mutex.Lock()
 	defer mr.mutex.Unlock()
-	
+
 	if mapperType.Kind() != reflect.Interface {
 		return fmt.Errorf("mapper must be interface, got %s", mapperType.Kind())
 	}
-	
+
 	if _, exists := mr.knownMappers[mapperType]; exists {
 		return fmt.Errorf("mapper %s already registered", mapperType.Name())
 	}
-	
+
 	factory := &MapperProxyFactory{
 		mapperInterface: mapperType,
 		methodCache:     make(map[string]*MapperMethod),
 	}
-	
+
 	mr.knownMappers[mapperType] = factory
 	return nil
 }
@@ -262,12 +329,12 @@ func (mr *MapperRegistry) RegisterMapper(mapperType reflect.Type) error {
 func (mr *MapperRegistry) GetMapper(mapperType reflect.Type, sqlSession any) (any, error) {
 	mr.mutex.RLock()
 	defer mr.mutex.RUnlock()
-	
+
 	factory, exists := mr.knownMappers[mapperType]
 	if !exists {
 		return nil, fmt.Errorf("mapper %s not registered", mapperType.Name())
 	}
-	
+
 	return factory.NewInstance(sqlSession), nil
 }
 
@@ -275,7 +342,7 @@ func (mr *MapperRegistry) GetMapper(mapperType reflect.Type, sqlSession any) (an
 func (mr *MapperRegistry) HasMapper(mapperType reflect.Type) bool {
 	mr.mutex.RLock()
 	defer mr.mutex.RUnlock()
-	
+
 	_, exists := mr.knownMappers[mapperType]
 	return exists
 }
@@ -284,7 +351,7 @@ func (mr *MapperRegistry) HasMapper(mapperType reflect.Type) bool {
 func (mr *MapperRegistry) GetMappers() []reflect.Type {
 	mr.mutex.RLock()
 	defer mr.mutex.RUnlock()
-	
+
 	mappers := make([]reflect.Type, 0, len(mr.knownMappers))
 	for mapperType := range mr.knownMappers {
 		mappers = append(mappers, mapperType)
@@ -301,7 +368,7 @@ func (factory *MapperProxyFactory) NewInstance(sqlSession any) any {
 func (tar *TypeAliasRegistry) RegisterAlias(alias string, value reflect.Type) {
 	tar.mutex.Lock()
 	defer tar.mutex.Unlock()
-	
+
 	tar.aliases[alias] = value
 }
 
@@ -309,7 +376,7 @@ func (tar *TypeAliasRegistry) RegisterAlias(alias string, value reflect.Type) {
 func (tar *TypeAliasRegistry) ResolveAlias(alias string) (reflect.Type, bool) {
 	tar.mutex.RLock()
 	defer tar.mutex.RUnlock()
-	
+
 	t, exists := tar.aliases[alias]
 	return t, exists
 }
@@ -318,7 +385,7 @@ func (tar *TypeAliasRegistry) ResolveAlias(alias string) (reflect.Type, bool) {
 func (thr *TypeHandlerRegistry) RegisterTypeHandler(javaType reflect.Type, handler TypeHandler) {
 	thr.mutex.Lock()
 	defer thr.mutex.Unlock()
-	
+
 	thr.defaultTypeHandlers[javaType] = handler
 }
 
@@ -326,7 +393,7 @@ func (thr *TypeHandlerRegistry) RegisterTypeHandler(javaType reflect.Type, handl
 func (thr *TypeHandlerRegistry) RegisterTypeHandlerWithJdbcType(javaType reflect.Type, jdbcType string, handler TypeHandler) {
 	thr.mutex.Lock()
 	defer thr.mutex.Unlock()
-	
+
 	if thr.typeHandlerMap[jdbcType] == nil {
 		thr.typeHandlerMap[jdbcType] = make(map[reflect.Type]TypeHandler)
 	}
@@ -337,7 +404,7 @@ func (thr *TypeHandlerRegistry) RegisterTypeHandlerWithJdbcType(javaType reflect
 func (thr *TypeHandlerRegistry) GetTypeHandler(javaType reflect.Type, jdbcType string) TypeHandler {
 	thr.mutex.RLock()
 	defer thr.mutex.RUnlock()
-	
+
 	// 先尝试精确匹配
 	if jdbcType != "" {
 		if handlers, exists := thr.typeHandlerMap[jdbcType]; exists {
@@ -346,12 +413,12 @@ func (thr *TypeHandlerRegistry) GetTypeHandler(javaType reflect.Type, jdbcType s
 			}
 		}
 	}
-	
+
 	// 尝试默认处理器
 	if handler, exists := thr.defaultTypeHandlers[javaType]; exists {
 		return handler
 	}
-	
+
 	return nil
 }
 
@@ -375,14 +442,14 @@ func (c *Configuration) registerDefaultTypeHandlers() {
 }
 
 // GetDatabaseConfig 获取数据库配置
-func (c *Configuration) GetDatabaseConfig() *orm.DatabaseConfig {
+func (c *Configuration) GetDatabaseConfig() *config.DatabaseConfig {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.DatabaseConfig
 }
 
 // SetDatabaseConfig 设置数据库配置
-func (c *Configuration) SetDatabaseConfig(config *orm.DatabaseConfig) {
+func (c *Configuration) SetDatabaseConfig(config *config.DatabaseConfig) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.DatabaseConfig = config

@@ -17,8 +17,9 @@ func TestConfigManager_AppConfig(t *testing.T) {
 		// 检查默认值
 		assert.Equal(t, "YYHertz", config.App.Name)
 		assert.Equal(t, 8888, config.App.Port)
-		assert.Equal(t, "mysql", config.Database.Driver)
-		assert.Equal(t, "127.0.0.1", config.Database.Host)
+		// 注释掉数据库配置测试，因为已从AppConfig中移除
+		// assert.Equal(t, "mysql", config.Database.Driver)
+		// assert.Equal(t, "127.0.0.1", config.Database.Host)
 	})
 
 	t.Run("使用泛型便捷函数", func(t *testing.T) {

@@ -82,39 +82,39 @@ func GetDefaultORM() *ORM {
 		dbConfig := DefaultDatabaseConfig()
 
 		// 尝试从全局配置获取数据库配置
-		if configManager := config.GetAppConfigManager(); configManager != nil {
+		if configManager := config.GetDatabaseConfigManager(); configManager != nil {
 			if appConfig, err := configManager.GetConfig(); err == nil {
 				// 映射配置字段
-				if appConfig.Database.Driver != "" {
-					dbConfig.Type = appConfig.Database.Driver
+				if appConfig.Primary.Driver != "" {
+					dbConfig.Type = appConfig.Primary.Driver
 				}
-				if appConfig.Database.Host != "" {
-					dbConfig.Host = appConfig.Database.Host
+				if appConfig.Primary.Host != "" {
+					dbConfig.Host = appConfig.Primary.Host
 				}
-				if appConfig.Database.Port > 0 {
-					dbConfig.Port = appConfig.Database.Port
+				if appConfig.Primary.Port > 0 {
+					dbConfig.Port = appConfig.Primary.Port
 				}
-				if appConfig.Database.Username != "" {
-					dbConfig.Username = appConfig.Database.Username
+				if appConfig.Primary.Username != "" {
+					dbConfig.Username = appConfig.Primary.Username
 				}
-				if appConfig.Database.Password != "" {
-					dbConfig.Password = appConfig.Database.Password
+				if appConfig.Primary.Password != "" {
+					dbConfig.Password = appConfig.Primary.Password
 				}
-				if appConfig.Database.Database != "" {
-					dbConfig.Database = appConfig.Database.Database
+				if appConfig.Primary.Database != "" {
+					dbConfig.Database = appConfig.Primary.Database
 				}
-				if appConfig.Database.Charset != "" {
-					dbConfig.Charset = appConfig.Database.Charset
+				if appConfig.Primary.Charset != "" {
+					dbConfig.Charset = appConfig.Primary.Charset
 				}
-				if appConfig.Database.MaxIdle > 0 {
-					dbConfig.MaxIdleConns = appConfig.Database.MaxIdle
-				}
-				if appConfig.Database.MaxOpen > 0 {
-					dbConfig.MaxOpenConns = appConfig.Database.MaxOpen
-				}
-				if appConfig.Database.MaxLife > 0 {
-					dbConfig.MaxLifetime = appConfig.Database.MaxLife
-				}
+				// if appConfig.Primary.MaxIdle > 0 {
+				// 	dbConfig.MaxIdleConns = appConfig.Primary.MaxIdle
+				// }
+				// if appConfig.Primary.MaxOpen > 0 {
+				// 	dbConfig.MaxOpenConns = appConfig.Primary.MaxOpen
+				// }
+				// if appConfig.Primary.MaxLife > 0 {
+				// 	dbConfig.MaxLifetime = appConfig.Primary.MaxLife
+				// }
 			}
 		}
 

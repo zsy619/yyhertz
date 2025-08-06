@@ -2,8 +2,14 @@
 # 支持日志级别: debug, info, warn, error, fatal, panic
 level: "info"
 
-# 日志格式: json, text, beego
+# 日志格式: json, text, beego, log4go, logstash, syslog, fluentd, cloudwatch, azure_insights
 # beego: Beego风格格式 [L] yyyy/mm/dd hh:mm:ss.sss [filename:line] message
+# log4go: Log4go风格格式 [yyyy/mm/dd hh:mm:ss] [LEVEL] (filename:line) message
+# logstash: Logstash JSON格式，包含@timestamp, @version, level, message等字段
+# syslog: 标准Syslog格式 <priority>timestamp hostname tag: message
+# fluentd: Fluentd JSON格式，适用于日志聚合
+# cloudwatch: AWS CloudWatch格式
+# azure_insights: Azure Application Insights格式
 format: "beego"
 
 # 输出配置
@@ -27,3 +33,57 @@ fields:
   service: "yyhertz"
   version: "1.0.0"
   # 可以添加更多全局字段
+
+# 输出目标配置
+outputs:
+  - "console"
+  - "file"
+  # - "syslog"
+  # - "fluentd"
+  # - "cloudwatch"
+  # - "azure_insights"
+  # - "elasticsearch"
+  # - "kafka"
+
+# 各输出目标的具体配置
+output_config:
+  syslog:
+    network: "udp"
+    address: "localhost:514"
+    priority: 16  # local0.info
+    tag: "yyhertz"
+  
+  fluentd:
+    host: "localhost"
+    port: 24224
+    tag: "yyhertz.logs"
+    timeout: "3s"
+    extra:
+      environment: "production"
+  
+  cloudwatch:
+    region: "us-east-1"
+    log_group_name: "/aws/yyhertz/application"
+    log_stream_name: "yyhertz-instance-001"
+    # access_key_id: "your-access-key"
+    # secret_access_key: "your-secret-key"
+  
+  azure_insights:
+    instrumentation_key: "your-instrumentation-key"
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    properties:
+      application: "yyhertz"
+      environment: "production"
+  
+  elasticsearch:
+    urls:
+      - "http://localhost:9200"
+    index: "yyhertz-logs"
+    # username: "elastic"
+    # password: "password"
+  
+  kafka:
+    brokers:
+      - "localhost:9092"
+    topic: "yyhertz-logs"
+    client_id: "yyhertz-logger"

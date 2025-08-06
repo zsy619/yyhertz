@@ -2,9 +2,154 @@ package config
 
 import (
 	"fmt"
+	"path"
 	"reflect"
+	"runtime"
+	"strings"
 	"time"
+
+	"github.com/zsy619/yyhertz/framework/util"
 )
+
+// 控制台颜色常量
+const (
+	// 前景色
+	FgBlack   = "\033[30m"
+	FgRed     = "\033[31m"
+	FgGreen   = "\033[32m"
+	FgYellow  = "\033[33m"
+	FgBlue    = "\033[34m"
+	FgMagenta = "\033[35m"
+	FgCyan    = "\033[36m"
+	FgWhite   = "\033[37m"
+
+	// 背景色
+	BgBlack   = "\033[40m"
+	BgRed     = "\033[41m"
+	BgGreen   = "\033[42m"
+	BgYellow  = "\033[43m"
+	BgBlue    = "\033[44m"
+	BgMagenta = "\033[45m"
+	BgCyan    = "\033[46m"
+	BgWhite   = "\033[47m"
+
+	// 样式
+	Reset     = "\033[0m"
+	Bold      = "\033[1m"
+	Underline = "\033[4m"
+)
+
+// colorPrint 根据不同平台输出彩色文本
+func colorPrint(text string, color string) string {
+	// Windows平台下不使用ANSI颜色代码
+	if runtime.GOOS == "windows" {
+		return text
+	}
+	return color + text + Reset
+}
+
+// printBanner 打印启动banner
+func printBanner() {
+	// 使用大号ASCII艺术字体
+	banner := `
+
+	██╗   ██╗██╗   ██╗██╗  ██╗███████╗██████╗ ████████╗███████╗
+	╚██╗ ██╔╝╚██╗ ██╔╝██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚══███╔╝
+	 ╚████╔╝  ╚████╔╝ ███████║█████╗  ██████╔╝   ██║     ███╔╝ 
+	  ╚██╔╝    ╚██╔╝  ██╔══██║██╔══╝  ██╔══██╗   ██║    ███╔╝  
+	   ██║      ██║   ██║  ██║███████╗██║  ██║   ██║   ███████╗
+	   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+`
+
+	// 定义不同颜色 - 使用浅色为主
+	colors := []string{FgYellow, FgCyan, FgWhite, FgGreen, FgMagenta, FgBlue}
+	lines := []string{}
+
+	// 将banner分割成行
+	for i, line := range strings.Split(banner, "\n") {
+		if line == "" {
+			lines = append(lines, "")
+			continue
+		}
+		// 每行使用不同颜色
+		color := colors[i%len(colors)]
+		lines = append(lines, colorPrint(line, color))
+	}
+
+	// 打印彩色banner
+	for _, line := range lines {
+		fmt.Println(line)
+	}
+
+	// 打印系统信息
+	fmt.Println()
+	printSystemInfo()
+}
+
+// printSystemInfo 打印系统信息
+func printSystemInfo() {
+	// 获取系统信息
+	goVersion := runtime.Version()
+	goOS := runtime.GOOS
+	goArch := runtime.GOARCH
+	numCPU := runtime.NumCPU()
+
+	// 打印系统信息 - 使用浅色
+	fmt.Println(colorPrint("系统信息:", FgYellow))
+	fmt.Printf("%s %s\n", colorPrint("Go 版 本:", FgCyan), goVersion)
+	fmt.Printf("%s %s/%s\n", colorPrint("操作系统:", FgCyan), goOS, goArch)
+	fmt.Printf("%s %d\n", colorPrint("CPU核心数:", FgCyan), numCPU)
+
+	// 打印框架信息 - 使用浅色
+	fmt.Println()
+	fmt.Println(colorPrint("框架信息:", FgYellow))
+	fmt.Printf("%s %s\n", colorPrint("框架名称:", FgCyan), colorPrint("YYHertz MVC", FgWhite))
+	fmt.Printf("%s %s\n", colorPrint("版    本:", FgCyan), "v1.0.0")
+	fmt.Printf("%s %s\n", colorPrint("作    者:", FgCyan), "YYHertz Team")
+	fmt.Println()
+}
+
+func InitConfig[T ConfigInterface](cnf T) {
+	appConf := path.Join(".", "conf", fmt.Sprintf("%s.yaml", cnf.GetConfigName()))
+	// 判断文件是否存在
+	if isExists := util.FileExists(appConf); !isExists {
+		// 文件不存在，生成默认配置
+		cm := NewViperConfigManager(cnf)
+		err := cm.Initialize()
+		if err != nil {
+			panic(err)
+		}
+		WatchConfig(cnf)
+	}
+}
+
+// 初始化配置注册表
+func init() {
+	// 打印启动banner
+	go func() {
+		printBanner()
+	}()
+
+	InitConfig(&AppConfig{})
+	InitConfig(&TemplateConfig{})
+	InitConfig(&AuthConfig{})
+	InitConfig(&LogConfig{})
+	InitConfig(&DatabaseConfig{})
+	InitConfig(&RedisConfig{})
+	InitConfig(&SessionConfig{})
+	InitConfig(&TLSServerConfig{})
+	InitConfig(&MyBatisConfig{})
+
+	RegisterConfigName[AppConfig](AppConfigName)
+	RegisterConfigName[TemplateConfig](TemplateConfigName)
+	RegisterConfigName[AuthConfig](AuthConfigName)
+	RegisterConfigName[TLSServerConfig](TLSConfigName)
+	RegisterConfigName[LogConfig](LogConfigName)
+	RegisterConfigName[DatabaseConfig](DatabaseConfigName)
+	RegisterConfigName[SessionConfig](SessionConfigName)
+	RegisterConfigName[RedisConfig](RedisConfigName)
+	RegisterConfigName[MyBatisConfig](MyBatisConfigName)
+}
 
 // 全局便捷函数，用于快速获取不同类型的配置
 
@@ -38,6 +183,23 @@ func GetLogConfig() (*LogConfig, error) {
 	return manager.GetConfig()
 }
 
+// GetDatabaseConfig 获取数据库配置
+func GetDatabaseConfig() (*DatabaseConfig, error) {
+	manager := GetViperConfigManager(DatabaseConfig{})
+	return manager.GetConfig()
+}
+
+func GetRedisConfig() (*RedisConfig, error) {
+	manager := GetViperConfigManager(RedisConfig{})
+	return manager.GetConfig()
+}
+
+// GetMyBatisConfig 获取MyBatis配置
+func GetMyBatisConfig() (*MyBatisConfig, error) {
+	manager := GetViperConfigManager(MyBatisConfig{})
+	return manager.GetConfig()
+}
+
 // GetAppConfigManager 获取应用配置管理器
 func GetAppConfigManager() *ViperConfigManager[AppConfig] {
 	return GetViperConfigManager(AppConfig{})
@@ -61,6 +223,21 @@ func GetTLSConfigManager() *ViperConfigManager[TLSServerConfig] {
 // GetLogConfigManager 获取日志配置管理器
 func GetLogConfigManager() *ViperConfigManager[LogConfig] {
 	return GetViperConfigManager(LogConfig{})
+}
+
+// GetDatabaseConfigManager 获取数据库配置管理器
+func GetDatabaseConfigManager() *ViperConfigManager[DatabaseConfig] {
+	return GetViperConfigManager(DatabaseConfig{})
+}
+
+// GetRedisConfigManager 获取Redis配置管理器
+func GetRedisConfigManager() *ViperConfigManager[RedisConfig] {
+	return GetViperConfigManager(RedisConfig{})
+}
+
+// GetMyBatisConfigManager 获取MyBatis配置管理器
+func GetMyBatisConfigManager() *ViperConfigManager[MyBatisConfig] {
+	return GetViperConfigManager(MyBatisConfig{})
 }
 
 // 泛型配置函数 - 主要API
@@ -131,15 +308,6 @@ func RegisterConfigName[T ConfigInterface](name string) {
 	var zero T
 	t := reflect.TypeOf(zero)
 	configNameRegistry[t] = name
-}
-
-// 初始化配置注册表
-func init() {
-	RegisterConfigName[AppConfig](AppConfigName)
-	RegisterConfigName[TemplateConfig](TemplateConfigName)
-	RegisterConfigName[AuthConfig](AuthConfigName)
-	RegisterConfigName[TLSServerConfig]("tls")
-	RegisterConfigName[LogConfig](LogConfigName)
 }
 
 // GetConfigBoolSlice 获取指定配置的布尔切片值（泛型版本）
@@ -260,7 +428,6 @@ func GetLogConfigBool(key string) bool {
 func GetLogConfigStringSlice(key string) []string {
 	return GetConfigStringSlice(LogConfig{}, key)
 }
-
 
 // 基于反射的新获取方式 - 支持默认值
 

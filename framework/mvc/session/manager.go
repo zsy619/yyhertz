@@ -23,6 +23,14 @@ func NewManager(config *Config) *Manager {
 	}
 }
 
+// NewManagerFromConfig 从配置文件创建Session管理器
+func NewManagerFromConfig() *Manager {
+	config := LoadFromConfig()
+	return &Manager{
+		config: config,
+	}
+}
+
 // GetConfig 获取配置
 func (m *Manager) GetConfig() *Config {
 	return m.config

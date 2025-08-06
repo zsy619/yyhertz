@@ -29,6 +29,16 @@ const (
 
 	// 默认会话配置名
 	SessionConfigName = "session"
+
+	// 默认数据库配置名
+	DatabaseConfigName = "database"
+
+	TLSConfigName = "tls"
+
+	RedisConfigName = "redis"
+
+	// MyBatis配置名
+	MyBatisConfigName = "mybatis"
 )
 
 // ConfigInterface 定义所有配置类型需要实现的接口
@@ -60,10 +70,12 @@ func NewViperConfigManager[T ConfigInterface](config T) *ViperConfigManager[T] {
 		fmt.Printf("配置名称不能为空 - config: %v\n", config)
 		Panic("配置名称不能为空")
 	}
+	// configPaths: []string{".", "./conf", "/etc/yyhertz", "$HOME/.yyhertz"},
+
 	return &ViperConfigManager[T]{
 		config:      config,
 		viper:       viper.New(),
-		configPaths: []string{".", "./conf", "/etc/yyhertz", "$HOME/.yyhertz"},
+		configPaths: []string{"./conf"},
 		configName:  configName,
 		configType:  "yaml",
 		envPrefix:   "YYHERTZ",
@@ -101,6 +113,18 @@ func (gcm *ViperConfigManager[T]) Initialize() error {
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
+	return gcm.initializeInternal()
+}
+
+// ensureInitialized 确保配置已初始化（线程安全）
+func (gcm *ViperConfigManager[T]) ensureInitialized() {
+	if !gcm.initialized {
+		_ = gcm.Initialize()
+	}
+}
+
+// initializeInternal 内部初始化方法（不加锁）
+func (gcm *ViperConfigManager[T]) initializeInternal() error {
 	if gcm.initialized {
 		return nil
 	}
@@ -174,17 +198,10 @@ func (gcm *ViperConfigManager[T]) createDefaultConfigFile() error {
 
 // GetConfig 获取完整配置
 func (gcm *ViperConfigManager[T]) GetConfig() (*T, error) {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
-
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		err := gcm.Initialize()
-		gcm.mu.RLock()
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	var config T
 	if err := gcm.viper.Unmarshal(&config); err != nil {
@@ -196,48 +213,38 @@ func (gcm *ViperConfigManager[T]) GetConfig() (*T, error) {
 
 // Get 获取配置值
 func (gcm *ViperConfigManager[T]) Get(key string) any {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.Get(key)
 }
 
 // GetString 获取字符串配置值
 func (gcm *ViperConfigManager[T]) GetString(key string) string {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetString(key)
 }
 
 // GetInt 获取整数配置值
 func (gcm *ViperConfigManager[T]) GetInt(key string) int {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetInt(key)
 }
 
 // GetIntSlice 获取整数数组配置值
 func (cm *ViperConfigManager[T]) GetIntSlice(key string) []int {
-	if !cm.initialized {
-		_ = cm.Initialize()
-	}
+	cm.ensureInitialized()
+
 	// 尝试直接获取 []int
 	if slice, ok := cm.Get(key).([]int); ok {
 		return slice
@@ -259,34 +266,27 @@ func (cm *ViperConfigManager[T]) GetIntSlice(key string) []int {
 
 // GetStringSlice 获取字符串数组配置值
 func (gcm *ViperConfigManager[T]) GetStringSlice(key string) []string {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetStringSlice(key)
 }
 
 // GetBool 获取布尔配置值
 func (gcm *ViperConfigManager[T]) GetBool(key string) bool {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetBool(key)
 }
 
 func (cm *ViperConfigManager[T]) GetBoolSlice(key string) []bool {
-	if !cm.initialized {
-		_ = cm.Initialize()
-	}
+	cm.ensureInitialized()
+
 	// 尝试直接获取 []bool
 	if slice, ok := cm.Get(key).([]bool); ok {
 		return slice
@@ -326,22 +326,17 @@ func (cm *ViperConfigManager[T]) GetBoolSlice(key string) []bool {
 
 // GetFloat64 获取浮点数配置值
 func (gcm *ViperConfigManager[T]) GetFloat64(key string) float64 {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetFloat64(key)
 }
 
 // GetFloat64Slice 获取浮点数数组配置值
 func (gcm *ViperConfigManager[T]) GetFloat64Slice(key string) []float64 {
-	if !gcm.initialized {
-		_ = gcm.Initialize()
-	}
+	gcm.ensureInitialized()
 
 	// 尝试直接获取 []float64
 	if slice, ok := gcm.Get(key).([]float64); ok {
@@ -375,22 +370,17 @@ func (gcm *ViperConfigManager[T]) GetFloat64Slice(key string) []float64 {
 
 // GetDuration 获取时间间隔配置值
 func (gcm *ViperConfigManager[T]) GetDuration(key string) time.Duration {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetDuration(key)
 }
 
 // GetDurationSlice 获取时间间隔数组配置值
 func (gcm *ViperConfigManager[T]) GetDurationSlice(key string) []time.Duration {
-	if !gcm.initialized {
-		_ = gcm.Initialize()
-	}
+	gcm.ensureInitialized()
 
 	// 尝试直接获取 []time.Duration
 	if slice, ok := gcm.Get(key).([]time.Duration); ok {
@@ -433,22 +423,17 @@ func (gcm *ViperConfigManager[T]) GetDurationSlice(key string) []time.Duration {
 
 // GetTime 获取时间配置值
 func (gcm *ViperConfigManager[T]) GetTime(key string) time.Time {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.GetTime(key)
 }
 
 // GetTimeSlice 获取时间数组配置值
 func (gcm *ViperConfigManager[T]) GetTimeSlice(key string) []time.Time {
-	if !gcm.initialized {
-		_ = gcm.Initialize()
-	}
+	gcm.ensureInitialized()
 
 	// 尝试直接获取 []time.Time
 	if slice, ok := gcm.Get(key).([]time.Time); ok {
@@ -508,25 +493,21 @@ func (gcm *ViperConfigManager[T]) GetTimeSlice(key string) []time.Time {
 
 // Set 设置配置值
 func (gcm *ViperConfigManager[T]) Set(key string, value any) {
+	gcm.ensureInitialized()
+
 	gcm.mu.Lock()
 	defer gcm.mu.Unlock()
 
-	if !gcm.initialized {
-		_ = gcm.Initialize()
-	}
 	gcm.viper.Set(key, value)
 }
 
 // IsSet 检查配置是否已设置
 func (gcm *ViperConfigManager[T]) IsSet(key string) bool {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.IsSet(key)
 }
 
@@ -536,7 +517,8 @@ func (gcm *ViperConfigManager[T]) WatchConfig() {
 	defer gcm.mu.Unlock()
 
 	if !gcm.initialized {
-		_ = gcm.Initialize()
+		// 直接调用内部初始化方法，避免重复加锁
+		gcm.initializeInternal()
 	}
 
 	gcm.viper.WatchConfig()
@@ -553,18 +535,40 @@ func (gcm *ViperConfigManager[T]) WatchConfig() {
 
 // ConfigFileUsed 获取当前使用的配置文件路径
 func (gcm *ViperConfigManager[T]) ConfigFileUsed() string {
+	gcm.ensureInitialized()
+
 	gcm.mu.RLock()
 	defer gcm.mu.RUnlock()
 
-	if !gcm.initialized {
-		gcm.mu.RUnlock()
-		_ = gcm.Initialize()
-		gcm.mu.RLock()
-	}
 	return gcm.viper.ConfigFileUsed()
 }
 
 // parseFloat 解析字符串为float64
 func parseFloat(s string) (float64, error) {
 	return strconv.ParseFloat(s, 64)
+}
+
+// LoadConfigWithGeneric 泛型加载配置的便捷函数
+func LoadConfigWithGeneric[T ConfigInterface](configName string) (T, error) {
+	// 创建配置类型的零值实例
+	var config T
+
+	// 获取配置管理器
+	manager := GetViperConfigManagerWithName[T](configName)
+	if manager == nil {
+		// 如果管理器不存在，创建一个新的
+		manager = NewViperConfigManager(config)
+		if err := manager.Initialize(); err != nil {
+			return config, err
+		}
+		ConfigManagers.Store(configName, manager)
+	}
+
+	// 获取配置
+	configPtr, err := manager.GetConfig()
+	if err != nil {
+		return config, err
+	}
+
+	return *configPtr, nil
 }

@@ -1,0 +1,144 @@
+# YYHertz Database Configuration
+# 数据库配置文件
+
+# 主数据库配置
+primary:
+  driver: "mysql"                                 # 数据库驱动: mysql, postgres, sqlite, sqlserver
+  dsn: ""                                        # 完整连接字符串(优先级高于单独配置)
+  host: "localhost"                              # 数据库主机地址
+  port: 3306                                     # 数据库端口
+  database: "yyhertz"                            # 数据库名
+  username: "root"                               # 用户名
+  password: ""                                   # 密码
+  charset: "utf8mb4"                             # 字符集
+  collation: "utf8mb4_unicode_ci"                # 排序规则
+  timezone: "Local"                              # 时区设置
+  max_open_conns: 100                            # 最大打开连接数
+  max_idle_conns: 10                             # 最大空闲连接数
+  conn_max_lifetime: "1h"                        # 连接最大生存时间
+  conn_max_idle_time: "30m"                      # 连接最大空闲时间
+  slow_query_threshold: "200ms"                  # 慢查询阈值
+  log_level: "warn"                              # 日志级别: silent, error, warn, info
+  enable_metrics: true                           # 启用性能监控
+  enable_auto_migration: false                   # 启用自动迁移
+  migration_table_name: "schema_migrations"      # 迁移记录表名
+  ssl_mode: "disable"                            # SSL模式: disable, require, verify-ca, verify-full
+  ssl_cert: ""                                   # SSL证书路径
+  ssl_key: ""                                    # SSL密钥路径
+  ssl_root_cert: ""                              # SSL根证书路径
+
+# 从数据库配置(读写分离)
+replica:
+  enable: false                                  # 启用读写分离
+  hosts: ["localhost:3307"]                      # 从库主机列表
+  driver: "mysql"                                # 数据库驱动
+  username: "root"                               # 用户名
+  password: ""                                   # 密码
+  database: "yyhertz"                            # 数据库名
+  max_open_conns: 50                             # 最大打开连接数
+  max_idle_conns: 10                             # 最大空闲连接数
+  conn_max_lifetime: "1h"                        # 连接最大生存时间
+  load_balancing_strategy: "round_robin"         # 负载均衡策略: round_robin, random, weighted
+
+# GORM配置
+gorm:
+  enable: true                                   # 启用GORM
+  disable_foreign_key_constrain: false          # 禁用外键约束
+  skip_default_transaction: false               # 跳过默认事务
+  full_save_associations: false                 # 完整保存关联
+  dry_run: false                                # 仅生成SQL不执行
+  prepare_stmt: true                            # 启用预编译语句
+  disable_nested_transaction: false             # 禁用嵌套事务
+  allow_global_update: false                    # 允许全局更新
+  query_fields: true                            # 查询时选择字段
+  create_batch_size: 1000                       # 批量创建大小
+  naming_strategy: "snake_case"                 # 命名策略: snake_case, camel_case
+  table_prefix: ""                              # 表前缀
+  singular_table: false                         # 使用单数表名
+
+# MyBatis配置
+mybatis:
+  enable: false                                 # 启用MyBatis
+  config_file: "./config/mybatis-config.xml"   # MyBatis配置文件路径
+  mapper_locations: "./mappers/*.xml"           # Mapper XML文件位置
+  type_aliases_path: "./models"                 # 类型别名路径
+  cache_enabled: true                           # 启用缓存
+  lazy_loading: false                           # 延迟加载
+  log_impl: "STDOUT_LOGGING"                    # 日志实现: STDOUT_LOGGING, LOG4J, SLF4J
+  map_underscore_map: true                      # 下划线到驼峰映射
+
+# 连接池配置
+pool:
+  enable: true                                  # 启用连接池
+  type: "default"                               # 连接池类型: default, hikari, druid
+  max_active_conns: 100                         # 最大活跃连接数
+  max_idle_conns: 10                            # 最大空闲连接数
+  min_idle_conns: 5                             # 最小空闲连接数
+  max_wait_time: "30s"                          # 最大等待时间
+  time_between_eviction: "30s"                  # 连接回收间隔
+  min_evictable_time: "5m"                      # 最小可回收空闲时间
+  test_on_borrow: true                          # 借用时测试连接
+  test_on_return: false                         # 归还时测试连接
+  test_while_idle: true                         # 空闲时测试连接
+  validation_query: "SELECT 1"                  # 验证查询SQL
+
+# 缓存配置
+cache:
+  enable: false                                 # 启用查询缓存
+  type: "memory"                                # 缓存类型: memory, redis, memcached
+  ttl: "1h"                                     # 缓存生存时间
+  max_size: 1000                                # 最大缓存大小
+  key_prefix: "yyhertz:db:"                     # 缓存键前缀
+  redis_addr: "localhost:6379"                  # Redis地址
+  redis_password: ""                            # Redis密码
+  redis_db: 0                                   # Redis数据库编号
+  memcached_addrs: "localhost:11211"            # Memcached地址列表
+
+# 监控配置
+monitoring:
+  enable: true                                  # 启用数据库监控
+  metrics_path: "/metrics"                      # 监控指标路径
+  slow_query_log: true                          # 启用慢查询日志
+  connection_events: true                       # 记录连接事件
+  query_events: false                           # 记录查询事件
+  error_events: true                            # 记录错误事件
+  stats_interval: "30s"                         # 统计信息收集间隔
+  export_format: "prometheus"                   # 导出格式: prometheus, json, text
+
+# 数据库迁移配置
+migration:
+  enable: true                                  # 启用数据库迁移
+  path: "./migrations"                          # 迁移文件路径
+  table_name: "schema_migrations"               # 迁移记录表名
+  auto_migrate: false                           # 自动迁移模型
+  drop_column: false                            # 允许删除列
+  drop_table: false                             # 允许删除表
+  drop_index: false                             # 允许删除索引
+  alter_column: true                            # 允许修改列
+  create_index: true                            # 允许创建索引
+  rename_column: true                           # 允许重命名列
+  rename_index: true                            # 允许重命名索引
+
+# 多租户配置
+multi_tenant:
+  enable: false                                 # 启用多租户支持
+  strategy: "discriminator"                     # 策略: schema, database, discriminator
+  tenant_header: "X-Tenant-ID"                 # 租户请求头
+  default_tenant: "default"                     # 默认租户
+  schema_prefix: "tenant_"                      # Schema前缀
+  table_suffix: ""                              # 表后缀
+
+# 开发环境配置
+development:
+  enable: false                                 # 启用开发模式
+  seed_data: false                              # 自动填充测试数据
+  drop_tables: false                            # 启动时删除所有表
+  show_sql: false                               # 显示SQL语句
+  explain_plan: false                           # 显示查询执行计划
+  mock_data: "./config/mock_data.yaml"          # 模拟数据配置文件
+
+# 常用连接字符串示例:
+# MySQL: "user:password@tcp(localhost:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+# PostgreSQL: "host=localhost user=postgres password=password dbname=yyhertz port=5432 sslmode=disable TimeZone=Asia/Shanghai" 
+# SQLite: "./database.db"
+# SQL Server: "sqlserver://user:password@localhost:1433?database=yyhertz"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/mybatis/config"
 	"github.com/zsy619/yyhertz/framework/mybatis/session"
-	"github.com/zsy619/yyhertz/framework/orm"
+	frameworkConfig "github.com/zsy619/yyhertz/framework/config"
 )
 
 // MyBatisDemo MyBatis演示程序
@@ -25,14 +25,13 @@ func NewMyBatisDemo() (*MyBatisDemo, error) {
 	configuration := config.NewConfiguration()
 	
 	// 设置数据库配置 (使用SQLite作为演示)
-	dbConfig := &orm.DatabaseConfig{
-		Type:         "sqlite",
-		Database:     "mybatis_demo.db",
-		MaxIdleConns: 5,
-		MaxOpenConns: 10,
-		MaxLifetime:  3600,
-		LogLevel:     "info",
-	}
+	dbConfig := &frameworkConfig.DatabaseConfig{}
+	dbConfig.Primary.Driver = "sqlite"
+	dbConfig.Primary.Database = "mybatis_demo.db"
+	dbConfig.Primary.MaxIdleConns = 5
+	dbConfig.Primary.MaxOpenConns = 10
+	dbConfig.Primary.ConnMaxLifetime = "1h"
+	dbConfig.Primary.LogLevel = "info"
 	configuration.SetDatabaseConfig(dbConfig)
 	
 	// 注册用户映射器

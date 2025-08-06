@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	
+
 	"github.com/zsy619/yyhertz/framework/mvc/handler"
 )
 
@@ -23,7 +23,7 @@ func TestGenericHandlerWithProcessor(t *testing.T) {
 		WithProcessor(func(ctx context.Context, input string) (string, error) {
 			return "echo: " + input, nil
 		})
-	
+
 	result, err := h.Handle(context.Background(), "test")
 	assert.NoError(t, err, "Handler should not return error")
 	assert.Equal(t, "echo: test", result, "Handler should return processed result")
@@ -41,12 +41,12 @@ func TestGenericHandlerWithValidator(t *testing.T) {
 		WithProcessor(func(ctx context.Context, input string) (string, error) {
 			return input, nil
 		})
-	
+
 	// 测试有效输入
 	result, err := h.Handle(context.Background(), "valid")
 	assert.NoError(t, err, "Valid input should not return error")
 	assert.Equal(t, "valid", result, "Handler should return input")
-	
+
 	// 测试无效输入
 	_, err = h.Handle(context.Background(), "")
 	assert.Error(t, err, "Invalid input should return error")
@@ -54,10 +54,10 @@ func TestGenericHandlerWithValidator(t *testing.T) {
 
 // TestSimpleHandler 测试简单处理器
 func TestSimpleHandler(t *testing.T) {
-	h := handler.NewSimpleHandler[int, int]("double_handler", func(ctx context.Context, input int) (int, error) {
+	h := handler.NewSimpleHandler("double_handler", func(ctx context.Context, input int) (int, error) {
 		return input * 2, nil
 	})
-	
+
 	result, err := h.Handle(context.Background(), 5)
 	assert.NoError(t, err, "Handler should not return error")
 	assert.Equal(t, 10, result, "Handler should double the input")

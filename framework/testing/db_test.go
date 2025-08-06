@@ -46,36 +46,45 @@ func (dts *DBTestSuite) SetUp(t *testing.T) {
 		Database:     ":memory:",
 		MaxIdleConns: 5,
 		MaxOpenConns: 10,
-		MaxLifetime:  3600,
+		MaxLifetime:  3600,     // 1小时，单位秒
 		LogLevel:     "silent", // 测试时不输出SQL日志
+		SlowQuery:    1000,     // 慢查询阈值1秒
 	}
 
 	// 创建ORM实例
 	var err error
 	dts.ORM, err = orm.NewORM(dbConfig)
 	if err != nil {
-		t.Fatalf("Failed to create ORM: %v", err)
+		t.Fatalf("创建ORM失败: %v", err)
 	}
 
 	dts.DB = dts.ORM.DB()
+	if dts.DB == nil {
+		t.Fatal("获取数据库连接失败")
+	}
 
-	// 创建增强ORM实例
-	poolConfig := orm.DefaultPoolConfig()
-	poolConfig.MetricsEnabled = false     // 测试时关闭指标收集
-	poolConfig.HealthCheckEnabled = false // 测试时关闭健康检查
+	// 创建增强ORM实例（如果存在的话）
+	if dts.EnhancedORM != nil {
+		poolConfig := orm.DefaultPoolConfig()
+		if poolConfig != nil {
+			poolConfig.MetricsEnabled = false     // 测试时关闭指标收集
+			poolConfig.HealthCheckEnabled = false // 测试时关闭健康检查
+		}
 
-	dts.EnhancedORM, err = orm.NewEnhancedORM(dbConfig, poolConfig)
-	if err != nil {
-		t.Fatalf("Failed to create Enhanced ORM: %v", err)
+		dts.EnhancedORM, err = orm.NewEnhancedORM(dbConfig, poolConfig)
+		if err != nil {
+			config.Warnf("创建增强ORM失败，将跳过: %v", err)
+			dts.EnhancedORM = nil
+		}
 	}
 
 	// 获取底层数据库连接
 	dts.TestDB, err = dts.DB.DB()
 	if err != nil {
-		t.Fatalf("Failed to get underlying DB: %v", err)
+		t.Fatalf("获取底层数据库连接失败: %v", err)
 	}
 
-	config.Infof("Database test suite initialized with %s", dbConfig.Type)
+	config.Infof("数据库测试套件初始化完成，使用驱动: %s", dbConfig.Type)
 }
 
 // TearDown 清理数据库测试环境
@@ -94,7 +103,7 @@ func (dts *DBTestSuite) TearDown(t *testing.T) {
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					config.Errorf("Cleanup function panicked: %v", r)
+					config.Errorf("清理函数发生panic: %v", r)
 				}
 			}()
 			dts.cleanup[i]()
@@ -112,7 +121,7 @@ func (dts *DBTestSuite) TearDown(t *testing.T) {
 	}
 
 	dts.BaseTestSuite.TearDown(t)
-	config.Info("Database test suite cleaned up")
+	config.Info("数据库测试套件清理完成")
 }
 
 // BeginTransaction 开始事务
@@ -209,7 +218,7 @@ func (dts *DBTestSuite) LoadFixture(fixturePath string) error {
 	// 读取SQL文件并执行
 	content, err := os.ReadFile(fixturePath)
 	if err != nil {
-		return fmt.Errorf("failed to read fixture file: %w", err)
+		return fmt.Errorf("读取夹具文件失败: %w", err)
 	}
 
 	// 按分号分割SQL语句
@@ -222,7 +231,7 @@ func (dts *DBTestSuite) LoadFixture(fixturePath string) error {
 		}
 
 		if err := dts.DB.Exec(stmt).Error; err != nil {
-			return fmt.Errorf("failed to execute SQL statement: %w", err)
+			return fmt.Errorf("执行SQL语句失败: %w", err)
 		}
 	}
 
@@ -255,7 +264,7 @@ func (dba *DBAssertion) AssertRecordCount(model any, expected int64, conditions 
 
 	if count != expected {
 		dba.t.Helper()
-		dba.t.Errorf("Expected %d records, got %d", expected, count)
+		dba.t.Errorf("期望 %d 条记录，实际得到 %d 条", expected, count)
 	}
 }
 
@@ -272,7 +281,7 @@ func (dba *DBAssertion) AssertRecordExists(model any, conditions ...any) {
 
 	if count == 0 {
 		dba.t.Helper()
-		dba.t.Error("Expected record to exist, but it doesn't")
+		dba.t.Error("期望记录存在，但实际不存在")
 	}
 }
 
@@ -289,7 +298,7 @@ func (dba *DBAssertion) AssertRecordNotExists(model any, conditions ...any) {
 
 	if count > 0 {
 		dba.t.Helper()
-		dba.t.Errorf("Expected record to not exist, but found %d records", count)
+		dba.t.Errorf("期望记录不存在，但找到了 %d 条记录", count)
 	}
 }
 
@@ -304,20 +313,20 @@ func (dba *DBAssertion) AssertFieldValue(model any, field string, expected any, 
 	var result map[string]any
 	if err := query.Select(field).First(&result).Error; err != nil {
 		dba.t.Helper()
-		dba.t.Errorf("Failed to query field value: %v", err)
+		dba.t.Errorf("查询字段值失败: %v", err)
 		return
 	}
 
 	actual, exists := result[field]
 	if !exists {
 		dba.t.Helper()
-		dba.t.Errorf("Field '%s' not found in result", field)
+		dba.t.Errorf("结果中未找到字段 '%s'", field)
 		return
 	}
 
 	if actual != expected {
 		dba.t.Helper()
-		dba.t.Errorf("Expected field '%s' to be %v, got %v", field, expected, actual)
+		dba.t.Errorf("期望字段 '%s' 的值为 %v，实际得到 %v", field, expected, actual)
 	}
 }
 
@@ -326,7 +335,7 @@ func (dba *DBAssertion) AssertQueryResult(sql string, expectedRows int, args ...
 	rows, err := dba.db.Raw(sql, args...).Rows()
 	if err != nil {
 		dba.t.Helper()
-		dba.t.Errorf("Failed to execute query: %v", err)
+		dba.t.Errorf("执行查询失败: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -338,7 +347,7 @@ func (dba *DBAssertion) AssertQueryResult(sql string, expectedRows int, args ...
 
 	if count != expectedRows {
 		dba.t.Helper()
-		dba.t.Errorf("Expected %d rows, got %d", expectedRows, count)
+		dba.t.Errorf("期望 %d 行，实际得到 %d 行", expectedRows, count)
 	}
 }
 
@@ -346,7 +355,7 @@ func (dba *DBAssertion) AssertQueryResult(sql string, expectedRows int, args ...
 func (dba *DBAssertion) AssertTableExists(tableName string) {
 	if !dba.db.Migrator().HasTable(tableName) {
 		dba.t.Helper()
-		dba.t.Errorf("Expected table '%s' to exist", tableName)
+		dba.t.Errorf("期望表 '%s' 存在", tableName)
 	}
 }
 
@@ -354,7 +363,7 @@ func (dba *DBAssertion) AssertTableExists(tableName string) {
 func (dba *DBAssertion) AssertTableNotExists(tableName string) {
 	if dba.db.Migrator().HasTable(tableName) {
 		dba.t.Helper()
-		dba.t.Errorf("Expected table '%s' to not exist", tableName)
+		dba.t.Errorf("期望表 '%s' 不存在", tableName)
 	}
 }
 
@@ -362,7 +371,7 @@ func (dba *DBAssertion) AssertTableNotExists(tableName string) {
 func (dba *DBAssertion) AssertColumnExists(tableName, columnName string) {
 	if !dba.db.Migrator().HasColumn(tableName, columnName) {
 		dba.t.Helper()
-		dba.t.Errorf("Expected column '%s' in table '%s' to exist", columnName, tableName)
+		dba.t.Errorf("期望表 '%s' 中的列 '%s' 存在", tableName, columnName)
 	}
 }
 
@@ -370,7 +379,7 @@ func (dba *DBAssertion) AssertColumnExists(tableName, columnName string) {
 func (dba *DBAssertion) AssertIndexExists(tableName, indexName string) {
 	if !dba.db.Migrator().HasIndex(tableName, indexName) {
 		dba.t.Helper()
-		dba.t.Errorf("Expected index '%s' on table '%s' to exist", indexName, tableName)
+		dba.t.Errorf("期望表 '%s' 上的索引 '%s' 存在", tableName, indexName)
 	}
 }
 
@@ -405,7 +414,7 @@ func (tdf *TestDataFactory) Generate(name string) any {
 
 	generator, exists := tdf.generators[name]
 	if !exists {
-		panic(fmt.Sprintf("No generator registered for '%s'", name))
+		panic(fmt.Sprintf("未注册名为 '%s' 的生成器", name))
 	}
 
 	return generator()
@@ -526,14 +535,14 @@ func (dbb *DBBenchmark) PrintResults() {
 	dbb.mutex.Lock()
 	defer dbb.mutex.Unlock()
 
-	config.Info("=== Database Benchmark Results ===")
+	config.Info("=== 数据库性能测试结果 ===")
 	for name, result := range dbb.results {
-		config.Infof("Test: %s", name)
-		config.Infof("  Operations: %d", result.Operations)
-		config.Infof("  Duration: %v", result.Duration)
-		config.Infof("  Average Time: %v", result.AverageTime)
-		config.Infof("  Min Time: %v", result.MinTime)
-		config.Infof("  Max Time: %v", result.MaxTime)
+		config.Infof("测试: %s", name)
+		config.Infof("  操作数: %d", result.Operations)
+		config.Infof("  总耗时: %v", result.Duration)
+		config.Infof("  平均耗时: %v", result.AverageTime)
+		config.Infof("  最小耗时: %v", result.MinTime)
+		config.Infof("  最大耗时: %v", result.MaxTime)
 		config.Infof("  QPS: %.2f", result.QPS)
 		config.Info("---")
 	}
@@ -594,11 +603,12 @@ func GetTestDB() (*gorm.DB, func()) {
 	dbConfig := &orm.DatabaseConfig{
 		Type:     "sqlite",
 		Database: ":memory:",
+		LogLevel: "silent",
 	}
 
 	ormInstance, err := orm.NewORM(dbConfig)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create test DB: %v", err))
+		panic(fmt.Sprintf("创建测试数据库失败: %v", err))
 	}
 
 	cleanup := func() {

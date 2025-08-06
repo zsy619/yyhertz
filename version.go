@@ -109,8 +109,7 @@ func PrintBanner() {
 ██   ██ ██      ██   ██    ██    ██          ████  ████ ██    ██ ██      
 ███████ █████   ██████     ██    ███████     ██ ████ ██ ██    ██ ██      
 ██   ██ ██      ██   ██    ██         ██     ██  ██  ██  ██  ██  ██      
-██   ██ ███████ ██   ██    ██    ███████     ██      ██   ████    ██████ 
-`)
+██   ██ ███████ ██   ██    ██    ███████     ██      ██   ████    ██████`)
 	fmt.Printf("                    %s Framework v%s\n", FrameworkName, FrameworkVersion)
 	fmt.Printf("                基于CloudWeGo-Hertz的类Beego框架\n")
 	fmt.Printf("                    Build: %s | %s\n", BuildDate, runtime.Version())

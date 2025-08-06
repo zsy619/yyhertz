@@ -11,31 +11,6 @@ app:
   host: "0.0.0.0"
   timezone: "Asia/Shanghai"
 
-# 数据库配置
-database:
-  driver: "mysql"
-  host: "127.0.0.1"
-  port: 3306
-  username: "root"
-  password: ""
-  database: "yyhertz"
-  charset: "utf8mb4"
-  max_idle: 10
-  max_open: 100
-  max_life: 3600  # 秒
-  ssl_mode: "disable"
-
-# Redis配置
-redis:
-  host: "127.0.0.1"
-  port: 6379
-  password: ""
-  database: 0
-  max_retries: 3
-  pool_size: 10
-  min_idle: 2
-  dial_timeout: 5  # 秒
-  read_timeout: 3  # 秒
 
 # 日志配置
 log:
@@ -80,12 +55,6 @@ middleware:
     burst: 200             # 突发容量
     strategy: "token_bucket"  # token_bucket, sliding_window
 
-  # 认证配置
-  auth:
-    enable: false
-    jwt_secret: "your-secret-key-change-me"
-    token_ttl: 24          # 小时
-    refresh_ttl: 168       # 小时
 
 # 外部服务配置
 services:

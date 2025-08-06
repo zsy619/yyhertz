@@ -212,6 +212,21 @@ func (c *HomeController) GetDatabase() {
 	c.renderMarkdownDoc("database", "数据库集成")
 }
 
+// MyBatis集成文档
+func (c *HomeController) GetMybatis() {
+	c.renderMarkdownDoc("mybatis", "MyBatis集成")
+}
+
+// 系统日志文档
+func (c *HomeController) GetLogging() {
+	c.renderMarkdownDoc("logging", "系统日志")
+}
+
+// 系统配置文档
+func (c *HomeController) GetConfig() {
+	c.renderMarkdownDoc("config", "系统配置")
+}
+
 // 部署文档
 func (c *HomeController) GetDeployment() {
 	c.renderMarkdownDoc("deployment", "部署上线")

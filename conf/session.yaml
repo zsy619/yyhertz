@@ -1,0 +1,124 @@
+# YYHertz Session Configuration
+# Session配置文件
+
+# Cookie配置
+cookie:
+  name: "yyhertz_cookie"                 # Cookie名称
+  domain: ""                             # Cookie域名(为空表示当前域名)
+  path: "/"                              # Cookie路径
+  max_age: 86400                         # Cookie最大生存时间(秒) - 24小时
+  secure: false                          # 是否仅HTTPS传输
+  http_only: true                        # 是否HttpOnly(防XSS)
+  same_site: "Lax"                       # SameSite策略: Strict, Lax, None
+  
+  # Cookie签名配置
+  sign:
+    enable: false                        # 启用Cookie签名
+    secret: "your-cookie-sign-secret-change-me" # 签名密钥
+  
+  # Cookie加密配置
+  encrypt:
+    enable: false                        # 启用Cookie加密
+    secret_key: "your-32-char-secret-key-change-me" # 加密密钥(32字符)
+    algorithm: "AES256"                  # 加密算法: AES256, AES128
+  
+  # Cookie压缩配置
+  compress:
+    enable: false                        # 启用Cookie压缩
+    level: 6                             # 压缩级别 1-9
+    algorithm: "gzip"                    # 压缩算法: gzip, deflate
+
+# Session配置
+session:
+  name: "YYHERTZ_SESSION"                # Session名称
+  secret: "your-session-secret-key-change-me" # Session密钥
+  max_age: 3600                          # Session最大生存时间(秒) - 1小时
+  
+  # Session Cookie配置
+  cookie:
+    path: "/"                            # Session Cookie路径
+    domain: ""                           # Session Cookie域名
+    secure: false                        # 是否仅HTTPS传输
+    http_only: true                      # 是否HttpOnly
+    same_site: "Lax"                     # SameSite策略
+  
+  # 存储配置
+  store:
+    type: "cookie"                       # 存储类型: cookie, memory, redis, file
+    prefix: "session:"                   # 存储键前缀
+    
+    # Redis存储配置
+    redis:
+      addr: "localhost:6379"             # Redis地址
+      password: ""                       # Redis密码
+      db: 0                              # Redis数据库
+      pool_size: 10                      # 连接池大小
+    
+    # 文件存储配置
+    file:
+      dir: "./sessions"                  # 存储目录
+      file_mode: "0600"                  # 文件权限
+    
+    # 内存存储配置
+    memory:
+      max_size: 1000                     # 最大条目数
+      gc_interval: "10m"                 # 垃圾回收间隔
+  
+  # 安全配置
+  security:
+    regenerate_id: true                  # 登录时重新生成Session ID
+    csrf_protection: false               # CSRF保护
+    encrypt_data: false                  # 加密Session数据
+    secure_transmission: false           # 安全传输
+  
+  # 清理配置
+  cleanup:
+    enable: true                         # 启用过期清理
+    interval: "1h"                       # 清理间隔
+    batch_size: 100                      # 批量清理大小
+
+# 中间件配置
+middleware:
+  # Cookie中间件配置
+  cookie:
+    enable: true                         # 启用Cookie中间件
+    trusted_proxies: []                  # 信任的代理
+    allowed_origins: ["*"]               # 允许的来源
+    blocked_user_agent: []               # 阻止的用户代理
+  
+  # Session中间件配置  
+  session:
+    enable: true                         # 启用Session中间件
+    skip_paths: ["/health", "/metrics"]  # 跳过的路径
+    error_handling: "log"                # 错误处理: ignore, log, panic
+    auto_save: true                      # 自动保存
+    lazy_loading: false                  # 延迟加载
+
+# 监控配置
+monitoring:
+  enable: false                          # 启用监控
+  metrics_path: "/metrics"               # 监控指标路径
+  collect_cookie: true                   # 收集Cookie指标
+  collect_session: true                  # 收集Session指标
+  report_interval: "30s"                 # 报告间隔
+
+# 开发配置
+development:
+  enable: false                          # 启用开发模式
+  show_cookies: false                    # 显示Cookie信息
+  show_sessions: false                   # 显示Session信息
+  debug_mode: false                      # 调试模式
+
+# 使用示例:
+# 1. Cookie设置:
+#    cookie.name = "my_app_cookie"
+#    cookie.max_age = 7 * 24 * 3600  // 7天
+#    cookie.secure = true            // 生产环境建议启用
+#
+# 2. Session存储:
+#    session.store.type = "redis"    // 生产环境建议使用Redis
+#    session.store.redis.addr = "redis-cluster:6379"
+#
+# 3. 安全配置:
+#    cookie.encrypt.enable = true    // 敏感数据建议加密
+#    session.security.csrf_protection = true // 启用CSRF保护

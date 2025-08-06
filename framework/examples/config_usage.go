@@ -24,8 +24,9 @@ func ExampleAppConfig() {
 
 	fmt.Printf("应用名称: %s\n", appConfig.App.Name)
 	fmt.Printf("应用端口: %d\n", appConfig.App.Port)
-	fmt.Printf("数据库主机: %s\n", appConfig.Database.Host)
-	fmt.Printf("数据库端口: %d\n", appConfig.Database.Port)
+	// 注释掉数据库相关的示例，因为已从AppConfig中移除
+	// fmt.Printf("数据库主机: %s\n", appConfig.Database.Host)
+	// fmt.Printf("数据库端口: %d\n", appConfig.Database.Port)
 
 	// 方式2：使用配置管理器获取单个值
 	manager := config.GetAppConfigManager()

@@ -5,9 +5,9 @@ package session
 
 import (
 	"sync"
-	
-	"github.com/zsy619/yyhertz/framework/mybatis/config"
+
 	"github.com/zsy619/yyhertz/framework/mybatis/cache"
+	"github.com/zsy619/yyhertz/framework/mybatis/config"
 	"github.com/zsy619/yyhertz/framework/orm"
 )
 
@@ -15,16 +15,16 @@ import (
 type SqlSessionFactory interface {
 	// OpenSession 打开新会话
 	OpenSession() SqlSession
-	
+
 	// OpenSessionWithAutoCommit 打开带自动提交的会话
 	OpenSessionWithAutoCommit(autoCommit bool) SqlSession
-	
+
 	// OpenSessionWithConnection 打开带连接的会话
 	OpenSessionWithConnection(connection any) SqlSession
-	
+
 	// OpenSessionWithExecutorType 打开带执行器类型的会话
 	OpenSessionWithExecutorType(execType config.ExecutorType) SqlSession
-	
+
 	// GetConfiguration 获取配置
 	GetConfiguration() *config.Configuration
 }
@@ -32,21 +32,21 @@ type SqlSessionFactory interface {
 // DefaultSqlSessionFactory 默认SQL会话工厂
 type DefaultSqlSessionFactory struct {
 	configuration *config.Configuration
-	orm          *orm.ORM
-	cache        cache.Cache
-	mutex        sync.RWMutex
+	orm           *orm.ORM
+	cache         cache.Cache
+	mutex         sync.RWMutex
 }
 
 // SqlSessionManager SQL会话管理器
 type SqlSessionManager struct {
-	factory    SqlSessionFactory
+	factory         SqlSessionFactory
 	localSqlSession *ThreadLocal
-	mutex      sync.RWMutex
+	mutex           sync.RWMutex
 }
 
 // ThreadLocal 线程本地存储 (Go中用Goroutine本地存储模拟)
 type ThreadLocal struct {
-	data map[int64]SqlSession
+	data  map[int64]SqlSession
 	mutex sync.RWMutex
 }
 
@@ -56,30 +56,63 @@ type ExecutorFactory struct {
 }
 
 // NewDefaultSqlSessionFactory 创建默认SQL会话工厂
-func NewDefaultSqlSessionFactory(configuration *config.Configuration) (*DefaultSqlSessionFactory, error) {
+func NewDefaultSqlSessionFactory(configuration *config.Configuration) (SqlSessionFactory, error) {
 	if configuration == nil {
 		configuration = config.NewConfiguration()
 	}
-	
+
 	// 创建ORM实例
-	orm, err := orm.NewORM(configuration.GetDatabaseConfig())
-	if err != nil {
-		return nil, err
+	var ormInstance *orm.ORM
+	var err error
+
+	if configuration.GetDatabaseConfig() != nil {
+		// 转换配置类型
+		primaryConfig := configuration.GetDatabaseConfig().Primary
+		dbConfig := &orm.DatabaseConfig{
+			Type:         primaryConfig.Driver,
+			Host:         primaryConfig.Host,
+			Port:         primaryConfig.Port,
+			Database:     primaryConfig.Database,
+			Username:     primaryConfig.Username,
+			Password:     primaryConfig.Password,
+			Charset:      primaryConfig.Charset,
+			Timezone:     primaryConfig.Timezone,
+			MaxIdleConns: primaryConfig.MaxIdleConns,
+			MaxOpenConns: primaryConfig.MaxOpenConns,
+			LogLevel:     primaryConfig.LogLevel,
+		}
+
+		// 解析连接最大生存时间
+		if primaryConfig.ConnMaxLifetime != "" {
+			// 简化处理，默认设置为3600秒
+			dbConfig.MaxLifetime = 3600
+		}
+
+		// 解析慢查询阈值
+		if primaryConfig.SlowQueryThreshold != "" {
+			// 简化处理，默认设置为200毫秒
+			dbConfig.SlowQuery = 200
+		}
+
+		ormInstance, err = orm.NewORM(dbConfig)
+		if err != nil {
+			return nil, err
+		}
 	}
-	
+
 	// 创建缓存
 	var c cache.Cache
-	if configuration.CacheEnabled {
+	if configuration.CacheEnabled && configuration.DefaultCacheConfig != nil {
 		perpetualCache := cache.NewPerpetualCache("factory")
 		c = cache.NewLruCache(perpetualCache, configuration.DefaultCacheConfig.Size)
 	}
-	
+
 	factory := &DefaultSqlSessionFactory{
 		configuration: configuration,
-		orm:          orm,
-		cache:        c,
+		orm:           ormInstance,
+		cache:         c,
 	}
-	
+
 	return factory, nil
 }
 
@@ -121,7 +154,7 @@ func (factory *DefaultSqlSessionFactory) GetConfiguration() *config.Configuratio
 func (factory *DefaultSqlSessionFactory) createExecutor(execType config.ExecutorType, autoCommit bool) Executor {
 	// 根据类型创建执行器
 	var executor Executor
-	
+
 	switch execType {
 	case config.ExecutorTypeReuse:
 		executor = NewReuseExecutor(factory.configuration, factory.orm.DB())
@@ -130,15 +163,15 @@ func (factory *DefaultSqlSessionFactory) createExecutor(execType config.Executor
 	default:
 		executor = NewSimpleExecutor(factory.configuration, factory.orm.DB())
 	}
-	
+
 	// 应用插件
 	executor = factory.applyPlugins(executor)
-	
+
 	// 包装缓存执行器
 	if factory.configuration.CacheEnabled {
 		executor = NewCachingExecutor(executor, factory.cache)
 	}
-	
+
 	return executor
 }
 
@@ -161,7 +194,7 @@ func NewSqlSessionManager(factory SqlSessionFactory) *SqlSessionManager {
 func (manager *SqlSessionManager) StartManagedSession() {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	
+
 	session := manager.factory.OpenSession()
 	manager.localSqlSession.Set(session)
 }
@@ -170,7 +203,7 @@ func (manager *SqlSessionManager) StartManagedSession() {
 func (manager *SqlSessionManager) StartManagedSessionWithAutoCommit(autoCommit bool) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	
+
 	session := manager.factory.OpenSessionWithAutoCommit(autoCommit)
 	manager.localSqlSession.Set(session)
 }
@@ -179,7 +212,7 @@ func (manager *SqlSessionManager) StartManagedSessionWithAutoCommit(autoCommit b
 func (manager *SqlSessionManager) StartManagedSessionWithExecutorType(execType config.ExecutorType) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
-	
+
 	session := manager.factory.OpenSessionWithExecutorType(execType)
 	manager.localSqlSession.Set(session)
 }
@@ -215,7 +248,7 @@ func NewThreadLocal() *ThreadLocal {
 func (tl *ThreadLocal) Set(session SqlSession) {
 	tl.mutex.Lock()
 	defer tl.mutex.Unlock()
-	
+
 	// 使用goroutine ID作为键 (简化实现)
 	// 实际应该使用更可靠的goroutine本地存储
 	goroutineID := getGoroutineID()
@@ -226,7 +259,7 @@ func (tl *ThreadLocal) Set(session SqlSession) {
 func (tl *ThreadLocal) Get() SqlSession {
 	tl.mutex.RLock()
 	defer tl.mutex.RUnlock()
-	
+
 	goroutineID := getGoroutineID()
 	return tl.data[goroutineID]
 }
@@ -235,7 +268,7 @@ func (tl *ThreadLocal) Get() SqlSession {
 func (tl *ThreadLocal) Remove() {
 	tl.mutex.Lock()
 	defer tl.mutex.Unlock()
-	
+
 	goroutineID := getGoroutineID()
 	delete(tl.data, goroutineID)
 }
@@ -269,8 +302,8 @@ func (factory *ExecutorFactory) CreateExecutor(execType config.ExecutorType, db 
 
 // SqlSessionTemplate SQL会话模板 (类似Spring的SqlSessionTemplate)
 type SqlSessionTemplate struct {
-	sqlSessionFactory SqlSessionFactory
-	executorType      config.ExecutorType
+	sqlSessionFactory   SqlSessionFactory
+	executorType        config.ExecutorType
 	exceptionTranslator ExceptionTranslator
 }
 
@@ -301,7 +334,7 @@ func (template *SqlSessionTemplate) SetExceptionTranslator(exceptionTranslator E
 func (template *SqlSessionTemplate) Execute(callback func(session SqlSession) (any, error)) (any, error) {
 	session := template.getSqlSession()
 	defer template.closeSqlSession(session)
-	
+
 	return callback(session)
 }
 
