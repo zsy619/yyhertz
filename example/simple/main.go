@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/example/simple/controllers"
-	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 	"github.com/zsy619/yyhertz/framework/mvc"
+	"github.com/zsy619/yyhertz/framework/mvc/devtools"
+	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
 func main() {
@@ -165,5 +166,10 @@ func main() {
 	log.Println("curl http://localhost:8888/api/v2/users/profile")
 	log.Println("curl http://localhost:8888/api/v2/admin/system/config")
 
-	app.Run(":8890")
+	// 设置开发工具
+	if err := devtools.SetupDevTools(app); err != nil {
+		fmt.Printf("设置开发工具失败: %v\n", err)
+	}
+
+	app.Run()
 }
