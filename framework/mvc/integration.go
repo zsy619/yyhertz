@@ -124,7 +124,7 @@ func (e *EnhancedFastEngine) setupGlobalErrorHandling() {
 
 // createIntelligentErrorHandler 创建智能错误处理中间件
 func (e *EnhancedFastEngine) createIntelligentErrorHandler() middleware.MiddlewareFunc {
-	return func(ctx *context.EnhancedContext) {
+	return func(ctx *context.Context) {
 		// 执行后续处理
 		ctx.Next()
 
@@ -231,7 +231,7 @@ func (e *EnhancedFastEngine) Use(name string, handler middleware.MiddlewareFunc,
 		e.middlewareManager.UseCustom(middleware.LayerGlobal, name, priority)
 	} else {
 		// 使用原始方法（这里需要根据实际的 FastEngine API 调整）
-		// e.FastEngine.Use(name, func(ctx *context.EnhancedContext) {
+		// e.FastEngine.Use(name, func(ctx *context.Context) {
 		// 	handler(ctx)
 		// }, priority)
 		fmt.Printf("Warning: Original FastEngine Use method not implemented\n")

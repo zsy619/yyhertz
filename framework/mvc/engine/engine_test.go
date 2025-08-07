@@ -102,7 +102,7 @@ func BenchmarkContextPool(b *testing.B) {
 	b.Run("WithoutPool", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				ctx := &mvccontext.EnhancedContext{
+				ctx := &mvccontext.Context{
 					Keys: make(map[string]interface{}),
 				}
 				ctx.Set("key", "value")

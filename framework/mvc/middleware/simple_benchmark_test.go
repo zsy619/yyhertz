@@ -37,7 +37,7 @@ func BenchmarkSimpleMVCMiddleware(b *testing.B) {
 	manager.Initialize()
 	
 	// 注册简单中间件
-	manager.RegisterCustom("test", func(ctx *mvccontext.EnhancedContext) {
+	manager.RegisterCustom("test", func(ctx *mvccontext.Context) {
 		ctx.Set("test", "value")
 		ctx.Next()
 	}, MiddlewareMetadata{

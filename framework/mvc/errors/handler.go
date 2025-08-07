@@ -13,18 +13,18 @@ import (
 
 // ErrorHandler 错误处理器接口
 type ErrorHandler interface {
-	Handle(ctx *mvccontext.EnhancedContext, err error) error
+	Handle(ctx *mvccontext.Context, err error) error
 	CanHandle(err error) bool
 	Priority() int
 }
 
 // ErrorHandlerFunc 错误处理函数类型
-type ErrorHandlerFunc func(ctx *mvccontext.EnhancedContext, err error) error
+type ErrorHandlerFunc func(ctx *mvccontext.Context, err error) error
 
 // ErrorContext 错误上下文
 type ErrorContext struct {
 	Original    error                          // 原始错误
-	Request     *mvccontext.EnhancedContext    // 请求上下文
+	Request     *mvccontext.Context    // 请求上下文
 	Handled     bool                           // 是否已处理
 	HandlerName string                         // 处理器名称
 	Timestamp   time.Time                      // 错误时间
@@ -146,7 +146,7 @@ func (d *ErrorDispatcher) SetFallbackHandler(handler ErrorHandlerFunc) {
 }
 
 // Dispatch 分发错误处理
-func (d *ErrorDispatcher) Dispatch(ctx *mvccontext.EnhancedContext, err error) error {
+func (d *ErrorDispatcher) Dispatch(ctx *mvccontext.Context, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -216,7 +216,7 @@ func (d *ErrorDispatcher) Dispatch(ctx *mvccontext.EnhancedContext, err error) e
 }
 
 // handleWithRetry 带重试的错误处理
-func (d *ErrorDispatcher) handleWithRetry(handler ErrorHandler, ctx *mvccontext.EnhancedContext, err error) error {
+func (d *ErrorDispatcher) handleWithRetry(handler ErrorHandler, ctx *mvccontext.Context, err error) error {
 	var lastErr error
 	
 	for i := 0; i <= d.config.MaxRetries; i++ {
@@ -293,7 +293,7 @@ type FuncErrorHandler struct {
 	handleFunc ErrorHandlerFunc
 }
 
-func (h *FuncErrorHandler) Handle(ctx *mvccontext.EnhancedContext, err error) error {
+func (h *FuncErrorHandler) Handle(ctx *mvccontext.Context, err error) error {
 	return h.handleFunc(ctx, err)
 }
 
@@ -310,7 +310,7 @@ func (h *FuncErrorHandler) Priority() int {
 // BusinessErrorHandler 业务错误处理器
 type BusinessErrorHandler struct{}
 
-func (h *BusinessErrorHandler) Handle(ctx *mvccontext.EnhancedContext, err error) error {
+func (h *BusinessErrorHandler) Handle(ctx *mvccontext.Context, err error) error {
 	if errNo, ok := err.(*errors.ErrNo); ok {
 		ctx.JSON(400, map[string]interface{}{
 			"code":    errNo.ErrCode,
@@ -334,7 +334,7 @@ func (h *BusinessErrorHandler) Priority() int {
 // SystemErrorHandler 系统错误处理器
 type SystemErrorHandler struct{}
 
-func (h *SystemErrorHandler) Handle(ctx *mvccontext.EnhancedContext, err error) error {
+func (h *SystemErrorHandler) Handle(ctx *mvccontext.Context, err error) error {
 	ctx.JSON(500, map[string]interface{}{
 		"code":    500,
 		"message": "Internal Server Error",
@@ -354,7 +354,7 @@ func (h *SystemErrorHandler) Priority() int {
 }
 
 // DefaultFallbackHandler 默认兜底处理器
-func DefaultFallbackHandler(ctx *mvccontext.EnhancedContext, err error) error {
+func DefaultFallbackHandler(ctx *mvccontext.Context, err error) error {
 	ctx.JSON(500, map[string]interface{}{
 		"code":    500,
 		"message": "Unknown Error",
@@ -379,7 +379,7 @@ func GetGlobalDispatcher() *ErrorDispatcher {
 }
 
 // DispatchError 分发错误（全局方法）
-func DispatchError(ctx *mvccontext.EnhancedContext, err error) error {
+func DispatchError(ctx *mvccontext.Context, err error) error {
 	return globalDispatcher.Dispatch(ctx, err)
 }
 

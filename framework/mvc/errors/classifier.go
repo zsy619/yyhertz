@@ -63,7 +63,7 @@ type ErrorClassification struct {
 
 // ErrorClassifier 错误分类器接口
 type ErrorClassifier interface {
-	Classify(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification
+	Classify(err error, ctx *mvccontext.Context) *ErrorClassification
 	CanClassify(err error) bool
 	Priority() int
 	Name() string
@@ -168,7 +168,7 @@ func DefaultClassifierConfig() ClassifierConfig {
 }
 
 // Classify 分类错误
-func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification {
+func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.Context) *ErrorClassification {
 	start := time.Now()
 	defer func() {
 		if c.config.EnableStatistics {
@@ -215,7 +215,7 @@ func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.EnhancedCont
 }
 
 // classifyByRules 基于规则分类
-func (c *IntelligentClassifier) classifyByRules(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification {
+func (c *IntelligentClassifier) classifyByRules(err error, ctx *mvccontext.Context) *ErrorClassification {
 	for _, rule := range c.rules {
 		if rule.Matcher.Match(err) {
 			return &ErrorClassification{
@@ -234,7 +234,7 @@ func (c *IntelligentClassifier) classifyByRules(err error, ctx *mvccontext.Enhan
 }
 
 // classifyByPatterns 基于模式分类
-func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification {
+func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.Context) *ErrorClassification {
 	errMsg := err.Error()
 	
 	var bestMatch *PatternMatcher
@@ -263,7 +263,7 @@ func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.En
 }
 
 // classifyByLearning 基于机器学习分类
-func (c *IntelligentClassifier) classifyByLearning(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification {
+func (c *IntelligentClassifier) classifyByLearning(err error, ctx *mvccontext.Context) *ErrorClassification {
 	errMsg := err.Error()
 	pattern := c.extractPattern(errMsg)
 	
@@ -602,7 +602,7 @@ func GetGlobalClassifier() *IntelligentClassifier {
 }
 
 // ClassifyError 分类错误（全局方法）
-func ClassifyError(err error, ctx *mvccontext.EnhancedContext) *ErrorClassification {
+func ClassifyError(err error, ctx *mvccontext.Context) *ErrorClassification {
 	return globalClassifier.Classify(err, ctx)
 }
 

@@ -195,7 +195,7 @@ func (m *MiddlewareManager) GetCompiledChain(layers ...MiddlewareLayer) (*Compil
 }
 
 // ExecuteCompiledChain 执行编译后的中间件链
-func (m *MiddlewareManager) ExecuteCompiledChain(ctx *mvccontext.EnhancedContext, layers ...MiddlewareLayer) error {
+func (m *MiddlewareManager) ExecuteCompiledChain(ctx *mvccontext.Context, layers ...MiddlewareLayer) error {
 	compiled, err := m.GetCompiledChain(layers...)
 	if err != nil {
 		return fmt.Errorf("failed to compile middleware chain: %v", err)
@@ -340,7 +340,7 @@ func (m *MiddlewareManager) performHealthCheck() {
 func (m *MiddlewareManager) registerBuiltinMiddlewares() {
 	// Logger中间件
 	m.RegisterBuiltin("logger", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			start := time.Now()
 			path := string(ctx.Request.Path())
 			method := string(ctx.Request.Method())
@@ -367,7 +367,7 @@ func (m *MiddlewareManager) registerBuiltinMiddlewares() {
 	
 	// Recovery中间件
 	m.RegisterBuiltin("recovery", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			defer func() {
 				if err := recover(); err != nil {
 					// 记录panic信息
@@ -393,7 +393,7 @@ func (m *MiddlewareManager) registerBuiltinMiddlewares() {
 	
 	// CORS中间件
 	m.RegisterBuiltin("cors", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 设置CORS头
 			ctx.Request.Header("Access-Control-Allow-Origin", "*")
 			ctx.Request.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
@@ -417,7 +417,7 @@ func (m *MiddlewareManager) registerBuiltinMiddlewares() {
 	
 	// Auth中间件
 	m.RegisterBuiltin("auth", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 简化的认证逻辑
 			token := ctx.Header("Authorization")
 			if token == "" {

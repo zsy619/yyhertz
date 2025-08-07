@@ -63,7 +63,7 @@ func ExampleUsage() {
 
 // 中间件示例
 func LoggerMiddleware() mvccontext.HandlerFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		start := time.Now()
 		path := ctx.Request.Path()
 		
@@ -83,7 +83,7 @@ func LoggerMiddleware() mvccontext.HandlerFunc {
 }
 
 func RecoveryMiddleware() mvccontext.HandlerFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Panic recovered: %v", err)
@@ -99,7 +99,7 @@ func RecoveryMiddleware() mvccontext.HandlerFunc {
 }
 
 func AuthMiddleware() mvccontext.HandlerFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		token := ctx.Header("Authorization")
 		if token == "" {
 			ctx.JSON(401, map[string]string{

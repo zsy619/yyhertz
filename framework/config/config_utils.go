@@ -148,7 +148,7 @@ func init() {
 	InitConfig(&TLSServerConfig{})
 	InitConfig(&MyBatisConfig{})
 	InitConfig(&MVCConfig{})
-	InitConfig(&MiddlewareUnifiedConfig{})
+	InitConfig(&MiddlewareConfig{})
 
 	RegisterConfigName[AppConfig](AppConfigName)
 	RegisterConfigName[TemplateConfig](TemplateConfigName)
@@ -160,7 +160,7 @@ func init() {
 	RegisterConfigName[RedisConfig](RedisConfigName)
 	RegisterConfigName[MyBatisConfig](MyBatisConfigName)
 	RegisterConfigName[MVCConfig](MVCConfigName)
-	RegisterConfigName[MiddlewareUnifiedConfig](MiddlewareUnifiedConfigName)
+	RegisterConfigName[MiddlewareConfig](MiddlewareConfigName)
 }
 
 // 全局便捷函数，用于快速获取不同类型的配置
@@ -218,9 +218,9 @@ func GetMVCConfig() (*MVCConfig, error) {
 	return manager.GetConfig()
 }
 
-// GetMiddlewareUnifiedConfig 获取统一中间件配置
-func GetMiddlewareUnifiedConfig() (*MiddlewareUnifiedConfig, error) {
-	manager := GetViperConfigManager(MiddlewareUnifiedConfig{})
+// GetMiddlewareConfig 获取中间件配置
+func GetMiddlewareConfig() (*MiddlewareConfig, error) {
+	manager := GetViperConfigManager(MiddlewareConfig{})
 	return manager.GetConfig()
 }
 
@@ -269,9 +269,9 @@ func GetMVCConfigManager() *ViperConfigManager[MVCConfig] {
 	return GetViperConfigManager(MVCConfig{})
 }
 
-// GetMiddlewareUnifiedConfigManager 获取统一中间件配置管理器
-func GetMiddlewareUnifiedConfigManager() *ViperConfigManager[MiddlewareUnifiedConfig] {
-	return GetViperConfigManager(MiddlewareUnifiedConfig{})
+// GetMiddlewareConfigManager 获取中间件配置管理器
+func GetMiddlewareConfigManager() *ViperConfigManager[MiddlewareConfig] {
+	return GetViperConfigManager(MiddlewareConfig{})
 }
 
 // 泛型配置函数 - 主要API

@@ -56,7 +56,7 @@ func (m *MiddlewareManager) registerEnhancedLoggerMiddleware() {
 			formatter = defaultLogFormatter
 		}
 
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 检查是否跳过
 			path := string(ctx.Request.Path())
 			for _, skip := range notlogged {
@@ -119,7 +119,7 @@ func (m *MiddlewareManager) registerEnhancedRecoveryMiddleware() {
 			}
 		}
 
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			defer func() {
 				if err := recover(); err != nil {
 					// 获取堆栈信息
@@ -151,7 +151,7 @@ func (m *MiddlewareManager) registerEnhancedRecoveryMiddleware() {
 // registerCORSMiddleware 注册CORS中间件
 func (m *MiddlewareManager) registerCORSMiddleware() {
 	m.RegisterBuiltin("cors-extended", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 设置CORS头
 			ctx.Request.Response.Header.Set("Access-Control-Allow-Origin", "*")
 			ctx.Request.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
@@ -178,7 +178,7 @@ func (m *MiddlewareManager) registerCORSMiddleware() {
 func (m *MiddlewareManager) registerRateLimitMiddleware() {
 	m.RegisterBuiltin("ratelimit", func(config interface{}) MiddlewareFunc {
 		// 简化的限流实现 - 实际应用中需要使用专业的限流算法
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// TODO: 实现令牌桶或滑动窗口算法
 			// 这里先实现基础检查
 			ctx.Next()
@@ -195,7 +195,7 @@ func (m *MiddlewareManager) registerRateLimitMiddleware() {
 // registerTracingMiddleware 注册链路追踪中间件
 func (m *MiddlewareManager) registerTracingMiddleware() {
 	m.RegisterBuiltin("tracing", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 生成Trace ID
 			traceID := generateTraceID()
 			ctx.Set("TraceID", traceID)
@@ -215,7 +215,7 @@ func (m *MiddlewareManager) registerTracingMiddleware() {
 // registerTLSMiddleware 注册TLS中间件
 func (m *MiddlewareManager) registerTLSMiddleware() {
 	m.RegisterBuiltin("tls", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// TLS相关检查和处理
 			// 简化实现，实际应用中需要检查协议  
 			fmt.Printf("[TLS] Processing request - client_ip: %s, path: %s\n", 
@@ -235,7 +235,7 @@ func (m *MiddlewareManager) registerBasicAuthMiddleware() {
 	m.RegisterBuiltin("basicauth", func(config interface{}) MiddlewareFunc {
 		_ = config // 简化实现，暂不处理账户配置
 
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 简化的Basic Auth实现
 			auth := string(ctx.Request.GetHeader("Authorization"))
 			if strings.HasPrefix(auth, "Basic ") {
@@ -260,7 +260,7 @@ func (m *MiddlewareManager) registerBasicAuthMiddleware() {
 // registerRequestIDMiddleware 注册请求ID中间件
 func (m *MiddlewareManager) registerRequestIDMiddleware() {
 	m.RegisterBuiltin("requestid", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			requestID := generateRequestID()
 			ctx.Set("RequestID", requestID)
 			ctx.Request.Response.Header.Set("X-Request-ID", requestID)
@@ -284,7 +284,7 @@ func (m *MiddlewareManager) registerTimeoutMiddleware() {
 			}
 		}
 
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			finish := make(chan struct{})
 			panicChan := make(chan any, 1)
 
@@ -320,7 +320,7 @@ func (m *MiddlewareManager) registerTimeoutMiddleware() {
 // registerSecureMiddleware 注册安全头中间件
 func (m *MiddlewareManager) registerSecureMiddleware() {
 	m.RegisterBuiltin("secure", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			ctx.Request.Response.Header.Set("X-Frame-Options", "DENY")
 			ctx.Request.Response.Header.Set("Content-Security-Policy", "default-src 'self'")
 			ctx.Request.Response.Header.Set("X-Content-Type-Options", "nosniff")
@@ -339,7 +339,7 @@ func (m *MiddlewareManager) registerSecureMiddleware() {
 // registerGZipMiddleware 注册压缩中间件
 func (m *MiddlewareManager) registerGZipMiddleware() {
 	m.RegisterBuiltin("gzip", func(config interface{}) MiddlewareFunc {
-		return func(ctx *mvccontext.EnhancedContext) {
+		return func(ctx *mvccontext.Context) {
 			// 检查客户端是否支持gzip
 			acceptEncoding := string(ctx.Request.GetHeader("Accept-Encoding"))
 			if strings.Contains(acceptEncoding, "gzip") {

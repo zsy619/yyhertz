@@ -59,10 +59,16 @@ type BaseController struct {
 	ViewsPath    string // 视图根路径（兼容性）
 
 	// 辅助工具
-	cookieHelper   *cookie.Helper                // Cookie辅助工具
-	sessionHelper  *session.Manager              // Session管理器
-	templateEngine *view.TemplateEngine          // 模板引擎实例
-	includeEngine  *view.TemplateIncludeEngine   // 支持include的模板引擎
+	cookieHelper   *cookie.Helper              // Cookie辅助工具
+	sessionHelper  *session.Manager            // Session管理器
+	templateEngine *view.TemplateEngine        // 模板引擎实例
+	includeEngine  *view.TemplateIncludeEngine // 支持include的模板引擎
+
+	// ============= 优化控制器特性 =============
+
+	// 优化功能控制
+	optimizationEnabled bool     // 是否启用优化特性
+	middlewareList      []string // 中间件列表，支持GetMiddleware()
 
 	// 内部控制字段
 	initialized bool // 控制器名称是否已初始化（内部使用）
@@ -100,6 +106,10 @@ func NewBaseController() *BaseController {
 		EnableRender:    true,
 		EnableGzip:      false,
 		checkXSRFCookie: false,
+
+		// 优化特性
+		optimizationEnabled: false,             // 默认不启用优化
+		middlewareList:      make([]string, 0), // 初始化空中间件列表
 
 		// 辅助工具
 		cookieHelper:   cookie.NewHelper(cookie.DefaultConfig()),
@@ -166,5 +176,111 @@ func (c *BaseController) Prepare() {
 
 // Finish 后处理方法
 func (c *BaseController) Finish() {
+	// 如果启用了优化特性，自动调用Destroy进行资源清理
+	if c.optimizationEnabled {
+		c.Destroy()
+	}
 	// 默认实现为空，子类可以重写
+}
+
+// ============= 优化控制器扩展方法 =============
+
+// InitWithContext 优化控制器兼容的初始化方法
+func (c *BaseController) InitWithContext(ctx *context.Context) error {
+	c.Ctx = ctx
+	if c.Data == nil {
+		c.Data = make(map[string]any)
+	}
+	c.initializeBaseController()
+	return nil
+}
+
+// Destroy 资源清理方法（优化控制器特性）
+func (c *BaseController) Destroy() error {
+	// 清理Context引用
+	c.Ctx = nil
+
+	// 清理模板数据
+	if c.Data != nil {
+		for k := range c.Data {
+			delete(c.Data, k)
+		}
+	}
+
+	// 清理路由参数
+	if c.RouteParams != nil {
+		for k := range c.RouteParams {
+			delete(c.RouteParams, k)
+		}
+	}
+
+	return nil
+}
+
+// Reset 重置控制器状态（优化控制器特性）
+func (c *BaseController) Reset() {
+	// 重置Context
+	c.Ctx = nil
+
+	// 重置控制器信息
+	c.ControllerName = ""
+	c.ActionName = ""
+	c.RoutePattern = ""
+
+	// 清理数据映射
+	if c.Data != nil {
+		for k := range c.Data {
+			delete(c.Data, k)
+		}
+	}
+	if c.RouteParams != nil {
+		for k := range c.RouteParams {
+			delete(c.RouteParams, k)
+		}
+	}
+	if c.LayoutSections != nil {
+		for k := range c.LayoutSections {
+			delete(c.LayoutSections, k)
+		}
+	}
+}
+
+// GetMiddleware 获取中间件列表（优化控制器特性）
+func (c *BaseController) GetMiddleware() []string {
+	if c.middlewareList == nil {
+		return []string{}
+	}
+	// 返回副本，防止外部修改
+	result := make([]string, len(c.middlewareList))
+	copy(result, c.middlewareList)
+	return result
+}
+
+// SetMiddleware 设置中间件列表
+func (c *BaseController) SetMiddleware(middlewares []string) {
+	c.middlewareList = make([]string, len(middlewares))
+	copy(c.middlewareList, middlewares)
+}
+
+// AddMiddleware 添加中间件
+func (c *BaseController) AddMiddleware(middleware string) {
+	if c.middlewareList == nil {
+		c.middlewareList = make([]string, 0)
+	}
+	c.middlewareList = append(c.middlewareList, middleware)
+}
+
+// EnableOptimization 启用优化特性
+func (c *BaseController) EnableOptimization() {
+	c.optimizationEnabled = true
+}
+
+// DisableOptimization 禁用优化特性
+func (c *BaseController) DisableOptimization() {
+	c.optimizationEnabled = false
+}
+
+// IsOptimizationEnabled 检查是否启用优化特性
+func (c *BaseController) IsOptimizationEnabled() bool {
+	return c.optimizationEnabled
 }

@@ -1,0 +1,120 @@
+# YYHertz 中间件配置
+# 中间件系统配置
+
+# 全局配置
+global:
+  mode: "auto"                    # 中间件模式: basic, advanced, auto
+  enable_statistics: true         # 启用统计
+  enable_monitoring: true         # 启用监控
+  enable_debug: false            # 启用调试模式
+
+# 基础模式配置
+basic:
+  enable_chain: true             # 启用中间件链
+  default_middlewares:           # 默认中间件
+    - "logger"
+    - "recovery"
+  max_handlers: 64               # 最大处理器数量
+
+# 高级模式配置 (MVC)
+advanced:
+  enable_optimization: true      # 启用优化
+  enable_compilation: true       # 启用编译
+  enable_layered_architecture: true # 启用分层架构
+  enable_dependency_analysis: true  # 启用依赖分析
+  cache_size: 500               # 缓存大小
+  cache_expire_time: "30m"      # 缓存过期时间
+  compile_timeout: "30s"        # 编译超时
+  max_concurrency: 100          # 最大并发数
+
+# 自动模式配置
+auto:
+  enable_auto_switch: true       # 启用自动切换
+  request_threshold: 1000        # 请求量阈值
+  response_time_limit: "100ms"   # 响应时间限制
+  switch_check_interval: "5m"    # 检查间隔
+  performance_threshold: 0.8     # 性能阈值
+  enable_upgrade: true           # 允许升级到高级模式
+  enable_downgrade: true         # 允许降级到基础模式
+
+# 内置中间件配置
+builtin:
+  # 日志中间件
+  logger:
+    enable: true
+    mode: "enhanced"             # enhanced, basic
+    format: "default"            # 日志格式
+    time_format: "2006/01/02 - 15:04:05"
+    skip_paths:                  # 跳过的路径
+      - "/health"
+      - "/metrics"
+    enable_colors: true          # 启用颜色
+
+  # 恢复中间件
+  recovery:
+    enable: true
+    mode: "enhanced"             # enhanced, basic
+    enable_stack: true           # 启用堆栈跟踪
+
+  # CORS中间件
+  cors:
+    enable: false
+    allow_origins: ["*"]
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: ["*"]
+    expose_headers: []
+    allow_credentials: false
+    max_age: 3600
+
+  # 认证中间件
+  auth:
+    enable: false
+    type: "basic"                # basic, jwt, custom
+    skip_paths:
+      - "/health"
+      - "/ping"
+    secret_key: ""
+    token_header: "Authorization"
+
+  # 限流中间件
+  rate_limit:
+    enable: false
+    rate: 100                    # 请求/秒
+    burst: 200                   # 突发容量
+    window: "1m"                 # 时间窗口
+    strategy: "token_bucket"     # token_bucket, sliding_window
+
+  # 链路追踪中间件
+  tracing:
+    enable: false
+    provider: "jaeger"           # jaeger, zipkin, custom
+    endpoint: ""
+    sample_rate: 0.1             # 采样率
+
+  # 请求ID中间件
+  request_id:
+    enable: true
+    header: "X-Request-ID"
+    generator: "timestamp"       # uuid, timestamp, custom
+
+  # 超时中间件
+  timeout:
+    enable: false
+    timeout: "30s"
+
+  # 安全头中间件
+  secure:
+    enable: false
+    content_security_policy: "default-src 'self'"
+    enable_hsts: true
+    enable_frame_options: true
+
+  # GZIP压缩中间件
+  gzip:
+    enable: false
+    level: 6                     # 压缩级别 1-9
+    min_size: 1024              # 最小压缩大小 (bytes)
+    exclude_paths: []           # 排除的路径
+
+# 自定义中间件配置
+custom: {}

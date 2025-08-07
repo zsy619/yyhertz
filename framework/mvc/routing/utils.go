@@ -194,8 +194,8 @@ func ValidatePath(path string) error {
 	return nil
 }
 
-// CreateEnhancedContext 创建增强的上下文（从comment包提取）
-func CreateEnhancedContext(c interface{}) *context.Context {
+// CreateContext 创建增强的上下文（从comment包提取）
+func CreateContext(c interface{}) *context.Context {
 	// 这里需要根据实际的RequestContext类型进行适配
 	if ctx, ok := c.(*context.Context); ok {
 		return ctx

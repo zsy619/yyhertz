@@ -35,12 +35,12 @@ type RecoveryStrategy struct {
 
 // RecoveryCondition 恢复条件接口
 type RecoveryCondition interface {
-	ShouldRecover(classification *ErrorClassification, ctx *mvccontext.EnhancedContext) bool
+	ShouldRecover(classification *ErrorClassification, ctx *mvccontext.Context) bool
 	Priority() int
 }
 
 // FallbackFunc 降级函数
-type FallbackFunc func(ctx *mvccontext.EnhancedContext, err error) error
+type FallbackFunc func(ctx *mvccontext.Context, err error) error
 
 // RecoveryResult 恢复结果
 type RecoveryResult struct {
@@ -146,7 +146,7 @@ func DefaultRecoveryConfig() RecoveryConfig {
 }
 
 // Recover 执行自动恢复
-func (r *AutoRecovery) Recover(ctx *mvccontext.EnhancedContext, err error) *RecoveryResult {
+func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResult {
 	if !r.config.EnableAutoRecovery {
 		return &RecoveryResult{
 			Original:    err,
@@ -213,7 +213,7 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.EnhancedContext, err error) *Reco
 }
 
 // selectStrategy 选择恢复策略
-func (r *AutoRecovery) selectStrategy(classification *ErrorClassification, ctx *mvccontext.EnhancedContext) *RecoveryStrategy {
+func (r *AutoRecovery) selectStrategy(classification *ErrorClassification, ctx *mvccontext.Context) *RecoveryStrategy {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	
@@ -235,7 +235,7 @@ func (r *AutoRecovery) selectStrategy(classification *ErrorClassification, ctx *
 }
 
 // executeRecovery 执行恢复
-func (r *AutoRecovery) executeRecovery(ctx *mvccontext.EnhancedContext, err error, classification *ErrorClassification, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeRecovery(ctx *mvccontext.Context, err error, classification *ErrorClassification, strategy *RecoveryStrategy) *RecoveryResult {
 	result := &RecoveryResult{
 		Original:    err,
 		Strategy:    strategy.Name,
@@ -266,7 +266,7 @@ func (r *AutoRecovery) executeRecovery(ctx *mvccontext.EnhancedContext, err erro
 }
 
 // executeRetry 执行重试恢复
-func (r *AutoRecovery) executeRetry(ctx *mvccontext.EnhancedContext, err error, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeRetry(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	result := &RecoveryResult{
 		Original: err,
 		Action:   ActionRetry,
@@ -306,7 +306,7 @@ func (r *AutoRecovery) executeRetry(ctx *mvccontext.EnhancedContext, err error, 
 }
 
 // executeFallback 执行降级恢复
-func (r *AutoRecovery) executeFallback(ctx *mvccontext.EnhancedContext, err error, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeFallback(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	result := &RecoveryResult{
 		Original: err,
 		Action:   ActionFallback,
@@ -333,7 +333,7 @@ func (r *AutoRecovery) executeFallback(ctx *mvccontext.EnhancedContext, err erro
 }
 
 // executeCircuitBreak 执行熔断恢复
-func (r *AutoRecovery) executeCircuitBreak(ctx *mvccontext.EnhancedContext, err error, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeCircuitBreak(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	return &RecoveryResult{
 		Original:   err,
 		Action:     ActionCircuitBreak,
@@ -344,7 +344,7 @@ func (r *AutoRecovery) executeCircuitBreak(ctx *mvccontext.EnhancedContext, err 
 }
 
 // executeIgnore 执行忽略恢复
-func (r *AutoRecovery) executeIgnore(ctx *mvccontext.EnhancedContext, err error, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeIgnore(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	return &RecoveryResult{
 		Original:   err,
 		Action:     ActionIgnore,
@@ -355,7 +355,7 @@ func (r *AutoRecovery) executeIgnore(ctx *mvccontext.EnhancedContext, err error,
 }
 
 // executeEscalate 执行上报恢复
-func (r *AutoRecovery) executeEscalate(ctx *mvccontext.EnhancedContext, err error, strategy *RecoveryStrategy) *RecoveryResult {
+func (r *AutoRecovery) executeEscalate(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	// 这里可以集成告警系统
 	fmt.Printf("[ESCALATED ERROR] %v\n", err)
 	
@@ -532,7 +532,7 @@ type CategoryCondition struct {
 	Category ErrorCategory
 }
 
-func (c *CategoryCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.EnhancedContext) bool {
+func (c *CategoryCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.Context) bool {
 	return classification.Category == c.Category
 }
 
@@ -545,7 +545,7 @@ type SeverityCondition struct {
 	Severity ErrorSeverity
 }
 
-func (c *SeverityCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.EnhancedContext) bool {
+func (c *SeverityCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.Context) bool {
 	return classification.Severity == c.Severity
 }
 
@@ -556,7 +556,7 @@ func (c *SeverityCondition) Priority() int {
 // RetryableCondition 可重试条件
 type RetryableCondition struct{}
 
-func (c *RetryableCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.EnhancedContext) bool {
+func (c *RetryableCondition) ShouldRecover(classification *ErrorClassification, ctx *mvccontext.Context) bool {
 	return classification.Retryable
 }
 
@@ -631,7 +631,7 @@ func (cb *CircuitBreaker) GetState() CircuitState {
 }
 
 // 默认降级处理器
-func defaultFallbackHandler(ctx *mvccontext.EnhancedContext, err error) error {
+func defaultFallbackHandler(ctx *mvccontext.Context, err error) error {
 	ctx.JSON(503, map[string]interface{}{
 		"code":    503,
 		"message": "Service temporarily unavailable",
@@ -649,7 +649,7 @@ func GetGlobalRecovery() *AutoRecovery {
 }
 
 // RecoverError 恢复错误（全局方法）
-func RecoverError(ctx *mvccontext.EnhancedContext, err error) *RecoveryResult {
+func RecoverError(ctx *mvccontext.Context, err error) *RecoveryResult {
 	return globalRecovery.Recover(ctx, err)
 }
 

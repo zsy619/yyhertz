@@ -43,11 +43,11 @@ type UnifiedContext interface {
 
 // MVCContextWrapper MVC Context包装器
 type MVCContextWrapper struct {
-	ctx *mvccontext.EnhancedContext
+	ctx *mvccontext.Context
 }
 
 // NewMVCContextWrapper 创建MVC Context包装器
-func NewMVCContextWrapper(ctx *mvccontext.EnhancedContext) *MVCContextWrapper {
+func NewMVCContextWrapper(ctx *mvccontext.Context) *MVCContextWrapper {
 	return &MVCContextWrapper{ctx: ctx}
 }
 
@@ -174,7 +174,7 @@ func (w *MVCContextWrapper) AbortWithError(code int, err error) error {
 }
 
 // GetMVCContext 获取原始MVC Context
-func (w *MVCContextWrapper) GetMVCContext() *mvccontext.EnhancedContext {
+func (w *MVCContextWrapper) GetMVCContext() *mvccontext.Context {
 	return w.ctx
 }
 
@@ -293,7 +293,7 @@ func NewContextConverter() *ContextConverter {
 // ToUnified 转换为统一Context接口
 func (c *ContextConverter) ToUnified(ctx interface{}) UnifiedContext {
 	switch v := ctx.(type) {
-	case *mvccontext.EnhancedContext:
+	case *mvccontext.Context:
 		return NewMVCContextWrapper(v)
 	case *Context:
 		return NewBasicContextWrapper(v)
@@ -303,12 +303,12 @@ func (c *ContextConverter) ToUnified(ctx interface{}) UnifiedContext {
 }
 
 // MVCToBasicContext MVC Context转换为基础Context
-func (c *ContextConverter) MVCToBasicContext(mvcCtx *mvccontext.EnhancedContext) *Context {
+func (c *ContextConverter) MVCToBasicContext(mvcCtx *mvccontext.Context) *Context {
 	return CreateBasicContext(mvcCtx)
 }
 
 // BasicToMVCContext 基础Context转换为MVC Context
-func (c *ContextConverter) BasicToMVCContext(basicCtx *Context) *mvccontext.EnhancedContext {
+func (c *ContextConverter) BasicToMVCContext(basicCtx *Context) *mvccontext.Context {
 	// 获取底层的Hertz RequestContext
 	hertzCtx := basicCtx.RequestContext
 	
@@ -346,7 +346,7 @@ func (c *ContextConverter) CreateCompatibleHandler(handler interface{}) interfac
 		}
 	case HandlerFunc:
 		// 基础中间件转换为MVC中间件
-		return func(mvcCtx *mvccontext.EnhancedContext) {
+		return func(mvcCtx *mvccontext.Context) {
 			basicCtx := c.MVCToBasicContext(mvcCtx)
 			h(basicCtx)
 			// 同步状态回MVC Context

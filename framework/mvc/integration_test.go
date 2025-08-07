@@ -40,23 +40,23 @@ func testMiddlewareRegistration(t *testing.T, engine *EnhancedFastEngine) {
 	engine.UseBuiltin("cors", nil, 20)
 	
 	// 注册自定义中间件
-	engine.Use("test-middleware", func(ctx *context.EnhancedContext) {
+	engine.Use("test-middleware", func(ctx *context.Context) {
 		fmt.Println("Test middleware executed")
 		ctx.Next()
 	}, 15)
 	
 	// 注册不同层级的中间件
-	engine.UseGroup("group-middleware", func(ctx *context.EnhancedContext) {
+	engine.UseGroup("group-middleware", func(ctx *context.Context) {
 		fmt.Println("Group middleware executed")
 		ctx.Next()
 	}, 10)
 	
-	engine.UseRoute("route-middleware", func(ctx *context.EnhancedContext) {
+	engine.UseRoute("route-middleware", func(ctx *context.Context) {
 		fmt.Println("Route middleware executed")
 		ctx.Next()
 	}, 10)
 	
-	engine.UseController("controller-middleware", func(ctx *context.EnhancedContext) {
+	engine.UseController("controller-middleware", func(ctx *context.Context) {
 		fmt.Println("Controller middleware executed")
 		ctx.Next()
 	}, 10)
@@ -84,7 +84,7 @@ func testErrorHandling(t *testing.T, engine *EnhancedFastEngine) {
 	// 注册自定义错误处理器
 	engine.RegisterErrorHandlerFunc("test-handler", 50, func(err error) bool {
 		return err.Error() == "test error"
-	}, func(ctx *context.EnhancedContext, err error) error {
+	}, func(ctx *context.Context, err error) error {
 		fmt.Printf("✓ Custom error handler processed: %v\n", err)
 		return nil
 	})
@@ -143,7 +143,7 @@ func BenchmarkMiddlewareChain(b *testing.B) {
 	
 	// 注册多个中间件
 	for i := 0; i < 10; i++ {
-		engine.Use(fmt.Sprintf("middleware-%d", i), func(ctx *context.EnhancedContext) {
+		engine.Use(fmt.Sprintf("middleware-%d", i), func(ctx *context.Context) {
 			ctx.Next()
 		}, i)
 	}
@@ -190,7 +190,7 @@ func Example_basicUsage() {
 	engine.UseBuiltin("cors", nil, 20)
 	
 	// 注册自定义中间件
-	engine.Use("auth", func(ctx *context.EnhancedContext) {
+	engine.Use("auth", func(ctx *context.Context) {
 		// 认证逻辑
 		fmt.Println("Authentication middleware")
 		ctx.Next()
@@ -200,7 +200,7 @@ func Example_basicUsage() {
 	engine.RegisterErrorHandlerFunc("business-error", 100, func(err error) bool {
 		_, ok := err.(*errors.ErrNo)
 		return ok
-	}, func(ctx *context.EnhancedContext, err error) error {
+	}, func(ctx *context.Context, err error) error {
 		fmt.Println("Business error handled")
 		return nil
 	})

@@ -148,6 +148,11 @@ func (c *HomeController) GetDocs() {
 			"Description": "了解模板引擎的使用方法",
 			"Link":        "/home/template",
 		},
+		{
+			"Title":       "日志",
+			"Description": "了解日志系统的集成",
+			"Link":        "/home/logging",
+		},
 	}
 
 	c.SetData("Title", "文档")
@@ -198,8 +203,8 @@ func (c *HomeController) GetRouting() {
 }
 
 // 中间件文档
-func (c *HomeController) GetMiddleware() {
-	c.renderMarkdownDoc("middleware", "中间件系统")
+func (c *HomeController) GetMiddlewares() {
+	c.renderMarkdownDoc("middlewares", "中间件系统")
 }
 
 // 模板文档

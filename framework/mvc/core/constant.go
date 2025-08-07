@@ -4,6 +4,11 @@ package core
 var ReservedMethods = map[string]bool{
 	// ============= 生命周期方法 =============
 	"Init": true, "Prepare": true, "Finish": true,
+	"Destroy": true, "Reset": true, "InitWithContext": true,
+
+	// ============= 优化控制方法 =============
+	"EnableOptimization": true, "DisableOptimization": true, "IsOptimizationEnabled": true,
+	"GetMiddleware": true, "SetMiddleware": true, "AddMiddleware": true,
 
 	// ============= 基础响应方法 =============
 	"JSON": true, "String": true,

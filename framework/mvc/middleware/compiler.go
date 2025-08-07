@@ -341,7 +341,7 @@ func (c *MiddlewareCompiler) inlineMiddlewares(chain []MiddlewareFunc) []Middlew
 
 // createCompiledHandler 创建编译后的处理器
 func (c *MiddlewareCompiler) createCompiledHandler(optimizedChain []MiddlewareFunc) MiddlewareFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		// 转换并设置优化后的中间件链
 		handlers := make([]mvccontext.HandlerFunc, len(optimizedChain))
 		for i, middleware := range optimizedChain {

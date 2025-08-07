@@ -13,48 +13,48 @@ import (
 type UnifiedMiddlewareManager struct {
 	// 基础系统引擎
 	basicEngine *Engine
-	
-	// 高级系统管理器  
+
+	// 高级系统管理器
 	mvcManager *MiddlewareManager
-	
+
 	// 当前模式
 	currentMode config.MiddlewareMode
-	
+
 	// 配置
-	config *config.MiddlewareUnifiedConfig
-	
+	config *config.MiddlewareConfig
+
 	// 适配器
-	adapter *MiddlewareAdapter
+	adapter   *MiddlewareAdapter
 	converter *ContextConverter
-	
+
 	// 统计信息
 	stats UnifiedStats
-	
+
 	// 同步控制
 	mu sync.RWMutex
-	
+
 	// 自动切换控制
 	autoSwitcher *AutoModeSwitcher
 }
 
 // UnifiedStats 统一统计信息
 type UnifiedStats struct {
-	CurrentMode        config.MiddlewareMode `json:"current_mode"`
-	TotalRequests      int64                 `json:"total_requests"`
-	BasicModeRequests  int64                 `json:"basic_mode_requests"`
-	MVCModeRequests    int64                 `json:"mvc_mode_requests"`
-	AverageResponseTime time.Duration       `json:"average_response_time"`
-	ModeSwitchCount     int64                `json:"mode_switch_count"`
-	LastSwitchTime      time.Time            `json:"last_switch_time"`
+	CurrentMode         config.MiddlewareMode `json:"current_mode"`
+	TotalRequests       int64                 `json:"total_requests"`
+	BasicModeRequests   int64                 `json:"basic_mode_requests"`
+	MVCModeRequests     int64                 `json:"mvc_mode_requests"`
+	AverageResponseTime time.Duration         `json:"average_response_time"`
+	ModeSwitchCount     int64                 `json:"mode_switch_count"`
+	LastSwitchTime      time.Time             `json:"last_switch_time"`
 }
 
 // AutoModeSwitcher 自动模式切换器
 type AutoModeSwitcher struct {
-	manager     *UnifiedMiddlewareManager
-	stopCh      chan struct{}
-	running     bool
-	mu          sync.RWMutex
-	
+	manager *UnifiedMiddlewareManager
+	stopCh  chan struct{}
+	running bool
+	mu      sync.RWMutex
+
 	// 性能监控
 	requestCount    int64
 	responseTimeSum time.Duration
@@ -64,13 +64,13 @@ type AutoModeSwitcher struct {
 // NewUnifiedMiddlewareManager 创建统一中间件管理器
 func NewUnifiedMiddlewareManager() *UnifiedMiddlewareManager {
 	// 加载配置
-	cfg, err := config.GetMiddlewareUnifiedConfig()
+	cfg, err := config.GetMiddlewareConfig()
 	if err != nil {
 		// 使用默认配置
-		defaultCfg := config.MiddlewareUnifiedConfig{}
+		defaultCfg := config.MiddlewareConfig{}
 		cfg = &defaultCfg
 	}
-	
+
 	manager := &UnifiedMiddlewareManager{
 		basicEngine: NewEngine(),
 		mvcManager:  NewMiddlewareManager(),
@@ -80,15 +80,15 @@ func NewUnifiedMiddlewareManager() *UnifiedMiddlewareManager {
 		converter:   NewContextConverter(),
 		stats:       UnifiedStats{CurrentMode: cfg.GetMode()},
 	}
-	
+
 	// 如果是自动模式，启动自动切换器
 	if cfg.IsAutoMode() {
 		manager.autoSwitcher = NewAutoModeSwitcher(manager)
 	}
-	
+
 	// 初始化内置中间件
 	manager.initBuiltinMiddlewares()
-	
+
 	return manager
 }
 
@@ -105,9 +105,9 @@ func NewAutoModeSwitcher(manager *UnifiedMiddlewareManager) *AutoModeSwitcher {
 func (m *UnifiedMiddlewareManager) Use(name string, handler interface{}, options ...MiddlewareOption) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	opts := parseMiddlewareOptions(options...)
-	
+
 	switch m.currentMode {
 	case config.BasicMode:
 		return m.useInBasicMode(name, handler, opts)
@@ -127,7 +127,7 @@ func (m *UnifiedMiddlewareManager) Use(name string, handler interface{}, options
 // UseBuiltin 使用内置中间件
 func (m *UnifiedMiddlewareManager) UseBuiltin(name string, config interface{}, options ...MiddlewareOption) error {
 	opts := parseMiddlewareOptions(options...)
-	
+
 	switch m.currentMode {
 	case "basic":
 		return m.useBuiltinInBasicMode(name, config, opts)
@@ -145,17 +145,17 @@ func (m *UnifiedMiddlewareManager) UseBuiltin(name string, config interface{}, o
 func (m *UnifiedMiddlewareManager) SwitchMode(mode config.MiddlewareMode) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if m.currentMode == mode {
 		return nil // 已经是目标模式
 	}
-	
+
 	oldMode := m.currentMode
 	m.currentMode = mode
 	m.stats.CurrentMode = mode
 	m.stats.ModeSwitchCount++
 	m.stats.LastSwitchTime = time.Now()
-	
+
 	fmt.Printf("Middleware mode switched: %s -> %s\n", oldMode, mode)
 	return nil
 }
@@ -232,13 +232,13 @@ func (m *UnifiedMiddlewareManager) useInMVCMode(name string, handler interface{}
 		defaultLayer := LayerGlobal
 		layer = &defaultLayer
 	}
-	
+
 	priority := opts.Priority
 	if priority == nil {
 		defaultPriority := 50
 		priority = &defaultPriority
 	}
-	
+
 	switch h := handler.(type) {
 	case MiddlewareFunc:
 		err := m.mvcManager.RegisterCustom(name, h, MiddlewareMetadata{
@@ -286,13 +286,13 @@ func (m *UnifiedMiddlewareManager) useBuiltinInMVCMode(name string, config inter
 		defaultLayer := LayerGlobal
 		layer = &defaultLayer
 	}
-	
+
 	priority := opts.Priority
 	if priority == nil {
 		defaultPriority := 50
 		priority = &defaultPriority
 	}
-	
+
 	return m.mvcManager.UseBuiltin(*layer, name, config, *priority)
 }
 
@@ -306,7 +306,7 @@ func (m *UnifiedMiddlewareManager) executeInBasicMode(ctx interface{}) error {
 }
 
 func (m *UnifiedMiddlewareManager) executeInMVCMode(ctx interface{}) error {
-	if mvcCtx, ok := ctx.(*mvccontext.EnhancedContext); ok {
+	if mvcCtx, ok := ctx.(*mvccontext.Context); ok {
 		mvcCtx.Next()
 		m.updateStats(config.AdvancedMode, time.Since(time.Now()))
 		return nil
@@ -316,7 +316,7 @@ func (m *UnifiedMiddlewareManager) executeInMVCMode(ctx interface{}) error {
 
 func (m *UnifiedMiddlewareManager) executeInAutoMode(ctx interface{}) error {
 	start := time.Now()
-	
+
 	// 根据当前性能决定使用哪种模式执行
 	if m.shouldUseAdvancedMode() {
 		err := m.executeInMVCMode(ctx)
@@ -334,27 +334,27 @@ func (m *UnifiedMiddlewareManager) shouldUseAdvancedMode() bool {
 	if m.stats.TotalRequests > int64(m.config.Auto.RequestThreshold) {
 		return true
 	}
-	
+
 	if m.stats.AverageResponseTime > m.config.Auto.ResponseTimeLimit {
 		return true
 	}
-	
+
 	return false
 }
 
 func (m *UnifiedMiddlewareManager) updateStats(mode config.MiddlewareMode, duration time.Duration) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	m.stats.TotalRequests++
-	
+
 	switch mode {
 	case config.BasicMode:
 		m.stats.BasicModeRequests++
 	case config.AdvancedMode:
 		m.stats.MVCModeRequests++
 	}
-	
+
 	// 更新平均响应时间
 	if m.stats.TotalRequests == 1 {
 		m.stats.AverageResponseTime = duration
@@ -368,19 +368,19 @@ func (m *UnifiedMiddlewareManager) initBuiltinMiddlewares() {
 	if m.config.Builtin.Logger.Enable {
 		m.UseBuiltin("logger", nil)
 	}
-	
+
 	if m.config.Builtin.Recovery.Enable {
 		m.UseBuiltin("recovery", nil)
 	}
-	
+
 	if m.config.Builtin.CORS.Enable {
 		m.UseBuiltin("cors", m.config.Builtin.CORS)
 	}
-	
+
 	if m.config.Builtin.RequestID.Enable {
 		m.UseBuiltin("requestid", m.config.Builtin.RequestID)
 	}
-	
+
 	// ... 其他内置中间件
 }
 
@@ -389,11 +389,11 @@ func (m *UnifiedMiddlewareManager) initBuiltinMiddlewares() {
 func (switcher *AutoModeSwitcher) Start() error {
 	switcher.mu.Lock()
 	defer switcher.mu.Unlock()
-	
+
 	if switcher.running {
 		return fmt.Errorf("auto switcher already running")
 	}
-	
+
 	switcher.running = true
 	go switcher.run()
 	return nil
@@ -402,11 +402,11 @@ func (switcher *AutoModeSwitcher) Start() error {
 func (switcher *AutoModeSwitcher) Stop() error {
 	switcher.mu.Lock()
 	defer switcher.mu.Unlock()
-	
+
 	if !switcher.running {
 		return fmt.Errorf("auto switcher not running")
 	}
-	
+
 	close(switcher.stopCh)
 	switcher.running = false
 	return nil
@@ -415,7 +415,7 @@ func (switcher *AutoModeSwitcher) Stop() error {
 func (switcher *AutoModeSwitcher) run() {
 	ticker := time.NewTicker(switcher.manager.config.Auto.SwitchCheckInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-switcher.stopCh:
@@ -428,14 +428,14 @@ func (switcher *AutoModeSwitcher) run() {
 
 func (switcher *AutoModeSwitcher) checkAndSwitch() {
 	stats := switcher.manager.GetStats()
-	
+
 	// 检查是否需要升级到高级模式
 	if switcher.manager.currentMode == config.BasicMode {
 		if switcher.shouldUpgrade(stats) {
 			switcher.manager.SwitchMode(config.AdvancedMode)
 		}
 	}
-	
+
 	// 检查是否需要降级到基础模式
 	if switcher.manager.currentMode == config.AdvancedMode {
 		if switcher.shouldDowngrade(stats) {
@@ -446,29 +446,29 @@ func (switcher *AutoModeSwitcher) checkAndSwitch() {
 
 func (switcher *AutoModeSwitcher) shouldUpgrade(stats UnifiedStats) bool {
 	config := switcher.manager.config
-	
+
 	// 请求量达到阈值
 	if stats.TotalRequests > int64(config.Auto.RequestThreshold) {
 		return config.Auto.EnableUpgrade
 	}
-	
+
 	// 响应时间超过限制
 	if stats.AverageResponseTime > config.Auto.ResponseTimeLimit {
 		return config.Auto.EnableUpgrade
 	}
-	
+
 	return false
 }
 
 func (switcher *AutoModeSwitcher) shouldDowngrade(stats UnifiedStats) bool {
 	config := switcher.manager.config
-	
+
 	// 性能良好且请求量不高时降级
 	if stats.TotalRequests < int64(config.Auto.RequestThreshold/2) &&
 		stats.AverageResponseTime < config.Auto.ResponseTimeLimit/2 {
 		return config.Auto.EnableDowngrade
 	}
-	
+
 	return false
 }
 

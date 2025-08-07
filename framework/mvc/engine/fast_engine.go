@@ -124,7 +124,7 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 		// 设置处理器链（全局中间件 + 路由处理器）
 		handlers := make([]mvccontext.HandlerFunc, len(e.middleware)+1)
 		copy(handlers, e.middleware)
-		handlers[len(handlers)-1] = func(ectx *mvccontext.EnhancedContext) {
+		handlers[len(handlers)-1] = func(ectx *mvccontext.Context) {
 			// 调用原始处理器
 			handler(ctx, c)
 		}
@@ -358,7 +358,7 @@ func (g *Group) wrapGroupHandler(handler core.HandlerFunc) core.HandlerFunc {
 		// 设置组中间件 + 处理器
 		handlers := make([]mvccontext.HandlerFunc, len(g.middleware)+1)
 		copy(handlers, g.middleware)
-		handlers[len(handlers)-1] = func(ectx *mvccontext.EnhancedContext) {
+		handlers[len(handlers)-1] = func(ectx *mvccontext.Context) {
 			handler(ctx, c)
 		}
 		

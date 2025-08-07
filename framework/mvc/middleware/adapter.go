@@ -11,7 +11,7 @@ import (
 
 // BasicToMVC 将基础中间件转换为MVC中间件
 func BasicToMVC(basicHandler Middleware) MiddlewareFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		// 创建基础上下文
 		c := context.Background()
 		
@@ -25,7 +25,7 @@ func BasicToMVC(basicHandler Middleware) MiddlewareFunc {
 
 // HandlerFuncToMVC 将基础HandlerFunc转换为MVC中间件
 func HandlerFuncToMVC(basicHandler HandlerFunc) MiddlewareFunc {
-	return func(ctx *mvccontext.EnhancedContext) {
+	return func(ctx *mvccontext.Context) {
 		// 创建基础中间件Context
 		basicCtx := CreateBasicContext(ctx)
 		
@@ -49,7 +49,7 @@ func MVCToBasic(mvcHandler MiddlewareFunc) Middleware {
 }
 
 // CreateBasicContext 从MVC Context创建基础Context
-func CreateBasicContext(mvcCtx *mvccontext.EnhancedContext) *Context {
+func CreateBasicContext(mvcCtx *mvccontext.Context) *Context {
 	hertzCtx := mvcCtx.Request
 	
 	// 创建基础中间件引擎的Context
@@ -70,7 +70,7 @@ func CreateBasicContext(mvcCtx *mvccontext.EnhancedContext) *Context {
 }
 
 // SyncContextState 同步基础Context状态到MVC Context
-func SyncContextState(basicCtx *Context, mvcCtx *mvccontext.EnhancedContext) {
+func SyncContextState(basicCtx *Context, mvcCtx *mvccontext.Context) {
 	// 同步Keys
 	for key, value := range basicCtx.Keys {
 		mvcCtx.Set(key, value)

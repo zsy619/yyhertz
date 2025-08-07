@@ -81,7 +81,7 @@ YYHertz/
 │   │   ├── log_config.go           # 日志配置
 │   │   ├── app_config.go           # 应用配置
 │   │   ├── template_config.go      # 模板配置
-│   │   └── middleware_unified_config.go # 统一中间件配置
+│   │   └── middleware_config.go # 中间件配置
 │   ├── template/                   # 🎨 模板引擎
 │   │   ├── manager.go              # 模板管理器
 │   │   └── enhanced_manager.go     # 增强模板功能
@@ -1426,7 +1426,7 @@ curl http://localhost:8888/home/docs
 - **📦 目录结构优化**：
   - 删除冗余目录：`framework/middleware/` 和 `framework/context/`
   - 统一到MVC架构：所有核心功能集中在 `framework/mvc/` 下
-  - 配置文件整合：新增 `middleware_unified_config.go` 统一配置
+  - 配置文件整合：新增 `middleware_config.go` 中间件配置
 
 #### 🔄 迁移指南
 

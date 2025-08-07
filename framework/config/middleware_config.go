@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-// MiddlewareUnifiedConfigName 统一中间件配置名称常量
-const MiddlewareUnifiedConfigName = "middleware_unified"
+// MiddlewareConfigName 中间件配置名称常量
+const MiddlewareConfigName = "middleware"
 
 // MiddlewareMode 中间件模式
 type MiddlewareMode string
@@ -19,14 +19,14 @@ const (
 	AutoMode     MiddlewareMode = "auto"     // 自动模式
 )
 
-// MiddlewareUnifiedConfig 统一中间件配置
-type MiddlewareUnifiedConfig struct {
+// MiddlewareConfig 中间件配置
+type MiddlewareConfig struct {
 	// 全局配置
 	Global struct {
-		Mode               MiddlewareMode `mapstructure:"mode" yaml:"mode" json:"mode"`
-		EnableStatistics   bool           `mapstructure:"enable_statistics" yaml:"enable_statistics" json:"enable_statistics"`
-		EnableMonitoring   bool           `mapstructure:"enable_monitoring" yaml:"enable_monitoring" json:"enable_monitoring"`
-		EnableDebug        bool           `mapstructure:"enable_debug" yaml:"enable_debug" json:"enable_debug"`
+		Mode             MiddlewareMode `mapstructure:"mode" yaml:"mode" json:"mode"`
+		EnableStatistics bool           `mapstructure:"enable_statistics" yaml:"enable_statistics" json:"enable_statistics"`
+		EnableMonitoring bool           `mapstructure:"enable_monitoring" yaml:"enable_monitoring" json:"enable_monitoring"`
+		EnableDebug      bool           `mapstructure:"enable_debug" yaml:"enable_debug" json:"enable_debug"`
 	} `mapstructure:"global" yaml:"global" json:"global"`
 
 	// 基础模式配置
@@ -38,31 +38,31 @@ type MiddlewareUnifiedConfig struct {
 
 	// 高级模式配置 (MVC)
 	Advanced struct {
-		EnableOptimization       bool          `mapstructure:"enable_optimization" yaml:"enable_optimization" json:"enable_optimization"`
-		EnableCompilation        bool          `mapstructure:"enable_compilation" yaml:"enable_compilation" json:"enable_compilation"`
-		EnableLayeredArchitecture bool         `mapstructure:"enable_layered_architecture" yaml:"enable_layered_architecture" json:"enable_layered_architecture"`
-		EnableDependencyAnalysis bool          `mapstructure:"enable_dependency_analysis" yaml:"enable_dependency_analysis" json:"enable_dependency_analysis"`
-		CacheSize               int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
-		CacheExpireTime         time.Duration `mapstructure:"cache_expire_time" yaml:"cache_expire_time" json:"cache_expire_time"`
-		CompileTimeout          time.Duration `mapstructure:"compile_timeout" yaml:"compile_timeout" json:"compile_timeout"`
-		MaxConcurrency          int           `mapstructure:"max_concurrency" yaml:"max_concurrency" json:"max_concurrency"`
+		EnableOptimization        bool          `mapstructure:"enable_optimization" yaml:"enable_optimization" json:"enable_optimization"`
+		EnableCompilation         bool          `mapstructure:"enable_compilation" yaml:"enable_compilation" json:"enable_compilation"`
+		EnableLayeredArchitecture bool          `mapstructure:"enable_layered_architecture" yaml:"enable_layered_architecture" json:"enable_layered_architecture"`
+		EnableDependencyAnalysis  bool          `mapstructure:"enable_dependency_analysis" yaml:"enable_dependency_analysis" json:"enable_dependency_analysis"`
+		CacheSize                 int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
+		CacheExpireTime           time.Duration `mapstructure:"cache_expire_time" yaml:"cache_expire_time" json:"cache_expire_time"`
+		CompileTimeout            time.Duration `mapstructure:"compile_timeout" yaml:"compile_timeout" json:"compile_timeout"`
+		MaxConcurrency            int           `mapstructure:"max_concurrency" yaml:"max_concurrency" json:"max_concurrency"`
 	} `mapstructure:"advanced" yaml:"advanced" json:"advanced"`
 
 	// 自动模式配置
 	Auto struct {
-		EnableAutoSwitch      bool          `mapstructure:"enable_auto_switch" yaml:"enable_auto_switch" json:"enable_auto_switch"`
-		RequestThreshold      int           `mapstructure:"request_threshold" yaml:"request_threshold" json:"request_threshold"`
-		ResponseTimeLimit     time.Duration `mapstructure:"response_time_limit" yaml:"response_time_limit" json:"response_time_limit"`
-		SwitchCheckInterval   time.Duration `mapstructure:"switch_check_interval" yaml:"switch_check_interval" json:"switch_check_interval"`
-		PerformanceThreshold  float64       `mapstructure:"performance_threshold" yaml:"performance_threshold" json:"performance_threshold"`
-		EnableUpgrade         bool          `mapstructure:"enable_upgrade" yaml:"enable_upgrade" json:"enable_upgrade"`
-		EnableDowngrade       bool          `mapstructure:"enable_downgrade" yaml:"enable_downgrade" json:"enable_downgrade"`
+		EnableAutoSwitch     bool          `mapstructure:"enable_auto_switch" yaml:"enable_auto_switch" json:"enable_auto_switch"`
+		RequestThreshold     int           `mapstructure:"request_threshold" yaml:"request_threshold" json:"request_threshold"`
+		ResponseTimeLimit    time.Duration `mapstructure:"response_time_limit" yaml:"response_time_limit" json:"response_time_limit"`
+		SwitchCheckInterval  time.Duration `mapstructure:"switch_check_interval" yaml:"switch_check_interval" json:"switch_check_interval"`
+		PerformanceThreshold float64       `mapstructure:"performance_threshold" yaml:"performance_threshold" json:"performance_threshold"`
+		EnableUpgrade        bool          `mapstructure:"enable_upgrade" yaml:"enable_upgrade" json:"enable_upgrade"`
+		EnableDowngrade      bool          `mapstructure:"enable_downgrade" yaml:"enable_downgrade" json:"enable_downgrade"`
 	} `mapstructure:"auto" yaml:"auto" json:"auto"`
 
 	// 内置中间件配置
 	Builtin struct {
 		Logger struct {
-			Enable        bool     `mapstructure:"enable" yaml:"enable" json:"enable"`
+			Enable       bool     `mapstructure:"enable" yaml:"enable" json:"enable"`
 			Mode         string   `mapstructure:"mode" yaml:"mode" json:"mode"` // enhanced, basic
 			Format       string   `mapstructure:"format" yaml:"format" json:"format"`
 			TimeFormat   string   `mapstructure:"time_format" yaml:"time_format" json:"time_format"`
@@ -71,9 +71,9 @@ type MiddlewareUnifiedConfig struct {
 		} `mapstructure:"logger" yaml:"logger" json:"logger"`
 
 		Recovery struct {
-			Enable      bool `mapstructure:"enable" yaml:"enable" json:"enable"`
+			Enable      bool   `mapstructure:"enable" yaml:"enable" json:"enable"`
 			Mode        string `mapstructure:"mode" yaml:"mode" json:"mode"` // enhanced, basic
-			EnableStack bool `mapstructure:"enable_stack" yaml:"enable_stack" json:"enable_stack"`
+			EnableStack bool   `mapstructure:"enable_stack" yaml:"enable_stack" json:"enable_stack"`
 		} `mapstructure:"recovery" yaml:"recovery" json:"recovery"`
 
 		CORS struct {
@@ -103,9 +103,9 @@ type MiddlewareUnifiedConfig struct {
 		} `mapstructure:"rate_limit" yaml:"rate_limit" json:"rate_limit"`
 
 		Tracing struct {
-			Enable     bool   `mapstructure:"enable" yaml:"enable" json:"enable"`
-			Provider   string `mapstructure:"provider" yaml:"provider" json:"provider"` // jaeger, zipkin, custom
-			Endpoint   string `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`
+			Enable     bool    `mapstructure:"enable" yaml:"enable" json:"enable"`
+			Provider   string  `mapstructure:"provider" yaml:"provider" json:"provider"` // jaeger, zipkin, custom
+			Endpoint   string  `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`
 			SampleRate float64 `mapstructure:"sample_rate" yaml:"sample_rate" json:"sample_rate"`
 		} `mapstructure:"tracing" yaml:"tracing" json:"tracing"`
 
@@ -128,9 +128,9 @@ type MiddlewareUnifiedConfig struct {
 		} `mapstructure:"secure" yaml:"secure" json:"secure"`
 
 		GZip struct {
-			Enable      bool     `mapstructure:"enable" yaml:"enable" json:"enable"`
-			Level       int      `mapstructure:"level" yaml:"level" json:"level"` // 1-9
-			MinSize     int      `mapstructure:"min_size" yaml:"min_size" json:"min_size"`
+			Enable       bool     `mapstructure:"enable" yaml:"enable" json:"enable"`
+			Level        int      `mapstructure:"level" yaml:"level" json:"level"` // 1-9
+			MinSize      int      `mapstructure:"min_size" yaml:"min_size" json:"min_size"`
 			ExcludePaths []string `mapstructure:"exclude_paths" yaml:"exclude_paths" json:"exclude_paths"`
 		} `mapstructure:"gzip" yaml:"gzip" json:"gzip"`
 	} `mapstructure:"builtin" yaml:"builtin" json:"builtin"`
@@ -140,12 +140,12 @@ type MiddlewareUnifiedConfig struct {
 }
 
 // GetConfigName 实现 ConfigInterface 接口
-func (c MiddlewareUnifiedConfig) GetConfigName() string {
-	return MiddlewareUnifiedConfigName
+func (c MiddlewareConfig) GetConfigName() string {
+	return MiddlewareConfigName
 }
 
 // SetDefaults 实现 ConfigInterface 接口 - 设置默认值
-func (c MiddlewareUnifiedConfig) SetDefaults(v *viper.Viper) {
+func (c MiddlewareConfig) SetDefaults(v *viper.Viper) {
 	// 全局默认配置
 	v.SetDefault("global.mode", string(AutoMode))
 	v.SetDefault("global.enable_statistics", true)
@@ -238,8 +238,8 @@ func (c MiddlewareUnifiedConfig) SetDefaults(v *viper.Viper) {
 }
 
 // GenerateDefaultContent 实现 ConfigInterface 接口 - 生成默认配置文件内容
-func (c MiddlewareUnifiedConfig) GenerateDefaultContent() string {
-	return `# YYHertz Unified Middleware Configuration
+func (c MiddlewareConfig) GenerateDefaultContent() string {
+	return `# YYHertz Middleware Configuration
 # 统一中间件系统配置
 
 # 全局配置
@@ -387,27 +387,27 @@ custom: {}
 }
 
 // GetMode 获取中间件模式
-func (c *MiddlewareUnifiedConfig) GetMode() MiddlewareMode {
+func (c *MiddlewareConfig) GetMode() MiddlewareMode {
 	return MiddlewareMode(c.Global.Mode)
 }
 
 // IsBasicMode 是否为基础模式
-func (c *MiddlewareUnifiedConfig) IsBasicMode() bool {
+func (c *MiddlewareConfig) IsBasicMode() bool {
 	return c.GetMode() == BasicMode
 }
 
 // IsAdvancedMode 是否为高级模式
-func (c *MiddlewareUnifiedConfig) IsAdvancedMode() bool {
+func (c *MiddlewareConfig) IsAdvancedMode() bool {
 	return c.GetMode() == AdvancedMode
 }
 
 // IsAutoMode 是否为自动模式
-func (c *MiddlewareUnifiedConfig) IsAutoMode() bool {
+func (c *MiddlewareConfig) IsAutoMode() bool {
 	return c.GetMode() == AutoMode
 }
 
 // GetBuiltinConfig 获取内置中间件配置
-func (c *MiddlewareUnifiedConfig) GetBuiltinConfig(name string) interface{} {
+func (c *MiddlewareConfig) GetBuiltinConfig(name string) interface{} {
 	switch name {
 	case "logger":
 		return c.Builtin.Logger
@@ -435,7 +435,7 @@ func (c *MiddlewareUnifiedConfig) GetBuiltinConfig(name string) interface{} {
 }
 
 // Validate 验证配置的合法性
-func (c *MiddlewareUnifiedConfig) Validate() error {
+func (c *MiddlewareConfig) Validate() error {
 	// 验证模式
 	mode := c.GetMode()
 	if mode != BasicMode && mode != AdvancedMode && mode != AutoMode {

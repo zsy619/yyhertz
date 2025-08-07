@@ -45,7 +45,7 @@ func main() {
     engine.UseBuiltin("cors", nil, 20)
     
     // 注册自定义中间件
-    engine.Use("auth", func(ctx *context.EnhancedContext) {
+    engine.Use("auth", func(ctx *context.Context) {
         // 认证逻辑
         token := ctx.Header("Authorization")
         if token == "" {
@@ -66,13 +66,13 @@ func main() {
     engine.Spin()
 }
 
-func getUsersHandler(ctx *context.EnhancedContext) {
+func getUsersHandler(ctx *context.Context) {
     ctx.JSON(200, map[string]interface{}{
         "users": []string{"user1", "user2"},
     })
 }
 
-func createUserHandler(ctx *context.EnhancedContext) {
+func createUserHandler(ctx *context.Context) {
     ctx.JSON(201, map[string]interface{}{
         "message": "User created successfully",
     })
@@ -153,7 +153,7 @@ engine.UseBuiltin("auth", map[string]interface{}{
 ### 自定义中间件
 
 ```go
-func customMiddleware(ctx *context.EnhancedContext) {
+func customMiddleware(ctx *context.Context) {
     start := time.Now()
     
     // 前置处理
@@ -199,7 +199,7 @@ engine.RegisterErrorHandlerFunc("business-error", 100,
         _, ok := err.(*errors.ErrNo)
         return ok
     },
-    func(ctx *context.EnhancedContext, err error) error {
+    func(ctx *context.Context, err error) error {
         if errNo, ok := err.(*errors.ErrNo); ok {
             ctx.JSON(400, map[string]interface{}{
                 "code":    errNo.ErrCode,
@@ -230,7 +230,7 @@ engine.AddRecoveryStrategy(errors.RecoveryStrategy{
     Name:      "external-fallback",
     Condition: &errors.CategoryCondition{Category: errors.CategoryExternal},
     Action:    errors.ActionFallback,
-    FallbackFunc: func(ctx *context.EnhancedContext, err error) error {
+    FallbackFunc: func(ctx *context.Context, err error) error {
         ctx.JSON(503, map[string]interface{}{
             "message": "Service temporarily unavailable",
             "success": false,
