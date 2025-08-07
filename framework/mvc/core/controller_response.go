@@ -92,7 +92,7 @@ func (c *BaseController) SetHeader(key, value string) {
 		config.Error("Context is nil when trying to set header")
 		return
 	}
-	c.Ctx.Header(key, value)
+	c.Ctx.SetHeader(key, value)
 }
 
 // Write 写入原始字节数据

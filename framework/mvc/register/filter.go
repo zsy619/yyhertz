@@ -12,7 +12,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/context"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // ============= 过滤器实现 =============

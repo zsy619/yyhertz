@@ -175,7 +175,7 @@ func (c *UserController) PostCreate() {
 import (
     "time"
     "github.com/zsy619/yyhertz/framework/log"
-    "github.com/zsy619/yyhertz/framework/middleware"
+    "github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
 func main() {

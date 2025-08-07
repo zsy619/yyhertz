@@ -147,7 +147,7 @@ func (c *UserController) PostCreate() {
 ### 3. 日志中间件配置
 
 ```go
-import "github.com/zsy619/yyhertz/framework/middleware"
+import "github.com/zsy619/yyhertz/framework/mvc/middleware"
 
 // 使用默认配置
 app.Use(middleware.LoggerMiddleware())

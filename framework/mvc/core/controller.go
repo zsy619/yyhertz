@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	context "github.com/zsy619/yyhertz/framework/context"
+	context "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 	templatemanager "github.com/zsy619/yyhertz/framework/template"

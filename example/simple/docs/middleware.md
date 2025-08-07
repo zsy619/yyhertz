@@ -26,7 +26,7 @@ type MiddlewareFactory func(...interface{}) MiddlewareFunc
 ### 恢复中间件
 
 ```go
-import "github.com/zsy619/yyhertz/framework/middleware"
+import "github.com/zsy619/yyhertz/framework/mvc/middleware"
 
 func main() {
     app := mvc.HertzApp

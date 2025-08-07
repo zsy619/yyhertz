@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	"github.com/zsy619/yyhertz/framework/middleware"
+	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 

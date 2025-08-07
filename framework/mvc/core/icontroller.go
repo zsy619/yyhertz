@@ -1,7 +1,7 @@
 package core
 
 import (
-	contextenhanced "github.com/zsy619/yyhertz/framework/context"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // 控制器接口定义（完全兼容Beego ControllerInterface）

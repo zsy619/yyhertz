@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	contextenhanced "github.com/zsy619/yyhertz/framework/context"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // ParamBinder 参数绑定器（统一从comment包提取和增强）

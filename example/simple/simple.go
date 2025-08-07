@@ -6,7 +6,7 @@ import (
 
 	"github.com/zsy619/yyhertz/example/simple/controllers"
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/middleware"
+	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 	"github.com/zsy619/yyhertz/framework/mvc"
 )
 

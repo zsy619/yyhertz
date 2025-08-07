@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/context"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 

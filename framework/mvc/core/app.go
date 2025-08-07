@@ -16,8 +16,8 @@ import (
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/context"
-	"github.com/zsy619/yyhertz/framework/middleware"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
 var (

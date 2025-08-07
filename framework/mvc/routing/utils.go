@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 	
-	"github.com/zsy619/yyhertz/framework/context"
+	"github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // CombinePath 组合路径（从annotation包提取）

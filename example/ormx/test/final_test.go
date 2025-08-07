@@ -10,6 +10,8 @@ import (
 	"github.com/zsy619/yyhertz/framework/orm"
 )
 
+// User类型定义在complete_test.go中
+
 func TestFinal(t *testing.T) {
 	fmt.Println("=== YYHertz ORM 最终功能测试 ===")
 

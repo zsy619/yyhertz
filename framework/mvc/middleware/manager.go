@@ -67,6 +67,9 @@ func NewMiddlewareManager() *MiddlewareManager {
 	// 注册内置中间件
 	manager.registerBuiltinMiddlewares()
 	
+	// 注册扩展的内置中间件
+	manager.InitExtendedMiddlewares()
+	
 	return manager
 }
 

@@ -240,3 +240,4 @@ example/mybat/conf
 example/ormx/conf/
 example/ormx/test/conf
 example/ormx/conf
+framework/mvc/middleware/conf

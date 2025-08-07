@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/protocol"
 )
 
 // Params 路由参数
@@ -47,6 +48,7 @@ type PoolMetrics struct {
 type EnhancedContext struct {
 	// 核心上下文
 	Request *app.RequestContext
+	RequestContext *app.RequestContext // 兼容性字段别名
 	Context context.Context
 	
 	// 路由相关
@@ -58,6 +60,11 @@ type EnhancedContext struct {
 	
 	// 响应数据  
 	Writer ResponseWriter
+	ResponseWriter ResponseWriter // 兼容性字段别名
+	
+	// 兼容性字段 - 为了向后兼容Beego风格API
+	Input  *InputData
+	Output *OutputData
 	
 	// 内部状态
 	index    int8           // 中间件索引
@@ -73,6 +80,111 @@ type EnhancedContext struct {
 
 // HandlerFunc 处理函数类型
 type HandlerFunc func(*EnhancedContext)
+
+// InputData Beego风格输入数据结构
+type InputData struct {
+	ctx *EnhancedContext
+}
+
+// OutputData Beego风格输出数据结构
+type OutputData struct {
+	ctx *EnhancedContext
+}
+
+// Cookie 设置Cookie (Output兼容性方法)
+func (o *OutputData) Cookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
+	if o.ctx.Request != nil {
+		o.ctx.Request.SetCookie(name, value, maxAge, path, domain, protocol.CookieSameSiteDefaultMode, secure, httpOnly)
+	}
+}
+
+// Header 设置响应头 (Output兼容性方法)
+func (o *OutputData) Header(key, value string) {
+	if o.ctx.Request != nil {
+		o.ctx.Request.Response.Header.Set(key, value)
+	}
+}
+
+// Status 设置状态码 (Output兼容性方法)
+func (o *OutputData) Status(code int) {
+	if o.ctx.Request != nil {
+		o.ctx.Request.Response.SetStatusCode(code)
+	}
+}
+
+// Body 设置响应体 (Output兼容性方法)
+func (o *OutputData) Body(content []byte) error {
+	if o.ctx.Request != nil {
+		o.ctx.Request.Response.SetBody(content)
+	}
+	return nil
+}
+
+// JSON 设置JSON响应 (Output兼容性方法)
+func (o *OutputData) JSON(data interface{}, hasIndent bool, coding ...bool) error {
+	if o.ctx.Request != nil {
+		o.ctx.Request.JSON(200, data)
+	}
+	return nil
+}
+
+// SetStatus 设置状态码 (Output兼容性方法，别名)
+func (o *OutputData) SetStatus(code int) {
+	o.Status(code)
+}
+
+// Param 获取路由参数 (Input兼容性方法)
+func (i *InputData) Param(key string) string {
+	return i.ctx.Params.ByName(key)
+}
+
+// Query 获取查询参数 (Input兼容性方法)
+func (i *InputData) Query(key string) string {
+	if i.ctx.Request != nil {
+		return string(i.ctx.Request.QueryArgs().Peek(key))
+	}
+	return ""
+}
+
+// Header 获取请求头 (Input兼容性方法)
+func (i *InputData) Header(key string) string {
+	if i.ctx.Request != nil {
+		return string(i.ctx.Request.GetHeader(key))
+	}
+	return ""
+}
+
+// Cookie 获取Cookie (Input兼容性方法)
+func (i *InputData) Cookie(key string) string {
+	if i.ctx.Request != nil {
+		return string(i.ctx.Request.Cookie(key))
+	}
+	return ""
+}
+
+// Data 设置上下文数据 (Input兼容性方法)
+func (i *InputData) Data(key string, val interface{}) {
+	if i.ctx != nil {
+		i.ctx.Keys[key] = val
+	}
+}
+
+// RequestBody 获取请求体数据 (Input兼容性方法)
+func (i *InputData) RequestBody() []byte {
+	if i.ctx.Request != nil {
+		body, _ := i.ctx.Request.Body()
+		return body
+	}
+	return nil
+}
+
+// IP 获取客户端IP (Input兼容性方法)
+func (i *InputData) IP() string {
+	if i.ctx.Request != nil {
+		return i.ctx.Request.ClientIP()
+	}
+	return ""
+}
 
 // ResponseWriter 响应写入器接口
 type ResponseWriter interface {
@@ -111,6 +223,9 @@ func NewContextPool() *ContextPool {
 			pooled:   true,
 			acquired: time.Now(),
 		}
+		// 初始化兼容性字段（这些字段会在NewContext中重新赋值，这里先设置为避免nil指针）
+		ctx.Input = &InputData{ctx: ctx}
+		ctx.Output = &OutputData{ctx: ctx}
 		return ctx
 	}
 	
@@ -152,6 +267,7 @@ func (pool *ContextPool) Put(ctx *EnhancedContext) {
 // Reset 重置Context状态，准备复用
 func (ctx *EnhancedContext) Reset() {
 	ctx.Request = nil
+	ctx.RequestContext = nil // 同时重置兼容性别名
 	ctx.Context = nil
 	ctx.Params = ctx.Params[:0]
 	ctx.FullPath = ""
@@ -172,8 +288,15 @@ func (ctx *EnhancedContext) Reset() {
 func NewContext(c *app.RequestContext) *EnhancedContext {
 	ctx := defaultPool.Get()
 	ctx.Request = c
+	ctx.RequestContext = c // 兼容性别名指向同一对象
 	ctx.Context = context.Background()
 	ctx.Writer = &responseWriter{RequestContext: c}
+	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
+	
+	// 初始化Beego风格兼容性字段
+	ctx.Input = &InputData{ctx: ctx}
+	ctx.Output = &OutputData{ctx: ctx}
+	
 	return ctx
 }
 
@@ -181,8 +304,15 @@ func NewContext(c *app.RequestContext) *EnhancedContext {
 func NewContextWithContext(c *app.RequestContext, parent context.Context) *EnhancedContext {
 	ctx := defaultPool.Get()
 	ctx.Request = c
+	ctx.RequestContext = c // 兼容性别名指向同一对象
 	ctx.Context = parent
 	ctx.Writer = &responseWriter{RequestContext: c}
+	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
+	
+	// 初始化Beego风格兼容性字段
+	ctx.Input = &InputData{ctx: ctx}
+	ctx.Output = &OutputData{ctx: ctx}
+	
 	return ctx
 }
 
@@ -267,6 +397,11 @@ func (ctx *EnhancedContext) Header(key string) string {
 		return ""
 	}
 	return string(ctx.Request.GetHeader(key))
+}
+
+// GetHeader 获取请求头 (兼容性别名)
+func (ctx *EnhancedContext) GetHeader(key string) string {
+	return ctx.Header(key)
 }
 
 // ============= 响应方法 =============
@@ -455,4 +590,51 @@ func (ctx *EnhancedContext) LastError() error {
 		return nil
 	}
 	return ctx.errors[len(ctx.errors)-1]
+}
+
+// ============= 兼容性API - 来自原@framework/context =============
+// 为了与原framework/context保持兼容性而提供的类型别名和适配器
+
+// Context 兼容性别名 - 映射到EnhancedContext
+type Context = EnhancedContext
+
+// ContextAdapter 兼容性适配器
+type ContextAdapter struct{}
+
+// NewContextAdapter 创建新的上下文适配器 (兼容性API)
+func NewContextAdapter() *ContextAdapter {
+	return &ContextAdapter{}
+}
+
+// HertzToContext 将Hertz的RequestContext转换为Context (兼容性API)
+func (a *ContextAdapter) HertzToContext(ctx *app.RequestContext) *EnhancedContext {
+	return NewContext(ctx)
+}
+
+// ContextToHertz 从Context获取Hertz的RequestContext (兼容性API)
+func (a *ContextAdapter) ContextToHertz(ctx *EnhancedContext) *app.RequestContext {
+	if ctx == nil {
+		return nil
+	}
+	return ctx.Request
+}
+
+// ============= 兼容性方法 - 为Context别名提供原框架期望的方法 =============
+
+// AbortWithStatus 终止并设置状态码 (兼容性方法)
+func (ctx *EnhancedContext) AbortWithStatus(code int) {
+	ctx.JSON(code, map[string]string{"error": "Request aborted"})
+	ctx.Abort()
+}
+
+// Write 写入响应数据 (兼容性方法)
+func (ctx *EnhancedContext) Write(data []byte) (int, error) {
+	return ctx.Writer.Write(data)
+}
+
+// SetHeader 设置响应头 (兼容性方法)
+func (ctx *EnhancedContext) SetHeader(key, value string) {
+	if ctx.Request != nil {
+		ctx.Request.Response.Header.Set(key, value)
+	}
 }
