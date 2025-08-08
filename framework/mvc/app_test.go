@@ -38,9 +38,9 @@ func TestStaticPathSetting(t *testing.T) {
 	// 只测试路径设置，不测试路由注册
 	originalPath := app.GetStaticPath()
 	assert.NotEmpty(t, originalPath, "Static path should not be empty")
-	
+
 	// 直接设置StaticPath字段，避免路由冲突
-	app.StaticPath = "/custom/assets"
+	app.SetStaticPath("/custom/assets")
 	assert.Equal(t, "/custom/assets", app.GetStaticPath(), "StaticPath field should be updated")
 }
 
@@ -55,7 +55,7 @@ func TestNewApp(t *testing.T) {
 // TestAppLogging 测试应用日志功能
 func TestAppLogging(t *testing.T) {
 	app := NewApp()
-	
+
 	// 测试基础日志方法（这些方法应该不会panic）
 	assert.NotPanics(t, func() {
 		app.LogInfo("Test info message")
@@ -72,11 +72,11 @@ func TestAppLogging(t *testing.T) {
 // TestAppConfig 测试应用配置功能
 func TestAppConfig(t *testing.T) {
 	app := NewApp()
-	
+
 	// 测试日志配置
 	originalConfig := app.GetLogConfig()
 	assert.NotNil(t, originalConfig, "App should have initial log config")
-	
+
 	// 测试更新日志级别
 	assert.NotPanics(t, func() {
 		app.UpdateLogLevel(config.LogLevelDebug)
