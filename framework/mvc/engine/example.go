@@ -6,15 +6,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/mvc/core"
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // ExampleUsage 展示新引擎的使用方法
 func ExampleUsage() {
 	// 创建高性能引擎
 	engine := NewFastEngine()
-	
+
 	// 配置引擎
 	config := EngineConfig{
 		MaxRouteCache:  2000,
@@ -25,21 +25,21 @@ func ExampleUsage() {
 		HandleOptions:  true,
 	}
 	engine.SetConfig(config)
-	
+
 	// 添加全局中间件
 	engine.Use(LoggerMiddleware(), RecoveryMiddleware())
-	
+
 	// 注册基础路由
 	engine.GET("/", HomeHandler)
 	engine.GET("/health", HealthHandler)
-	
+
 	// 用户相关路由
 	engine.GET("/users", ListUsersHandler)
 	engine.GET("/users/:id", GetUserHandler)
 	engine.POST("/users", CreateUserHandler)
 	engine.PUT("/users/:id", UpdateUserHandler)
 	engine.DELETE("/users/:id", DeleteUserHandler)
-	
+
 	// API路由组
 	apiGroup := engine.Group("/api/v1")
 	apiGroup.Use(AuthMiddleware())
@@ -47,16 +47,16 @@ func ExampleUsage() {
 		apiGroup.GET("/profile", GetProfileHandler)
 		apiGroup.POST("/upload", UploadFileHandler)
 	}
-	
+
 	// 通配符路由
 	engine.GET("/static/*filepath", StaticFileHandler)
-	
+
 	// 编译引擎以优化性能
 	engine.Compile()
-	
+
 	// 模拟请求处理
 	simulateRequests(engine)
-	
+
 	// 打印性能统计
 	engine.PrintStats()
 }
@@ -66,19 +66,20 @@ func LoggerMiddleware() mvccontext.HandlerFunc {
 	return func(ctx *mvccontext.Context) {
 		start := time.Now()
 		path := ctx.Request.Path()
-		
+
 		ctx.Next()
-		
+
 		latency := time.Since(start)
 		status := ctx.Writer.Status()
-		
-		log.Printf("[%s] %s %s %v %d",
-			ctx.Request.Method(),
-			string(path),
-			ctx.Request.RemoteAddr(),
-			latency,
-			status,
-		)
+		go func() {
+			log.Printf("[%s] %s %s %v %d",
+				ctx.Request.Method(),
+				string(path),
+				ctx.Request.RemoteAddr(),
+				latency,
+				status,
+			)
+		}()
 	}
 }
 
@@ -93,7 +94,7 @@ func RecoveryMiddleware() mvccontext.HandlerFunc {
 				ctx.Abort()
 			}
 		}()
-		
+
 		ctx.Next()
 	}
 }
@@ -108,7 +109,7 @@ func AuthMiddleware() mvccontext.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		
+
 		// 验证token逻辑
 		ctx.Set("user_id", "12345")
 		ctx.Next()
@@ -139,7 +140,7 @@ func ListUsersHandler(ctx context.Context, c *core.RequestContext) {
 		{"id": 2, "name": "Bob", "email": "bob@example.com"},
 		{"id": 3, "name": "Charlie", "email": "charlie@example.com"},
 	}
-	
+
 	c.JSON(200, map[string]interface{}{
 		"users": users,
 		"total": len(users),
@@ -149,14 +150,14 @@ func ListUsersHandler(ctx context.Context, c *core.RequestContext) {
 func GetUserHandler(ctx context.Context, c *core.RequestContext) {
 	// 从URL参数获取用户ID
 	userID := string(c.Param("id"))
-	
+
 	// 模拟从数据库获取用户
 	user := map[string]interface{}{
 		"id":    userID,
 		"name":  "User " + userID,
 		"email": "user" + userID + "@example.com",
 	}
-	
+
 	c.JSON(200, user)
 }
 
@@ -166,10 +167,10 @@ func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
 		Name  string `json:"name"`
 		Email string `json:"email"`
 	}
-	
+
 	// 这里应该有参数绑定逻辑
 	// c.ShouldBindJSON(&user)
-	
+
 	// 模拟创建用户
 	result := map[string]interface{}{
 		"id":      123,
@@ -177,13 +178,13 @@ func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
 		"email":   user.Email,
 		"created": time.Now(),
 	}
-	
+
 	c.JSON(201, result)
 }
 
 func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
 	userID := string(c.Param("id"))
-	
+
 	c.JSON(200, map[string]interface{}{
 		"message": "User updated successfully",
 		"user_id": userID,
@@ -192,7 +193,7 @@ func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
 
 func DeleteUserHandler(ctx context.Context, c *core.RequestContext) {
 	userID := string(c.Param("id"))
-	
+
 	c.JSON(200, map[string]interface{}{
 		"message": "User deleted successfully",
 		"user_id": userID,
@@ -202,7 +203,7 @@ func DeleteUserHandler(ctx context.Context, c *core.RequestContext) {
 func GetProfileHandler(ctx context.Context, c *core.RequestContext) {
 	// 从中间件设置的用户ID获取用户信息
 	// userID := ctx.MustGet("user_id").(string)
-	
+
 	c.JSON(200, map[string]interface{}{
 		"user_id": "12345",
 		"name":    "Current User",
@@ -220,7 +221,7 @@ func UploadFileHandler(ctx context.Context, c *core.RequestContext) {
 
 func StaticFileHandler(ctx context.Context, c *core.RequestContext) {
 	filepath := string(c.Param("filepath"))
-	
+
 	c.JSON(200, map[string]interface{}{
 		"message":  "Static file served",
 		"filepath": filepath,
@@ -230,7 +231,7 @@ func StaticFileHandler(ctx context.Context, c *core.RequestContext) {
 // simulateRequests 模拟请求以展示性能
 func simulateRequests(engine *FastEngine) {
 	fmt.Println("=== Simulating Requests ===")
-	
+
 	requests := []struct {
 		method string
 		path   string
@@ -246,12 +247,12 @@ func simulateRequests(engine *FastEngine) {
 		{"GET", "/static/css/style.css"},
 		{"GET", "/nonexistent"}, // 404测试
 	}
-	
+
 	for _, req := range requests {
 		fmt.Printf("Processing: %s %s\n", req.method, req.path)
 		engine.HandleRequest(req.method, req.path, nil)
 	}
-	
+
 	// 并发测试
 	fmt.Println("\n=== Concurrent Test ===")
 	concurrentTest(engine, 100, 1000)
@@ -260,7 +261,7 @@ func simulateRequests(engine *FastEngine) {
 func concurrentTest(engine *FastEngine, goroutines, requestsPerGoroutine int) {
 	start := time.Now()
 	done := make(chan bool, goroutines)
-	
+
 	for i := 0; i < goroutines; i++ {
 		go func(id int) {
 			for j := 0; j < requestsPerGoroutine; j++ {
@@ -269,16 +270,16 @@ func concurrentTest(engine *FastEngine, goroutines, requestsPerGoroutine int) {
 			done <- true
 		}(i)
 	}
-	
+
 	// 等待所有goroutine完成
 	for i := 0; i < goroutines; i++ {
 		<-done
 	}
-	
+
 	elapsed := time.Since(start)
 	totalRequests := goroutines * requestsPerGoroutine
 	qps := float64(totalRequests) / elapsed.Seconds()
-	
+
 	fmt.Printf("Concurrent test completed:\n")
 	fmt.Printf("- Goroutines: %d\n", goroutines)
 	fmt.Printf("- Requests per goroutine: %d\n", requestsPerGoroutine)
@@ -290,7 +291,7 @@ func concurrentTest(engine *FastEngine, goroutines, requestsPerGoroutine int) {
 // PerformanceComparison 性能对比测试
 func PerformanceComparison() {
 	fmt.Println("=== Performance Comparison ===")
-	
+
 	// 测试原始路由vs新引擎
 	testOldRouting()
 	testNewEngine()
@@ -305,7 +306,7 @@ func testOldRouting() {
 func testNewEngine() {
 	fmt.Println("Testing new FastEngine...")
 	engine := NewFastEngine()
-	
+
 	// 添加1000个路由
 	for i := 0; i < 1000; i++ {
 		path := fmt.Sprintf("/test/%d", i)
@@ -313,9 +314,9 @@ func testNewEngine() {
 			c.String(200, "OK")
 		})
 	}
-	
+
 	engine.Compile()
-	
+
 	// 执行10000次请求
 	start := time.Now()
 	for i := 0; i < 10000; i++ {
@@ -323,7 +324,7 @@ func testNewEngine() {
 		engine.HandleRequest("GET", path, nil)
 	}
 	elapsed := time.Since(start)
-	
-	fmt.Printf("New engine - 10k requests in %v (%.2f req/ms)\n", 
+
+	fmt.Printf("New engine - 10k requests in %v (%.2f req/ms)\n",
 		elapsed, float64(10000)/float64(elapsed.Milliseconds()))
 }

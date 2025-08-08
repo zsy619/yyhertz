@@ -25,16 +25,17 @@ func RecoveryMiddleware() Middleware {
 				path := string(ctx.Path())
 				clientIP := ctx.ClientIP()
 				userAgent := string(ctx.UserAgent())
-
-				// 使用结构化日志记录panic信息
-				config.WithFields(map[string]any{
-					"error":      fmt.Sprintf("%v", err),
-					"method":     method,
-					"path":       path,
-					"client_ip":  clientIP,
-					"user_agent": userAgent,
-					"stack":      string(stack),
-				}).Error("PANIC recovered in middleware")
+				go func() {
+					// 使用结构化日志记录panic信息
+					config.WithFields(map[string]any{
+						"error":      fmt.Sprintf("%v", err),
+						"method":     method,
+						"path":       path,
+						"client_ip":  clientIP,
+						"user_agent": userAgent,
+						"stack":      string(stack),
+					}).Error("PANIC recovered in middleware")
+				}()
 
 				// 返回标准错误响应
 				response := response.BuildErrorResp(errors.ServiceError.WithMessage("Internal Server Error"))
@@ -65,14 +66,16 @@ func RecoveryMiddlewareWithHandler(handler func(c context.Context, ctx *app.Requ
 					userAgent := string(ctx.UserAgent())
 
 					// 使用结构化日志记录panic信息
-					config.WithFields(map[string]any{
-						"error":      fmt.Sprintf("%v", err),
-						"method":     method,
-						"path":       path,
-						"client_ip":  clientIP,
-						"user_agent": userAgent,
-						"stack":      string(stack),
-					}).Error("PANIC recovered in middleware with custom handler")
+					go func() {
+						config.WithFields(map[string]any{
+							"error":      fmt.Sprintf("%v", err),
+							"method":     method,
+							"path":       path,
+							"client_ip":  clientIP,
+							"user_agent": userAgent,
+							"stack":      string(stack),
+						}).Error("PANIC recovered in middleware with custom handler")
+					}()
 
 					response := response.BuildErrorResp(errors.ServiceError.WithMessage("Internal Server Error"))
 					ctx.JSON(500, response)
@@ -98,15 +101,17 @@ func LoggingRecoveryHandler() func(c context.Context, ctx *app.RequestContext, e
 		stack := debug.Stack()
 
 		// 使用结构化日志记录详细的panic信息
-		config.WithFields(map[string]any{
-			"error":      fmt.Sprintf("%v", err),
-			"method":     method,
-			"path":       path,
-			"client_ip":  clientIP,
-			"user_agent": userAgent,
-			"stack":      string(stack),
-			"handler":    "LoggingRecoveryHandler",
-		}).Error("PANIC recovered by logging recovery handler")
+		go func() {
+			config.WithFields(map[string]any{
+				"error":      fmt.Sprintf("%v", err),
+				"method":     method,
+				"path":       path,
+				"client_ip":  clientIP,
+				"user_agent": userAgent,
+				"stack":      string(stack),
+				"handler":    "LoggingRecoveryHandler",
+			}).Error("PANIC recovered by logging recovery handler")
+		}()
 
 		// 返回错误响应
 		response := response.BuildErrorResp(errors.ServiceError.WithMessage(fmt.Sprintf("Internal Server Error: %v", err)))
@@ -151,7 +156,9 @@ func EnhancedRecoveryHandler() func(c context.Context, ctx *app.RequestContext, 
 			// 业务错误
 			logFields["error_type"] = "business_error"
 			logFields["error_code"] = e.ErrCode
-			config.WithFields(logFields).Warn("Business panic recovered")
+			go func() {
+				config.WithFields(logFields).Warn("Business panic recovered")
+			}()
 
 			// 返回业务错误响应
 			response := response.BuildErrorResp(e)
@@ -160,7 +167,9 @@ func EnhancedRecoveryHandler() func(c context.Context, ctx *app.RequestContext, 
 		case error:
 			// 系统错误
 			logFields["error_type"] = "system_error"
-			config.WithFields(logFields).Error("System panic recovered")
+			go func() {
+				config.WithFields(logFields).Error("System panic recovered")
+			}()
 
 			// 返回系统错误响应
 			response := response.BuildErrorResp(errors.ServiceError.WithMessage("Internal Server Error"))
@@ -169,7 +178,9 @@ func EnhancedRecoveryHandler() func(c context.Context, ctx *app.RequestContext, 
 		default:
 			// 未知错误
 			logFields["error_type"] = "unknown_error"
-			config.WithFields(logFields).Error("Unknown panic recovered")
+			go func() {
+				config.WithFields(logFields).Error("Unknown panic recovered")
+			}()
 
 			// 返回通用错误响应
 			response := response.BuildErrorResp(errors.ServiceError.WithMessage("Internal Server Error"))
@@ -214,9 +225,13 @@ func RequestAwareRecoveryHandler() func(c context.Context, ctx *app.RequestConte
 
 		// 记录错误日志
 		if isAPIRequest {
-			config.WithRequestID(requestID).WithFields(logFields).Error("API panic recovered")
+			go func() {
+				config.WithRequestID(requestID).WithFields(logFields).Error("API panic recovered")
+			}()
 		} else {
-			config.WithFields(logFields).Error("Web panic recovered")
+			go func() {
+				config.WithFields(logFields).Error("Web panic recovered")
+			}()
 		}
 
 		// 根据请求类型返回不同响应格式

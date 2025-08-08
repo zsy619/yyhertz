@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/util"
 )
@@ -121,17 +122,18 @@ func AccessLogMiddleware() Middleware {
 		ctx.Next(c)
 
 		duration := time.Since(start)
-
-		// 使用单例日志系统记录访问日志
-		config.WithFields(map[string]any{
-			"type":        "access",
-			"method":      string(ctx.Method()),
-			"path":        string(ctx.Path()),
-			"status_code": ctx.Response.StatusCode(),
-			"duration":    duration.String(),
-			"duration_ms": duration.Milliseconds(),
-			"client_ip":   ctx.ClientIP(),
-		}).Info("Access log")
+		go func() {
+			// 使用单例日志系统记录访问日志
+			config.WithFields(map[string]any{
+				"type":        "access",
+				"method":      string(ctx.Method()),
+				"path":        string(ctx.Path()),
+				"status_code": ctx.Response.StatusCode(),
+				"duration":    duration.String(),
+				"duration_ms": duration.Milliseconds(),
+				"client_ip":   ctx.ClientIP(),
+			}).Info("Access log")
+		}()
 
 		ctx.Next(c)
 	}

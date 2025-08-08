@@ -42,8 +42,9 @@ func CORSMiddleware() Middleware {
 		// 处理预检请求
 		if method == "OPTIONS" {
 			corsFields["preflight"] = true
-			config.WithFields(corsFields).Debug("CORS preflight request handled")
-
+			go func() {
+				config.WithFields(corsFields).Debug("CORS preflight request handled")
+			}()
 			ctx.Status(204)
 			ctx.Abort()
 			return
@@ -110,9 +111,13 @@ func CORSMiddlewareWithConfig(origins []string, methods []string, headers []stri
 
 		// 如果来源不被允许，记录警告
 		if !originAllowed {
-			config.WithFields(corsFields).Warn("CORS request from disallowed origin")
+			go func() {
+				config.WithFields(corsFields).Warn("CORS request from disallowed origin")
+			}()
 		} else {
-			config.WithFields(corsFields).Debug("CORS request from allowed origin")
+			go func() {
+				config.WithFields(corsFields).Debug("CORS request from allowed origin")
+			}()
 		}
 
 		// 设置CORS头部
@@ -125,7 +130,9 @@ func CORSMiddlewareWithConfig(origins []string, methods []string, headers []stri
 		// 处理预检请求
 		if method == "OPTIONS" {
 			corsFields["preflight"] = true
-			config.WithFields(corsFields).Debug("CORS configured preflight request handled")
+			go func() {
+				config.WithFields(corsFields).Debug("CORS configured preflight request handled")
+			}()
 
 			ctx.Status(204)
 			ctx.Abort()

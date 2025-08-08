@@ -89,8 +89,10 @@ func TLSSupportMiddleware(cfg *TLSConfig) app.HandlerFunc {
 				redirectToHTTPS(c, cfg.RedirectPort)
 				return
 			} else {
-				// 返回错误
-				config.Warn("HTTP请求被拒绝，要求HTTPS")
+				go func() {
+					// 返回错误
+					config.Warn("HTTP请求被拒绝，要求HTTPS")
+				}()
 				c.JSON(consts.StatusBadRequest, response.ErrorResponse{
 					Code:    constant.CodeHTTPSRequired,
 					Message: "HTTPS连接是必需的",
