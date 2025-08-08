@@ -43,7 +43,7 @@ func AdaptHandler(handler HandlerFunc) app.HandlerFunc {
 type App struct {
 	*server.Hertz
 	ViewPath      string
-	StaticPath    string
+	StaticPaths   map[string]string // URL路径 -> 本地路径映射
 	startTime     time.Time
 	address       string
 	loggerManager *config.LoggerManager
@@ -84,16 +84,19 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 
 	app := &App{
 		Hertz:         h,                                // 使用Hertz服务器实例
-		ViewPath:      "views",                          // 默认视图路径
-		StaticPath:    "static",                         // 默认静态文件路径
+		ViewPath:      "./views",                        // 默认视图路径
+		StaticPaths:   map[string]string{"/static": "./static"}, // 默认静态文件路径映射
 		startTime:     time.Now(),                       // 记录应用启动时间
 		address:       fmt.Sprintf("%s:%d", host, port), // 应用监听地址
 		loggerManager: loggerManager,                    // 日志管理器
 	}
 
-	// 配置视图和静态文件路径
-	app.SetViewPath("/views")
-	app.SetStaticPath("/static")
+	// 配置视图路径
+	app.SetViewPath("./views")
+	// 注册默认静态路径
+	for urlPath, _ := range app.StaticPaths {
+		app.Static(urlPath, ".")
+	}
 
 	// 配置增强的日志中间件
 	loggerConfig := &middleware.MiddlewareLoggerConfig{
@@ -144,15 +147,59 @@ func (app *App) GetViewPath() string {
 	return app.ViewPath
 }
 
-// SetStaticPath 设置静态文件路径
+// SetStaticPath 设置单个静态文件路径（向后兼容）
 func (app *App) SetStaticPath(path string) {
-	app.StaticPath = path
-	app.Static("/static", path)
+	if app.StaticPaths == nil {
+		app.StaticPaths = make(map[string]string)
+	}
+	// 自动推导URL路径：如果path是"./static"，URL路径为"/static"  
+	urlPath := "/" + strings.TrimLeft(strings.TrimPrefix(path, "./"), "/")
+	if urlPath == "/" {
+		urlPath = "/static" // 默认URL路径
+	}
+	
+	// 只有当路径不存在或者发生变化时才注册
+	if existing, exists := app.StaticPaths[urlPath]; !exists || existing != path {
+		app.StaticPaths[urlPath] = path
+		// Hertz的Static方法需要相对路径，urlPath为"/static"，path为"./static"时
+		// 会导致路径变成"/static/static"，所以我们传递"."让它映射到当前目录下的路径
+		app.Static(urlPath, ".")
+	}
 }
 
-// GetStaticPath 获取静态文件路径
+// SetStaticPaths 设置多个静态文件路径映射
+func (app *App) SetStaticPaths(pathMap map[string]string) {
+	app.StaticPaths = make(map[string]string)
+	for urlPath, localPath := range pathMap {
+		app.StaticPaths[urlPath] = localPath
+		app.Static(urlPath, ".")
+	}
+}
+
+// AddStaticPath 添加单个静态路径映射
+func (app *App) AddStaticPath(urlPath, localPath string) {
+	if app.StaticPaths == nil {
+		app.StaticPaths = make(map[string]string)
+	}
+	app.StaticPaths[urlPath] = localPath
+	app.Static(urlPath, ".")
+}
+
+// GetStaticPath 获取默认静态文件路径（向后兼容）
 func (app *App) GetStaticPath() string {
-	return app.StaticPath
+	if path, exists := app.StaticPaths["/static"]; exists {
+		return path
+	}
+	// 返回第一个路径作为默认值
+	for _, path := range app.StaticPaths {
+		return path
+	}
+	return "./static"
+}
+
+// GetStaticPaths 获取所有静态路径映射
+func (app *App) GetStaticPaths() map[string]string {
+	return app.StaticPaths
 }
 
 // Use 添加中间件

@@ -1,24 +1,55 @@
 # 🚀 快速开始
 
-几分钟内搭建你的第一个Hertz MVC应用。
+通过这个10分钟教程，您将掌握YYHertz框架的核心概念，并创建一个完整的Web应用。
 
-## 环境要求
+## 🛠️ 环境准备
 
-- Go 1.19 或更高版本
-- Git（用于下载依赖）
+### 系统要求
+- **Go版本**: 1.19+ (推荐1.21+)
+- **操作系统**: Linux, macOS, Windows
+- **内存**: 最低512MB RAM
+- **工具**: Git, IDE (推荐VS Code + Go插件)
 
-## 安装框架
-
-使用 go mod 初始化项目并安装Hertz MVC框架：
-
+### 验证环境
 ```bash
-mkdir my-hertz-app
-cd my-hertz-app
-go mod init my-hertz-app
-go get github.com/zsy619/yyhertz
+# 检查Go版本
+go version
+# 输出: go version go1.21.0 darwin/amd64
+
+# 检查Go环境
+go env GOPATH GOROOT
 ```
 
-## 创建第一个应用
+## 📦 创建项目
+
+### 方式一：标准创建 (推荐)
+```bash
+# 1. 创建项目目录
+mkdir my-hertz-app && cd my-hertz-app
+
+# 2. 初始化Go模块
+go mod init my-hertz-app
+
+# 3. 安装YYHertz框架
+go get -u github.com/zsy619/yyhertz
+
+# 4. 验证安装
+go list -m github.com/zsy619/yyhertz
+```
+
+### 方式二：使用模板
+```bash
+# 克隆官方模板
+git clone https://github.com/zsy619/yyhertz-template.git my-app
+cd my-app
+
+# 重新初始化模块
+rm go.mod go.sum
+go mod init my-app
+go mod tidy
+```
+
+## 🎯 第一个应用 - Hello World
 
 ### 1. 创建主文件
 

@@ -79,7 +79,7 @@ func ExampleUsage() {
 
 	// 添加一些示例路由
 	app.GET("/", func(ctx context.Context, c *mvc.RequestContext) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "Hello YYHertz!",
 			"time":    time.Now(),
 		})
@@ -89,8 +89,8 @@ func ExampleUsage() {
 		// 模拟一些处理时间
 		time.Sleep(50 * time.Millisecond)
 
-		c.JSON(200, map[string]interface{}{
-			"users": []map[string]interface{}{
+		c.JSON(200, map[string]any{
+			"users": []map[string]any{
 				{"id": 1, "name": "张三"},
 				{"id": 2, "name": "李四"},
 			},
@@ -100,13 +100,13 @@ func ExampleUsage() {
 	app.POST("/api/users", func(ctx context.Context, c *mvc.RequestContext) {
 		// 模拟错误情况
 		if string(c.Query("error")) == "true" {
-			c.JSON(500, map[string]interface{}{
+			c.JSON(500, map[string]any{
 				"error": "模拟服务器错误",
 			})
 			return
 		}
 
-		c.JSON(201, map[string]interface{}{
+		c.JSON(201, map[string]any{
 			"message": "用户创建成功",
 			"id":      123,
 		})

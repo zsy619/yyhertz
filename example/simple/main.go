@@ -15,8 +15,28 @@ func main() {
 	// 创建应用实例
 	app := mvc.HertzApp
 
-	// 修正框架的静态文件路径问题
-	app.StaticPath = "./static"
+	// 设置开发工具
+	if err := devtools.SetupDevTools(app); err != nil {
+		fmt.Printf("设置开发工具失败: %v\n", err)
+	}
+
+	// 设置静态文件路径 - 支持单路径（向后兼容）
+	app.SetStaticPath("./static")
+	
+	// 或者使用多路径映射（推荐）
+	// app.SetStaticPaths(map[string]string{
+	//     "/static":  "./static",
+	//     "/assets":  "./assets",
+	//     "/vendor":  "./static/vendor",
+	//     "/uploads": "./uploads",
+	// })
+	
+	// 或者逐个添加路径
+	// app.AddStaticPath("/cdn", "./cdn")
+	// app.AddStaticPath("/images", "./storage/images")
+
+	// 设置视图模板路径
+	app.SetViewPath("./views")
 
 	// 添加全局中间件
 	app.Use(
@@ -32,17 +52,86 @@ func main() {
 	userController := &controllers.UserController{}
 	adminController := &controllers.AdminController{}
 	markdownController := &controllers.MarkdownController{}
+	docsController := &controllers.DocsController{}
 
 	// 自动注册路由 (使用新的AutoRouters方法)
-	app.AutoRouters(homeController, userController, adminController, markdownController)
+	app.AutoRouters(homeController, userController, adminController, markdownController, docsController)
 
 	app.RouterPrefix("/", homeController, "GetIndex", "*:/")
-	app.RouterPrefix("/", markdownController, "GetIndex", "*:/")
 
 	fmt.Println("🚀 YYHertz Namespace功能演示启动...", homeController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", homeController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", userController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", adminController.GetControllerName())
+	fmt.Println("		0000🚀🚀🚀 ", markdownController.GetControllerName())
+	fmt.Println("		0000🚀🚀🚀 ", docsController.GetControllerName())
+
+	nsDocs := mvc.NewNamespace("/docs",
+		// ============= 开始使用 =============
+		mvc.NSNamespace("/getting-started",
+			mvc.NSRouter("/overview", docsController, "*:GetGettingStartedOverview"),
+			mvc.NSRouter("/quickstart", docsController, "*:GetGettingStartedQuickstart"),
+			mvc.NSRouter("/structure", docsController, "*:GetGettingStartedStructure"),
+		),
+		// ============= MVC核心 =============
+		mvc.NSNamespace("/mvc-core",
+			mvc.NSRouter("/application", docsController, "*:GetMvcCoreApplication"),
+			mvc.NSRouter("/controller", docsController, "*:GetMvcCoreController"),
+			mvc.NSRouter("/routing", docsController, "*:GetMvcCoreRouting"),
+			mvc.NSRouter("/namespace", docsController, "*:GetMvcCoreNamespace"),
+			mvc.NSRouter("/annotation", docsController, "*:GetMvcCoreAnnotation"),
+			mvc.NSRouter("/comment", docsController, "*:GetMvcCoreComment"),
+		),
+		// ============= 中间件 =============
+		mvc.NSNamespace("/middleware",
+			mvc.NSRouter("/overview", docsController, "*:GetMiddlewareOverview"),
+			mvc.NSRouter("/builtin", docsController, "*:GetMiddlewareBuiltin"),
+			mvc.NSRouter("/custom", docsController, "*:GetMiddlewareCustom"),
+			mvc.NSRouter("/config", docsController, "*:GetMiddlewareConfig"),
+		),
+		// ============= 数据访问 =============
+		mvc.NSNamespace("/data-access",
+			mvc.NSRouter("/gorm", docsController, "*:GetDataAccessGorm"),
+			mvc.NSRouter("/mybatis", docsController, "*:GetDataAccessMybatis"),
+			mvc.NSRouter("/database-config", docsController, "*:GetDataAccessDatabaseConfig"),
+			mvc.NSRouter("/transaction", docsController, "*:GetDataAccessTransaction"),
+		),
+		// ============= 视图渲染 =============
+		mvc.NSNamespace("/view-template",
+			mvc.NSRouter("/overview", docsController, "*:GetViewTemplateOverview"),
+			mvc.NSRouter("/template-engine", docsController, "*:GetViewTemplateTemplateEngine"),
+			mvc.NSRouter("/view-rendering", docsController, "*:GetViewTemplateViewRendering"),
+			mvc.NSRouter("/static-assets", docsController, "*:GetViewTemplateStaticAssets"),
+		),
+		// ============= 配置管理 =============
+		mvc.NSNamespace("/configuration",
+			mvc.NSRouter("/app-config", docsController, "*:GetConfigurationAppConfig"),
+			mvc.NSRouter("/environment", docsController, "*:GetConfigurationEnvironment"),
+			mvc.NSRouter("/logging", docsController, "*:GetConfigurationLogging"),
+		),
+		// ============= 部署运维 =============
+		mvc.NSNamespace("/deployment",
+			mvc.NSRouter("/overview", docsController, "*:GetDeploymentOverview"),
+			mvc.NSRouter("/docker", docsController, "*:GetDeploymentDocker"),
+			mvc.NSRouter("/kubernetes", docsController, "*:GetDeploymentKubernetes"),
+			mvc.NSRouter("/monitoring", docsController, "*:GetDeploymentMonitoring"),
+		),
+		// ============= 高级功能 =============
+		mvc.NSNamespace("/advanced",
+			mvc.NSRouter("/session", docsController, "*:GetAdvancedSession"),
+			mvc.NSRouter("/cache", docsController, "*:GetAdvancedCache"),
+			mvc.NSRouter("/validation", docsController, "*:GetAdvancedValidation"),
+			mvc.NSRouter("/captcha", docsController, "*:GetAdvancedCaptcha"),
+			mvc.NSRouter("/scheduler", docsController, "*:GetAdvancedScheduler"),
+		),
+		// ============= 开发工具 =============
+		mvc.NSNamespace("/dev-tools",
+			mvc.NSRouter("/codegen", docsController, "*:GetDevToolsCodegen"),
+			mvc.NSRouter("/hot-reload", docsController, "*:GetDevToolsHotReload"),
+			mvc.NSRouter("/performance", docsController, "*:GetDevToolsPerformance"),
+			mvc.NSRouter("/testing", docsController, "*:GetDevToolsTesting"),
+		),
+	)
 
 	// 使用Beego风格的Namespace功能
 	nsApi := mvc.NewNamespace("/api",
@@ -61,71 +150,11 @@ func main() {
 			mvc.NSRouter("/city", userController, "POST:PostCreate"),
 			mvc.NSRouter("/county", userController, "PUT:PutUpdate"),
 		),
-
-		// 学生管理命名空间
-		mvc.NSNamespace("/student",
-			mvc.NSRouter("/register", userController, "*:PostCreate"),
-			mvc.NSRouter("/login", userController, "POST:GetInfo"),
-			mvc.NSRouter("/logout", userController, "POST:DeleteRemove"),
-			mvc.NSRouter("/profile", userController, "GET:GetInfo"),
-		),
-
-		// 教师管理命名空间
-		mvc.NSNamespace("/teacher",
-			mvc.NSRouter("/register", adminController, "*:GetSettings"),
-			mvc.NSRouter("/login", adminController, "POST:PostSettings"),
-			mvc.NSRouter("/logout", adminController, "POST:GetUsers"),
-			mvc.NSRouter("/profile", adminController, "GET:GetDashboard"),
-		),
-
-		// 在线功能
-		mvc.NSNamespace("/online",
-			mvc.NSRouter("/heartbeat", homeController, "*:GetIndex"),
-			mvc.NSRouter("/status", homeController, "GET:GetAbout"),
-		),
-
-		// 任务管理
-		mvc.NSNamespace("/task",
-			mvc.NSRouter("/clean", adminController, "*:PostClearCache"),
-			mvc.NSRouter("/backup", adminController, "POST:PostSettings"),
-		),
-	)
-
-	// 添加V2版本的API命名空间
-	nsApiV2 := mvc.NewNamespace("/api/v2",
-		// 用户管理
-		mvc.NSNamespace("/users",
-			mvc.NSAutoRouter(userController),
-			mvc.NSRouter("/profile", userController, "GET:GetInfo"),
-			mvc.NSRouter("/avatar", userController, "POST:PostCreate"),
-
-			// 用户设置子空间
-			mvc.NSNamespace("/settings",
-				mvc.NSRouter("/password", userController, "PUT:PutUpdate"),
-				mvc.NSRouter("/email", userController, "PUT:PutUpdate"),
-				mvc.NSRouter("/preferences", userController, "GET:GetInfo"),
-			),
-		),
-
-		// 管理员功能
-		mvc.NSNamespace("/admin",
-			mvc.NSAutoRouter(adminController),
-
-			// 系统管理
-			mvc.NSNamespace("/system",
-				mvc.NSRouter("/config", adminController, "GET:GetSettings"),
-				mvc.NSRouter("/config", adminController, "POST:PostSettings"),
-				mvc.NSRouter("/logs", adminController, "GET:GetUsers"),
-				mvc.NSRouter("/backup", adminController, "POST:PostClearCache"),
-			),
-		),
 	)
 
 	// 添加命名空间到全局应用
+	mvc.AddNamespace(nsDocs)
 	mvc.AddNamespace(nsApi)
-	mvc.AddNamespace(nsApiV2)
-
-	fmt.Println("		8888🚀🚀🚀 ", homeController.ControllerName)
 
 	log.Println("🚀 YYHertz Namespace功能演示启动成功!")
 	log.Println("📍 服务器地址: http://localhost:8888")
@@ -149,27 +178,6 @@ func main() {
 	log.Println("POST   /api/task/clean           - 清理任务")
 	log.Println("POST   /api/task/backup          - 备份任务")
 	log.Println("")
-	log.Println("📋 API V2版本路由:")
-	log.Println("GET    /api/v2/users/profile     - 用户资料")
-	log.Println("POST   /api/v2/users/avatar      - 上传头像")
-	log.Println("PUT    /api/v2/users/settings/password    - 修改密码")
-	log.Println("PUT    /api/v2/users/settings/email       - 修改邮箱")
-	log.Println("GET    /api/v2/users/settings/preferences - 获取偏好设置")
-	log.Println("GET    /api/v2/admin/system/config        - 系统配置")
-	log.Println("POST   /api/v2/admin/system/config        - 保存配置")
-	log.Println("GET    /api/v2/admin/system/logs          - 系统日志")
-	log.Println("POST   /api/v2/admin/system/backup        - 系统备份")
-	log.Println("")
-	log.Println("💡 测试命令:")
-	log.Println("curl http://localhost:8888/api/auth/token")
-	log.Println("curl http://localhost:8888/api/student/register")
-	log.Println("curl http://localhost:8888/api/v2/users/profile")
-	log.Println("curl http://localhost:8888/api/v2/admin/system/config")
-
-	// 设置开发工具
-	if err := devtools.SetupDevTools(app); err != nil {
-		fmt.Printf("设置开发工具失败: %v\n", err)
-	}
 
 	app.Run()
 }

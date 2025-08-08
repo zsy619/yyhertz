@@ -241,3 +241,4 @@ example/ormx/conf/
 example/ormx/test/conf
 example/ormx/conf
 framework/mvc/middleware/conf
+!example/config_demo

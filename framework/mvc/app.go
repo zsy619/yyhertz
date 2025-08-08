@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/zsy619/yyhertz/framework/mvc/annotation"
+	"github.com/zsy619/yyhertz/framework/mvc/captcha"
 	"github.com/zsy619/yyhertz/framework/mvc/comment"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
@@ -56,12 +57,33 @@ var (
 )
 
 // Router相关类型别名
-type Router = router.Router
-type RouterGroup = router.Group
+type (
+	Router      = router.Router
+	RouterGroup = router.Group
+)
 
 var (
 	NewRouter = router.NewRouter
 	NewGroup  = router.NewGroup
+)
+
+// Captcha相关类型别名
+type (
+	CaptchaConfig           = captcha.Config
+	CaptchaGenerator        = captcha.Generator
+	CaptchaStore            = captcha.Store
+	CaptchaMiddleware       = captcha.Middleware
+	CaptchaMiddlewareConfig = captcha.MiddlewareConfig
+)
+
+var (
+	DefaultCaptchaConfig   = captcha.DefaultConfig
+	NewCaptchaGenerator    = captcha.NewGenerator
+	NewMemoryStore         = captcha.NewMemoryStore
+	NewCaptchaMiddleware   = captcha.NewMiddleware
+	CaptchaGenerateHandler = captcha.GenerateHandler
+	CaptchaImageHandler    = captcha.ImageHandler
+	CaptchaVerifyHandler   = captcha.VerifyHandler
 )
 
 func init() {

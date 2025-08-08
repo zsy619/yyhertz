@@ -19,18 +19,31 @@ type HomeController struct {
 	mvc.BaseController
 }
 
-// 渲染Markdown文档的辅助方法
+// 渲染Markdown文档的辅助方法 (支持分组目录)
 func (c *HomeController) renderMarkdownDoc(docName, title string) {
-	// 构建markdown文件路径
-	docPath := filepath.Join("./docs", docName+".md")
+	c.renderMarkdownDocWithGroup("", docName, title)
+}
+
+// 渲染分组Markdown文档的方法
+func (c *HomeController) renderMarkdownDocWithGroup(group, docName, title string) {
+	var docPath string
+	if group == "" {
+		// 兼容旧版本的文档路径
+		docPath = filepath.Join("./docs", docName+".md")
+	} else {
+		// 新的分组文档路径
+		docPath = filepath.Join("./docs", group, docName+".md")
+	}
 
 	// 读取markdown文件
+	log.Printf("尝试读取文档: %s", docPath)
 	content, err := os.ReadFile(docPath)
 	if err != nil {
 		log.Printf("读取文档失败: %s, 错误: %v", docPath, err)
 		c.Error(404, fmt.Sprintf("文档不存在: %s", docName))
 		return
 	}
+	log.Printf("成功读取文档，长度: %d", len(content))
 
 	// 配置Goldmark解析器
 	md := goldmark.New(
@@ -60,9 +73,27 @@ func (c *HomeController) renderMarkdownDoc(docName, title string) {
 	c.SetData("Title", title)
 	c.SetData("CurrentDoc", docName)
 	c.SetData("Content", template.HTML(htmlBuf.String()))
+	if group != "" {
+		// 设置分组名称用于面包屑导航
+		groupNames := map[string]string{
+			"getting-started": "📖 开始使用",
+			"mvc-core":        "🏗️ MVC核心",
+			"middleware":      "🔌 中间件系统",
+			"data-access":     "🗄️ 数据访问",
+			"view-template":   "🎨 视图模板",
+			"configuration":   "⚙️ 配置管理",
+			"advanced":        "🔧 高级功能",
+			"dev-tools":       "🛠️ 开发工具",
+		}
+		c.SetData("GroupName", groupNames[group])
+	}
 
 	// 渲染统一模板
+	log.Printf("=== 准备渲染模板: home/docs/unified-doc.html ===")
+	log.Printf("=== 模板数据: Title=%s, CurrentDoc=%s, Content长度=%d ===",
+		title, docName, len(htmlBuf.String()))
 	c.RenderHTML("home/docs/unified-doc.html")
+	log.Printf("=== 模板渲染完成 ===")
 }
 
 func (c *HomeController) GetIndex() {
@@ -112,8 +143,8 @@ func (c *HomeController) GetAbout() {
 		"Version":   "1.0.0",
 		"Author":    "CloudWeGo Team",
 		"License":   "Apache 2.0",
-		"Github":    "https://github.com/cloudwego/hertz",
-		"Docs":      "https://www.cloudwego.io/zh/docs/hertz/",
+		"Github":    "https://github.com/zsy619/yyhertz",
+		"Docs":      "https://yyhertz.hn24365.com",
 	}
 
 	c.SetData("Title", "关于我们")
@@ -235,4 +266,171 @@ func (c *HomeController) GetConfig() {
 // 部署文档
 func (c *HomeController) GetDeployment() {
 	c.renderMarkdownDoc("deployment", "部署上线")
+}
+
+// ============= 新文档体系路由 (基于8大分组) =============
+
+// ============= 📖 开始使用分组 =============
+
+// 概览与安装文档
+func (c *HomeController) GetOverview() {
+	log.Printf("=== GetOverview方法被调用 ===")
+	log.Printf("=== 开始调用renderMarkdownDocWithGroup ===")
+	c.renderMarkdownDocWithGroup("getting-started", "overview", "概览与安装")
+	log.Printf("=== renderMarkdownDocWithGroup调用结束 ===")
+}
+
+// 简单测试方法
+func (c *HomeController) GetTest() {
+	log.Printf("=== GetTest方法被调用 ===")
+
+	// 测试简单模板渲染
+	c.SetData("Title", "Simple Test")
+	c.SetData("Content", "This is a simple test content")
+	log.Printf("=== 尝试渲染简单模板 ===")
+	c.RenderHTML("home/index.html")
+	log.Printf("=== 简单模板渲染完成 ===")
+}
+
+// HTML测试方法
+func (c *HomeController) GetHtmlTest() {
+	log.Printf("=== GetHtmlTest方法被调用 ===")
+	c.SetData("Title", "HTML测试")
+	c.SetData("Message", "这是直接的HTML测试内容")
+	c.RenderHTML("home/docs/unified-doc.html")
+	log.Printf("=== HTML测试渲染完成 ===")
+}
+
+// 项目结构文档
+func (c *HomeController) GetStructure() {
+	c.renderMarkdownDocWithGroup("getting-started", "structure", "项目结构")
+}
+
+// ============= 🏗️ MVC核心分组 =============
+
+// 应用程序文档
+func (c *HomeController) GetApplication() {
+	c.renderMarkdownDocWithGroup("mvc-core", "application", "应用程序")
+}
+
+// 命名空间文档
+func (c *HomeController) GetNamespace() {
+	c.renderMarkdownDocWithGroup("mvc-core", "namespace", "命名空间")
+}
+
+// ============= 🔌 中间件系统分组 =============
+
+// 中间件概览文档
+func (c *HomeController) GetMiddlewareOverview() {
+	c.renderMarkdownDocWithGroup("middleware", "overview", "中间件概览")
+}
+
+// 内置中间件文档
+func (c *HomeController) GetBuiltinMiddleware() {
+	c.renderMarkdownDocWithGroup("middleware", "builtin", "内置中间件")
+}
+
+// 自定义中间件文档
+func (c *HomeController) GetCustomMiddleware() {
+	c.renderMarkdownDocWithGroup("middleware", "custom", "自定义中间件")
+}
+
+// 中间件配置文档
+func (c *HomeController) GetMiddlewareConfig() {
+	c.renderMarkdownDocWithGroup("middleware", "config", "中间件配置")
+}
+
+// ============= 🗄️ 数据访问分组 =============
+
+// GORM集成文档
+func (c *HomeController) GetGorm() {
+	c.renderMarkdownDocWithGroup("data-access", "gorm", "GORM集成")
+}
+
+// 数据库配置文档
+func (c *HomeController) GetDatabaseConfig() {
+	c.renderMarkdownDocWithGroup("data-access", "database-config", "数据库配置")
+}
+
+// 事务管理文档
+func (c *HomeController) GetTransaction() {
+	c.renderMarkdownDocWithGroup("data-access", "transaction", "事务管理")
+}
+
+// ============= 🎨 视图模板分组 =============
+
+// 模板引擎文档
+func (c *HomeController) GetTemplateEngine() {
+	c.renderMarkdownDocWithGroup("view-template", "template-engine", "模板引擎")
+}
+
+// 视图渲染文档
+func (c *HomeController) GetViewRendering() {
+	c.renderMarkdownDocWithGroup("view-template", "view-rendering", "视图渲染")
+}
+
+// 静态资源文档
+func (c *HomeController) GetStaticAssets() {
+	c.renderMarkdownDocWithGroup("view-template", "static-assets", "静态资源")
+}
+
+// ============= ⚙️ 配置管理分组 =============
+
+// 应用配置文档
+func (c *HomeController) GetAppConfig() {
+	c.renderMarkdownDocWithGroup("configuration", "app-config", "应用配置")
+}
+
+// 环境配置文档
+func (c *HomeController) GetEnvironment() {
+	c.renderMarkdownDocWithGroup("configuration", "environment", "环境配置")
+}
+
+// ============= 🔧 高级功能分组 =============
+
+// 会话管理文档
+func (c *HomeController) GetSession() {
+	c.renderMarkdownDocWithGroup("advanced", "session", "会话管理")
+}
+
+// 缓存系统文档
+func (c *HomeController) GetCache() {
+	c.renderMarkdownDocWithGroup("advanced", "cache", "缓存系统")
+}
+
+// 验证系统文档
+func (c *HomeController) GetValidation() {
+	c.renderMarkdownDocWithGroup("advanced", "validation", "验证系统")
+}
+
+// 验证码功能文档
+func (c *HomeController) GetCaptcha() {
+	c.renderMarkdownDocWithGroup("advanced", "captcha", "验证码功能")
+}
+
+// 任务调度文档
+func (c *HomeController) GetScheduler() {
+	c.renderMarkdownDocWithGroup("advanced", "scheduler", "任务调度")
+}
+
+// ============= 🛠️ 开发工具分组 =============
+
+// 代码生成文档
+func (c *HomeController) GetCodegen() {
+	c.renderMarkdownDocWithGroup("dev-tools", "codegen", "代码生成")
+}
+
+// 热重载文档
+func (c *HomeController) GetHotReload() {
+	c.renderMarkdownDocWithGroup("dev-tools", "hot-reload", "热重载")
+}
+
+// 性能监控文档
+func (c *HomeController) GetPerformance() {
+	c.renderMarkdownDocWithGroup("dev-tools", "performance", "性能监控")
+}
+
+// 测试工具文档
+func (c *HomeController) GetTesting() {
+	c.renderMarkdownDocWithGroup("dev-tools", "testing", "测试工具")
 }
