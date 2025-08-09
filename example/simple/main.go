@@ -92,9 +92,18 @@ func main() {
 		// ============= 数据访问 =============
 		mvc.NSNamespace("/data-access",
 			mvc.NSRouter("/gorm", docsController, "*:GetDataAccessGorm"),
+			// MyBatis 路由 - 新的分离式结构
+			mvc.NSRouter("/mybatis-basic", docsController, "*:GetDataAccessMybatisBasic"),
+			mvc.NSRouter("/mybatis-advanced", docsController, "*:GetDataAccessMybatisAdvanced"),
+			mvc.NSRouter("/mybatis-performance", docsController, "*:GetDataAccessMybatisPerformance"),
+			// 保持向后兼容的旧路由
 			mvc.NSRouter("/mybatis", docsController, "*:GetDataAccessMybatis"),
 			mvc.NSRouter("/database-config", docsController, "*:GetDataAccessDatabaseConfig"),
 			mvc.NSRouter("/transaction", docsController, "*:GetDataAccessTransaction"),
+			// 新增的文档路由
+			mvc.NSRouter("/database-tuning", docsController, "*:GetDataAccessDatabaseTuning"),
+			mvc.NSRouter("/caching-strategies", docsController, "*:GetDataAccessCachingStrategies"),
+			mvc.NSRouter("/monitoring-alerting", docsController, "*:GetDataAccessMonitoringAlerting"),
 		),
 		// ============= 视图渲染 =============
 		mvc.NSNamespace("/view-template",

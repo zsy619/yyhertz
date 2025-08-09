@@ -36,6 +36,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"gorm.io/gorm"
 	frameworkConfig "github.com/zsy619/yyhertz/framework/config"
@@ -436,7 +437,7 @@ type MyBatisGorm struct {
 	db      *gorm.DB
 	config  *GormConfig
 	mappers map[string]*MapperInfo
-	cache   *Cache
+	cache   *LegacyCache
 	mutex   sync.RWMutex
 }
 
@@ -502,8 +503,8 @@ type ColumnMapping struct {
 	JavaType reflect.Type
 }
 
-// Cache 缓存实现
-type Cache struct {
+// LegacyCache 缓存实现（保持向后兼容）
+type LegacyCache struct {
 	data    map[string]interface{}
 	mutex   sync.RWMutex
 	maxSize int
@@ -545,7 +546,7 @@ func NewMyBatisGorm(db *gorm.DB, config *GormConfig) *MyBatisGorm {
 		db:      db,
 		config:  config,
 		mappers: make(map[string]*MapperInfo),
-		cache:   NewCache(config.CacheSize),
+		cache:   NewLegacyCache(config.CacheSize),
 	}
 	
 	return mb
@@ -563,9 +564,9 @@ func DefaultGormConfig() *GormConfig {
 	}
 }
 
-// NewCache 创建缓存
-func NewCache(maxSize int) *Cache {
-	return &Cache{
+// NewLegacyCache 创建缓存
+func NewLegacyCache(maxSize int) *LegacyCache {
+	return &LegacyCache{
 		data:    make(map[string]interface{}),
 		maxSize: maxSize,
 	}
@@ -892,17 +893,17 @@ func underscoreToCamelCase(name string) string {
 	return strings.Join(parts, "")
 }
 
-// Cache方法实现
+// LegacyCache方法实现
 
 // Get 获取缓存
-func (cache *Cache) Get(key string) interface{} {
+func (cache *LegacyCache) Get(key string) interface{} {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 	return cache.data[key]
 }
 
 // Put 放入缓存
-func (cache *Cache) Put(key string, value interface{}) {
+func (cache *LegacyCache) Put(key string, value interface{}) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	
@@ -920,7 +921,7 @@ func (cache *Cache) Put(key string, value interface{}) {
 }
 
 // Clear 清空缓存
-func (cache *Cache) Clear() {
+func (cache *LegacyCache) Clear() {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
 	cache.data = make(map[string]interface{})
@@ -1120,4 +1121,47 @@ func CreateUnifiedMyBatis(db *gorm.DB, gormConfig *GormConfig) (*MyBatis, *MyBat
 	gormMyBatis := NewMyBatisGorm(db, gormConfig)
 	
 	return fullMyBatis, gormMyBatis, nil
+}
+
+// ===============================================
+// 新增：简化版API（推荐使用）
+// ===============================================
+
+// NewSimple 创建简化版MyBatis会话（推荐使用）
+func NewSimple(db *gorm.DB) SimpleSession {
+	return NewSimpleSession(db)
+}
+
+// NewSimpleWithHooks 创建带常用钩子的简化版会话
+func NewSimpleWithHooks(db *gorm.DB, enableDebug bool) SimpleSession {
+	session := NewSimpleSession(db).Debug(enableDebug)
+	
+	// 添加常用钩子
+	session = session.AddBeforeHook(AuditHook())
+	
+	// 添加性能监控钩子（100ms慢查询阈值）
+	beforeHook, afterHook := PerformanceHook(100 * time.Millisecond)
+	session = session.AddBeforeHook(beforeHook).AddAfterHook(afterHook)
+	
+	if enableDebug {
+		debugBefore, debugAfter := DebugHook()
+		session = session.AddBeforeHook(debugBefore).AddAfterHook(debugAfter)
+	}
+	
+	return session
+}
+
+// NewTransactionSession 创建支持事务的会话
+func NewTransactionSession(db *gorm.DB) *TransactionAwareSession {
+	return NewTransactionAwareSession(db)
+}
+
+// NewXMLMapper 创建支持XML Mapper的会话（推荐用于复杂查询）
+func NewXMLMapper(db *gorm.DB) XMLSession {
+	return NewXMLSession(db)
+}
+
+// NewXMLMapperWithHooks 创建带钩子的XML Mapper会话
+func NewXMLMapperWithHooks(db *gorm.DB, enableDebug bool) XMLSession {
+	return NewXMLSessionWithHooks(db, enableDebug)
 }

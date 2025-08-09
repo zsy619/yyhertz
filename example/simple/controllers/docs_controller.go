@@ -154,8 +154,25 @@ func (c *DocsController) GetDataAccessGorm() {
 	c.renderDoc("data-access", "gorm", "GORM集成")
 }
 
+// MyBatis基础集成
+func (c *DocsController) GetDataAccessMybatisBasic() {
+	c.renderDoc("data-access", "mybatis-basic", "MyBatis基础集成")
+}
+
+// MyBatis高级特性
+func (c *DocsController) GetDataAccessMybatisAdvanced() {
+	c.renderDoc("data-access", "mybatis-advanced", "MyBatis高级特性")
+}
+
+// MyBatis性能优化
+func (c *DocsController) GetDataAccessMybatisPerformance() {
+	c.renderDoc("data-access", "mybatis-performance", "MyBatis性能优化")
+}
+
+// 保留旧的MyBatis路由以向后兼容
 func (c *DocsController) GetDataAccessMybatis() {
-	c.renderDoc("data-access", "mybatis", "MyBatis集成")
+	// 重定向到基础集成页面
+	c.renderDoc("data-access", "mybatis-basic", "MyBatis基础集成")
 }
 
 func (c *DocsController) GetDataAccessDatabaseConfig() {
@@ -164,6 +181,21 @@ func (c *DocsController) GetDataAccessDatabaseConfig() {
 
 func (c *DocsController) GetDataAccessTransaction() {
 	c.renderDoc("data-access", "transaction", "事务管理")
+}
+
+// 新增的数据库调优文档
+func (c *DocsController) GetDataAccessDatabaseTuning() {
+	c.renderDoc("data-access", "database-tuning", "数据库调优")
+}
+
+// 新增的缓存策略文档
+func (c *DocsController) GetDataAccessCachingStrategies() {
+	c.renderDoc("data-access", "caching-strategies", "缓存策略")
+}
+
+// 新增的监控告警文档
+func (c *DocsController) GetDataAccessMonitoringAlerting() {
+	c.renderDoc("data-access", "monitoring-alerting", "监控告警")
 }
 
 // ============= 视图渲染 =============

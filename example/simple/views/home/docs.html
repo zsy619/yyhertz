@@ -168,8 +168,14 @@
                                         <a href="/docs/data-access/gorm" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "gorm"}}active{{end}}">
                                             <i class="fas fa-database me-2"></i>GORM集成
                                         </a>
-                                        <a href="/docs/data-access/mybatis" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis"}}active{{end}}">
-                                            <i class="fas fa-table me-2"></i>MyBatis集成
+                                        <a href="/docs/data-access/mybatis-basic" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-basic"}}active{{end}}">
+                                            <i class="fas fa-table me-2 text-primary"></i>MyBatis基础
+                                        </a>
+                                        <a href="/docs/data-access/mybatis-advanced" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-advanced"}}active{{end}}">
+                                            <i class="fas fa-rocket me-2 text-success"></i>MyBatis高级特性
+                                        </a>
+                                        <a href="/docs/data-access/mybatis-performance" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-performance"}}active{{end}}">
+                                            <i class="fas fa-tachometer-alt me-2 text-warning"></i>MyBatis性能优化
                                         </a>
                                         <a href="/docs/data-access/database-config" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "database-config"}}active{{end}}">
                                             <i class="fas fa-cog me-2"></i>数据库配置
@@ -406,9 +412,21 @@
                                             <i class="fas fa-database me-2 text-primary"></i>数据访问
                                         </h5>
                                         <p class="card-text">支持GORM和MyBatis，提供完整的数据库操作解决方案。</p>
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex gap-2 flex-wrap">
                                             <a href="/docs/data-access/gorm" class="btn btn-sm btn-outline-primary">GORM</a>
-                                            <a href="/docs/data-access/mybatis" class="btn btn-sm btn-outline-secondary">MyBatis</a>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    MyBatis
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="/docs/data-access/mybatis-basic">
+                                                        <i class="fas fa-table me-2 text-primary"></i>基础集成</a></li>
+                                                    <li><a class="dropdown-item" href="/docs/data-access/mybatis-advanced">
+                                                        <i class="fas fa-rocket me-2 text-success"></i>高级特性</a></li>
+                                                    <li><a class="dropdown-item" href="/docs/data-access/mybatis-performance">
+                                                        <i class="fas fa-tachometer-alt me-2 text-warning"></i>性能优化</a></li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -561,8 +579,14 @@
                     // 数据访问
                     'gorm': 'collapseDataAccess',
                     'mybatis': 'collapseDataAccess',
+                    'mybatis-basic': 'collapseDataAccess',
+                    'mybatis-advanced': 'collapseDataAccess',
+                    'mybatis-performance': 'collapseDataAccess',
                     'database-config': 'collapseDataAccess',
                     'transaction': 'collapseDataAccess',
+                    'database-tuning': 'collapseDataAccess',
+                    'caching-strategies': 'collapseDataAccess',
+                    'monitoring-alerting': 'collapseDataAccess',
 
                     // 视图渲染
                     'view-template-overview': 'collapseViewTemplate',

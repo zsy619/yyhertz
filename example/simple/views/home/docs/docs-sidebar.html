@@ -100,14 +100,29 @@
                         <a href="/docs/data-access/gorm" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "gorm"}}active{{end}}">
                             <i class="fas fa-database me-2"></i>GORM集成
                         </a>
-                        <a href="/docs/data-access/mybatis" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis"}}active{{end}}">
-                            <i class="fas fa-table me-2"></i>MyBatis集成
+                        <a href="/docs/data-access/mybatis-basic" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-basic"}}active{{end}}">
+                            <i class="fas fa-table me-2 text-primary"></i>MyBatis基础
+                        </a>
+                        <a href="/docs/data-access/mybatis-advanced" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-advanced"}}active{{end}}">
+                            <i class="fas fa-rocket me-2 text-success"></i>MyBatis高级特性
+                        </a>
+                        <a href="/docs/data-access/mybatis-performance" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-performance"}}active{{end}}">
+                            <i class="fas fa-tachometer-alt me-2 text-warning"></i>MyBatis性能优化
                         </a>
                         <a href="/docs/data-access/database-config" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "database-config"}}active{{end}}">
                             <i class="fas fa-cog me-2"></i>数据库配置
                         </a>
                         <a href="/docs/data-access/transaction" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "transaction"}}active{{end}}">
                             <i class="fas fa-exchange-alt me-2"></i>事务管理
+                        </a>
+                        <a href="/docs/data-access/database-tuning" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "database-tuning"}}active{{end}}">
+                            <i class="fas fa-tools me-2 text-info"></i>数据库调优
+                        </a>
+                        <a href="/docs/data-access/caching-strategies" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "caching-strategies"}}active{{end}}">
+                            <i class="fas fa-memory me-2 text-purple"></i>缓存策略
+                        </a>
+                        <a href="/docs/data-access/monitoring-alerting" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "monitoring-alerting"}}active{{end}}">
+                            <i class="fas fa-chart-line me-2 text-danger"></i>监控告警
                         </a>
                     </div>
                 </div>
@@ -278,8 +293,14 @@
                 // 数据访问
                 'gorm': 'collapseDataAccess',
                 'mybatis': 'collapseDataAccess',
+                'mybatis-basic': 'collapseDataAccess',
+                'mybatis-advanced': 'collapseDataAccess',
+                'mybatis-performance': 'collapseDataAccess',
                 'database-config': 'collapseDataAccess',
                 'transaction': 'collapseDataAccess',
+                'database-tuning': 'collapseDataAccess',
+                'caching-strategies': 'collapseDataAccess',
+                'monitoring-alerting': 'collapseDataAccess',
 
                 // 高级功能
                 'session': 'collapseAdvanced',
