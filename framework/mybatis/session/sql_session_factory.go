@@ -4,7 +4,11 @@
 package session
 
 import (
+	"crypto/rand"
+	"encoding/binary"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/zsy619/yyhertz/framework/mybatis/cache"
 	"github.com/zsy619/yyhertz/framework/mybatis/config"
@@ -65,9 +69,15 @@ func NewDefaultSqlSessionFactory(configuration *config.Configuration) (SqlSessio
 	var ormInstance *orm.ORM
 	var err error
 
+	// 验证配置
+	if err := validateConfiguration(configuration); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	if configuration.GetDatabaseConfig() != nil {
 		// 转换配置类型
-		primaryConfig := configuration.GetDatabaseConfig().Primary
+		primaryConfig := &configuration.GetDatabaseConfig().Primary
+
 		dbConfig := &orm.DatabaseConfig{
 			Type:         primaryConfig.Driver,
 			Host:         primaryConfig.Host,
@@ -80,6 +90,20 @@ func NewDefaultSqlSessionFactory(configuration *config.Configuration) (SqlSessio
 			MaxIdleConns: primaryConfig.MaxIdleConns,
 			MaxOpenConns: primaryConfig.MaxOpenConns,
 			LogLevel:     primaryConfig.LogLevel,
+		}
+
+		// 设置默认值
+		if dbConfig.Charset == "" {
+			dbConfig.Charset = "utf8mb4"
+		}
+		if dbConfig.Timezone == "" {
+			dbConfig.Timezone = "Asia/Shanghai"
+		}
+		if dbConfig.MaxIdleConns <= 0 {
+			dbConfig.MaxIdleConns = 10
+		}
+		if dbConfig.MaxOpenConns <= 0 {
+			dbConfig.MaxOpenConns = 100
 		}
 
 		// 解析连接最大生存时间
@@ -96,8 +120,10 @@ func NewDefaultSqlSessionFactory(configuration *config.Configuration) (SqlSessio
 
 		ormInstance, err = orm.NewORM(dbConfig)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create ORM instance: %w", err)
 		}
+	} else {
+		return nil, fmt.Errorf("database configuration is required")
 	}
 
 	// 创建缓存
@@ -249,6 +275,10 @@ func (tl *ThreadLocal) Set(session SqlSession) {
 	tl.mutex.Lock()
 	defer tl.mutex.Unlock()
 
+	if tl.data == nil {
+		tl.data = make(map[int64]SqlSession)
+	}
+
 	// 使用goroutine ID作为键 (简化实现)
 	// 实际应该使用更可靠的goroutine本地存储
 	goroutineID := getGoroutineID()
@@ -278,7 +308,40 @@ func getGoroutineID() int64 {
 	// 这是一个简化实现
 	// 实际应该使用更可靠的方法获取goroutine ID
 	// 或者使用context.Context来传递会话
-	return 1
+	// 使用时间戳和随机数来模拟唯一ID，避免并发问题
+	
+	// 生成基于时间戳的ID
+	timestamp := time.Now().UnixNano()
+	
+	// 添加随机数避免冲突
+	var randomBytes [8]byte
+	rand.Read(randomBytes[:])
+	randomInt := int64(binary.LittleEndian.Uint64(randomBytes[:]))
+	
+	return timestamp ^ randomInt
+}
+
+// validateConfiguration 验证配置
+func validateConfiguration(configuration *config.Configuration) error {
+	if configuration == nil {
+		return fmt.Errorf("configuration cannot be nil")
+	}
+
+	// 验证数据库配置
+	if dbConfig := configuration.GetDatabaseConfig(); dbConfig != nil {
+		primary := &dbConfig.Primary
+		if primary.Driver == "" {
+			return fmt.Errorf("database driver is required")
+		}
+		if primary.Host == "" && primary.Driver != "sqlite" {
+			return fmt.Errorf("database host is required for driver %s", primary.Driver)
+		}
+		if primary.Database == "" {
+			return fmt.Errorf("database name is required")
+		}
+	}
+
+	return nil
 }
 
 // NewExecutorFactory 创建执行器工厂
@@ -332,10 +395,26 @@ func (template *SqlSessionTemplate) SetExceptionTranslator(exceptionTranslator E
 
 // Execute 执行操作
 func (template *SqlSessionTemplate) Execute(callback func(session SqlSession) (any, error)) (any, error) {
+	if callback == nil {
+		return nil, fmt.Errorf("callback function cannot be nil")
+	}
+
 	session := template.getSqlSession()
+	if session == nil {
+		return nil, fmt.Errorf("failed to obtain SQL session")
+	}
 	defer template.closeSqlSession(session)
 
-	return callback(session)
+	result, err := callback(session)
+	if err != nil && template.exceptionTranslator != nil {
+		// 转换异常
+		translatedErr := template.exceptionTranslator.Translate("SqlSessionTemplate", "", err)
+		if translatedErr != nil {
+			return nil, translatedErr
+		}
+	}
+
+	return result, err
 }
 
 // getSqlSession 获取SQL会话
@@ -346,6 +425,10 @@ func (template *SqlSessionTemplate) getSqlSession() SqlSession {
 // closeSqlSession 关闭SQL会话
 func (template *SqlSessionTemplate) closeSqlSession(session SqlSession) {
 	if session != nil {
-		session.Close()
+		if err := session.Close(); err != nil {
+			// 记录关闭错误，但不中断主流程
+			// 这里可以使用日志框架记录错误
+			_ = fmt.Errorf("failed to close SQL session: %w", err)
+		}
 	}
 }

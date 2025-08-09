@@ -245,3 +245,5 @@ framework/mvc/middleware/conf
 framework/mybatis/conf
 !framework/mybatis/cache
 example/gobatis/conf
+example/gobatis/example.db
+example/gobatis/gobatis_example
