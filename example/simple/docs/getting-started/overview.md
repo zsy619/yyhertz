@@ -22,11 +22,11 @@ YYHertz 是基于 CloudWeGo-Hertz 构建的现代化 Go Web 框架，提供完�
 - **兼容性适配** 100%向后兼容
 - **性能缓存** 95%+命中率
 
-### 🗄️ 双ORM支持
-- **GORM集成** - Go最流行的ORM库
-- **MyBatis-Go** - XML配置动态SQL
-- **事务管理** - 声明式事务支持
-- **连接池优化** - 智能连接复用
+### 🗄️ 统一ORM解决方案
+- **双引擎协同** - GORM高效CRUD + MyBatis复杂查询
+- **智能选择器** - 根据操作复杂度自动选择最优引擎
+- **跨引擎事务** - 统一事务管理机制
+- **性能监控** - 实时监控和自动优化建议
 
 ## 📊 性能对比
 
@@ -242,7 +242,7 @@ log:
 1. 📖 阅读 [快速开始](/home/quickstart) - 学习基本开发流程
 2. 🏗️ 了解 [项目结构](/home/structure) - 掌握目录组织方式  
 3. 🎛️ 学习 [控制器开发](/home/controller) - 掌握MVC核心概念
-4. 🗄️ 配置 [数据库集成](/home/gorm) - 连接您的数据库
+4. 🗄️ 配置 [统一ORM解决方案](/docs/data-access/orm-unified) - 了解双引擎架构
 5. 📚 查看 [完整示例](https://github.com/zsy619/yyhertz-examples) - 参考实际项目
 
 ## 📞 获取帮助

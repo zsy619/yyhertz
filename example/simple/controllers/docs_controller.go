@@ -80,7 +80,7 @@ func (c *DocsController) renderDoc(category, doc, title string, trimCategory ...
 			"getting-started": "📖 开始使用",
 			"mvc-core":        "🏗️ MVC核心",
 			"middleware":      "🔌 中间件",
-			"data-access":     "🗄️ 数据访问",
+			"data-access":     "🗄️ 统一ORM",
 			"view-template":   "🎨 视图渲染",
 			"configuration":   "⚙️ 配置管理",
 			"advanced":        "🔧 高级功能",
@@ -149,9 +149,22 @@ func (c *DocsController) GetMiddlewareConfig() {
 	c.renderDoc("middleware", "config", "中间件配置")
 }
 
-// ============= 数据访问 =============
+// ============= 统一ORM =============
+
+// 统一ORM概览
+func (c *DocsController) GetDataAccessOrmUnified() {
+	c.renderDoc("data-access", "orm-unified", "统一ORM概览")
+}
+
+// GORM快速开始
+func (c *DocsController) GetDataAccessGormQuickstart() {
+	c.renderDoc("data-access", "gorm-quickstart", "GORM快速开始")
+}
+
+// 保持对旧GORM路由的向后兼容
 func (c *DocsController) GetDataAccessGorm() {
-	c.renderDoc("data-access", "gorm", "GORM集成")
+	// 重定向到新的GORM快速开始页面
+	c.renderDoc("data-access", "gorm-quickstart", "GORM快速开始")
 }
 
 // MyBatis基础集成
@@ -191,6 +204,11 @@ func (c *DocsController) GetDataAccessDatabaseTuning() {
 // 新增的缓存策略文档
 func (c *DocsController) GetDataAccessCachingStrategies() {
 	c.renderDoc("data-access", "caching-strategies", "缓存策略")
+}
+
+// 新增的对象映射文档
+func (c *DocsController) GetDataAccessObjectMapping() {
+	c.renderDoc("data-access", "object-mapping", "高性能对象映射")
 }
 
 // 新增的监控告警文档

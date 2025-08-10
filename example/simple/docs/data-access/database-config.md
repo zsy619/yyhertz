@@ -864,7 +864,7 @@ func CleanupTestDB() {
 
 ## 🔗 相关资源
 
-- [GORM集成指南](./gorm.md)
+- [GORM快速开始](./gorm-quickstart.md)
 - [事务管理](./transaction.md)
 - [应用配置管理](../configuration/app-config.md)
 - [性能优化建议](../dev-tools/performance.md)

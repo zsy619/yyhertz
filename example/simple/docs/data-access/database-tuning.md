@@ -1,6 +1,6 @@
-# 数据库调优
+# 🚀 数据库调优
 
-YYHertz框架下的数据库性能调优指南，涵盖MySQL/PostgreSQL的配置优化、索引设计、查询优化等关键技术。
+YYHertz统一ORM解决方案下的数据库性能调优指南，涵盖MySQL/PostgreSQL的配置优化、索引设计、查询优化等关键技术，并结合双引擎架构的特点提供针对性优化建议。
 
 ## 🎯 调优目标
 
@@ -13,6 +13,17 @@ YYHertz框架下的数据库性能调优指南，涵盖MySQL/PostgreSQL的配置
 | **连接数** | 200-500 | 100-300 | 同时连接数范围 |
 | **CPU使用率** | < 80% | < 80% | 峰值时期CPU占用 |
 | **内存使用率** | < 85% | < 85% | 缓冲池内存占用 |
+
+### YYHertz统一ORM性能基准
+
+基于双引擎协同架构的性能基准：
+
+| 引擎类型 | 操作类型 | 目标性能 | 适用场景 | 优化重点 |
+|---------|----------|----------|----------|----------|
+| **GORM引擎** | 简单CRUD | >16,000 ops/sec | 用户管理、基础数据操作 | 连接池、索引优化 |
+| **GORM引擎** | 关联查询 | >10,000 ops/sec | 预加载查询 | N+1优化、索引覆盖 |
+| **MyBatis引擎** | 复杂查询 | >800 ops/sec | 统计报表、聚合查询 | SQL优化、缓存策略 |
+| **MyBatis引擎** | 动态SQL | >500 ops/sec | 条件查询、批量操作 | 执行计划、参数化 |
 
 ### 调优优先级
 
@@ -323,9 +334,155 @@ GROUP BY u.id, u.name
 ORDER BY order_count DESC;
 ```
 
-## 📊 YYHertz框架中的数据库监控
+## 📊 YYHertz统一ORM监控与调优
 
-### 1. 性能监控集成
+### 1. 双引擎性能监控
+
+针对统一ORM的双引擎架构，需要分别监控GORM和MyBatis的性能表现：
+
+```go
+package monitoring
+
+import (
+    "context"
+    "time"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/zsy619/yyhertz/framework/orm"
+)
+
+// 统一ORM性能指标
+var (
+    ormEngineQueryDuration = prometheus.NewHistogramVec(
+        prometheus.HistogramOpts{
+            Name: "orm_engine_query_duration_seconds",
+            Help: "ORM engine query duration",
+            Buckets: []float64{0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0},
+        },
+        []string{"engine", "operation", "table"},
+    )
+    
+    ormEngineSelectionTotal = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "orm_engine_selections_total",
+            Help: "Total ORM engine selections",
+        },
+        []string{"engine", "reason", "auto_selected"},
+    )
+    
+    ormCacheHitRate = prometheus.NewGaugeVec(
+        prometheus.GaugeOpts{
+            Name: "orm_cache_hit_rate",
+            Help: "ORM cache hit rate",
+        },
+        []string{"cache_type"},
+    )
+)
+
+// 统一ORM监控插件
+func NewUnifiedORMMonitor() orm.Plugin {
+    return &unifiedORMMonitor{}
+}
+
+type unifiedORMMonitor struct{}
+
+func (m *unifiedORMMonitor) Name() string {
+    return "unified_orm_monitor"
+}
+
+func (m *unifiedORMMonitor) Initialize(manager *orm.Manager) error {
+    // 注册引擎选择监控
+    manager.OnEngineSelection(func(selection orm.EngineSelection) {
+        ormEngineSelectionTotal.WithLabelValues(
+            selection.Engine,
+            selection.Reason,
+            strconv.FormatBool(selection.AutoSelected),
+        ).Inc()
+    })
+    
+    // 注册查询监控
+    manager.OnQueryStart(func(ctx context.Context, query orm.QueryInfo) {
+        ctx = context.WithValue(ctx, "query_start", time.Now())
+    })
+    
+    manager.OnQueryComplete(func(ctx context.Context, query orm.QueryInfo, err error) {
+        start := ctx.Value("query_start").(time.Time)
+        duration := time.Since(start)
+        
+        status := "success"
+        if err != nil {
+            status = "error"
+        }
+        
+        ormEngineQueryDuration.WithLabelValues(
+            query.Engine,
+            query.Operation,
+            query.Table,
+        ).Observe(duration.Seconds())
+    })
+    
+    return nil
+}
+```
+
+### 2. 智能选择器优化监控
+
+```go
+// 智能选择器性能分析
+func (c *AdminController) GetEnginePerformanceAnalysis() {
+    manager := orm.GetDefault()
+    
+    // 获取引擎选择统计
+    stats := manager.GetEngineStats()
+    
+    analysis := map[string]interface{}{
+        "gorm_engine": map[string]interface{}{
+            "query_count":    stats.GormQueries,
+            "avg_duration":   stats.GormAvgDuration.Milliseconds(),
+            "success_rate":   stats.GormSuccessRate,
+            "optimal_ratio":  stats.GormOptimalRatio, // 选择正确率
+        },
+        "mybatis_engine": map[string]interface{}{
+            "query_count":    stats.MyBatisQueries,
+            "avg_duration":   stats.MyBatisAvgDuration.Milliseconds(),
+            "success_rate":   stats.MyBatisSuccessRate,
+            "optimal_ratio":  stats.MyBatisOptimalRatio,
+        },
+        "auto_selection": map[string]interface{}{
+            "accuracy":       stats.AutoSelectionAccuracy, // 自动选择准确率
+            "total_selections": stats.TotalSelections,
+            "gorm_selected":  stats.GormAutoSelected,
+            "mybatis_selected": stats.MyBatisAutoSelected,
+        },
+        "recommendations": generateOptimizationRecommendations(stats),
+    }
+    
+    c.JSON(mvc.Result{Success: true, Data: analysis})
+}
+
+// 生成优化建议
+func generateOptimizationRecommendations(stats orm.EngineStats) []string {
+    var recommendations []string
+    
+    if stats.GormAvgDuration > 50*time.Millisecond {
+        recommendations = append(recommendations, 
+            "GORM引擎平均响应时间过长，建议优化索引和查询条件")
+    }
+    
+    if stats.MyBatisAvgDuration > 1*time.Second {
+        recommendations = append(recommendations,
+            "MyBatis引擎查询时间过长，建议优化SQL语句和数据库配置")
+    }
+    
+    if stats.AutoSelectionAccuracy < 0.9 {
+        recommendations = append(recommendations,
+            "智能选择器准确率较低，建议调整选择策略阈值")
+    }
+    
+    return recommendations
+}
+```
+
+### 3. 传统数据库监控集成
 
 ```go
 package monitoring
@@ -682,12 +839,196 @@ groups:
 }
 ```
 
+## 🎯 统一ORM调优最佳实践
+
+### 1. 双引擎协同优化策略
+
+```yaml
+# conf/orm-tuning.yaml
+unified_orm:
+  # 智能选择器配置优化
+  smart_selector:
+    complexity_threshold: 3           # 复杂度阈值调整
+    gorm_preferred_operations:        # GORM优先处理的操作
+      - "single_table_crud"
+      - "simple_join_2_tables"
+      - "batch_insert_size<1000"
+    mybatis_preferred_operations:     # MyBatis优先处理的操作  
+      - "complex_aggregation"
+      - "dynamic_where_conditions>5"
+      - "cross_database_queries"
+  
+  # 性能优化配置
+  performance:
+    gorm_connection_pool:             # GORM连接池优化
+      max_open_conns: 100
+      max_idle_conns: 50
+      conn_max_lifetime: "1h"
+    mybatis_connection_pool:          # MyBatis连接池优化
+      max_open_conns: 50
+      max_idle_conns: 25
+      conn_max_lifetime: "2h"         # MyBatis查询周期长，连接保持时间可以更长
+    
+  # 缓存策略优化
+  cache:
+    l1_cache_size: 1000              # 应用层缓存
+    l2_redis_cluster: true           # 分布式缓存
+    query_cache_ttl: "5m"            # 查询缓存TTL
+```
+
+### 2. 引擎特化索引策略
+
+```sql
+-- GORM引擎优化索引设计
+-- 针对GORM的模型关联查询优化
+CREATE INDEX idx_users_status_created_gorm ON users(status, created_at, id)
+  COMMENT 'GORM引擎分页查询优化';
+
+CREATE INDEX idx_orders_user_status ON orders(user_id, status, amount)
+  COMMENT 'GORM引擎关联查询优化';
+
+-- MyBatis引擎优化索引设计  
+-- 针对复杂聚合查询优化
+CREATE INDEX idx_orders_complex_agg ON orders(created_at, status, user_id)
+  COMMENT 'MyBatis引擎聚合查询优化';
+
+-- 支持动态WHERE条件的覆盖索引
+CREATE INDEX idx_users_search_cover ON users(status, created_at, username, email, id)
+  COMMENT 'MyBatis引擎动态查询覆盖索引';
+```
+
+### 3. 智能监控与自动调优
+
+```go
+// 自动调优建议系统
+type AutoTuningAdvisor struct {
+    manager *orm.Manager
+    stats   *orm.StatsCollector
+}
+
+func (a *AutoTuningAdvisor) AnalyzeAndRecommend() *TuningRecommendation {
+    stats := a.stats.GetRecentStats(24 * time.Hour)
+    
+    recommendation := &TuningRecommendation{}
+    
+    // 分析GORM引擎性能
+    if stats.GormAvgLatency > 100*time.Millisecond {
+        recommendation.GormOptimizations = []string{
+            "建议为频繁查询表添加复合索引",
+            "考虑启用GORM预加载优化",
+            "检查是否存在N+1查询问题",
+        }
+    }
+    
+    // 分析MyBatis引擎性能
+    if stats.MyBatisSlowQueryRate > 0.1 {
+        recommendation.MyBatisOptimizations = []string{
+            "建议优化复杂SQL语句",
+            "考虑增加查询结果缓存",
+            "检查是否需要分库分表",
+        }
+    }
+    
+    // 分析智能选择器效率
+    if stats.AutoSelectionAccuracy < 0.95 {
+        recommendation.SelectorOptimizations = []string{
+            "建议调整复杂度阈值参数",
+            "增加更多的选择规则",
+            "考虑引入机器学习选择策略",
+        }
+    }
+    
+    return recommendation
+}
+```
+
+### 4. 跨引擎事务优化
+
+```go
+// 跨引擎事务性能优化
+func (c *OrderController) OptimizedComplexTransaction() {
+    manager := orm.GetDefault()
+    
+    // 使用事务批次优化大量操作
+    err := manager.OptimizedTransaction(&orm.TransactionOptions{
+        IsolationLevel: orm.ReadCommitted,
+        MaxRetries:     3,
+        Timeout:       30 * time.Second,
+        BatchSize:     1000, // 批量提交大小
+    }, func(tx *orm.TransactionContext) error {
+        
+        // 批量操作使用GORM引擎
+        if err := tx.GORM().CreateInBatches(orders, 1000).Error; err != nil {
+            return err
+        }
+        
+        // 复杂统计使用MyBatis引擎
+        if _, err := tx.MyBatis().Update("updateOrderStats", statsParams); err != nil {
+            return err
+        }
+        
+        return nil
+    })
+    
+    if err != nil {
+        c.Error(500, "事务执行失败: "+err.Error())
+        return
+    }
+    
+    c.JSON(mvc.Result{Success: true})
+}
+```
+
+### 5. 动态配置调优
+
+```go
+// 运行时动态调优配置
+func (c *AdminController) PostTuningConfig() {
+    var config struct {
+        ComplexityThreshold    int     `json:"complexity_threshold"`
+        GormConnectionPoolSize int     `json:"gorm_pool_size"`
+        CacheSettings         map[string]interface{} `json:"cache_settings"`
+    }
+    
+    if err := c.BindJSON(&config); err != nil {
+        c.Error(400, err.Error())
+        return
+    }
+    
+    manager := orm.GetDefault()
+    
+    // 动态调整智能选择器阈值
+    manager.UpdateSelectorConfig(&orm.SelectorConfig{
+        ComplexityThreshold: config.ComplexityThreshold,
+    })
+    
+    // 动态调整连接池大小
+    manager.UpdateConnectionPool(&orm.PoolConfig{
+        GormMaxConns: config.GormConnectionPoolSize,
+    })
+    
+    // 应用缓存设置
+    manager.UpdateCacheConfig(config.CacheSettings)
+    
+    c.JSON(mvc.Result{
+        Success: true,
+        Message: "调优配置已动态更新",
+    })
+}
+```
+
 ## 📚 相关资源
 
-- **[MyBatis性能优化](./mybatis-performance.md)** - 应用层数据访问优化
+### 统一ORM特性文档
+- **[统一ORM概览](./orm-unified.md)** - 了解双引擎架构设计理念
+- **[GORM快速开始](./gorm-quickstart.md)** - GORM引擎性能最佳实践
+- **[MyBatis性能优化](./mybatis-performance.md)** - MyBatis引擎查询优化技巧
+
+### 传统调优资源
 - **[缓存策略](./caching-strategies.md)** - Redis缓存设计最佳实践
 - **[监控告警](./monitoring-alerting.md)** - 完整的监控告警解决方案
+- **[事务管理](./transaction.md)** - 跨引擎事务优化策略
 
 ---
 
-**数据库调优是系统性工程** - 需要从配置、索引、查询、架构等多个维度综合优化，持续监控和调整！🚀
+**🚀 统一ORM调优** - 双引擎协同，智能选择，性能最优！持续监控和调整是关键！

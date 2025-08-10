@@ -86,9 +86,5 @@ Step-5  风险提示
 2.1 如拆分则给出合理的命名，并完成相关栏目与内容
 2.2.修订 @example/simple/docs/data-access/mybatis.md 文档
 
-```claude
 
-
-
-```
 

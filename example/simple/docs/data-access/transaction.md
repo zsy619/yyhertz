@@ -990,7 +990,7 @@ func (s *UserService) BulkUpdateWithPreparedStmt(updates []UserUpdate) error {
 
 ## 🔗 相关资源
 
-- [GORM集成指南](./gorm)
+- [GORM快速开始](./gorm-quickstart)
 - [数据库配置](./database-config)
 - [性能优化建议](../dev-tools/performance)
 - [错误处理最佳实践](../advanced/error-handling)

@@ -155,33 +155,45 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 数据访问 -->
+                        <!-- 统一ORM -->
                         <div class="accordion-item">
                             <h6 class="accordion-header" id="headingDataAccess">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataAccess" aria-expanded="false">
-                                    <i class="fas fa-database me-2 text-warning"></i>数据访问
+                                    <i class="fas fa-layer-group me-2 text-warning"></i>统一ORM
                                 </button>
                             </h6>
                             <div id="collapseDataAccess" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
                                 <div class="accordion-body p-0">
                                     <div class="list-group list-group-flush">
-                                        <a href="/docs/data-access/gorm" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "gorm"}}active{{end}}">
-                                            <i class="fas fa-database me-2"></i>GORM集成
+                                        <a href="/docs/data-access/orm-unified" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "orm-unified"}}active{{end}}">
+                                            <i class="fas fa-layer-group me-2 text-primary"></i>统一ORM概览
+                                        </a>
+                                        <a href="/docs/data-access/gorm-quickstart" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "gorm-quickstart"}}active{{end}}">
+                                            <i class="fas fa-rocket me-2 text-success"></i>GORM快速开始
                                         </a>
                                         <a href="/docs/data-access/mybatis-basic" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-basic"}}active{{end}}">
-                                            <i class="fas fa-table me-2 text-primary"></i>MyBatis基础
+                                            <i class="fas fa-code me-2 text-info"></i>MyBatis基础
                                         </a>
                                         <a href="/docs/data-access/mybatis-advanced" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-advanced"}}active{{end}}">
-                                            <i class="fas fa-rocket me-2 text-success"></i>MyBatis高级特性
+                                            <i class="fas fa-cogs me-2 text-primary"></i>MyBatis高级特性
                                         </a>
                                         <a href="/docs/data-access/mybatis-performance" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "mybatis-performance"}}active{{end}}">
                                             <i class="fas fa-tachometer-alt me-2 text-warning"></i>MyBatis性能优化
                                         </a>
                                         <a href="/docs/data-access/database-config" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "database-config"}}active{{end}}">
-                                            <i class="fas fa-cog me-2"></i>数据库配置
+                                            <i class="fas fa-server me-2 text-secondary"></i>数据库配置
                                         </a>
                                         <a href="/docs/data-access/transaction" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "transaction"}}active{{end}}">
-                                            <i class="fas fa-exchange-alt me-2"></i>事务管理
+                                            <i class="fas fa-sync-alt me-2 text-warning"></i>事务管理
+                                        </a>
+                                        <a href="/docs/data-access/database-tuning" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "database-tuning"}}active{{end}}">
+                                            <i class="fas fa-tools me-2 text-info"></i>数据库调优
+                                        </a>
+                                        <a href="/docs/data-access/caching-strategies" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "caching-strategies"}}active{{end}}">
+                                            <i class="fas fa-memory me-2 text-purple"></i>缓存策略
+                                        </a>
+                                        <a href="/docs/data-access/monitoring-alerting" class="list-group-item list-group-item-action border-0 {{if eq .CurrentDoc "monitoring-alerting"}}active{{end}}">
+                                            <i class="fas fa-chart-line me-2 text-danger"></i>监控告警
                                         </a>
                                     </div>
                                 </div>
@@ -409,11 +421,12 @@
                                 <div class="card doc-card h-100">
                                     <div class="card-body">
                                         <h5 class="card-title">
-                                            <i class="fas fa-database me-2 text-primary"></i>数据访问
+                                            <i class="fas fa-layer-group me-2 text-primary"></i>统一ORM
                                         </h5>
-                                        <p class="card-text">支持GORM和MyBatis，提供完整的数据库操作解决方案。</p>
+                                        <p class="card-text">双引擎协同架构，GORM高效CRUD + MyBatis复杂查询，智能选择最优执行引擎。</p>
                                         <div class="d-flex gap-2 flex-wrap">
-                                            <a href="/docs/data-access/gorm" class="btn btn-sm btn-outline-primary">GORM</a>
+                                            <a href="/docs/data-access/orm-unified" class="btn btn-sm btn-outline-primary">统一ORM</a>
+                                            <a href="/docs/data-access/gorm-quickstart" class="btn btn-sm btn-outline-success">GORM</a>
                                             <div class="btn-group" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                                     MyBatis
@@ -577,6 +590,8 @@
                     'middleware-config': 'collapseMiddleware',
 
                     // 数据访问
+                    'orm-unified': 'collapseDataAccess',
+                    'gorm-quickstart': 'collapseDataAccess',
                     'gorm': 'collapseDataAccess',
                     'mybatis': 'collapseDataAccess',
                     'mybatis-basic': 'collapseDataAccess',

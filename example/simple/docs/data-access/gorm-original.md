@@ -1051,10 +1051,10 @@ func TestUserController_WithTransaction(t *testing.T) {
 
 ## 🔗 相关资源
 
-- [事务管理](./transaction.md)
-- [数据库配置](./database-config.md)
-- [MyBatis集成](./mybatis.md)
-- [性能优化指南](../dev-tools/performance.md)
+- [事务管理](./transaction)
+- [数据库配置](./database-config)
+- [MyBatis集成](./mybatis)
+- [性能优化指南](../dev-tools/performance)
 
 ---
 

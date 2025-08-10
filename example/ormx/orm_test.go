@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// User 测试用户模型
-type User struct {
+// TestUser 测试用户模型
+type TestUser struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:100;not null" json:"name"`
 	Email     string    `gorm:"uniqueIndex;size:100" json:"email"`
@@ -20,8 +20,8 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Article 测试文章模型
-type Article struct {
+// TestArticle 测试文章模型
+type TestArticle struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	UserID      uint      `json:"user_id"`
 	Title       string    `gorm:"size:200;not null" json:"title"`
@@ -35,7 +35,7 @@ func TestBasicORM(t *testing.T) {
 	// 1. 初始化数据库连接
 	dbConfig := &orm.DatabaseConfig{
 		Type:         "sqlite",
-		Database:     "test.db",
+		Database:     ":memory:", // 使用内存数据库避免文件残留
 		MaxIdleConns: 10,
 		MaxOpenConns: 100,
 		LogLevel:     "info",
@@ -51,7 +51,7 @@ func TestBasicORM(t *testing.T) {
 	db := ormInstance.DB()
 
 	// 2. 自动迁移
-	if err := db.AutoMigrate(&User{}, &Article{}); err != nil {
+	if err := db.AutoMigrate(&TestUser{}, &TestArticle{}); err != nil {
 		t.Fatal("Failed to migrate:", err)
 	}
 
@@ -72,7 +72,7 @@ func testCRUD(t *testing.T, db *gorm.DB) {
 	fmt.Println("\n=== Testing CRUD Operations ===")
 
 	// Create
-	user := User{
+	user := TestUser{
 		Name:  "Test User",
 		Email: "test@example.com",
 		Age:   25,
@@ -84,7 +84,7 @@ func testCRUD(t *testing.T, db *gorm.DB) {
 	fmt.Printf("Created user with ID: %d\n", user.ID)
 
 	// Read
-	var foundUser User
+	var foundUser TestUser
 	if err := db.First(&foundUser, user.ID).Error; err != nil {
 		t.Fatal("Failed to find user:", err)
 	}
@@ -107,11 +107,14 @@ func testCRUD(t *testing.T, db *gorm.DB) {
 func testPagination(t *testing.T, db *gorm.DB) {
 	fmt.Println("\n=== Testing Pagination ===")
 
+	// 清理旧数据
+	db.Exec("DELETE FROM test_users")
+
 	// 创建测试数据
 	for i := 1; i <= 20; i++ {
-		user := User{
-			Name:  fmt.Sprintf("User %d", i),
-			Email: fmt.Sprintf("user%d@example.com", i),
+		user := TestUser{
+			Name:  fmt.Sprintf("PageUser %d", i),
+			Email: fmt.Sprintf("pageuser%d@example.com", i),
 			Age:   20 + i,
 		}
 		db.Create(&user)
@@ -123,8 +126,8 @@ func testPagination(t *testing.T, db *gorm.DB) {
 		MaxPageSize: 100,
 		IncludeTotal: true,
 	}
-	paginator := orm.NewOffsetPaginator(db.Model(&User{}), config)
-	var users []User
+	paginator := orm.NewOffsetPaginator(db.Model(&TestUser{}), config)
+	var users []TestUser
 	
 	result, err := paginator.Paginate(1, 5, &users)
 	if err != nil {
@@ -136,7 +139,7 @@ func testPagination(t *testing.T, db *gorm.DB) {
 	fmt.Printf("Found %d users on page 1\n", len(users))
 
 	// 测试第二页
-	var users2 []User
+	var users2 []TestUser
 	result2, err := paginator.Paginate(2, 5, &users2)
 	if err != nil {
 		t.Fatal("Pagination failed:", err)
@@ -149,11 +152,15 @@ func testPagination(t *testing.T, db *gorm.DB) {
 func testTransaction(t *testing.T, db *gorm.DB) {
 	fmt.Println("\n=== Testing Transaction ===")
 
+	// 清理旧数据
+	db.Exec("DELETE FROM test_articles")
+	db.Exec("DELETE FROM test_users")
+
 	// 开始事务
 	tx := db.Begin()
 	
 	// 创建用户
-	user := User{
+	user := TestUser{
 		Name:  "Transaction User",
 		Email: "transaction@example.com",
 		Age:   30,
@@ -165,7 +172,7 @@ func testTransaction(t *testing.T, db *gorm.DB) {
 	}
 
 	// 创建文章
-	article := Article{
+	article := TestArticle{
 		UserID:      user.ID,
 		Title:       "Transaction Article",
 		Content:     "This article was created in a transaction",
@@ -187,7 +194,7 @@ func testTransaction(t *testing.T, db *gorm.DB) {
 
 	// 验证数据
 	var count int64
-	db.Model(&User{}).Where("email = ?", "transaction@example.com").Count(&count)
+	db.Model(&TestUser{}).Where("email = ?", "transaction@example.com").Count(&count)
 	if count != 1 {
 		t.Fatal("Transaction data not found")
 	}

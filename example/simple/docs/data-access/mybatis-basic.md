@@ -429,4 +429,4 @@ func (c *UserController) GetUser() {
 
 - [完整示例项目](../../gobatis/) - 包含性能测试和压力测试的完整示例
 - [数据库配置](./database-config) - database.yaml的完整配置说明
-- [GORM集成](./gorm) - 可与MyBatis配合使用的ORM选择
+- [GORM快速开始](./gorm-quickstart) - 可与MyBatis配合使用的高性能CRUD引擎

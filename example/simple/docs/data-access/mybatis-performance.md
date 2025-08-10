@@ -658,9 +658,9 @@ func (cp *CapacityPlanner) CalculateResources() *ResourceRequirements {
 
 完成MyBatis性能优化学习后，建议继续深入：
 
-- **[数据库调优](./database-tuning.md)** - MySQL/PostgreSQL数据库层面优化
-- **[缓存策略](./caching-strategies.md)** - Redis缓存设计模式
-- **[监控告警](./monitoring-alerting.md)** - 完整的可观测性解决方案
+- **[数据库调优](./database-tuning)** - MySQL/PostgreSQL数据库层面优化
+- **[缓存策略](./caching-strategies)** - Redis缓存设计模式
+- **[监控告警](./monitoring-alerting)** - 完整的可观测性解决方案
 
 ## 🔗 参考资源
 

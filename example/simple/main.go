@@ -89,8 +89,13 @@ func main() {
 			mvc.NSRouter("/custom", docsController, "*:GetMiddlewareCustom"),
 			mvc.NSRouter("/config", docsController, "*:GetMiddlewareConfig"),
 		),
-		// ============= 数据访问 =============
+		// ============= 统一ORM =============
 		mvc.NSNamespace("/data-access",
+			// 统一ORM概览 - 新增的主要入口
+			mvc.NSRouter("/orm-unified", docsController, "*:GetDataAccessOrmUnified"),
+			// GORM快速开始 - 新的路由
+			mvc.NSRouter("/gorm-quickstart", docsController, "*:GetDataAccessGormQuickstart"),
+			// 保持向后兼容的旧GORM路由
 			mvc.NSRouter("/gorm", docsController, "*:GetDataAccessGorm"),
 			// MyBatis 路由 - 新的分离式结构
 			mvc.NSRouter("/mybatis-basic", docsController, "*:GetDataAccessMybatisBasic"),
