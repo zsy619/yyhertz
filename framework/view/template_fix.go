@@ -80,6 +80,7 @@ func (e *TemplateIncludeEngine) loadAllTemplatesForInclude() error {
 	}
 	
 	config.Infof("Loaded %d template files for include support", len(templateFiles))
+	
 	return nil
 }
 

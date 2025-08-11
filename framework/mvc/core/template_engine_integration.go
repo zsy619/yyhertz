@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"path/filepath"
 
 	templatemanager "github.com/zsy619/yyhertz/framework/template"
 	"github.com/zsy619/yyhertz/framework/view"
@@ -13,7 +14,13 @@ func (c *BaseController) initializeEnhancedTemplateEngine() {
 		// 尝试使用增强的模板引擎
 		cfg := view.DefaultTemplateConfig()
 		if c.ViewPath != "" {
-			cfg.ViewPaths = []string{c.ViewPath} // 使用控制器的视图路径
+			// 扩展视图路径，包含基础路径、shared目录和其他常用目录
+			cfg.ViewPaths = []string{
+				c.ViewPath,                             // 主视图路径
+				filepath.Join(c.ViewPath, "shared"),    // shared模板目录
+				filepath.Join(c.ViewPath, "layouts"),   // 布局目录
+				filepath.Join(c.ViewPath, "components"), // 组件目录
+			}
 		}
 		if enhanced, err := view.NewTemplateIncludeEngine(cfg); err == nil {
 			c.templateEngine = enhanced.TemplateEngine

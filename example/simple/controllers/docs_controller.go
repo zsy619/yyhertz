@@ -29,7 +29,12 @@ func (c *DocsController) renderDoc(category, doc, title string, trimCategory ...
 		docPath = filepath.Join("./docs", doc+".md")
 	} else {
 		if len(trimCategory) > 0 && trimCategory[0] {
-			myDoc := strings.TrimPrefix(doc, category+"-")
+			// myDoc := strings.TrimPrefix(doc, category+"-")
+			myDocs := strings.Split(doc, "-")
+			var myDoc string
+			if len(myDocs) > 0 {
+				myDoc = myDocs[len(myDocs)-1]
+			}
 			docPath = filepath.Join("./docs", category, myDoc+".md")
 		} else {
 			docPath = filepath.Join("./docs", category, doc+".md")
@@ -94,9 +99,83 @@ func (c *DocsController) renderDoc(category, doc, title string, trimCategory ...
 	c.RenderHTML("home/docs/unified-doc.html")
 }
 
+// 渲染控制器子文档的专用方法（支持自定义CurrentDoc）
+func (c *DocsController) renderDocWithCurrentDoc(category, docFile, currentDoc, title string) {
+	var docPath string
+	// 构建文档路径 - 处理不同的文档命名模式
+	if strings.HasPrefix(docFile, "controller-") {
+		// 控制器子文档，需要提取最后一个部分作为文件名
+		docParts := strings.Split(docFile, "-")
+		if len(docParts) > 0 {
+			fileName := docParts[len(docParts)-1]
+			docPath = filepath.Join("./docs", category, fileName+".md")
+		}
+	} else {
+		// 其他文档，直接使用docFile作为文件名
+		docPath = filepath.Join("./docs", category, docFile+".md")
+	}
+
+	log.Printf("尝试读取文档: %s", docPath)
+	content, err := os.ReadFile(docPath)
+	if err != nil {
+		log.Printf("读取文档失败: %s, 错误: %v", docPath, err)
+		c.Error(404, fmt.Sprintf("文档不存在: %s", docFile))
+		return
+	}
+
+	// 配置Goldmark解析器
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			extension.Strikethrough,
+			extension.TaskList,
+			extension.DefinitionList,
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithXHTML(),
+			html.WithUnsafe(),
+		),
+	)
+
+	// 解析Markdown为HTML
+	var htmlBuf bytes.Buffer
+	if err := md.Convert(content, &htmlBuf); err != nil {
+		log.Printf("Markdown解析失败: %v", err)
+		c.Error(500, "文档解析失败")
+		return
+	}
+
+	// 设置模板数据
+	c.SetData("Title", title)
+	c.SetData("CurrentDoc", currentDoc)  // 使用传入的currentDoc用于导航高亮
+	c.SetData("Content", template.HTML(htmlBuf.String()))
+	c.SetData("Category", category)
+
+	// 设置分组名称用于面包屑导航
+	if category != "" {
+		categoryNames := map[string]string{
+			"getting-started": "📖 开始使用",
+			"mvc-core":        "🏗️ MVC核心",
+			"middleware":      "🔌 中间件",
+			"data-access":     "🗄️ 统一ORM",
+			"view-template":   "🎨 视图渲染",
+			"configuration":   "⚙️ 配置管理",
+			"advanced":        "🔧 高级功能",
+			"deployment":      "☁️ 部署运维",
+			"dev-tools":       "🛠️ 开发工具",
+		}
+		c.SetData("CategoryName", categoryNames[category])
+	}
+
+	// 渲染统一模板
+	c.RenderHTML("home/docs/unified-doc.html")
+}
+
 // ============= 开始使用 =============
 func (c *DocsController) GetGettingStartedOverview() {
-	c.renderDoc("getting-started", "overview", "概览与安装")
+	c.renderDocWithCurrentDoc("getting-started", "overview", "getting-started-overview", "概览与安装")
 }
 
 func (c *DocsController) GetGettingStartedQuickstart() {
@@ -114,6 +193,51 @@ func (c *DocsController) GetMvcCoreApplication() {
 
 func (c *DocsController) GetMvcCoreController() {
 	c.renderDoc("mvc-core", "controller", "控制器")
+}
+
+// ============= MVC核心 - 控制器子路由 =============
+func (c *DocsController) GetMvcCoreControllerOverview() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "controller-overview", "overview", "控制器概览")
+}
+
+func (c *DocsController) GetMvcCoreControllerLifecycle() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "controller-lifecycle", "lifecycle", "生命周期管理")
+}
+
+func (c *DocsController) GetMvcCoreControllerRequestHandling() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "request-handling", "request-handling", "请求处理")
+}
+
+func (c *DocsController) GetMvcCoreControllerResponseOutput() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "response-output", "response-output", "响应输出")
+}
+
+func (c *DocsController) GetMvcCoreControllerTemplateSystem() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "template-system", "template-system", "模板系统")
+}
+
+func (c *DocsController) GetMvcCoreControllerSessionCookie() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "session-cookie", "session-cookie", "Session/Cookie")
+}
+
+func (c *DocsController) GetMvcCoreControllerRoutingManagement() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "routing-management", "routing-management", "路由管理")
+}
+
+func (c *DocsController) GetMvcCoreControllerSecurityFeatures() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "security-features", "security-features", "安全特性")
+}
+
+func (c *DocsController) GetMvcCoreControllerUtilityMethods() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "utility-methods", "utility-methods", "工具方法")
+}
+
+func (c *DocsController) GetMvcCoreControllerRealWorldExamples() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "real-world-examples", "real-world-examples", "实际应用场景")
+}
+
+func (c *DocsController) GetMvcCoreControllerFaqBestPractices() {
+	c.renderDocWithCurrentDoc("mvc-core/controller", "faq-best-practices", "faq-best-practices", "FAQ与最佳实践")
 }
 
 func (c *DocsController) GetMvcCoreRouting() {

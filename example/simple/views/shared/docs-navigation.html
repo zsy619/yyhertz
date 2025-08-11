@@ -1,0 +1,431 @@
+{{define "docs-navigation"}}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>文档导航
+        </h5>
+    </div>
+    <div class="accordion accordion-flush" id="docsNavAccordion">
+        <!-- 开始使用 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingGettingStarted">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGettingStarted" aria-expanded="false">
+                    <i class="fas fa-book me-2 text-primary"></i>开始使用
+                </button>
+            </h6>
+            <div id="collapseGettingStarted" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/getting-started/overview" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-info-circle me-2"></i>概览与安装
+                        </a>
+                        <a href="/docs/getting-started/quickstart" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-rocket me-2"></i>快速开始
+                        </a>
+                        <a href="/docs/getting-started/structure" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-sitemap me-2"></i>项目结构
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MVC核心 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingMvcCore">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMvcCore" aria-expanded="false">
+                    <i class="fas fa-cube me-2 text-success"></i>MVC核心
+                </button>
+            </h6>
+            <div id="collapseMvcCore" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/mvc-core/application" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-desktop me-2"></i>应用程序
+                        </a>
+                        
+                        <!-- 控制器基础（支持三级导航） -->
+                        <div class="list-group-item border-0 p-0">
+                            <div class="accordion" id="controllerAccordion">
+                                <div class="accordion-item border-0">
+                                    <h6 class="accordion-header" id="headingController">
+                                        <button class="accordion-button collapsed list-group-item-action border-0 py-2 ps-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseController" aria-expanded="false" data-controller-section="true">
+                                            <i class="fas fa-cogs me-2"></i>控制器基础
+                                        </button>
+                                    </h6>
+                                    <div id="collapseController" class="accordion-collapse collapse" data-bs-parent="#controllerAccordion" data-controller-section="true">
+                                        <div class="accordion-body p-0">
+                                            <div class="list-group list-group-flush">
+                                                <a href="/docs/mvc-core/controller/overview" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-info-circle me-2"></i>控制器概览
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/lifecycle" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-recycle me-2"></i>生命周期管理
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/request-handling" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-download me-2"></i>请求处理
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/response-output" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-upload me-2"></i>响应输出
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/template-system" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-file-code me-2"></i>模板系统
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/session-cookie" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-cookie-bite me-2"></i>Session/Cookie
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/routing-management" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-route me-2"></i>路由管理
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/security-features" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-shield-alt me-2"></i>安全特性
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/utility-methods" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-tools me-2"></i>工具方法
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/real-world-examples" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-project-diagram me-2"></i>实际应用场景
+                                                </a>
+                                                <a href="/docs/mvc-core/controller/faq-best-practices" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-question-circle me-2"></i>FAQ与最佳实践
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/docs/mvc-core/routing" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-route me-2"></i>路由系统
+                        </a>
+                        <a href="/docs/mvc-core/namespace" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-folder-tree me-2"></i>命名空间
+                        </a>
+                        <a href="/docs/mvc-core/annotation" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-tags me-2"></i>注解路由系统
+                        </a>
+                        <a href="/docs/mvc-core/comment" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-comment-alt me-2"></i>注释路由系统
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中间件系统 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingMiddleware">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMiddleware" aria-expanded="false">
+                    <i class="fas fa-layer-group me-2 text-info"></i>中间件系统
+                </button>
+            </h6>
+            <div id="collapseMiddleware" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/middleware/overview" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-eye me-2"></i>中间件概览
+                        </a>
+                        <a href="/docs/middleware/builtin" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-boxes me-2"></i>内置中间件
+                        </a>
+                        <a href="/docs/middleware/custom" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-tools me-2"></i>自定义中间件
+                        </a>
+                        <a href="/docs/middleware/config" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-sliders-h me-2"></i>中间件配置
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统一ORM -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingDataAccess">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataAccess" aria-expanded="false">
+                    <i class="fas fa-layer-group me-2 text-warning"></i>统一ORM
+                </button>
+            </h6>
+            <div id="collapseDataAccess" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/data-access/orm-unified" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-layer-group me-2 text-primary"></i>统一ORM概览
+                        </a>
+                        <a href="/docs/data-access/gorm-quickstart" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-rocket me-2 text-success"></i>GORM快速开始
+                        </a>
+                        <a href="/docs/data-access/mybatis-basic" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-code me-2 text-info"></i>MyBatis基础
+                        </a>
+                        <a href="/docs/data-access/mybatis-advanced" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-cogs me-2 text-primary"></i>MyBatis高级特性
+                        </a>
+                        <a href="/docs/data-access/mybatis-performance" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-tachometer-alt me-2 text-warning"></i>MyBatis性能优化
+                        </a>
+                        <a href="/docs/data-access/database-config" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-server me-2 text-secondary"></i>数据库配置
+                        </a>
+                        <a href="/docs/data-access/transaction" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-sync-alt me-2 text-warning"></i>事务管理
+                        </a>
+                        <a href="/docs/data-access/database-tuning" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-tools me-2 text-info"></i>数据库调优
+                        </a>
+                        <a href="/docs/data-access/caching-strategies" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-memory me-2 text-purple"></i>缓存策略
+                        </a>
+                        <a href="/docs/data-access/object-mapping" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-exchange-alt me-2 text-success"></i>对象映射
+                        </a>
+                        <a href="/docs/data-access/monitoring-alerting" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-chart-line me-2 text-danger"></i>监控告警
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 视图渲染 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingViewTemplate">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseViewTemplate" aria-expanded="false">
+                    <i class="fas fa-eye me-2 text-info"></i>视图渲染
+                </button>
+            </h6>
+            <div id="collapseViewTemplate" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/view-template/overview" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-eye me-2"></i>视图概览
+                        </a>
+                        <a href="/docs/view-template/template-engine" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-cogs me-2"></i>模板引擎
+                        </a>
+                        <a href="/docs/view-template/view-rendering" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-paint-brush me-2"></i>视图渲染
+                        </a>
+                        <a href="/docs/view-template/static-assets" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-file-code me-2"></i>静态资源
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 配置管理 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingConfiguration">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConfiguration" aria-expanded="false">
+                    <i class="fas fa-cog me-2 text-secondary"></i>配置管理
+                </button>
+            </h6>
+            <div id="collapseConfiguration" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/configuration/app-config" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-cogs me-2"></i>应用配置
+                        </a>
+                        <a href="/docs/configuration/environment" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-server me-2"></i>环境配置
+                        </a>
+                        <a href="/docs/configuration/logging" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-file-alt me-2"></i>日志配置
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 高级功能 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingAdvanced">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdvanced" aria-expanded="false">
+                    <i class="fas fa-magic me-2" style="color: #8b5cf6;"></i>高级功能
+                </button>
+            </h6>
+            <div id="collapseAdvanced" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/advanced/session" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-user-clock me-2"></i>会话管理
+                        </a>
+                        <a href="/docs/advanced/cache" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-memory me-2"></i>缓存系统
+                        </a>
+                        <a href="/docs/advanced/validation" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-check-circle me-2"></i>验证系统
+                        </a>
+                        <a href="/docs/advanced/captcha" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-shield-alt me-2"></i>验证码功能
+                        </a>
+                        <a href="/docs/advanced/scheduler" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-clock me-2"></i>任务调度
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 部署运维 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingDeployment">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDeployment" aria-expanded="false">
+                    <i class="fas fa-cloud me-2 text-success"></i>部署运维
+                </button>
+            </h6>
+            <div id="collapseDeployment" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/deployment/overview" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-rocket me-2"></i>部署概览
+                        </a>
+                        <a href="/docs/deployment/docker" class="list-group-item list-group-item-action border-0">
+                            <i class="fab fa-docker me-2"></i>Docker部署
+                        </a>
+                        <a href="/docs/deployment/kubernetes" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-dharmachakra me-2"></i>K8s部署
+                        </a>
+                        <a href="/docs/deployment/monitoring" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-chart-line me-2"></i>监控告警
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 开发工具 -->
+        <div class="accordion-item">
+            <h6 class="accordion-header" id="headingDevTools">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDevTools" aria-expanded="false">
+                    <i class="fas fa-tools me-2 text-dark"></i>开发工具
+                </button>
+            </h6>
+            <div id="collapseDevTools" class="accordion-collapse collapse" data-bs-parent="#docsNavAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="/docs/dev-tools/codegen" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-code me-2"></i>代码生成
+                        </a>
+                        <a href="/docs/dev-tools/hot-reload" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-sync me-2"></i>热重载
+                        </a>
+                        <a href="/docs/dev-tools/performance" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>性能监控
+                        </a>
+                        <a href="/docs/dev-tools/testing" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-vial me-2"></i>测试工具
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 返回文档首页按钮 -->
+<div class="mt-3">
+    <a href="/home/docs" class="btn btn-outline-primary w-100">
+        <i class="fas fa-arrow-left me-2"></i>返回文档首页
+    </a>
+</div>
+
+<!-- JavaScript for URL-based navigation highlighting and expansion -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 获取当前页面路径
+        const currentPath = window.location.pathname;
+        
+        // 导航配置 - 路径前缀与accordion ID的映射
+        const navigationConfig = {
+            // 一级导航映射
+            sections: {
+                '/docs/getting-started/': 'collapseGettingStarted',
+                '/docs/mvc-core/': 'collapseMvcCore',
+                '/docs/middleware/': 'collapseMiddleware',
+                '/docs/data-access/': 'collapseDataAccess',
+                '/docs/view-template/': 'collapseViewTemplate',
+                '/docs/configuration/': 'collapseConfiguration',
+                '/docs/advanced/': 'collapseAdvanced',
+                '/docs/deployment/': 'collapseDeployment',
+                '/docs/dev-tools/': 'collapseDevTools'
+            },
+            // 二级导航映射（特殊处理控制器子路由）
+            subSections: {
+                '/docs/mvc-core/controller/': 'collapseController'
+            }
+        };
+
+        console.log('Current path:', currentPath);
+
+        // 1. 高亮当前页面对应的链接
+        highlightCurrentLink(currentPath);
+        
+        // 2. 展开相关的导航区域
+        expandParentSections(currentPath, navigationConfig);
+
+        /**
+         * 高亮当前页面对应的导航链接
+         */
+        function highlightCurrentLink(currentPath) {
+            // 查找精确匹配当前URL的链接
+            const matchingLink = document.querySelector(`a[href="${currentPath}"]`);
+            if (matchingLink) {
+                matchingLink.classList.add('active');
+                console.log('Highlighted link:', currentPath);
+            }
+        }
+
+        /**
+         * 展开匹配路径的所有父级导航区域
+         */
+        function expandParentSections(currentPath, config) {
+            // 检查一级导航
+            for (const [pathPrefix, sectionId] of Object.entries(config.sections)) {
+                if (currentPath.startsWith(pathPrefix)) {
+                    expandSection(sectionId);
+                    console.log('Expanded section:', sectionId, 'for path:', pathPrefix);
+                    break;
+                }
+            }
+
+            // 检查二级导航（控制器子路由）
+            for (const [pathPrefix, subSectionId] of Object.entries(config.subSections)) {
+                if (currentPath.startsWith(pathPrefix)) {
+                    expandSection(subSectionId);
+                    console.log('Expanded sub-section:', subSectionId, 'for path:', pathPrefix);
+                    
+                    // 控制器子路由需要特殊处理按钮高亮
+                    const controllerButton = document.querySelector('[data-bs-target="#collapseController"]');
+                    if (controllerButton) {
+                        controllerButton.classList.add('text-primary');
+                        console.log('Added highlight to controller button');
+                    }
+                    break;
+                }
+            }
+        }
+
+        /**
+         * 展开指定的accordion区域并更新按钮状态
+         */
+        function expandSection(sectionId) {
+            const sectionElement = document.getElementById(sectionId);
+            const buttonElement = document.querySelector(`[data-bs-target="#${sectionId}"]`);
+            
+            if (sectionElement) {
+                // 添加show类展开区域
+                sectionElement.classList.add('show');
+            }
+            
+            if (buttonElement) {
+                // 更新按钮状态
+                buttonElement.classList.remove('collapsed');
+                buttonElement.setAttribute('aria-expanded', 'true');
+            }
+        }
+    });
+</script>
+{{end}}

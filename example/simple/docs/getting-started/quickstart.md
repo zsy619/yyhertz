@@ -191,11 +191,11 @@ go run main.go
 
 现在你已经有了一个基本的Hertz MVC应用，可以继续学习：
 
-- [控制器详解](/home/controller) - 了解控制器的高级用法
-- [路由系统](/home/routing) - 学习路由配置和参数处理
-- [模板引擎](/home/template) - 掌握模板语法和布局
-- [中间件](/home/middleware) - 添加认证、日志等功能
-- [数据库集成](/home/database) - 连接和操作数据库
+- [控制器详解](/docs/mvc-core/controller) - 了解控制器的高级用法
+- [路由系统](/docs/mvc-core/routing) - 学习路由配置和参数处理
+- [模板引擎](/docs/view-template/overview) - 掌握模板语法和布局
+- [中间件](/docs/middleware/overview) - 添加认证、日志等功能
+- [数据库集成](/docs/data-access/orm-unified) - 连接和操作数据库
 
 ## 常见问题
 
