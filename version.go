@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 	"github.com/zsy619/yyhertz/framework/mvc"
+	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
 const (
@@ -24,10 +24,10 @@ const (
 	GoVersion    = "1.24+"
 
 	// 作者信息
-	Author     = "CloudWeGo Team"
+	Author     = "YYHertz Team"
 	License    = "Apache 2.0"
-	Repository = "https://github.com/cloudwego/hertz"
-	Homepage   = "https://www.cloudwego.io/zh/docs/hertz/"
+	Repository = "https://github.com/zsy619/yyhertz"
+	Homepage   = "https://yyhertz.hn24365.com"
 
 	// 构建信息
 	BuildMode = "release"
@@ -397,7 +397,7 @@ func main() {
 	// 获取应用配置
 	appConfig, err := configManager.GetConfig()
 	if err != nil {
-		config.GetGlobalLogger().WithFields(map[string]any{
+		config.WithFields(map[string]any{
 			"error": err.Error(),
 		}).Fatal("获取配置失败")
 	}
@@ -452,7 +452,7 @@ func main() {
 
 	// 验证TLS配置
 	if err := middleware.ValidateTLSConfig(tlsConfig); err != nil {
-		config.GetGlobalLogger().WithFields(map[string]any{
+		config.WithFields(map[string]any{
 			"error": err.Error(),
 		}).Fatal("TLS配置验证失败")
 	}

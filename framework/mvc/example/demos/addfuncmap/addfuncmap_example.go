@@ -1,14 +1,16 @@
 package main
 
 import (
-	"github.com/zsy619/yyhertz/framework/mvc"
-	"github.com/zsy619/yyhertz/framework/util"
 	"strings"
+
+	"github.com/zsy619/yyhertz/framework/mvc"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // ExampleController 示例控制器
 type ExampleController struct {
-	mvc.BaseController
+	*core.BaseController
 }
 
 // GetIndex 首页

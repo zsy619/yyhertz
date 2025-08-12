@@ -1,6 +1,6 @@
 module github.com/zsy619/yyhertz
 
-go 1.24.5
+go 1.24.6
 
 require (
 	github.com/cloudwego/hertz v0.10.1
@@ -49,7 +49,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/microsoft/go-mssqldb v1.8.2 // indirect
-	github.com/nyaruka/phonenumbers v1.6.4 // indirect
+	github.com/nyaruka/phonenumbers v1.6.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.10.0 // indirect
@@ -63,15 +63,15 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
-	golang.org/x/arch v0.19.0 // indirect
+	golang.org/x/arch v0.20.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
-	golang.org/x/image v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20250811191247-51f88131bc50 // indirect
+	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

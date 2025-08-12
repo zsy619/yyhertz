@@ -1,17 +1,18 @@
-package core
+package example
 
 import (
 	"html/template"
 	"strings"
 	"testing"
 
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // TestAppAddFuncMap 测试应用级别的AddFuncMap功能
 func TestAppAddFuncMap(t *testing.T) {
 	// 创建测试应用
-	app := NewApp()
+	app := core.NewApp()
 
 	// 测试添加自定义函数
 	testFunc := func(s string) string {
@@ -62,7 +63,7 @@ func TestAppAddFuncMap(t *testing.T) {
 
 // TestAddFuncMapWithTemplate 测试AddFuncMap与模板引擎的集成
 func TestAddFuncMapWithTemplate(t *testing.T) {
-	app := NewApp()
+	app := core.NewApp()
 
 	// 添加测试函数
 	app.AddFuncMap("reverse", func(s string) string {
@@ -96,7 +97,7 @@ func TestAddFuncMapWithTemplate(t *testing.T) {
 
 // TestAddFuncMapContainString 测试util.ContainString函数
 func TestAddFuncMapContainString(t *testing.T) {
-	app := NewApp()
+	app := core.NewApp()
 
 	// 添加util.ContainString函数
 	app.AddFuncMap("containString", util.ContainString)
@@ -137,7 +138,7 @@ func TestAddFuncMapContainString(t *testing.T) {
 
 // TestAddFuncMapThreadSafety 测试AddFuncMap的线程安全性
 func TestAddFuncMapThreadSafety(t *testing.T) {
-	app := NewApp()
+	app := core.NewApp()
 
 	// 并发添加和移除函数
 	done := make(chan bool, 2)
@@ -171,7 +172,7 @@ func TestAddFuncMapThreadSafety(t *testing.T) {
 
 // BenchmarkAddFuncMap 基准测试AddFuncMap性能
 func BenchmarkAddFuncMap(b *testing.B) {
-	app := NewApp()
+	app := core.NewApp()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

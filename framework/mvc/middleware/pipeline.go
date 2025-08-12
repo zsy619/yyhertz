@@ -6,20 +6,24 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/zsy619/yyhertz/framework/constant"
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // MiddlewareFunc 统一的中间件函数类型
 type MiddlewareFunc func(*mvccontext.Context)
 
-// MiddlewareLayer 中间件层级枚举
-type MiddlewareLayer int
+// MiddlewareLayer 中间件层级枚举 - 使用统一常量
+type MiddlewareLayer = constant.ExecutionLayer
 
+// 中间件层级常量别名 - 保持向后兼容
 const (
-	LayerGlobal     MiddlewareLayer = iota // 全局中间件
-	LayerGroup                             // 路由组中间件
-	LayerRoute                             // 路由级中间件
-	LayerController                        // 控制器中间件
+	LayerBeforeStatic = constant.LayerBeforeStatic // 静态文件处理前
+	LayerGlobal       = constant.LayerGlobal       // 全局中间件 (BeforeRouter)
+	LayerGroup        = constant.LayerGroup        // 路由组中间件
+	LayerRoute        = constant.LayerRoute        // 路由级中间件 (BeforeExec)
+	LayerController   = constant.LayerController   // 控制器中间件 (AfterExec)
+	LayerFinishRouter = constant.LayerFinishRouter // 请求处理完成后
 )
 
 // MiddlewareInfo 中间件信息
@@ -187,7 +191,7 @@ func (p *MiddlewarePipeline) BuildChain(layers ...MiddlewareLayer) []MiddlewareF
 	var chain []MiddlewareFunc
 
 	// 按层级优先级组合中间件
-	layerOrder := []MiddlewareLayer{LayerGlobal, LayerGroup, LayerRoute, LayerController}
+	layerOrder := []MiddlewareLayer{LayerBeforeStatic, LayerGlobal, LayerGroup, LayerRoute, LayerController, LayerFinishRouter}
 
 	for _, targetLayer := range layerOrder {
 		// 检查是否需要包含此层级
@@ -436,6 +440,8 @@ func (p *MiddlewarePipeline) PrintDebugInfo() {
 // getLayerName 获取层级名称
 func getLayerName(layer MiddlewareLayer) string {
 	switch layer {
+	case LayerBeforeStatic:
+		return "BeforeStatic"
 	case LayerGlobal:
 		return "Global"
 	case LayerGroup:
@@ -444,6 +450,8 @@ func getLayerName(layer MiddlewareLayer) string {
 		return "Route"
 	case LayerController:
 		return "Controller"
+	case LayerFinishRouter:
+		return "FinishRouter"
 	default:
 		return "Unknown"
 	}

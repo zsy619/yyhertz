@@ -4,6 +4,7 @@ package mvc
 import (
 	"sync"
 
+	"github.com/zsy619/yyhertz/framework/constant"
 	"github.com/zsy619/yyhertz/framework/mvc/annotation"
 	"github.com/zsy619/yyhertz/framework/mvc/captcha"
 	"github.com/zsy619/yyhertz/framework/mvc/comment"
@@ -18,6 +19,17 @@ type App = core.App
 type RequestContext = core.RequestContext
 type HandlerFunc = core.HandlerFunc
 type IController = core.IController
+type FilterFunc = core.FilterFunc
+type FilterPattern = core.FilterPattern
+
+// 过滤器位置常量 - 使用统一常量
+const (
+	BeforeStatic = constant.BeforeStatic // 静态文件处理前
+	BeforeRouter = constant.BeforeRouter // 路由匹配前
+	BeforeExec   = constant.BeforeExec   // 控制器执行前
+	AfterExec    = constant.AfterExec    // 控制器执行后
+	FinishRouter = constant.FinishRouter // 请求处理完成后
+)
 
 // 重新导出常用功能
 var (
@@ -112,7 +124,9 @@ func init() {
 
 // SetStaticPath 设置静态文件路径的静态方法
 // 参数：localDir - 静态文件本地目录（相对应用所在目录）
-//      urlPath - URL路径（可选），如果不提供则自动推导
+//
+//	urlPath - URL路径（可选），如果不提供则自动推导
+//
 // 示例：SetStaticPath("public", "/static") 或 SetStaticPath("public")
 func SetStaticPath(localDir string, urlPath ...string) {
 	if HertzApp != nil {
@@ -152,4 +166,44 @@ func ListFuncMap() []string {
 		return HertzApp.ListFuncMap()
 	}
 	return []string{}
+}
+
+// ============= 过滤器管理静态方法 =============
+
+// InsertFilter 插入过滤器到指定位置的静态方法
+// 参数：pattern - 路径模式 (支持通配符 *)
+//
+//	position - 过滤器位置 (BeforeStatic, BeforeRouter, BeforeExec, AfterExec, FinishRouter)
+//	filter - 过滤器函数
+//	params - 可选参数 (第一个bool值表示是否启用，默认true)
+//
+// 示例：InsertFilter("/api/*", BeforeRouter, authFilter)
+func InsertFilter(pattern string, position int, filter FilterFunc, params ...bool) {
+	if HertzApp != nil {
+		HertzApp.InsertFilter(pattern, position, filter, params...)
+	}
+}
+
+// RemoveFilter 移除指定模式和位置的过滤器的静态方法
+func RemoveFilter(pattern string, position int) bool {
+	if HertzApp != nil {
+		return HertzApp.RemoveFilter(pattern, position)
+	}
+	return false
+}
+
+// ListFilters 列出指定位置的所有过滤器的静态方法
+func ListFilters(position int) []*FilterPattern {
+	if HertzApp != nil {
+		return HertzApp.ListFilters(position)
+	}
+	return []*FilterPattern{}
+}
+
+// GetAllFilters 获取所有位置的过滤器的静态方法
+func GetAllFilters() map[int][]*FilterPattern {
+	if HertzApp != nil {
+		return HertzApp.GetAllFilters()
+	}
+	return make(map[int][]*FilterPattern)
 }

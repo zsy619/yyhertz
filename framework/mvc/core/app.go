@@ -17,6 +17,7 @@ import (
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/constant"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 	"github.com/zsy619/yyhertz/framework/view"
@@ -33,6 +34,29 @@ type RequestContext = app.RequestContext
 
 // HandlerFunc 定义处理函数类型
 type HandlerFunc = func(context.Context, *RequestContext)
+
+// FilterFunc 过滤器函数类型
+type FilterFunc = func(*contextenhanced.Context)
+
+// 过滤器位置常量 - 使用统一常量
+const (
+	BeforeStatic = constant.BeforeStatic // 静态文件处理前
+	BeforeRouter = constant.BeforeRouter // 路由匹配前
+	BeforeExec   = constant.BeforeExec   // 控制器执行前
+	AfterExec    = constant.AfterExec    // 控制器执行后
+	FinishRouter = constant.FinishRouter // 请求处理完成后
+)
+
+// FilterPattern 过滤器模式匹配结构
+type FilterPattern struct {
+	Pattern  string     // 路径模式 (支持通配符)
+	Position int        // 过滤器位置
+	Filter   FilterFunc // 过滤器函数
+	Enabled  bool       // 是否启用
+	Priority int        // 优先级
+}
+
+// 位置映射到中间件层级已移除 - 现在使用统一常量和转换函数
 
 // AdaptHandler 将HandlerFunc适配为app.HandlerFunc
 func AdaptHandler(handler HandlerFunc) app.HandlerFunc {
@@ -53,6 +77,11 @@ type App struct {
 	// 全局模板函数管理
 	globalFuncMap template.FuncMap
 	funcMapMutex  sync.RWMutex
+
+	// 过滤器管理
+	filters      map[int][]*FilterPattern // 按位置分组的过滤器
+	filtersMutex sync.RWMutex             // 过滤器读写锁
+	nextFilterID int64                    // 下一个过滤器ID (用于排序)
 }
 
 // GetAppInstance 获取单例应用实例
@@ -98,6 +127,10 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 
 		// 初始化全局模板函数映射
 		globalFuncMap: make(template.FuncMap),
+
+		// 初始化过滤器管理
+		filters:      make(map[int][]*FilterPattern),
+		nextFilterID: 0,
 	}
 
 	// 配置视图路径
@@ -198,18 +231,18 @@ func (app *App) SetStaticPath(localDir string, urlPath ...string) {
 func (app *App) SetStaticPaths(pathMap map[string]string) {
 	app.StaticPaths = make(map[string]string)
 	for localPath, urlPath := range pathMap {
-		app.StaticPaths[urlPath] = localPath
-		app.Static(urlPath, localPath)
+		app.SetStaticPath(localPath, urlPath)
 	}
 }
 
 // AddStaticPath 添加单个静态路径映射
-func (app *App) AddStaticPath(urlPath, localPath string) {
-	if app.StaticPaths == nil {
-		app.StaticPaths = make(map[string]string)
-	}
-	app.StaticPaths[urlPath] = localPath
-	app.Static(urlPath, localPath)
+func (app *App) AddStaticPath(localPath, urlPath string) {
+	app.SetStaticPath(localPath, urlPath)
+}
+
+// AddStaticPaths 添加多个静态路径映射
+func (app *App) AddStaticPaths(pathMap map[string]string) {
+	app.SetStaticPaths(pathMap)
 }
 
 // GetStaticPath 获取默认静态文件路径（向后兼容）
@@ -302,6 +335,26 @@ func (app *App) LogDebug(args ...any) {
 // GetLoggerWithContext 获取带上下文信息的logger
 func (app *App) GetLoggerWithContext(ctx *RequestContext) *hertzlogrus.Logger {
 	return config.GetGlobalLogger().GetLogger()
+}
+
+// Fatal 全局致命错误日志
+func (app *App) LogFatal(args ...any) {
+	config.Fatal(args...)
+}
+
+// Fatalf 全局格式化致命错误日志
+func (app *App) LogFatalf(format string, args ...any) {
+	config.Fatalf(format, args...)
+}
+
+// Panic 全局panic日志
+func (app *App) LogPanic(args ...any) {
+	config.Panic(args...)
+}
+
+// Panicf 全局格式化panic日志
+func (app *App) LogPanicf(format string, args ...any) {
+	config.Panicf(format, args...)
 }
 
 // ============= 路由注册方法 =============
@@ -515,14 +568,34 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 			method.Call([]reflect.Value{reflect.ValueOf(controller)})
 		}
 
-		// 初始化控制器
+		// 初始化增强上下文
 		enhancedCtx := contextenhanced.NewContext(c)
+
+		// 执行 BeforeStatic 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeStatic)
+		if enhancedCtx.IsAborted() {
+			return
+		}
+
+		// 执行 BeforeRouter 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeRouter)
+		if enhancedCtx.IsAborted() {
+			return
+		}
+
+		// 初始化控制器
 		controllerName := controller.GetControllerName() // 使用修复后的方法
 		methodName := method.Name
 		controller.Init(enhancedCtx, controllerName, methodName, app)
 
 		// 设置控制器上下文（如果控制器有Ctx字段）
 		app.setControllerContext(controller, c)
+
+		// 执行 BeforeExec 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeExec)
+		if enhancedCtx.IsAborted() {
+			return
+		}
 
 		// 执行前置处理
 		controller.Prepare()
@@ -544,21 +617,47 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 			}
 		}
 
+		// 执行 AfterExec 过滤器
+		app.ExecuteFilters(enhancedCtx, AfterExec)
+
 		// 执行后置处理
 		controller.Finish()
+
+		// 执行 FinishRouter 过滤器
+		app.ExecuteFilters(enhancedCtx, FinishRouter)
 	}
 }
 
 // createMethodHandler 创建方法处理函数
 func (app *App) createMethodHandler(controller IController, methodName string) HandlerFunc {
 	return func(ctx context.Context, c *RequestContext) {
-		// 初始化控制器
+		// 初始化增强上下文
 		enhancedCtx := contextenhanced.NewContext(c)
+
+		// 执行 BeforeStatic 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeStatic)
+		if enhancedCtx.IsAborted() {
+			return
+		}
+
+		// 执行 BeforeRouter 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeRouter)
+		if enhancedCtx.IsAborted() {
+			return
+		}
+
+		// 初始化控制器
 		controllerName := app.getControllerName(controller)
 		controller.Init(enhancedCtx, controllerName, methodName, app)
 
 		// 设置控制器上下文
 		app.setControllerContext(controller, c)
+
+		// 执行 BeforeExec 过滤器
+		app.ExecuteFilters(enhancedCtx, BeforeExec)
+		if enhancedCtx.IsAborted() {
+			return
+		}
 
 		// 执行前置处理
 		controller.Prepare()
@@ -577,8 +676,14 @@ func (app *App) createMethodHandler(controller IController, methodName string) H
 			}
 		}
 
+		// 执行 AfterExec 过滤器
+		app.ExecuteFilters(enhancedCtx, AfterExec)
+
 		// 执行后置处理
 		controller.Finish()
+
+		// 执行 FinishRouter 过滤器
+		app.ExecuteFilters(enhancedCtx, FinishRouter)
 	}
 }
 
@@ -694,4 +799,155 @@ func (app *App) ListFuncMap() []string {
 	}
 
 	return names
+}
+
+// ============= 过滤器管理方法 =============
+
+// InsertFilter 插入过滤器到指定位置
+// 参数：pattern - 路径模式 (支持通配符 *)
+//
+//	position - 过滤器位置 (BeforeStatic, BeforeRouter, BeforeExec, AfterExec, FinishRouter)
+//	filter - 过滤器函数
+//	params - 可选参数 (第一个bool值表示是否启用，默认true)
+func (app *App) InsertFilter(pattern string, position int, filter FilterFunc, params ...bool) {
+	// 验证位置参数
+	if !constant.IsValidFilterPosition(position) {
+		app.LogErrorf("Invalid filter position: %d", position)
+		return
+	}
+
+	// 处理可选参数
+	enabled := true
+	if len(params) > 0 {
+		enabled = params[0]
+	}
+
+	app.filtersMutex.Lock()
+	defer app.filtersMutex.Unlock()
+
+	// 创建过滤器模式
+	filterPattern := &FilterPattern{
+		Pattern:  pattern,
+		Position: position,
+		Filter:   filter,
+		Enabled:  enabled,
+		Priority: int(app.nextFilterID), // 使用ID作为优先级，保证插入顺序
+	}
+
+	// 添加到对应位置的过滤器列表
+	app.filters[position] = append(app.filters[position], filterPattern)
+	app.nextFilterID++
+
+	app.LogInfof("Filter inserted: pattern=%s, position=%d", pattern, position)
+}
+
+// RemoveFilter 移除指定模式和位置的过滤器
+func (app *App) RemoveFilter(pattern string, position int) bool {
+	app.filtersMutex.Lock()
+	defer app.filtersMutex.Unlock()
+
+	filters := app.filters[position]
+	for i, filter := range filters {
+		if filter.Pattern == pattern {
+			// 从切片中移除
+			app.filters[position] = append(filters[:i], filters[i+1:]...)
+			app.LogInfof("Filter removed: pattern=%s, position=%d", pattern, position)
+			return true
+		}
+	}
+
+	return false
+}
+
+// ListFilters 列出指定位置的所有过滤器
+func (app *App) ListFilters(position int) []*FilterPattern {
+	app.filtersMutex.RLock()
+	defer app.filtersMutex.RUnlock()
+
+	filters := app.filters[position]
+	// 返回副本，避免并发修改
+	result := make([]*FilterPattern, len(filters))
+	copy(result, filters)
+	return result
+}
+
+// GetAllFilters 获取所有位置的过滤器
+func (app *App) GetAllFilters() map[int][]*FilterPattern {
+	app.filtersMutex.RLock()
+	defer app.filtersMutex.RUnlock()
+
+	// 创建深度副本
+	result := make(map[int][]*FilterPattern)
+	for position, filters := range app.filters {
+		result[position] = make([]*FilterPattern, len(filters))
+		copy(result[position], filters)
+	}
+
+	return result
+}
+
+// matchPattern 检查路径是否匹配模式 (支持 * 通配符)
+func (app *App) matchPattern(pattern, path string) bool {
+	// 简单的通配符匹配实现
+	if pattern == "*" || pattern == "/*" {
+		return true
+	}
+
+	// 精确匹配
+	if pattern == path {
+		return true
+	}
+
+	// 通配符匹配
+	if strings.HasSuffix(pattern, "*") {
+		prefix := strings.TrimSuffix(pattern, "*")
+		return strings.HasPrefix(path, prefix)
+	}
+
+	if strings.HasPrefix(pattern, "*") {
+		suffix := strings.TrimPrefix(pattern, "*")
+		return strings.HasSuffix(path, suffix)
+	}
+
+	// 中间通配符支持
+	if strings.Contains(pattern, "*") {
+		parts := strings.Split(pattern, "*")
+		if len(parts) == 2 {
+			return strings.HasPrefix(path, parts[0]) && strings.HasSuffix(path, parts[1])
+		}
+	}
+
+	return false
+}
+
+// ExecuteFilters 执行指定位置的过滤器
+func (app *App) ExecuteFilters(ctx *contextenhanced.Context, position int) {
+	app.filtersMutex.RLock()
+	filters := app.filters[position]
+	app.filtersMutex.RUnlock()
+
+	if len(filters) == 0 {
+		return
+	}
+
+	// 获取请求路径
+	path := string(ctx.Request.Path())
+
+	// 执行匹配的过滤器
+	for _, filter := range filters {
+		if !filter.Enabled {
+			continue
+		}
+
+		// 检查路径是否匹配
+		if app.matchPattern(filter.Pattern, path) {
+			// 执行过滤器
+			filter.Filter(ctx)
+
+			// 如果请求被中止，停止执行后续过滤器
+			if ctx.IsAborted() {
+				break
+			}
+		}
+	}
 }

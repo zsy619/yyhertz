@@ -20,20 +20,15 @@ func main() {
 		fmt.Printf("设置开发工具失败: %v\n", err)
 	}
 
-	// 设置静态文件路径 - 支持单路径（向后兼容）
 	app.SetStaticPath("./static")
 
-	// 或者使用多路径映射（推荐）
+	// 设置静态文件路径 - 避免与默认路径冲突
 	app.SetStaticPaths(map[string]string{
-		"./static":        "/static",
-		"./assets":        "/assets",
-		"./static/vendor": "/vendor",
-		"./uploads":       "/uploads",
+		"./assets":  "/assets",
+		"./uploads": "/uploads",
+		"./cdn":     "/cdn",
+		"./public":  "/public",
 	})
-
-	// 或者逐个添加路径
-	app.AddStaticPath("./cdn", "/cdn")
-	// app.AddStaticPath("./storage/images", "/images")
 
 	// 设置视图模板路径
 	app.SetViewPath("./views")
@@ -92,6 +87,7 @@ func main() {
 				mvc.NSRouter("/faq-best-practices", docsController, "*:GetMvcCoreControllerFaqBestPractices"),
 			),
 			mvc.NSRouter("/routing", docsController, "*:GetMvcCoreRouting"),
+			mvc.NSRouter("/static-path-configuration", docsController, "*:GetMvcCoreStaticPathConfiguration"),
 			mvc.NSRouter("/namespace", docsController, "*:GetMvcCoreNamespace"),
 			mvc.NSRouter("/annotation", docsController, "*:GetMvcCoreAnnotation"),
 			mvc.NSRouter("/comment", docsController, "*:GetMvcCoreComment"),
@@ -123,6 +119,7 @@ func main() {
 			mvc.NSRouter("/database-tuning", docsController, "*:GetDataAccessDatabaseTuning"),
 			mvc.NSRouter("/caching-strategies", docsController, "*:GetDataAccessCachingStrategies"),
 			mvc.NSRouter("/monitoring-alerting", docsController, "*:GetDataAccessMonitoringAlerting"),
+			mvc.NSRouter("/object-mapping", docsController, "*:GetDataAccessObjectMapping"),
 		),
 		// ============= 视图渲染 =============
 		mvc.NSNamespace("/view-template",

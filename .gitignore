@@ -247,3 +247,5 @@ framework/mybatis/conf
 example/gobatis/conf
 example/gobatis/example.db
 example/gobatis/gobatis_example
+!example/simple/static/vendor
+framework/mvc/example/demos/conf

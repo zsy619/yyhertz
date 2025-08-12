@@ -1,0 +1,40 @@
+@host = http://localhost:8888
+
+###
+GET  {{host}}/direct/users HTTP/1.1
+
+
+###
+PUT {{host}}/test/users/1direct HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=direct张三&age=25direct
+
+###
+GET {{host}}/test/simple/users/1simple HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=张simple三&age=2simple5
+
+###
+GET {{host}}/test/original/users/original1 HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=original张三&age=original25
+
+###
+POST {{host}}/test/users HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=zsy&age=25
+
+
+###
+DELETE  {{host}}/direct/users/1 HTTP/1.1
+
+
+###
+PATCH   {{host}}/direct/users/1/status HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+status=ok

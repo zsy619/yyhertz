@@ -149,7 +149,7 @@ func (c *DocsController) renderDocWithCurrentDoc(category, docFile, currentDoc, 
 
 	// 设置模板数据
 	c.SetData("Title", title)
-	c.SetData("CurrentDoc", currentDoc)  // 使用传入的currentDoc用于导航高亮
+	c.SetData("CurrentDoc", currentDoc) // 使用传入的currentDoc用于导航高亮
 	c.SetData("Content", template.HTML(htmlBuf.String()))
 	c.SetData("Category", category)
 
@@ -242,6 +242,10 @@ func (c *DocsController) GetMvcCoreControllerFaqBestPractices() {
 
 func (c *DocsController) GetMvcCoreRouting() {
 	c.renderDoc("mvc-core", "routing", "路由系统")
+}
+
+func (c *DocsController) GetMvcCoreStaticPathConfiguration() {
+	c.renderDocWithCurrentDoc("mvc-core", "static-path-configuration", "static-path-configuration", "静态路径配置")
 }
 
 func (c *DocsController) GetMvcCoreNamespace() {
