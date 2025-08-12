@@ -4,7 +4,7 @@
 // has been split into multiple files:
 // - params.go: Route parameter handling
 // - context.go: Core context structure and methods 
-// - compat_beego.go: Beego-style compatibility support
+// - adapter.go: Standard MVC framework compatibility support
 // - response_writer.go: Response writer implementation
 // - batch.go: Batch processing functionality
 // - adapter.go: Compatibility adapters

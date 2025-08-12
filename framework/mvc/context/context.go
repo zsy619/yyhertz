@@ -30,7 +30,7 @@ type Context struct {
 	Writer ResponseWriter
 	ResponseWriter ResponseWriter // 兼容性字段别名
 	
-	// 兼容性字段 - 为了向后兼容Beego风格API
+	// 兼容性字段 - 为了向后兼容传络MVC风格API
 	Input  *InputData
 	Output *OutputData
 	
@@ -76,7 +76,7 @@ func NewContext(c *app.RequestContext) *Context {
 	ctx.Writer = &responseWriter{RequestContext: c}
 	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
 	
-	// 初始化Beego风格兼容性字段
+	// 初始化传络MVC风格兼容性字段
 	ctx.Input = &InputData{ctx: ctx}
 	ctx.Output = &OutputData{ctx: ctx}
 	
@@ -92,7 +92,7 @@ func NewContextWithContext(c *app.RequestContext, parent context.Context) *Conte
 	ctx.Writer = &responseWriter{RequestContext: c}
 	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
 	
-	// 初始化Beego风格兼容性字段
+	// 初始化传络MVC风格兼容性字段
 	ctx.Input = &InputData{ctx: ctx}
 	ctx.Output = &OutputData{ctx: ctx}
 	
