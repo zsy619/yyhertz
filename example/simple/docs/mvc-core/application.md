@@ -199,6 +199,12 @@ type StaticConfig struct {
     Prefix string // URL前缀
     MaxAge int    // 缓存时间(秒)
 }
+
+// 静态路径映射配置
+type StaticPathConfig struct {
+    Mappings map[string]string // URL路径 -> 本地目录映射
+    Default  string            // 默认静态目录
+}
 ```
 
 ### YAML配置文件
@@ -231,6 +237,13 @@ static:
   dir: "./static"
   prefix: "/static"
   max_age: 3600  # 1 hour
+  
+# 多静态路径配置
+static_paths:
+  "/static": "./public"        # 主要静态资源
+  "/files": "./uploads"        # 用户上传文件
+  "/assets": "./assets"        # 编译后的资源
+  "/docs": "./documents"       # 文档资源
 ```
 
 ### 从配置文件加载
@@ -274,6 +287,16 @@ func main() {
         Prefix: cfg.Static.Prefix,
         MaxAge: cfg.Static.MaxAge,
     })
+    
+    // 配置多静态路径（推荐方式）
+    for urlPath, localDir := range cfg.StaticPaths {
+        mvc.SetStaticPath(localDir, urlPath)
+    }
+    
+    // 或者使用简化方式
+    mvc.SetStaticPath("public", "/static")   // 主要资源
+    mvc.SetStaticPath("uploads", "/files")   // 上传文件
+    mvc.SetStaticPath("assets")              // 自动推导为 /assets
     
     app.Run(fmt.Sprintf(":%d", cfg.App.Port))
 }

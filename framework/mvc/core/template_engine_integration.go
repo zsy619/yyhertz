@@ -28,6 +28,9 @@ func (c *BaseController) initializeEnhancedTemplateEngine() {
 			
 			// 自动添加Beego风格的模板函数
 			c.addBeegoTemplateFunctions()
+			
+			// 添加应用级别的全局模板函数
+			c.addGlobalTemplateFunctions()
 		} else {
 			// 降级到标准模板引擎
 			c.templateEngine = templatemanager.GetTemplateManager().GetEngine()
@@ -120,5 +123,27 @@ func (c *BaseController) ListAvailableTemplates() []string {
 func (c *BaseController) AddBeegoTemplateFunctions() {
 	for name, fn := range view.BeegoTemplateFuncs {
 		c.AddTemplateFunction(name, fn)
+	}
+}
+
+// addGlobalTemplateFunctions 添加应用级别的全局模板函数（内部方法）
+func (c *BaseController) addGlobalTemplateFunctions() {
+	if c.app != nil {
+		// 从应用实例获取全局模板函数
+		globalFuncs := c.app.GetGlobalFuncMap()
+		
+		if c.templateEngine != nil {
+			// 添加到模板引擎
+			for name, fn := range globalFuncs {
+				c.templateEngine.AddFunction(name, fn)
+			}
+		}
+		
+		// 如果有include引擎，也添加到它那里
+		if c.includeEngine != nil {
+			for name, fn := range globalFuncs {
+				c.includeEngine.AddFunction(name, fn)
+			}
+		}
 	}
 }

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"path"
 	"reflect"
 	"strconv"
@@ -18,6 +19,7 @@ import (
 	"github.com/zsy619/yyhertz/framework/config"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
+	"github.com/zsy619/yyhertz/framework/view"
 )
 
 var (
@@ -47,6 +49,10 @@ type App struct {
 	startTime     time.Time
 	address       string
 	loggerManager *config.LoggerManager
+
+	// 全局模板函数管理
+	globalFuncMap template.FuncMap
+	funcMapMutex  sync.RWMutex
 }
 
 // GetAppInstance 获取单例应用实例
@@ -83,12 +89,15 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	loggerManager := config.InitGlobalLogger(logConfig)
 
 	app := &App{
-		Hertz:         h,                                // 使用Hertz服务器实例
-		ViewPath:      "./views",                        // 默认视图路径
+		Hertz:         h,                                        // 使用Hertz服务器实例
+		ViewPath:      "./views",                                // 默认视图路径
 		StaticPaths:   map[string]string{"/static": "./static"}, // 默认静态文件路径映射
-		startTime:     time.Now(),                       // 记录应用启动时间
-		address:       fmt.Sprintf("%s:%d", host, port), // 应用监听地址
-		loggerManager: loggerManager,                    // 日志管理器
+		startTime:     time.Now(),                               // 记录应用启动时间
+		address:       fmt.Sprintf("%s:%d", host, port),         // 应用监听地址
+		loggerManager: loggerManager,                            // 日志管理器
+
+		// 初始化全局模板函数映射
+		globalFuncMap: make(template.FuncMap),
 	}
 
 	// 配置视图路径
@@ -147,32 +156,50 @@ func (app *App) GetViewPath() string {
 	return app.ViewPath
 }
 
-// SetStaticPath 设置单个静态文件路径（向后兼容）
-func (app *App) SetStaticPath(path string) {
+// SetStaticPath 设置静态文件路径
+// 参数：localDir - 静态文件本地目录（相对应用所在目录）
+//
+//	urlPath - URL路径（可选），如果不提供则自动推导
+//
+// 示例：SetStaticPath("public", "/static") 或 SetStaticPath("public")
+func (app *App) SetStaticPath(localDir string, urlPath ...string) {
 	if app.StaticPaths == nil {
 		app.StaticPaths = make(map[string]string)
 	}
-	// 自动推导URL路径：如果path是"./static"，URL路径为"/static"  
-	urlPath := "/" + strings.TrimLeft(strings.TrimPrefix(path, "./"), "/")
-	if urlPath == "/" {
-		urlPath = "/static" // 默认URL路径
+
+	// 确定URL路径
+	var targetUrlPath string
+	if len(urlPath) > 0 && urlPath[0] != "" {
+		targetUrlPath = urlPath[0]
+	} else {
+		// 自动推导：移除 "./" 前缀，确保以 "/" 开头
+		cleanDir := strings.TrimLeft(strings.TrimPrefix(localDir, "./"), "/")
+		if cleanDir == "" {
+			targetUrlPath = "/static" // 默认URL路径
+		} else {
+			targetUrlPath = "/" + cleanDir
+		}
 	}
-	
+
+	// 确保URL路径以/开头
+	if !strings.HasPrefix(targetUrlPath, "/") {
+		targetUrlPath = "/" + targetUrlPath
+	}
+
 	// 只有当路径不存在或者发生变化时才注册
-	if existing, exists := app.StaticPaths[urlPath]; !exists || existing != path {
-		app.StaticPaths[urlPath] = path
-		// Hertz的Static方法需要相对路径，urlPath为"/static"，path为"./static"时
-		// 会导致路径变成"/static/static"，所以我们传递"."让它映射到当前目录下的路径
-		app.Static(urlPath, ".")
+	if existing, exists := app.StaticPaths[targetUrlPath]; !exists || existing != localDir {
+		app.StaticPaths[targetUrlPath] = localDir
+		// 注册静态文件路由
+		app.Static(targetUrlPath, localDir)
 	}
 }
 
 // SetStaticPaths 设置多个静态文件路径映射
 func (app *App) SetStaticPaths(pathMap map[string]string) {
 	app.StaticPaths = make(map[string]string)
-	for urlPath, localPath := range pathMap {
+	for localPath, urlPath := range pathMap {
 		app.StaticPaths[urlPath] = localPath
-		app.Static(urlPath, ".")
+		app.Static(urlPath, localPath)
 	}
 }
 
@@ -182,7 +209,7 @@ func (app *App) AddStaticPath(urlPath, localPath string) {
 		app.StaticPaths = make(map[string]string)
 	}
 	app.StaticPaths[urlPath] = localPath
-	app.Static(urlPath, ".")
+	app.Static(urlPath, localPath)
 }
 
 // GetStaticPath 获取默认静态文件路径（向后兼容）
@@ -609,4 +636,62 @@ func (app *App) registerRoute(method, path string, handler HandlerFunc) {
 	}
 
 	app.LogInfof("Route registered: %s %s", method, path)
+}
+
+// ============= 模板函数管理方法 =============
+
+// AddFuncMap 添加全局模板函数
+// 参数：name - 函数名字符串，fn - 函数实现
+// 示例：AddFuncMap("containString", tool.ContainString)
+func (app *App) AddFuncMap(name string, fn any) {
+	app.funcMapMutex.Lock()
+	defer app.funcMapMutex.Unlock()
+
+	// 添加到应用级别的全局模板函数映射
+	app.globalFuncMap[name] = fn
+
+	// 同时添加到view引擎的全局存储中
+	view.AddGlobalFunction(name, fn)
+
+	app.LogInfof("Template function registered: %s", name)
+}
+
+// GetGlobalFuncMap 获取全局模板函数映射（只读副本）
+func (app *App) GetGlobalFuncMap() template.FuncMap {
+	app.funcMapMutex.RLock()
+	defer app.funcMapMutex.RUnlock()
+
+	// 创建副本以避免并发修改
+	funcMapCopy := make(template.FuncMap, len(app.globalFuncMap))
+	for name, fn := range app.globalFuncMap {
+		funcMapCopy[name] = fn
+	}
+
+	return funcMapCopy
+}
+
+// RemoveFuncMap 移除全局模板函数
+func (app *App) RemoveFuncMap(name string) {
+	app.funcMapMutex.Lock()
+	defer app.funcMapMutex.Unlock()
+
+	delete(app.globalFuncMap, name)
+
+	// 同时从view引擎的全局存储中移除
+	view.RemoveGlobalFunction(name)
+
+	app.LogInfof("Template function removed: %s", name)
+}
+
+// ListFuncMap 列出所有已注册的模板函数名称
+func (app *App) ListFuncMap() []string {
+	app.funcMapMutex.RLock()
+	defer app.funcMapMutex.RUnlock()
+
+	names := make([]string, 0, len(app.globalFuncMap))
+	for name := range app.globalFuncMap {
+		names = append(names, name)
+	}
+
+	return names
 }

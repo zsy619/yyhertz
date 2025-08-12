@@ -22,18 +22,18 @@ func main() {
 
 	// 设置静态文件路径 - 支持单路径（向后兼容）
 	app.SetStaticPath("./static")
-	
+
 	// 或者使用多路径映射（推荐）
-	// app.SetStaticPaths(map[string]string{
-	//     "/static":  "./static",
-	//     "/assets":  "./assets",
-	//     "/vendor":  "./static/vendor",
-	//     "/uploads": "./uploads",
-	// })
-	
+	app.SetStaticPaths(map[string]string{
+		"./static":        "/static",
+		"./assets":        "/assets",
+		"./static/vendor": "/vendor",
+		"./uploads":       "/uploads",
+	})
+
 	// 或者逐个添加路径
-	// app.AddStaticPath("/cdn", "./cdn")
-	// app.AddStaticPath("/images", "./storage/images")
+	app.AddStaticPath("./cdn", "/cdn")
+	// app.AddStaticPath("./storage/images", "/images")
 
 	// 设置视图模板路径
 	app.SetViewPath("./views")

@@ -36,9 +36,11 @@ var (
 )
 
 // Session相关类型别名
-type SessionConfig = session.Config
-type SessionManager = session.Manager
-type SessionStore = session.Store
+type (
+	SessionConfig  = session.Config
+	SessionManager = session.Manager
+	SessionStore   = session.Store
+)
 
 var (
 	DefaultSessionConfig = session.DefaultConfig
@@ -104,4 +106,50 @@ func init() {
 		// 完成初始化
 		IsInitComplete = true
 	})
+}
+
+// ============= HertzApp 静态方法 =============
+
+// SetStaticPath 设置静态文件路径的静态方法
+// 参数：localDir - 静态文件本地目录（相对应用所在目录）
+//      urlPath - URL路径（可选），如果不提供则自动推导
+// 示例：SetStaticPath("public", "/static") 或 SetStaticPath("public")
+func SetStaticPath(localDir string, urlPath ...string) {
+	if HertzApp != nil {
+		HertzApp.SetStaticPath(localDir, urlPath...)
+	}
+}
+
+// ============= 模板函数管理静态方法 =============
+
+// AddFuncMap 添加全局模板函数的静态方法
+// 参数：name - 函数名字符串，fn - 函数实现
+// 示例：AddFuncMap("containString", tool.ContainString)
+func AddFuncMap(name string, fn any) {
+	if HertzApp != nil {
+		HertzApp.AddFuncMap(name, fn)
+	}
+}
+
+// GetGlobalFuncMap 获取全局模板函数映射的静态方法
+func GetGlobalFuncMap() map[string]any {
+	if HertzApp != nil {
+		return HertzApp.GetGlobalFuncMap()
+	}
+	return make(map[string]any)
+}
+
+// RemoveFuncMap 移除全局模板函数的静态方法
+func RemoveFuncMap(name string) {
+	if HertzApp != nil {
+		HertzApp.RemoveFuncMap(name)
+	}
+}
+
+// ListFuncMap 列出所有已注册的模板函数名称的静态方法
+func ListFuncMap() []string {
+	if HertzApp != nil {
+		return HertzApp.ListFuncMap()
+	}
+	return []string{}
 }

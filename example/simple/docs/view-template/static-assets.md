@@ -28,14 +28,25 @@ import (
 func main() {
     app := mvc.HertzApp
     
-    // 基本静态文件配置
-    app.StaticPath = "./static"
-    app.StaticURL = "/static"
+    // ============= 推荐方式：使用 SetStaticPath =============
     
-    // 多个静态目录
-    app.AddStaticPath("/assets", "./assets")
-    app.AddStaticPath("/uploads", "./uploads")
-    app.AddStaticPath("/images", "./static/images")
+    // 双参数形式：指定本地目录和URL路径
+    mvc.SetStaticPath("public", "/static")    // public目录映射到/static路径
+    mvc.SetStaticPath("uploads", "/files")    // uploads目录映射到/files路径
+    mvc.SetStaticPath("assets", "/assets")    // assets目录映射到/assets路径
+    
+    // 单参数形式：自动推导URL路径
+    mvc.SetStaticPath("images")               // images目录自动映射到/images路径
+    mvc.SetStaticPath("css")                  // css目录自动映射到/css路径
+    mvc.SetStaticPath("js")                   // js目录自动映射到/js路径
+    
+    // 支持相对路径
+    mvc.SetStaticPath("./static/vendor", "/vendor")
+    
+    // ============= 其他方式（兼容性支持）=============
+    
+    // 通过应用实例设置（推荐使用上面的静态方法）
+    app.SetStaticPath("documents", "/docs")
     
     // 单文件映射
     app.AddStaticFile("/favicon.ico", "./static/favicon.ico")
@@ -45,32 +56,132 @@ func main() {
 }
 ```
 
-### 目录结构
+### SetStaticPath 详细说明
+
+#### API 签名
+```go
+func SetStaticPath(localDir string, urlPath ...string)
+```
+
+#### 参数说明
+- `localDir`: 静态文件本地目录（相对应用所在目录）
+- `urlPath`: URL路径（可选），如果不提供则自动推导
+
+#### 使用示例
+
+**基本用法：**
+```go
+// 设置 public 目录映射到 /static URL路径
+mvc.SetStaticPath("public", "/static")
+
+// 访问示例：
+// 本地文件: public/css/app.css  
+// 访问URL: http://localhost:8080/static/css/app.css
+```
+
+**自动推导URL路径：**
+```go
+// 设置 assets 目录，自动推导URL路径为 /assets
+mvc.SetStaticPath("assets")
+
+// 访问示例：
+// 本地文件: assets/images/logo.png
+// 访问URL: http://localhost:8080/assets/images/logo.png
+```
+
+**多个静态目录：**
+```go
+func setupStaticPaths() {
+    // 主要静态资源
+    mvc.SetStaticPath("public", "/static")
+    
+    // 用户上传文件
+    mvc.SetStaticPath("uploads", "/files")
+    
+    // 文档和下载
+    mvc.SetStaticPath("documents", "/docs")
+    
+    // 自动推导的目录
+    mvc.SetStaticPath("images")      // -> /images
+    mvc.SetStaticPath("css")         // -> /css
+    mvc.SetStaticPath("js")          // -> /js
+}
+```
+
+**相对路径处理：**
+```go
+// 支持 "./" 前缀
+mvc.SetStaticPath("./static/vendor", "/vendor")
+mvc.SetStaticPath("./uploads", "/files")
+
+// 不带 "./" 前缀（推荐）
+mvc.SetStaticPath("static/vendor", "/vendor")
+mvc.SetStaticPath("uploads", "/files")
+```
+
+#### 路径映射规则
+
+| 本地目录 | URL路径参数 | 最终URL路径 | 说明 |
+|---------|------------|------------|-----|
+| `"public"` | `"/static"` | `/static` | 明确指定URL路径 |
+| `"assets"` | 未提供 | `/assets` | 自动推导 |
+| `"./uploads"` | `"/files"` | `/files` | 处理相对路径前缀 |
+| `""` | `"/static"` | `/static` | 空目录使用默认 |
+
+### 目录结构示例
+
+推荐的项目静态资源目录结构：
 
 ```
-static/
-├── css/
-│   ├── bootstrap.min.css
-│   ├── app.css
-│   └── admin.css
-├── js/
-│   ├── jquery.min.js
-│   ├── bootstrap.min.js
-│   ├── app.js
-│   └── modules/
-│       ├── user.js
-│       └── dashboard.js
-├── images/
-│   ├── logo.png
-│   ├── icons/
-│   └── uploads/
-├── fonts/
-│   ├── roboto.woff2
-│   └── icons.ttf
-└── vendor/
-    ├── bootstrap/
-    ├── jquery/
-    └── fontawesome/
+my-hertz-app/
+├── public/                 # 主要静态资源 (映射到 /static)
+│   ├── css/
+│   │   ├── bootstrap.min.css
+│   │   ├── app.css
+│   │   └── admin.css
+│   ├── js/
+│   │   ├── jquery.min.js
+│   │   ├── bootstrap.min.js
+│   │   ├── app.js
+│   │   └── modules/
+│   │       ├── user.js
+│   │       └── dashboard.js
+│   ├── images/
+│   │   ├── logo.png
+│   │   ├── icons/
+│   │   └── banners/
+│   ├── fonts/
+│   │   ├── roboto.woff2
+│   │   └── icons.ttf
+│   └── vendor/
+│       ├── bootstrap/
+│       ├── jquery/
+│       └── fontawesome/
+├── uploads/                # 用户上传文件 (映射到 /files)
+│   ├── avatars/
+│   ├── documents/
+│   └── temp/
+├── assets/                 # 编译后的资源 (映射到 /assets)
+│   ├── app.min.css
+│   ├── app.min.js
+│   └── manifest.json
+└── docs/                  # 文档资源 (映射到 /docs)
+    ├── api/
+    └── guides/
+```
+
+**对应的配置：**
+```go
+func main() {
+    // 设置静态路径映射
+    mvc.SetStaticPath("public", "/static")     // 主要静态资源
+    mvc.SetStaticPath("uploads", "/files")     // 用户上传
+    mvc.SetStaticPath("assets")                // 编译资源 -> /assets
+    mvc.SetStaticPath("docs")                  // 文档资源 -> /docs
+    
+    // 启动应用
+    mvc.HertzApp.Run(":8080")
+}
 ```
 
 ## 资源引用

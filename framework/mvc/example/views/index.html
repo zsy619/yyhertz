@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .example { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result { background: #e8f5e8; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{.Title}}</h1>
+        <p>当前时间: <strong>{{getTime}}</strong></p>
+        
+        <h2>📝 字符串处理函数</h2>
+        
+        <div class="example">
+            <h3>用户名处理</h3>
+            <p>原始用户名: <code>{{.Username}}</code></p>
+            <div class="result">
+                <p>大写: <strong>{{upper .Username}}</strong></p>
+                <p>小写: <strong>{{lower .Username}}</strong></p>
+                <p>反转: <strong>{{reverse .Username}}</strong></p>
+                <p>格式化: <strong>{{formatUser .Username}}</strong></p>
+            </div>
+        </div>
+        
+        <h2>💰 数字格式化函数</h2>
+        
+        <div class="example">
+            <h3>价格处理</h3>
+            <p>原始价格: <code>{{.Price}}</code></p>
+            <div class="result">
+                <p>保留2位小数: <strong>{{formatFloat2 .Price}}</strong></p>
+                <p>格式化价格: <strong>{{formatPrice .Price}}</strong></p>
+            </div>
+        </div>
+        
+        <h2>🏷️ 条件判断函数</h2>
+        
+        <div class="example">
+            <h3>标签检查</h3>
+            <p>标签列表: <code>{{.Tags}}</code></p>
+            <div class="result">
+                {{if containString .Tags "important"}}
+                    <p>✅ 包含 'important' 标签</p>
+                {{else}}
+                    <p>❌ 不包含 'important' 标签</p>
+                {{end}}
+                
+                {{if containString .Tags "normal"}}
+                    <p>✅ 包含 'normal' 标签</p>
+                {{else}}
+                    <p>❌ 不包含 'normal' 标签</p>
+                {{end}}
+            </div>
+        </div>
+        
+        <h2>📋 字符串状态检查</h2>
+        
+        <div class="example">
+            <h3>空值检查</h3>
+            <div class="result">
+                {{if isEmpty ""}}
+                    <p>✅ 空字符串检测正确</p>
+                {{end}}
+                
+                {{if isNotEmpty .Username}}
+                    <p>✅ 用户名非空检测正确</p>
+                {{end}}
+            </div>
+        </div>
+        
+        <hr>
+        <p><a href="/test">查看更多示例</a></p>
+    </div>
+</body>
+</html>

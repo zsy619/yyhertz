@@ -113,7 +113,60 @@ var (
 	defaultEngine *TemplateEngine
 	engineOnce    sync.Once
 	engineMutex   sync.Mutex
+	
+	// 全局模板函数映射
+	globalFuncMap     template.FuncMap
+	globalFuncMapOnce sync.Once
+	globalFuncMutex   sync.RWMutex
 )
+
+// initGlobalFuncMap 初始化全局模板函数映射
+func initGlobalFuncMap() {
+	globalFuncMapOnce.Do(func() {
+		globalFuncMutex.Lock()
+		defer globalFuncMutex.Unlock()
+		
+		globalFuncMap = make(template.FuncMap)
+	})
+}
+
+// AddGlobalFunction 添加全局模板函数
+func AddGlobalFunction(name string, fn any) {
+	initGlobalFuncMap()
+	
+	globalFuncMutex.Lock()
+	defer globalFuncMutex.Unlock()
+	
+	globalFuncMap[name] = fn
+	config.Debugf("Global template function added: %s", name)
+}
+
+// GetGlobalFunctions 获取全局模板函数映射（只读副本）
+func GetGlobalFunctions() template.FuncMap {
+	initGlobalFuncMap()
+	
+	globalFuncMutex.RLock()
+	defer globalFuncMutex.RUnlock()
+	
+	// 创建副本以避免并发修改
+	funcMapCopy := make(template.FuncMap, len(globalFuncMap))
+	for name, fn := range globalFuncMap {
+		funcMapCopy[name] = fn
+	}
+	
+	return funcMapCopy
+}
+
+// RemoveGlobalFunction 移除全局模板函数
+func RemoveGlobalFunction(name string) {
+	initGlobalFuncMap()
+	
+	globalFuncMutex.Lock()
+	defer globalFuncMutex.Unlock()
+	
+	delete(globalFuncMap, name)
+	config.Debugf("Global template function removed: %s", name)
+}
 
 // GetDefaultEngine 获取默认模板引擎
 func GetDefaultEngine() *TemplateEngine {
@@ -180,6 +233,12 @@ func NewTemplateEngine(cfg *TemplateConfig) (*TemplateEngine, error) {
 func (e *TemplateEngine) registerDefaultFunctions() {
 	// 从现有的TemplateFuncs复制
 	for name, fn := range TemplateFuncs {
+		e.funcMap[name] = fn
+	}
+
+	// 添加全局自定义函数
+	globalFuncs := GetGlobalFunctions()
+	for name, fn := range globalFuncs {
 		e.funcMap[name] = fn
 	}
 

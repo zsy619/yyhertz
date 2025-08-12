@@ -36,7 +36,7 @@ func xxmainx() {
 	app := mvc.NewAppWithLogConfig(logConfig)
 
 	// 配置视图路径（静态路径在app初始化时已设置）
-	app.SetViewPath("example/views")
+	// app.SetViewPath("example/views")
 	// 注意：静态路径已经在应用初始化时设置为"static"，这里不再重复设置以避免路由冲突
 
 	// 配置增强的日志中间件

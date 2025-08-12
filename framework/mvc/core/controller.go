@@ -30,6 +30,9 @@ type BaseController struct {
 
 	// 应用控制器引用
 	AppController IController // 应用控制器实例引用
+	
+	// 应用实例引用（用于访问全局功能）
+	app *App // 应用实例引用
 
 	// ============= Beego风格的模板属性 =============
 
@@ -147,6 +150,11 @@ func (c *BaseController) Init(ct *context.Context, controllerName, actionName st
 		// 尝试类型断言为IController
 		if appController, ok := app.(IController); ok {
 			c.AppController = appController
+		}
+		
+		// 尝试类型断言为*App
+		if appInstance, ok := app.(*App); ok {
+			c.app = appInstance
 		}
 	}
 

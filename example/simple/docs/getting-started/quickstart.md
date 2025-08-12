@@ -209,7 +209,16 @@ A: 确保视图文件路径与 `RenderHTML` 中指定的路径一致。
 
 ### Q: 如何处理静态文件？
 
-A: 静态文件会自动从 `static/` 目录提供服务，访问路径为 `/static/文件路径`。
+A: 静态文件可以通过 `SetStaticPath` 方法配置。框架默认从 `static/` 目录提供服务，访问路径为 `/static/文件路径`。
+
+**自定义静态路径：**
+```go
+// 双参数形式：指定本地目录和URL路径
+mvc.SetStaticPath("public", "/assets")
+
+// 单参数形式：自动推导URL路径
+mvc.SetStaticPath("uploads")  // 自动映射到 /uploads
+```
 
 ---
 

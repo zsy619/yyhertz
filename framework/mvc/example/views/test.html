@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AddFuncMap 测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .example { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .result { background: #e8f5e8; padding: 10px; margin: 5px 0; border-radius: 3px; }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AddFuncMap 测试页面</h1>
+        
+        <h2>🔄 字符串转换函数</h2>
+        
+        <div class="example">
+            <h3>消息处理</h3>
+            <p>原始消息: <code>{{.Message}}</code></p>
+            <div class="result">
+                <p>大写: <strong>{{upper .Message}}</strong></p>
+                <p>首字母大写: <strong>{{.Message | upper}}</strong></p>
+                <p>反转: <strong>{{reverse .Message}}</strong></p>
+            </div>
+        </div>
+        
+        <h2>📜 数组处理函数</h2>
+        
+        <div class="example">
+            <h3>列表操作</h3>
+            <p>水果列表: <code>{{.Items}}</code></p>
+            <div class="result">
+                <p>用逗号连接: <strong>{{join .Items ", "}}</strong></p>
+                <p>用 " | " 连接: <strong>{{join .Items " | "}}</strong></p>
+                
+                {{if contains .Items "apple"}}
+                    <p>✅ 列表包含苹果</p>
+                {{else}}
+                    <p>❌ 列表不包含苹果</p>
+                {{end}}
+                
+                {{if contains .Items "grape"}}
+                    <p>✅ 列表包含葡萄</p>
+                {{else}}
+                    <p>❌ 列表不包含葡萄</p>
+                {{end}}
+            </div>
+        </div>
+        
+        <h2>⏰ 时间和格式化函数</h2>
+        
+        <div class="example">
+            <h3>系统信息</h3>
+            <div class="result">
+                <p>当前时间: <strong>{{getTime}}</strong></p>
+                <p>文件大小示例: <strong>{{formatByte 1048576}}</strong> (1MB)</p>
+                <p>大文件示例: <strong>{{formatByte 1073741824}}</strong> (1GB)</p>
+            </div>
+        </div>
+        
+        <h2>🧪 组合使用示例</h2>
+        
+        <div class="example">
+            <h3>复杂模板逻辑</h3>
+            <div class="result">
+                <p>处理后的消息: 
+                    {{if isNotEmpty .Message}}
+                        <strong>{{formatUser (upper .Message)}}</strong>
+                    {{else}}
+                        <em>消息为空</em>
+                    {{end}}
+                </p>
+                
+                <p>水果处理:
+                    {{range $index, $item := .Items}}
+                        {{if contains $.Items "apple"}}
+                            <span style="color: red;">{{upper $item}}</span>
+                        {{else}}
+                            <span>{{$item}}</span>
+                        {{end}}
+                        {{if ne $index (sub (len $.Items) 1)}}, {{end}}
+                    {{end}}
+                </p>
+            </div>
+        </div>
+        
+        <hr>
+        <p><a href="/">返回首页</a></p>
+    </div>
+</body>
+</html>
