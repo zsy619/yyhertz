@@ -15,27 +15,27 @@ type ErrorCategory int
 
 const (
 	// 业务错误分类
-	CategoryBusiness     ErrorCategory = iota // 业务逻辑错误
-	CategoryValidation                        // 参数验证错误
-	CategoryAuthentication                   // 认证错误
-	CategoryAuthorization                    // 权限错误
-	CategoryRateLimit                        // 限流错误
-	
+	CategoryBusiness       ErrorCategory = iota // 业务逻辑错误
+	CategoryValidation                          // 参数验证错误
+	CategoryAuthentication                      // 认证错误
+	CategoryAuthorization                       // 权限错误
+	CategoryRateLimit                           // 限流错误
+
 	// 系统错误分类
-	CategorySystem       // 系统内部错误
-	CategoryNetwork      // 网络错误
-	CategoryTimeout      // 超时错误
-	CategoryDatabase     // 数据库错误
-	CategoryExternal     // 外部服务错误
-	
+	CategorySystem   // 系统内部错误
+	CategoryNetwork  // 网络错误
+	CategoryTimeout  // 超时错误
+	CategoryDatabase // 数据库错误
+	CategoryExternal // 外部服务错误
+
 	// 客户端错误分类
-	CategoryClientError  // 客户端错误
-	CategoryBadRequest   // 请求格式错误
-	CategoryNotFound     // 资源不存在
-	CategoryConflict     // 数据冲突
-	
+	CategoryClientError // 客户端错误
+	CategoryBadRequest  // 请求格式错误
+	CategoryNotFound    // 资源不存在
+	CategoryConflict    // 数据冲突
+
 	// 未知错误分类
-	CategoryUnknown      // 未知错误
+	CategoryUnknown // 未知错误
 )
 
 // ErrorSeverity 错误严重等级
@@ -71,12 +71,12 @@ type ErrorClassifier interface {
 
 // ClassificationRule 分类规则
 type ClassificationRule struct {
-	Name       string                 // 规则名称
-	Matcher    ErrorMatcher           // 匹配器
-	Category   ErrorCategory          // 分类
-	Severity   ErrorSeverity          // 严重等级
-	Retryable  bool                   // 是否可重试
-	Metadata   map[string]interface{} // 元数据
+	Name      string                 // 规则名称
+	Matcher   ErrorMatcher           // 匹配器
+	Category  ErrorCategory          // 分类
+	Severity  ErrorSeverity          // 严重等级
+	Retryable bool                   // 是否可重试
+	Metadata  map[string]interface{} // 元数据
 }
 
 // ErrorMatcher 错误匹配器
@@ -86,72 +86,72 @@ type ErrorMatcher interface {
 
 // IntelligentClassifier 智能错误分类器
 type IntelligentClassifier struct {
-	rules       []ClassificationRule // 分类规则
-	patterns    []*PatternMatcher    // 模式匹配器
-	statistics  ClassifierStats      // 统计信息
-	config      ClassifierConfig     // 配置
-	mu          sync.RWMutex         // 读写锁
+	rules        []ClassificationRule      // 分类规则
+	patterns     []*PatternMatcher         // 模式匹配器
+	statistics   ClassifierStats           // 统计信息
+	config       ClassifierConfig          // 配置
+	mu           sync.RWMutex              // 读写锁
 	learningData map[string]*LearningEntry // 学习数据
 }
 
 // ClassifierStats 分类器统计
 type ClassifierStats struct {
-	TotalClassified   int64                         // 总分类次数
-	CategoryCounts    map[ErrorCategory]int64       // 各分类数量
-	SeverityCounts    map[ErrorSeverity]int64       // 各等级数量
-	AccuracyRate      float64                       // 准确率
-	AverageScore      float64                       // 平均置信度
-	ClassificationTime time.Duration                // 平均分类时间
+	TotalClassified    int64                   // 总分类次数
+	CategoryCounts     map[ErrorCategory]int64 // 各分类数量
+	SeverityCounts     map[ErrorSeverity]int64 // 各等级数量
+	AccuracyRate       float64                 // 准确率
+	AverageScore       float64                 // 平均置信度
+	ClassificationTime time.Duration           // 平均分类时间
 }
 
 // ClassifierConfig 分类器配置
 type ClassifierConfig struct {
-	EnableLearning       bool          // 启用机器学习
-	EnablePatternMatch   bool          // 启用模式匹配
-	EnableStatistics     bool          // 启用统计
-	LearningThreshold    float64       // 学习阈值
-	MaxLearningEntries   int           // 最大学习条目
-	PatternCacheSize     int           // 模式缓存大小
+	EnableLearning     bool    // 启用机器学习
+	EnablePatternMatch bool    // 启用模式匹配
+	EnableStatistics   bool    // 启用统计
+	LearningThreshold  float64 // 学习阈值
+	MaxLearningEntries int     // 最大学习条目
+	PatternCacheSize   int     // 模式缓存大小
 }
 
 // LearningEntry 学习条目
 type LearningEntry struct {
-	Pattern      string            // 错误模式
-	Category     ErrorCategory     // 正确分类
-	Severity     ErrorSeverity     // 正确严重等级
-	Confidence   float64           // 置信度
-	UpdatedAt    time.Time         // 更新时间
-	UsageCount   int64             // 使用次数
+	Pattern    string        // 错误模式
+	Category   ErrorCategory // 正确分类
+	Severity   ErrorSeverity // 正确严重等级
+	Confidence float64       // 置信度
+	UpdatedAt  time.Time     // 更新时间
+	UsageCount int64         // 使用次数
 }
 
 // PatternMatcher 模式匹配器
 type PatternMatcher struct {
-	Pattern      string           // 匹配模式
-	Category     ErrorCategory    // 分类
-	Severity     ErrorSeverity    // 严重等级
-	Retryable    bool            // 是否可重试
-	Confidence   float64         // 置信度
+	Pattern    string        // 匹配模式
+	Category   ErrorCategory // 分类
+	Severity   ErrorSeverity // 严重等级
+	Retryable  bool          // 是否可重试
+	Confidence float64       // 置信度
 }
 
 // NewIntelligentClassifier 创建智能分类器
 func NewIntelligentClassifier() *IntelligentClassifier {
 	classifier := &IntelligentClassifier{
-		rules:        make([]ClassificationRule, 0),
-		patterns:     make([]*PatternMatcher, 0),
-		statistics:   ClassifierStats{
+		rules:    make([]ClassificationRule, 0),
+		patterns: make([]*PatternMatcher, 0),
+		statistics: ClassifierStats{
 			CategoryCounts: make(map[ErrorCategory]int64),
 			SeverityCounts: make(map[ErrorSeverity]int64),
 		},
 		config:       DefaultClassifierConfig(),
 		learningData: make(map[string]*LearningEntry),
 	}
-	
+
 	// 初始化默认规则
 	classifier.initDefaultRules()
-	
+
 	// 初始化模式匹配器
 	classifier.initPatternMatchers()
-	
+
 	return classifier
 }
 
@@ -175,19 +175,19 @@ func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.Context) *Er
 			c.updateClassificationStats(time.Since(start))
 		}
 	}()
-	
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.statistics.TotalClassified++
-	
+
 	// 首先尝试精确规则匹配
 	if classification := c.classifyByRules(err, ctx); classification != nil {
 		classification.Classifier = "rule-based"
 		c.updateStats(classification)
 		return classification
 	}
-	
+
 	// 然后尝试模式匹配
 	if c.config.EnablePatternMatch {
 		if classification := c.classifyByPatterns(err, ctx); classification != nil {
@@ -196,7 +196,7 @@ func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.Context) *Er
 			return classification
 		}
 	}
-	
+
 	// 最后尝试机器学习
 	if c.config.EnableLearning {
 		if classification := c.classifyByLearning(err, ctx); classification != nil {
@@ -205,12 +205,12 @@ func (c *IntelligentClassifier) Classify(err error, ctx *mvccontext.Context) *Er
 			return classification
 		}
 	}
-	
+
 	// 默认分类
 	classification := c.getDefaultClassification(err)
 	classification.Classifier = "default"
 	c.updateStats(classification)
-	
+
 	return classification
 }
 
@@ -229,17 +229,17 @@ func (c *IntelligentClassifier) classifyByRules(err error, ctx *mvccontext.Conte
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 // classifyByPatterns 基于模式分类
 func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.Context) *ErrorClassification {
 	errMsg := err.Error()
-	
+
 	var bestMatch *PatternMatcher
 	var bestScore float64
-	
+
 	for _, pattern := range c.patterns {
 		score := c.calculatePatternScore(errMsg, pattern.Pattern)
 		if score > bestScore && score > 0.5 { // 最低置信度阈值
@@ -247,7 +247,7 @@ func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.Co
 			bestMatch = pattern
 		}
 	}
-	
+
 	if bestMatch != nil {
 		return &ErrorClassification{
 			Original:     err,
@@ -258,7 +258,7 @@ func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.Co
 			ClassifiedAt: time.Now(),
 		}
 	}
-	
+
 	return nil
 }
 
@@ -266,10 +266,10 @@ func (c *IntelligentClassifier) classifyByPatterns(err error, ctx *mvccontext.Co
 func (c *IntelligentClassifier) classifyByLearning(err error, ctx *mvccontext.Context) *ErrorClassification {
 	errMsg := err.Error()
 	pattern := c.extractPattern(errMsg)
-	
+
 	if entry, exists := c.learningData[pattern]; exists {
 		entry.UsageCount++
-		
+
 		if entry.Confidence >= c.config.LearningThreshold {
 			return &ErrorClassification{
 				Original:     err,
@@ -281,7 +281,7 @@ func (c *IntelligentClassifier) classifyByLearning(err error, ctx *mvccontext.Co
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -289,11 +289,11 @@ func (c *IntelligentClassifier) classifyByLearning(err error, ctx *mvccontext.Co
 func (c *IntelligentClassifier) getDefaultClassification(err error) *ErrorClassification {
 	// 基于错误类型进行简单推断
 	errMsg := strings.ToLower(err.Error())
-	
+
 	var category ErrorCategory = CategoryUnknown
 	var severity ErrorSeverity = SeverityMedium
 	var retryable bool = false
-	
+
 	switch {
 	case strings.Contains(errMsg, "timeout"):
 		category, severity, retryable = CategoryTimeout, SeverityHigh, true
@@ -312,7 +312,7 @@ func (c *IntelligentClassifier) getDefaultClassification(err error) *ErrorClassi
 	default:
 		category, severity, retryable = CategorySystem, SeverityMedium, false
 	}
-	
+
 	return &ErrorClassification{
 		Original:     err,
 		Category:     category,
@@ -342,28 +342,28 @@ func (c *IntelligentClassifier) Name() string {
 func (c *IntelligentClassifier) initDefaultRules() {
 	// ErrNo 业务错误
 	c.AddRule(ClassificationRule{
-		Name:     "errno-business",
-		Matcher:  &TypeMatcher{TargetType: "*errors.ErrNo"},
-		Category: CategoryBusiness,
-		Severity: SeverityLow,
+		Name:      "errno-business",
+		Matcher:   &TypeMatcher{TargetType: "*errors.ErrNo"},
+		Category:  CategoryBusiness,
+		Severity:  SeverityLow,
 		Retryable: false,
 	})
-	
+
 	// 超时错误
 	c.AddRule(ClassificationRule{
-		Name:     "context-timeout",
-		Matcher:  &ContextMatcher{},
-		Category: CategoryTimeout,
-		Severity: SeverityHigh,
+		Name:      "context-timeout",
+		Matcher:   &ContextMatcher{},
+		Category:  CategoryTimeout,
+		Severity:  SeverityHigh,
 		Retryable: true,
 	})
-	
+
 	// 网络错误
 	c.AddRule(ClassificationRule{
-		Name:     "network-error",
-		Matcher:  &MessageMatcher{Patterns: []string{"connection", "network", "dial"}},
-		Category: CategoryNetwork,
-		Severity: SeverityHigh,
+		Name:      "network-error",
+		Matcher:   &MessageMatcher{Patterns: []string{"connection", "network", "dial"}},
+		Category:  CategoryNetwork,
+		Severity:  SeverityHigh,
 		Retryable: true,
 	})
 }
@@ -380,7 +380,7 @@ func (c *IntelligentClassifier) initPatternMatchers() {
 		{Pattern: "not found", Category: CategoryNotFound, Severity: SeverityLow, Retryable: false, Confidence: 0.8},
 		{Pattern: "rate limit", Category: CategoryRateLimit, Severity: SeverityMedium, Retryable: true, Confidence: 0.9},
 	}
-	
+
 	c.patterns = patterns
 }
 
@@ -388,7 +388,7 @@ func (c *IntelligentClassifier) initPatternMatchers() {
 func (c *IntelligentClassifier) AddRule(rule ClassificationRule) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.rules = append(c.rules, rule)
 }
 
@@ -397,12 +397,12 @@ func (c *IntelligentClassifier) Learn(err error, correctCategory ErrorCategory, 
 	if !c.config.EnableLearning {
 		return
 	}
-	
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	pattern := c.extractPattern(err.Error())
-	
+
 	if entry, exists := c.learningData[pattern]; exists {
 		// 更新已存在的条目
 		entry.Category = correctCategory
@@ -415,7 +415,7 @@ func (c *IntelligentClassifier) Learn(err error, correctCategory ErrorCategory, 
 		if len(c.learningData) >= c.config.MaxLearningEntries {
 			c.evictLearningData()
 		}
-		
+
 		c.learningData[pattern] = &LearningEntry{
 			Pattern:    pattern,
 			Category:   correctCategory,
@@ -431,19 +431,19 @@ func (c *IntelligentClassifier) Learn(err error, correctCategory ErrorCategory, 
 func (c *IntelligentClassifier) extractPattern(errMsg string) string {
 	// 简化的模式提取：去除数字和时间戳，保留关键词
 	pattern := strings.ToLower(errMsg)
-	
+
 	// 移除常见的变量部分
 	replacements := map[string]string{
 		`\d+`: "[NUM]",
 		`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`: "[UUID]",
-		`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`: "[TIME]",
-		`"[^"]*"`: "[STR]",
+		`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`:                          "[TIME]",
+		`"[^"]*"`:                                                      "[STR]",
 	}
-	
+
 	for old, new := range replacements {
 		pattern = strings.ReplaceAll(pattern, old, new)
 	}
-	
+
 	return pattern
 }
 
@@ -451,50 +451,50 @@ func (c *IntelligentClassifier) extractPattern(errMsg string) string {
 func (c *IntelligentClassifier) calculatePatternScore(errMsg, pattern string) float64 {
 	errMsg = strings.ToLower(errMsg)
 	pattern = strings.ToLower(pattern)
-	
+
 	if strings.Contains(errMsg, pattern) {
 		// 基于匹配长度和位置计算分数
 		score := float64(len(pattern)) / float64(len(errMsg))
-		
+
 		// 如果在开头匹配，增加分数
 		if strings.HasPrefix(errMsg, pattern) {
 			score += 0.2
 		}
-		
+
 		// 限制最大分数
 		if score > 1.0 {
 			score = 1.0
 		}
-		
+
 		return score
 	}
-	
+
 	return 0.0
 }
 
 // calculateLearningConfidence 计算学习置信度
 func (c *IntelligentClassifier) calculateLearningConfidence(usageCount int64) float64 {
 	// 基于使用次数计算置信度，使用对数函数避免过快增长
-	confidence := 0.5 + 0.4 * (1.0 - 1.0/float64(usageCount + 1))
-	
+	confidence := 0.5 + 0.4*(1.0-1.0/float64(usageCount+1))
+
 	if confidence > 0.95 {
 		confidence = 0.95 // 最大置信度限制
 	}
-	
+
 	return confidence
 }
 
 // isRetryableByCategory 根据分类判断是否可重试
 func (c *IntelligentClassifier) isRetryableByCategory(category ErrorCategory) bool {
 	retryableCategories := map[ErrorCategory]bool{
-		CategoryTimeout:    true,
-		CategoryNetwork:    true,
-		CategoryDatabase:   true,
-		CategoryExternal:   true,
-		CategoryRateLimit:  true,
-		CategorySystem:     false,
+		CategoryTimeout:   true,
+		CategoryNetwork:   true,
+		CategoryDatabase:  true,
+		CategoryExternal:  true,
+		CategoryRateLimit: true,
+		CategorySystem:    false,
 	}
-	
+
 	return retryableCategories[category]
 }
 
@@ -502,14 +502,14 @@ func (c *IntelligentClassifier) isRetryableByCategory(category ErrorCategory) bo
 func (c *IntelligentClassifier) updateStats(classification *ErrorClassification) {
 	c.statistics.CategoryCounts[classification.Category]++
 	c.statistics.SeverityCounts[classification.Severity]++
-	c.statistics.AverageScore = (c.statistics.AverageScore * float64(c.statistics.TotalClassified - 1) + 
+	c.statistics.AverageScore = (c.statistics.AverageScore*float64(c.statistics.TotalClassified-1) +
 		classification.Score) / float64(c.statistics.TotalClassified)
 }
 
 // updateClassificationStats 更新分类时间统计
 func (c *IntelligentClassifier) updateClassificationStats(duration time.Duration) {
-	c.statistics.ClassificationTime = (c.statistics.ClassificationTime * 
-		time.Duration(c.statistics.TotalClassified - 1) + duration) / 
+	c.statistics.ClassificationTime = (c.statistics.ClassificationTime*
+		time.Duration(c.statistics.TotalClassified-1) + duration) /
 		time.Duration(c.statistics.TotalClassified)
 }
 
@@ -519,16 +519,16 @@ func (c *IntelligentClassifier) evictLearningData() {
 	var oldestPattern string
 	var oldestTime time.Time = time.Now()
 	var minUsage int64 = 9223372036854775807 // max int64
-	
+
 	for pattern, entry := range c.learningData {
-		if entry.UsageCount < minUsage || 
-		   (entry.UsageCount == minUsage && entry.UpdatedAt.Before(oldestTime)) {
+		if entry.UsageCount < minUsage ||
+			(entry.UsageCount == minUsage && entry.UpdatedAt.Before(oldestTime)) {
 			minUsage = entry.UsageCount
 			oldestTime = entry.UpdatedAt
 			oldestPattern = pattern
 		}
 	}
-	
+
 	if oldestPattern != "" {
 		delete(c.learningData, oldestPattern)
 	}
@@ -538,7 +538,7 @@ func (c *IntelligentClassifier) evictLearningData() {
 func (c *IntelligentClassifier) GetStatistics() ClassifierStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	// 深拷贝统计信息
 	stats := ClassifierStats{
 		TotalClassified:    c.statistics.TotalClassified,
@@ -548,15 +548,15 @@ func (c *IntelligentClassifier) GetStatistics() ClassifierStats {
 		AverageScore:       c.statistics.AverageScore,
 		ClassificationTime: c.statistics.ClassificationTime,
 	}
-	
+
 	for k, v := range c.statistics.CategoryCounts {
 		stats.CategoryCounts[k] = v
 	}
-	
+
 	for k, v := range c.statistics.SeverityCounts {
 		stats.SeverityCounts[k] = v
 	}
-	
+
 	return stats
 }
 
@@ -630,7 +630,7 @@ func GetCategoryName(category ErrorCategory) string {
 		CategoryConflict:       "Conflict",
 		CategoryUnknown:        "Unknown",
 	}
-	
+
 	if name, exists := names[category]; exists {
 		return name
 	}
@@ -645,7 +645,7 @@ func GetSeverityName(severity ErrorSeverity) string {
 		SeverityHigh:     "High",
 		SeverityCritical: "Critical",
 	}
-	
+
 	if name, exists := names[severity]; exists {
 		return name
 	}
@@ -655,18 +655,18 @@ func GetSeverityName(severity ErrorSeverity) string {
 // PrintClassifierInfo 打印分类器信息
 func PrintClassifierInfo() {
 	stats := globalClassifier.GetStatistics()
-	
+
 	fmt.Println("=== Error Classifier Statistics ===")
 	fmt.Printf("Total Classifications: %d\n", stats.TotalClassified)
 	fmt.Printf("Average Score: %.2f\n", stats.AverageScore)
 	fmt.Printf("Average Classification Time: %v\n", stats.ClassificationTime)
-	
+
 	fmt.Println("\nCategory Distribution:")
 	for category, count := range stats.CategoryCounts {
 		percentage := float64(count) / float64(stats.TotalClassified) * 100
 		fmt.Printf("  %s: %d (%.1f%%)\n", GetCategoryName(category), count, percentage)
 	}
-	
+
 	fmt.Println("\nSeverity Distribution:")
 	for severity, count := range stats.SeverityCounts {
 		percentage := float64(count) / float64(stats.TotalClassified) * 100
