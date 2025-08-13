@@ -37,7 +37,8 @@ type InputData struct {
 
 // OutputData 标准MVC风格输出数据结构
 type OutputData struct {
-	ctx *Context
+	ctx       *Context
+	extension *session.ContextExtension // session包扩展
 }
 
 // ============= OutputData方法 =============
@@ -68,6 +69,48 @@ func (o *OutputData) JSON(data interface{}) error {
 func (o *OutputData) Header(key, value string) {
 	if o.ctx.Request != nil {
 		o.ctx.Request.Response.Header.Set(key, value)
+	}
+}
+
+// ============= OutputData Session方法 =============
+
+// getExtension 获取session扩展（延迟初始化）(OutputData版本)
+func (o *OutputData) getExtension() *session.ContextExtension {
+	if o.extension == nil && o.ctx != nil && o.ctx.Request != nil {
+		// 创建session扩展
+		o.extension = session.NewExtensionForHertzContext(o.ctx.Request)
+	}
+	return o.extension
+}
+
+// SetSession 设置session数据 (Output兼容性方法) - 代理到session包
+func (o *OutputData) SetSession(key string, value interface{}) error {
+	if ext := o.getExtension(); ext != nil {
+		return ext.SetSession(key, value)
+	}
+	return nil
+}
+
+// GetSession 获取session数据 (Output兼容性方法) - 代理到session包
+func (o *OutputData) GetSession(key string) interface{} {
+	if ext := o.getExtension(); ext != nil {
+		return ext.GetSession(key)
+	}
+	return nil
+}
+
+// Session 获取或设置session数据的便捷方法 (OutputData)
+// 用法：
+//   value := ctx.Output.Session("adminId")          // 获取值
+//   ctx.Output.Session("adminId", "12345")          // 设置值
+func (o *OutputData) Session(key string, values ...interface{}) interface{} {
+	if len(values) == 0 {
+		// 获取模式
+		return o.GetSession(key)
+	} else {
+		// 设置模式
+		o.SetSession(key, values[0])
+		return values[0]
 	}
 }
 
@@ -380,6 +423,21 @@ func (i *InputData) SessionRegenerateID() {
 	}
 }
 
+// Session 获取或设置session数据的便捷方法 (InputData)
+// 用法：
+//   value := ctx.Input.Session("adminId")          // 获取值
+//   ctx.Input.Session("adminId", "12345")          // 设置值
+func (i *InputData) Session(key string, values ...interface{}) interface{} {
+	if len(values) == 0 {
+		// 获取模式
+		return i.GetSession(key)
+	} else {
+		// 设置模式
+		i.SetSession(key, values[0])
+		return values[0]
+	}
+}
+
 // ============= 兼容性别名和附加功能 =============
 
 // GetSessionExtension 获取session扩展对象 (提供对session包完整功能的访问)
@@ -436,6 +494,8 @@ func (o *OutputData) Initialize(c *app.RequestContext) {
 		o.ctx.Request = c
 		o.ctx.RequestContext = c
 	}
+	// 重置extension以便重新初始化
+	o.extension = nil
 }
 
 // GetContext 获取关联的Context (InputData)
@@ -501,4 +561,21 @@ func NewOutputData(ctx *Context) *OutputData {
    - OutputData.Initialize(c *app.RequestContext) // 初始化方法
    - InputData.GetContext() *Context              // 获取Context
    - OutputData.GetContext() *Context             // 获取Context
+
+8. 便捷Session方法（v2.0新增）：
+   InputData:
+   - Session(key) -> GetSession(key)              // 获取session值
+   - Session(key, value) -> SetSession(key, value) // 设置session值
+   
+   OutputData（新增完整session支持）:
+   - Session(key) -> GetSession(key)              // 获取session值
+   - Session(key, value) -> SetSession(key, value) // 设置session值
+   - SetSession(key, value) error                 // 设置session数据
+   - GetSession(key) interface{}                  // 获取session数据
+   
+   使用示例：
+   adminId := ctx.Input.Session("adminId")        // 获取
+   ctx.Input.Session("adminId", "12345")          // 设置
+   userId := ctx.Output.Session("userId")         // 获取
+   ctx.Output.Session("userId", "67890")          // 设置
 */
