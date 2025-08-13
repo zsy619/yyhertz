@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	hertzApp "github.com/cloudwego/hertz/pkg/app"
 	"github.com/zsy619/yyhertz/framework/config"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
@@ -238,7 +239,7 @@ func (app *AppWithControllerRegister) SetErrorHandler(statusCode int, handler Er
 // integrateControllerRegister 集成ControllerRegister到Hertz应用（简化版）
 func (app *AppWithControllerRegister) integrateControllerRegister() {
 	// 将ControllerRegister作为通用处理器注册到Hertz（使用适配器）
-	app.Any("/*path", func(ctx context.Context, c *core.RequestContext) {
+	app.Any("/*path", func(ctx context.Context, c *hertzApp.RequestContext) {
 		// 创建增强的Context
 		enhancedCtx := contextenhanced.NewContext(c)
 		app.ControllerRegister.ServeHTTP(enhancedCtx)
@@ -420,7 +421,7 @@ func (app *AppWithControllerRegister) setDefaultErrorHandlers() {
 			"error": "Not Found",
 			"code":  404,
 			"path":  string(ctx.RequestContext.URI().Path()),
-		}, false, true)
+		})
 	})
 
 	// 500错误处理器
@@ -430,7 +431,7 @@ func (app *AppWithControllerRegister) setDefaultErrorHandlers() {
 			"error": "Internal Server Error",
 			"code":  500,
 			"msg":   err.Error(),
-		}, false, true)
+		})
 	})
 }
 

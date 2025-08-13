@@ -122,7 +122,7 @@ func AuthFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 		ctx.Output.JSON(map[string]any{
 			"error": "Authentication required",
 			"code":  401,
-		}, false, true)
+		})
 		return
 	}
 
@@ -132,7 +132,7 @@ func AuthFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 		ctx.Output.JSON(map[string]any{
 			"error": "Invalid token",
 			"code":  401,
-		}, false, true)
+		})
 		return
 	}
 
@@ -156,7 +156,7 @@ func RateLimitFilter(limit int, window time.Duration) FilterFunc {
 			ctx.Output.JSON(map[string]any{
 				"error": "Rate limit exceeded",
 				"code":  429,
-			}, false, true)
+			})
 			return
 		}
 
@@ -190,7 +190,7 @@ func SecurityFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 		ctx.Output.JSON(map[string]any{
 			"error": "Method not allowed",
 			"code":  405,
-		}, false, true)
+		})
 		return
 	}
 
@@ -223,7 +223,7 @@ func WrapMiddleware(middleware MiddlewareFunc) FilterFunc {
 			ctx.Output.JSON(map[string]any{
 				"error": err.Error(),
 				"code":  500,
-			}, false, true)
+			})
 			return
 		}
 

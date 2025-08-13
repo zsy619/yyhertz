@@ -343,7 +343,7 @@ func (cr *ControllerRegister) handleFunctionResults(ctx *contextenhanced.Context
 
 		// 其他类型作为响应内容
 		if result.CanInterface() {
-			ctx.Output.JSON(result.Interface(), false, true)
+			ctx.Output.JSON(result.Interface())
 		}
 	}
 }
@@ -357,7 +357,7 @@ func (cr *ControllerRegister) handleNotFound(ctx *contextenhanced.Context) {
 		"error": "Not Found",
 		"code":  404,
 		"path":  string(ctx.RequestContext.URI().Path()),
-	}, false, true)
+	})
 }
 
 // handleMethodNotAllowed 处理405错误
@@ -376,7 +376,7 @@ func (cr *ControllerRegister) handleMethodNotAllowed(ctx *contextenhanced.Contex
 		"error":           "Method Not Allowed",
 		"code":            405,
 		"allowed_methods": allowedMethods,
-	}, false, true)
+	})
 }
 
 // handlePanic 处理panic
@@ -387,7 +387,7 @@ func (cr *ControllerRegister) handlePanic(ctx *contextenhanced.Context, err any)
 	ctx.Output.JSON(map[string]any{
 		"error": "Internal Server Error",
 		"code":  500,
-	}, false, true)
+	})
 }
 
 // handleError 处理一般错误
@@ -398,7 +398,7 @@ func (cr *ControllerRegister) handleError(ctx *contextenhanced.Context, err erro
 	ctx.Output.JSON(map[string]any{
 		"error": err.Error(),
 		"code":  500,
-	}, false, true)
+	})
 }
 
 // ============= 过滤器执行 =============

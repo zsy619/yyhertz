@@ -1,6 +1,6 @@
 module github.com/zsy619/yyhertz
 
-go 1.24.6
+go 1.25
 
 require (
 	github.com/cloudwego/hertz v0.10.1

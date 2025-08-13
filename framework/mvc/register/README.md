@@ -76,7 +76,7 @@ func (c *UserController) DeleteRemove(){} // DELETE /user/:id
 cr.Get("/ping", func(ctx *contextenhanced.Context) {
     ctx.Output.JSON(map[string]interface{}{
         "message": "pong",
-    }, false, true)
+    })
 })
 
 cr.Post("/echo", echoHandler)
@@ -169,7 +169,7 @@ func (c *UserController) Prepare() {
 func (c *UserController) GetIndex() {
     // 业务逻辑
     users := c.getUserList()
-    c.Context.Output.JSON(users, true, true)
+    c.Context.Output.JSON(users)
 }
 ```
 
@@ -192,13 +192,21 @@ ctx.Input.JSON(&data)
 ip := ctx.Input.IP()
 userAgent := ctx.Input.UserAgent()
 isAjax := ctx.Input.IsAjax()
+
+// Session操作（使用新的session包）
+err := ctx.Input.SetSession("user_id", "12345")
+userID := ctx.Input.GetSession("user_id")
+
+// 安全Cookie操作（使用新的session包）
+ctx.Input.SetSecureCookie("secret", "csrf_token", "token_value")
+token, ok := ctx.Input.GetSecureCookie("secret", "csrf_token")
 ```
 
 ### 输出处理 (Output)
 
 ```go
 // JSON响应
-ctx.Output.JSON(data, true, true) // data, hasIndent, encoding
+ctx.Output.JSON(data)
 
 // 设置状态码
 ctx.Output.SetStatus(201)
@@ -208,6 +216,10 @@ ctx.Output.Header("Content-Type", "application/json")
 
 // 设置Cookie
 ctx.Output.Cookie("session_id", "abc123", 3600, "/", "", false, true)
+
+// Session管理（输出端）
+ctx.Output.SetSessionID("new_session_id")
+ctx.Output.ClearSession()
 
 // 文件下载
 ctx.Output.Download("file.pdf", "report.pdf")
@@ -294,7 +306,7 @@ func main() {
 
 ```go
 func RegisterControllers(cr *register.ControllerRegister) {
-    controllers := map[string]core.IController{
+    controllers := map[string]interface{}{
         "/user":    &UserController{},
         "/product": &ProductController{},
         "/order":   &OrderController{},
@@ -352,7 +364,7 @@ func ErrorHandlerFilter(ctx *contextenhanced.Context, chain *register.FilterChai
             ctx.Output.JSON(map[string]interface{}{
                 "error": "Internal Server Error",
                 "code":  500,
-            }, false, true)
+            })
         }
     }()
     

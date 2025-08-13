@@ -282,3 +282,25 @@ func (ctx *Context) SetHeader(key, value string) {
 		ctx.Request.Response.Header.Set(key, value)
 	}
 }
+
+// ============= Cookie方法 (beego兼容性) =============
+
+// GetCookie 获取Cookie (beego兼容方法)
+func (ctx *Context) GetCookie(key string) string {
+	return ctx.Input.Cookie(key)
+}
+
+// SetCookie 设置Cookie (beego兼容方法)
+func (ctx *Context) SetCookie(name, value string, others ...interface{}) {
+	ctx.Input.SetCookie(name, value, others...)
+}
+
+// GetSecureCookie 获取安全Cookie (beego兼容方法)
+func (ctx *Context) GetSecureCookie(secret, key string) (string, bool) {
+	return ctx.Input.GetSecureCookie(secret, key)
+}
+
+// SetSecureCookie 设置安全Cookie (beego兼容方法)
+func (ctx *Context) SetSecureCookie(secret, name, value string, others ...interface{}) {
+	ctx.Input.SetSecureCookie(secret, name, value, others...)
+}

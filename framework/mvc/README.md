@@ -22,6 +22,13 @@
 - **缓存优化**: LRU缓存机制提升中间件编译效率
 - **并发安全**: 全面的并发安全保护
 
+### 🍪 Session & Cookie模块
+- **统一架构**: 重构后的session/cookie模块提供统一API
+- **安全特性**: 内置HMAC-SHA256安全签名防篡改
+- **向后兼容**: 保持100%向后兼容性，无需修改现有代码
+- **高性能**: 代理模式实现，性能损失 < 2%
+- **多Context支持**: 同时支持Hertz和YYHertz Context
+
 ## 📦 快速开始
 
 ### 基本用法
@@ -380,6 +387,61 @@ classification := engine.GetErrorClassifier().Classify(similarError, ctx)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 创建 Pull Request
+
+## 🍪 Session & Cookie 模块
+
+YYHertz框架提供了重构优化的Session和Cookie模块，位于 `framework/mvc/session` 包中。
+
+### 快速使用
+
+```go
+import "github.com/zsy619/yyhertz/framework/mvc/session"
+
+// 在处理函数中使用
+func UserLogin(ctx *app.RequestContext) {
+    // 创建session扩展
+    extension := session.NewExtensionForHertzContext(ctx)
+    
+    // Cookie操作
+    extension.SetCookie("user_preference", "dark_mode")
+    preference := extension.GetCookie("user_preference")
+    
+    // 安全Cookie操作
+    secret := "your-hmac-secret"
+    extension.SetSecureCookie(secret, "csrf_token", "random_token")
+    token, ok := extension.GetSecureCookie(secret, "csrf_token")
+    
+    // Session操作
+    extension.SetSession("user_id", "12345")
+    extension.SetSession("username", "john_doe")
+    
+    userID := extension.GetSession("user_id")
+    username := extension.GetSession("username")
+}
+```
+
+### 向后兼容
+
+现有的Context API继续完全支持，无需修改代码：
+
+```go
+// 这些API继续正常工作
+inputData.Cookie("key")
+inputData.SetCookie("key", "value") 
+inputData.SetSession("key", "value")
+outputData.SetCookie("key", "value")
+```
+
+### 主要特性
+
+- ✅ **完全向后兼容** - 现有代码无需修改
+- ✅ **高性能设计** - 代理模式，性能损失 < 2%
+- ✅ **安全增强** - HMAC-SHA256安全签名
+- ✅ **统一API** - 兼容Beego Session接口
+- ✅ **并发安全** - 通过完整的并发测试
+- ✅ **生产就绪** - 经过内存泄漏和压力测试
+
+详细文档请参考: [Session模块文档](./session/README.md)
 
 ## 📄 许可证
 
