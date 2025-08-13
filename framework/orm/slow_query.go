@@ -37,7 +37,7 @@ type SlowQueryRecord struct {
 	// SQL语句
 	SQL string `json:"sql"`
 	// 参数
-	Params []interface{} `json:"params,omitempty"`
+	Params []any `json:"params,omitempty"`
 	// 执行时间
 	Duration time.Duration `json:"duration"`
 	// 执行时间点
@@ -135,7 +135,7 @@ func (m *SlowQueryMonitor) autoPrintLoop() {
 }
 
 // RecordQuery 记录查询
-func (m *SlowQueryMonitor) RecordQuery(sql string, duration time.Duration, params ...interface{}) {
+func (m *SlowQueryMonitor) RecordQuery(sql string, duration time.Duration, params ...any) {
 	m.mutex.RLock()
 	if !m.enabled || duration < m.threshold {
 		m.mutex.RUnlock()
@@ -233,11 +233,11 @@ func (m *SlowQueryMonitor) ClearQueries() {
 }
 
 // GetStats 获取统计信息
-func (m *SlowQueryMonitor) GetStats() map[string]interface{} {
+func (m *SlowQueryMonitor) GetStats() map[string]any {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	stats := make(map[string]interface{})
+	stats := make(map[string]any)
 	stats["threshold"] = m.threshold.String()
 	stats["total_records"] = len(m.queries)
 	stats["enabled"] = m.enabled
@@ -304,7 +304,7 @@ func (m *SlowQueryMonitor) GetRecordCount() int {
 func parseSQL(sql string) (table string, operation string) {
 	// 转换为大写便于匹配
 	upperSQL := strings.ToUpper(strings.TrimSpace(sql))
-	
+
 	// 确定操作类型
 	switch {
 	case strings.HasPrefix(upperSQL, "SELECT"):
@@ -365,37 +365,37 @@ func parseSQL(sql string) (table string, operation string) {
 // getCallStack 获取调用栈信息
 func getCallStack() string {
 	var stack []string
-	
+
 	// 跳过当前函数和RecordQuery函数
 	for i := 3; i < 8; i++ {
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
 		}
-		
+
 		fn := runtime.FuncForPC(pc)
 		if fn == nil {
 			continue
 		}
-		
+
 		funcName := fn.Name()
 		// 过滤掉runtime相关的函数
 		if strings.Contains(funcName, "runtime.") {
 			continue
 		}
-		
+
 		// 简化文件路径
 		if lastSlash := strings.LastIndex(file, "/"); lastSlash != -1 {
 			file = file[lastSlash+1:]
 		}
-		
+
 		stack = append(stack, fmt.Sprintf("%s:%d", file, line))
 	}
-	
+
 	if len(stack) == 0 {
 		return "无调用栈信息"
 	}
-	
+
 	return strings.Join(stack, " -> ")
 }
 
@@ -417,7 +417,7 @@ func NewSlowQueryAnalyzer(monitor *SlowQueryMonitor) *SlowQueryAnalyzer {
 func (a *SlowQueryAnalyzer) AnalyzeByTable() map[string]*TableAnalysis {
 	queries := a.monitor.GetSlowQueries()
 	result := make(map[string]*TableAnalysis)
-	
+
 	for _, q := range queries {
 		if analysis, exists := result[q.Table]; exists {
 			analysis.Count++
@@ -440,12 +440,12 @@ func (a *SlowQueryAnalyzer) AnalyzeByTable() map[string]*TableAnalysis {
 			}
 		}
 	}
-	
+
 	// 计算平均时间
 	for _, analysis := range result {
 		analysis.AvgDuration = analysis.TotalDuration / time.Duration(analysis.Count)
 	}
-	
+
 	return result
 }
 
@@ -453,7 +453,7 @@ func (a *SlowQueryAnalyzer) AnalyzeByTable() map[string]*TableAnalysis {
 func (a *SlowQueryAnalyzer) AnalyzeByOperation() map[string]*OperationAnalysis {
 	queries := a.monitor.GetSlowQueries()
 	result := make(map[string]*OperationAnalysis)
-	
+
 	for _, q := range queries {
 		if analysis, exists := result[q.Operation]; exists {
 			analysis.Count++
@@ -476,12 +476,12 @@ func (a *SlowQueryAnalyzer) AnalyzeByOperation() map[string]*OperationAnalysis {
 			}
 		}
 	}
-	
+
 	// 计算平均时间
 	for _, analysis := range result {
 		analysis.AvgDuration = analysis.TotalDuration / time.Duration(analysis.Count)
 	}
-	
+
 	return result
 }
 
@@ -514,7 +514,7 @@ func (a *SlowQueryAnalyzer) PrintTableAnalysis() {
 		config.Info("没有慢查询数据可分析")
 		return
 	}
-	
+
 	config.Info("=== 按表分析慢查询 ===")
 	for table, data := range analysis {
 		config.Infof("表: %s", table)
@@ -535,7 +535,7 @@ func (a *SlowQueryAnalyzer) PrintOperationAnalysis() {
 		config.Info("没有慢查询数据可分析")
 		return
 	}
-	
+
 	config.Info("=== 按操作类型分析慢查询 ===")
 	for operation, data := range analysis {
 		config.Infof("操作: %s", operation)
@@ -577,7 +577,7 @@ func SetGlobalSlowQueryMonitor(monitor *SlowQueryMonitor) {
 // ============= 便捷函数 =============
 
 // RecordSlowQuery 记录慢查询
-func RecordSlowQuery(sql string, duration time.Duration, params ...interface{}) {
+func RecordSlowQuery(sql string, duration time.Duration, params ...any) {
 	GetGlobalSlowQueryMonitor().RecordQuery(sql, duration, params...)
 }
 
@@ -587,7 +587,7 @@ func PrintSlowQueryStats(n int) {
 }
 
 // GetSlowQueryStats 获取慢查询统计
-func GetSlowQueryStats() map[string]interface{} {
+func GetSlowQueryStats() map[string]any {
 	return GetGlobalSlowQueryMonitor().GetStats()
 }
 

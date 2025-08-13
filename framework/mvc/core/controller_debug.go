@@ -15,14 +15,14 @@ import (
 // GetDebugInfo 获取调试信息
 func (c *BaseController) GetDebugInfo() map[string]any {
 	debugInfo := map[string]any{
-		"request_info":  c.getRequestDebugInfo(),
-		"server_info":   c.getServerDebugInfo(),
-		"runtime_info":  c.getRuntimeDebugInfo(),
-		"memory_info":   c.getMemoryDebugInfo(),
-		"session_info":  c.getSessionDebugInfo(),
-		"headers_info":  c.getHeadersDebugInfo(),
+		"request_info": c.getRequestDebugInfo(),
+		"server_info":  c.getServerDebugInfo(),
+		"runtime_info": c.getRuntimeDebugInfo(),
+		"memory_info":  c.getMemoryDebugInfo(),
+		"session_info": c.getSessionDebugInfo(),
+		"headers_info": c.getHeadersDebugInfo(),
 	}
-	
+
 	return debugInfo
 }
 
@@ -31,18 +31,18 @@ func (c *BaseController) getRequestDebugInfo() map[string]any {
 	if c.Ctx == nil {
 		return map[string]any{"error": "context is nil"}
 	}
-	
+
 	return map[string]any{
 		"method":       c.Ctx.Method(),
 		"path":         c.Ctx.Path(),
-		"query":        string(c.Ctx.Request.URI().QueryString()),
+		"query":        string(c.Ctx.Request().URI().QueryString()),
 		"client_ip":    c.GetClientIP(),
 		"user_agent":   c.GetUserAgent(),
 		"content_type": c.Ctx.ContentType(),
 		"body_size":    c.GetBodySize(),
 		"is_ajax":      c.IsAjax(),
 		"is_https":     c.IsHTTPS(),
-		"host":         string(c.Ctx.Request.Host()),
+		"host":         string(c.Ctx.Request().Host()),
 		"referer":      c.GetHeader("Referer"),
 	}
 }
@@ -50,11 +50,11 @@ func (c *BaseController) getRequestDebugInfo() map[string]any {
 // getServerDebugInfo 获取服务器调试信息
 func (c *BaseController) getServerDebugInfo() map[string]any {
 	return map[string]any{
-		"timestamp":    time.Now().Format(time.RFC3339),
-		"go_version":   runtime.Version(),
-		"os":           runtime.GOOS,
-		"arch":         runtime.GOARCH,
-		"num_cpu":      runtime.NumCPU(),
+		"timestamp":     time.Now().Format(time.RFC3339),
+		"go_version":    runtime.Version(),
+		"os":            runtime.GOOS,
+		"arch":          runtime.GOARCH,
+		"num_cpu":       runtime.NumCPU(),
 		"num_goroutine": runtime.NumGoroutine(),
 	}
 }
@@ -63,7 +63,7 @@ func (c *BaseController) getServerDebugInfo() map[string]any {
 func (c *BaseController) getRuntimeDebugInfo() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	return map[string]any{
 		"alloc_mb":        c.bytesToMB(m.Alloc),
 		"total_alloc_mb":  c.bytesToMB(m.TotalAlloc),
@@ -77,16 +77,16 @@ func (c *BaseController) getRuntimeDebugInfo() map[string]any {
 func (c *BaseController) getMemoryDebugInfo() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	return map[string]any{
-		"heap_alloc":     c.bytesToMB(m.HeapAlloc),
-		"heap_sys":       c.bytesToMB(m.HeapSys),
-		"heap_idle":      c.bytesToMB(m.HeapIdle),
-		"heap_inuse":     c.bytesToMB(m.HeapInuse),
-		"heap_released":  c.bytesToMB(m.HeapReleased),
-		"heap_objects":   m.HeapObjects,
-		"stack_inuse":    c.bytesToMB(m.StackInuse),
-		"stack_sys":      c.bytesToMB(m.StackSys),
+		"heap_alloc":    c.bytesToMB(m.HeapAlloc),
+		"heap_sys":      c.bytesToMB(m.HeapSys),
+		"heap_idle":     c.bytesToMB(m.HeapIdle),
+		"heap_inuse":    c.bytesToMB(m.HeapInuse),
+		"heap_released": c.bytesToMB(m.HeapReleased),
+		"heap_objects":  m.HeapObjects,
+		"stack_inuse":   c.bytesToMB(m.StackInuse),
+		"stack_sys":     c.bytesToMB(m.StackSys),
 	}
 }
 
@@ -95,13 +95,13 @@ func (c *BaseController) getSessionDebugInfo() map[string]any {
 	sessionInfo := map[string]any{
 		"session_id": c.GetSessionID(),
 	}
-	
+
 	// 获取所有会话数据（谨慎使用，可能包含敏感信息）
 	if c.IsDebugMode() {
 		// 这里应该实现获取所有session数据的逻辑
 		sessionInfo["session_data"] = "Available in debug mode only"
 	}
-	
+
 	return sessionInfo
 }
 
@@ -110,14 +110,14 @@ func (c *BaseController) getHeadersDebugInfo() map[string]any {
 	if c.Ctx == nil {
 		return map[string]any{"error": "context is nil"}
 	}
-	
+
 	headers := make(map[string]string)
-	
+
 	// 获取所有请求头
-	c.Ctx.Request.Request.Header.VisitAll(func(key, value []byte) {
+	c.Ctx.Request().Request.Header.VisitAll(func(key, value []byte) {
 		headers[string(key)] = string(value)
 	})
-	
+
 	return map[string]any{
 		"request_headers": headers,
 	}
@@ -138,26 +138,26 @@ func (c *BaseController) EndProfiler() time.Duration {
 	if !ok {
 		return 0
 	}
-	
+
 	duration := time.Since(start)
 	c.SetData("profiler_duration", duration)
-	
+
 	// 记录性能信息
 	c.LogPerformance("request_duration", duration)
-	
+
 	return duration
 }
 
 // GetProfilerResult 获取性能分析结果
 func (c *BaseController) GetProfilerResult() map[string]any {
 	duration, _ := c.GetData("profiler_duration").(time.Duration)
-	
+
 	return map[string]any{
-		"duration_ms":    float64(duration.Nanoseconds()) / 1e6,
-		"duration_str":   duration.String(),
-		"memory_before":  c.GetData("memory_before"),
-		"memory_after":   c.GetData("memory_after"),
-		"memory_delta":   c.calculateMemoryDelta(),
+		"duration_ms":   float64(duration.Nanoseconds()) / 1e6,
+		"duration_str":  duration.String(),
+		"memory_before": c.GetData("memory_before"),
+		"memory_after":  c.GetData("memory_after"),
+		"memory_delta":  c.calculateMemoryDelta(),
 	}
 }
 
@@ -171,7 +171,7 @@ func (c *BaseController) LogPerformance(metric string, value any) {
 		"method":    c.Ctx.Method(),
 		"client_ip": c.GetClientIP(),
 	}
-	
+
 	config.Infof("Performance: %+v", perfData)
 }
 
@@ -179,7 +179,7 @@ func (c *BaseController) LogPerformance(metric string, value any) {
 func (c *BaseController) calculateMemoryDelta() any {
 	before, beforeOk := c.GetData("memory_before").(uint64)
 	after, afterOk := c.GetData("memory_after").(uint64)
-	
+
 	if beforeOk && afterOk {
 		delta := int64(after) - int64(before)
 		return map[string]any{
@@ -187,7 +187,7 @@ func (c *BaseController) calculateMemoryDelta() any {
 			"delta_mb":    float64(delta) / (1024 * 1024),
 		}
 	}
-	
+
 	return nil
 }
 
@@ -198,21 +198,21 @@ func (c *BaseController) DumpRequest() string {
 	if c.Ctx == nil {
 		return "Context is nil"
 	}
-	
+
 	dump := fmt.Sprintf("=== REQUEST DUMP ===\n")
 	dump += fmt.Sprintf("Method: %s\n", c.Ctx.Method())
 	dump += fmt.Sprintf("Path: %s\n", c.Ctx.Path())
-	dump += fmt.Sprintf("Query: %s\n", c.Ctx.Request.URI().QueryString())
+	dump += fmt.Sprintf("Query: %s\n", c.Ctx.Request().URI().QueryString())
 	dump += fmt.Sprintf("Content-Type: %s\n", c.Ctx.ContentType())
 	dump += fmt.Sprintf("User-Agent: %s\n", c.GetUserAgent())
 	dump += fmt.Sprintf("Client-IP: %s\n", c.GetClientIP())
 	dump += fmt.Sprintf("Body-Size: %d\n", c.GetBodySize())
-	
+
 	dump += "\n=== HEADERS ===\n"
-	c.Ctx.Request.Request.Header.VisitAll(func(key, value []byte) {
+	c.Ctx.Request().Request.Header.VisitAll(func(key, value []byte) {
 		dump += fmt.Sprintf("%s: %s\n", key, value)
 	})
-	
+
 	if body, err := c.GetRawBody(); err == nil && len(body) > 0 {
 		dump += "\n=== BODY ===\n"
 		if len(body) > 1024 {
@@ -221,7 +221,7 @@ func (c *BaseController) DumpRequest() string {
 			dump += string(body) + "\n"
 		}
 	}
-	
+
 	return dump
 }
 
@@ -239,7 +239,7 @@ func (c *BaseController) LogDebugError(err error, context map[string]any) {
 		"request":     c.getRequestDebugInfo(),
 		"context":     context,
 	}
-	
+
 	config.Errorf("Application Error: %+v", errorData)
 }
 
@@ -251,13 +251,13 @@ func (c *BaseController) DebugJSON(data any) {
 		c.JSONError("Debug mode is disabled")
 		return
 	}
-	
+
 	debugData := map[string]any{
 		"debug_info": c.GetDebugInfo(),
 		"data":       data,
 		"timestamp":  time.Now().Format(time.RFC3339),
 	}
-	
+
 	c.IndentedJSON(debugData)
 }
 
@@ -266,16 +266,16 @@ func (c *BaseController) DebugHeaders() {
 	if !c.IsDebugMode() {
 		return
 	}
-	
+
 	c.SetHeader("X-Debug-Request-ID", c.GenerateRequestID())
 	c.SetHeader("X-Debug-Timestamp", time.Now().Format(time.RFC3339))
 	c.SetHeader("X-Debug-Go-Version", runtime.Version())
-	
+
 	// 添加性能信息
 	if duration, ok := c.GetData("profiler_duration").(time.Duration); ok {
 		c.SetHeader("X-Debug-Duration-Ms", fmt.Sprintf("%.2f", float64(duration.Nanoseconds())/1e6))
 	}
-	
+
 	// 添加内存信息
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
@@ -308,14 +308,14 @@ func (c *BaseController) PrintDebugInfo() {
 	if !c.IsDebugMode() {
 		return
 	}
-	
+
 	debugInfo := c.GetDebugInfo()
 	jsonData, err := json.MarshalIndent(debugInfo, "", "  ")
 	if err != nil {
 		config.Errorf("Failed to marshal debug info: %v", err)
 		return
 	}
-	
+
 	config.Infof("Debug Info:\n%s", string(jsonData))
 }
 
@@ -326,7 +326,7 @@ func (c *BaseController) Assert(condition bool, message string) {
 	if !condition {
 		stack := string(debug.Stack())
 		config.Errorf("Assertion failed: %s\nStack trace:\n%s", message, stack)
-		
+
 		if c.IsDebugMode() {
 			panic(fmt.Sprintf("Assertion failed: %s", message))
 		}
@@ -355,7 +355,7 @@ func (c *BaseController) RecordMetric(name string, value float64, tags map[strin
 		"path":      c.Ctx.Path(),
 		"method":    c.Ctx.Method(),
 	}
-	
+
 	config.Infof("Metric: %+v", metricData)
 }
 
@@ -385,7 +385,7 @@ func (c *BaseController) HealthCheck() map[string]any {
 		"uptime":    c.getUptime(),
 		"checks":    c.performHealthChecks(),
 	}
-	
+
 	return health
 }
 
@@ -410,7 +410,7 @@ func (c *BaseController) performHealthChecks() map[string]any {
 		"disk":     c.checkDiskSpace(),
 		"memory":   c.checkMemoryUsage(),
 	}
-	
+
 	return checks
 }
 
@@ -418,7 +418,7 @@ func (c *BaseController) performHealthChecks() map[string]any {
 func (c *BaseController) checkDatabase() map[string]any {
 	// 这里应该实现真正的数据库检查
 	return map[string]any{
-		"status": "ok",
+		"status":     "ok",
 		"latency_ms": 5.2,
 	}
 }
@@ -427,7 +427,7 @@ func (c *BaseController) checkDatabase() map[string]any {
 func (c *BaseController) checkCache() map[string]any {
 	// 这里应该实现真正的缓存检查
 	return map[string]any{
-		"status": "ok",
+		"status":     "ok",
 		"latency_ms": 1.8,
 	}
 }
@@ -436,7 +436,7 @@ func (c *BaseController) checkCache() map[string]any {
 func (c *BaseController) checkDiskSpace() map[string]any {
 	// 这里应该实现真正的磁盘检查
 	return map[string]any{
-		"status": "ok",
+		"status":        "ok",
 		"usage_percent": 45.6,
 	}
 }
@@ -445,20 +445,20 @@ func (c *BaseController) checkDiskSpace() map[string]any {
 func (c *BaseController) checkMemoryUsage() map[string]any {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	usagePercent := float64(m.Alloc) / float64(m.Sys) * 100
-	
+
 	status := "ok"
 	if usagePercent > 90 {
 		status = "critical"
 	} else if usagePercent > 80 {
 		status = "warning"
 	}
-	
+
 	return map[string]any{
-		"status":         status,
-		"usage_percent":  usagePercent,
-		"alloc_mb":       c.bytesToMB(m.Alloc),
-		"sys_mb":         c.bytesToMB(m.Sys),
+		"status":        status,
+		"usage_percent": usagePercent,
+		"alloc_mb":      c.bytesToMB(m.Alloc),
+		"sys_mb":        c.bytesToMB(m.Sys),
 	}
 }

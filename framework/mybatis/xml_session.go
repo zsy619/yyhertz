@@ -13,27 +13,27 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
 	"github.com/zsy619/yyhertz/framework/mybatis/mapper"
+	"gorm.io/gorm"
 )
 
 // XMLSession XML支持的会话接口
 type XMLSession interface {
 	SimpleSession
-	
+
 	// XML映射器管理
 	LoadMapperXML(xmlPath string) error
 	LoadMapperXMLFromString(xmlContent string) error
 	LoadMapperDirectory(dirPath string) error
-	
+
 	// 通过语句ID执行（MyBatis风格）
-	SelectOneByID(ctx context.Context, statementId string, parameter interface{}) (interface{}, error)
-	SelectListByID(ctx context.Context, statementId string, parameter interface{}) ([]interface{}, error)
-	SelectPageByID(ctx context.Context, statementId string, parameter interface{}, page PageRequest) (*PageResult, error)
-	InsertByID(ctx context.Context, statementId string, parameter interface{}) (int64, error)
-	UpdateByID(ctx context.Context, statementId string, parameter interface{}) (int64, error)
-	DeleteByID(ctx context.Context, statementId string, parameter interface{}) (int64, error)
-	
+	SelectOneByID(ctx context.Context, statementId string, parameter any) (any, error)
+	SelectListByID(ctx context.Context, statementId string, parameter any) ([]any, error)
+	SelectPageByID(ctx context.Context, statementId string, parameter any, page PageRequest) (*PageResult, error)
+	InsertByID(ctx context.Context, statementId string, parameter any) (int64, error)
+	UpdateByID(ctx context.Context, statementId string, parameter any) (int64, error)
+	DeleteByID(ctx context.Context, statementId string, parameter any) (int64, error)
+
 	// Mapper信息查询
 	GetStatement(statementId string) *mapper.XMLMappedStatement
 	GetResultMap(resultMapId string) *mapper.XMLResultMap
@@ -44,7 +44,7 @@ type XMLSession interface {
 // xmlSession XML会话实现
 type xmlSession struct {
 	SimpleSession
-	parsers       map[string]*mapper.MapperXMLParser  // namespace -> parser
+	parsers        map[string]*mapper.MapperXMLParser // namespace -> parser
 	dynamicBuilder *mapper.DynamicSqlBuilder
 }
 
@@ -72,15 +72,15 @@ func (xs *xmlSession) LoadMapperXML(xmlPath string) error {
 	if err := parser.ParseXMLFile(xmlPath); err != nil {
 		return fmt.Errorf("failed to load mapper XML %s: %w", xmlPath, err)
 	}
-	
+
 	namespace := parser.GetNamespace()
 	if namespace == "" {
 		return fmt.Errorf("mapper XML file must have a namespace: %s", xmlPath)
 	}
-	
+
 	xs.parsers[namespace] = parser
 	log.Printf("[XML Mapper] Loaded mapper: %s with %d statements", namespace, len(parser.GetAllStatements()))
-	
+
 	return nil
 }
 
@@ -90,15 +90,15 @@ func (xs *xmlSession) LoadMapperXMLFromString(xmlContent string) error {
 	if err := parser.ParseXMLReader(strings.NewReader(xmlContent)); err != nil {
 		return fmt.Errorf("failed to parse mapper XML content: %w", err)
 	}
-	
+
 	namespace := parser.GetNamespace()
 	if namespace == "" {
 		return fmt.Errorf("mapper XML content must have a namespace")
 	}
-	
+
 	xs.parsers[namespace] = parser
 	log.Printf("[XML Mapper] Loaded mapper from string: %s with %d statements", namespace, len(parser.GetAllStatements()))
-	
+
 	return nil
 }
 
@@ -108,73 +108,73 @@ func (xs *xmlSession) LoadMapperDirectory(dirPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load mapper directory %s: %w", dirPath, err)
 	}
-	
+
 	for namespace, parser := range parsers {
 		xs.parsers[namespace] = parser
 		log.Printf("[XML Mapper] Loaded mapper: %s with %d statements", namespace, len(parser.GetAllStatements()))
 	}
-	
+
 	log.Printf("[XML Mapper] Total loaded %d mappers from directory: %s", len(parsers), dirPath)
 	return nil
 }
 
 // SelectOneByID 通过语句ID查询单条记录
-func (xs *xmlSession) SelectOneByID(ctx context.Context, statementId string, parameter interface{}) (interface{}, error) {
+func (xs *xmlSession) SelectOneByID(ctx context.Context, statementId string, parameter any) (any, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return nil, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeSelect {
 		return nil, fmt.Errorf("statement %s is not a SELECT statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	// 执行查询
 	result, err := xs.SimpleSession.SelectOne(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 应用ResultMap映射（如果有的话）
 	if stmt.ResultMap != "" {
 		return xs.applyResultMap(result, stmt.ResultMap)
 	}
-	
+
 	return result, nil
 }
 
 // SelectListByID 通过语句ID查询多条记录
-func (xs *xmlSession) SelectListByID(ctx context.Context, statementId string, parameter interface{}) ([]interface{}, error) {
+func (xs *xmlSession) SelectListByID(ctx context.Context, statementId string, parameter any) ([]any, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return nil, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeSelect {
 		return nil, fmt.Errorf("statement %s is not a SELECT statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	// 执行查询
 	results, err := xs.SimpleSession.SelectList(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 应用ResultMap映射（如果有的话）
 	if stmt.ResultMap != "" {
-		mappedResults := make([]interface{}, len(results))
+		mappedResults := make([]any, len(results))
 		for i, result := range results {
 			mapped, err := xs.applyResultMap(result, stmt.ResultMap)
 			if err != nil {
@@ -184,36 +184,36 @@ func (xs *xmlSession) SelectListByID(ctx context.Context, statementId string, pa
 		}
 		return mappedResults, nil
 	}
-	
+
 	return results, nil
 }
 
 // SelectPageByID 通过语句ID分页查询
-func (xs *xmlSession) SelectPageByID(ctx context.Context, statementId string, parameter interface{}, page PageRequest) (*PageResult, error) {
+func (xs *xmlSession) SelectPageByID(ctx context.Context, statementId string, parameter any, page PageRequest) (*PageResult, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return nil, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeSelect {
 		return nil, fmt.Errorf("statement %s is not a SELECT statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	// 执行分页查询
 	pageResult, err := xs.SimpleSession.SelectPage(ctx, sql, page, args...)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 应用ResultMap映射（如果有的话）
 	if stmt.ResultMap != "" {
-		mappedItems := make([]interface{}, len(pageResult.Items))
+		mappedItems := make([]any, len(pageResult.Items))
 		for i, item := range pageResult.Items {
 			mapped, err := xs.applyResultMap(item, stmt.ResultMap)
 			if err != nil {
@@ -223,67 +223,67 @@ func (xs *xmlSession) SelectPageByID(ctx context.Context, statementId string, pa
 		}
 		pageResult.Items = mappedItems
 	}
-	
+
 	return pageResult, nil
 }
 
 // InsertByID 通过语句ID插入记录
-func (xs *xmlSession) InsertByID(ctx context.Context, statementId string, parameter interface{}) (int64, error) {
+func (xs *xmlSession) InsertByID(ctx context.Context, statementId string, parameter any) (int64, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return 0, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeInsert {
 		return 0, fmt.Errorf("statement %s is not an INSERT statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	return xs.SimpleSession.Insert(ctx, sql, args...)
 }
 
 // UpdateByID 通过语句ID更新记录
-func (xs *xmlSession) UpdateByID(ctx context.Context, statementId string, parameter interface{}) (int64, error) {
+func (xs *xmlSession) UpdateByID(ctx context.Context, statementId string, parameter any) (int64, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return 0, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeUpdate {
 		return 0, fmt.Errorf("statement %s is not an UPDATE statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	return xs.SimpleSession.Update(ctx, sql, args...)
 }
 
 // DeleteByID 通过语句ID删除记录
-func (xs *xmlSession) DeleteByID(ctx context.Context, statementId string, parameter interface{}) (int64, error) {
+func (xs *xmlSession) DeleteByID(ctx context.Context, statementId string, parameter any) (int64, error) {
 	stmt := xs.getStatementByID(statementId)
 	if stmt == nil {
 		return 0, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	if stmt.StatementType != mapper.StatementTypeDelete {
 		return 0, fmt.Errorf("statement %s is not a DELETE statement", statementId)
 	}
-	
+
 	// 构建最终的SQL
 	sql, args, err := xs.buildSQL(stmt, parameter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to build SQL for %s: %w", statementId, err)
 	}
-	
+
 	return xs.SimpleSession.Delete(ctx, sql, args...)
 }
 
@@ -312,7 +312,7 @@ func (xs *xmlSession) GetStatementIds(namespace string) []string {
 	if !exists {
 		return []string{}
 	}
-	
+
 	statements := parser.GetAllStatements()
 	ids := make([]string, 0, len(statements))
 	for statementId := range statements {
@@ -329,13 +329,13 @@ func (xs *xmlSession) getStatementByID(statementId string) *mapper.XMLMappedStat
 	if len(parts) != 2 {
 		return nil
 	}
-	
+
 	namespace := parts[0]
 	parser, exists := xs.parsers[namespace]
 	if !exists {
 		return nil
 	}
-	
+
 	return parser.GetStatement(statementId)
 }
 
@@ -345,20 +345,20 @@ func (xs *xmlSession) getResultMapByID(resultMapId string) *mapper.XMLResultMap 
 	if len(parts) != 2 {
 		return nil
 	}
-	
+
 	namespace := parts[0]
 	parser, exists := xs.parsers[namespace]
 	if !exists {
 		return nil
 	}
-	
+
 	return parser.GetResultMap(resultMapId)
 }
 
 // buildSQL 构建最终的SQL语句
-func (xs *xmlSession) buildSQL(stmt *mapper.XMLMappedStatement, parameter interface{}) (string, []interface{}, error) {
+func (xs *xmlSession) buildSQL(stmt *mapper.XMLMappedStatement, parameter any) (string, []any, error) {
 	sql := stmt.SQL
-	
+
 	// 检查是否包含动态SQL
 	if xs.containsDynamicSQL(sql) {
 		// 使用动态SQL构建器
@@ -389,16 +389,16 @@ func (xs *xmlSession) containsDynamicSQL(sql string) bool {
 }
 
 // processStaticSQL 处理静态SQL的参数占位符
-func (xs *xmlSession) processStaticSQL(sql string, parameter interface{}) (string, []interface{}, error) {
-	args := make([]interface{}, 0)
-	
+func (xs *xmlSession) processStaticSQL(sql string, parameter any) (string, []any, error) {
+	args := make([]any, 0)
+
 	// 简单的#{param}占位符替换
 	result := sql
-	
+
 	// 查找所有#{xxx}占位符
 	paramPattern := `#\{([^}]+)\}`
 	matches := regexp.MustCompile(paramPattern).FindAllStringSubmatch(sql, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 1 {
 			paramName := match[1]
@@ -406,87 +406,87 @@ func (xs *xmlSession) processStaticSQL(sql string, parameter interface{}) (strin
 			args = append(args, value)
 		}
 	}
-	
+
 	// 将所有#{xxx}替换为?
 	result = regexp.MustCompile(paramPattern).ReplaceAllString(result, "?")
-	
+
 	return result, args, nil
 }
 
 // getParameterValue 从参数对象中获取指定属性的值
-func (xs *xmlSession) getParameterValue(parameter interface{}, propertyPath string) interface{} {
+func (xs *xmlSession) getParameterValue(parameter any, propertyPath string) any {
 	if parameter == nil {
 		return nil
 	}
-	
+
 	// 如果是map类型
-	if paramMap, ok := parameter.(map[string]interface{}); ok {
+	if paramMap, ok := parameter.(map[string]any); ok {
 		return paramMap[propertyPath]
 	}
-	
+
 	// 使用反射获取结构体字段值
 	return xs.getFieldValue(parameter, propertyPath)
 }
 
 // getFieldValue 使用反射获取字段值
-func (xs *xmlSession) getFieldValue(obj interface{}, fieldPath string) interface{} {
+func (xs *xmlSession) getFieldValue(obj any, fieldPath string) any {
 	if obj == nil {
 		return nil
 	}
-	
+
 	parts := strings.Split(fieldPath, ".")
 	current := obj
-	
+
 	for _, part := range parts {
 		if current == nil {
 			return nil
 		}
-		
+
 		v := reflect.ValueOf(current)
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		
+
 		if v.Kind() != reflect.Struct {
 			return nil
 		}
-		
+
 		field := v.FieldByName(part)
 		if !field.IsValid() || !field.CanInterface() {
 			return nil
 		}
-		
+
 		current = field.Interface()
 	}
-	
+
 	return current
 }
 
 // applyResultMap 应用ResultMap映射
-func (xs *xmlSession) applyResultMap(result interface{}, resultMapId string) (interface{}, error) {
+func (xs *xmlSession) applyResultMap(result any, resultMapId string) (any, error) {
 	resultMap := xs.getResultMapByID(resultMapId)
 	if resultMap == nil {
 		return result, nil // 如果没有找到ResultMap，直接返回原结果
 	}
-	
+
 	// 简化实现：只处理基本的列映射
-	if resultData, ok := result.(map[string]interface{}); ok {
-		mappedResult := make(map[string]interface{})
-		
+	if resultData, ok := result.(map[string]any); ok {
+		mappedResult := make(map[string]any)
+
 		// 应用ID映射
 		for _, idMapping := range resultMap.IDMappings {
 			if value, exists := resultData[idMapping.Column]; exists {
 				mappedResult[idMapping.Property] = xs.convertValue(value, idMapping.JavaType)
 			}
 		}
-		
+
 		// 应用结果映射
 		for _, mapping := range resultMap.ResultMappings {
 			if value, exists := resultData[mapping.Column]; exists {
 				mappedResult[mapping.Property] = xs.convertValue(value, mapping.JavaType)
 			}
 		}
-		
+
 		// 如果启用了自动映射，复制未明确映射的字段
 		if resultMap.AutoMap {
 			for column, value := range resultData {
@@ -495,19 +495,19 @@ func (xs *xmlSession) applyResultMap(result interface{}, resultMapId string) (in
 				}
 			}
 		}
-		
+
 		return mappedResult, nil
 	}
-	
+
 	return result, nil
 }
 
 // convertValue 根据JavaType转换值
-func (xs *xmlSession) convertValue(value interface{}, javaType string) interface{} {
+func (xs *xmlSession) convertValue(value any, javaType string) any {
 	if javaType == "" || value == nil {
 		return value
 	}
-	
+
 	switch strings.ToLower(javaType) {
 	case "string", "java.lang.string":
 		return fmt.Sprintf("%v", value)

@@ -10,6 +10,7 @@ import (
 	"log"
 	"testing"
 	"time"
+
 	// 传统的context包（用于演示兼容性）
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -142,7 +143,7 @@ func mixedStyleHandler(ctx context.Context, c *app.RequestContext) {
 	secureData, _ := extension.GetSecureCookie(secret, "new_security_feature")
 
 	// 新增的高级Session功能
-	err := extension.SetSession("new_feature_data", map[string]interface{}{
+	err := extension.SetSession("new_feature_data", map[string]any{
 		"feature_id": "mixed_migration",
 		"enabled":    true,
 		"config": map[string]string{

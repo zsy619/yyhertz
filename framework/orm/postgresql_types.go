@@ -13,7 +13,7 @@ import (
 )
 
 // JSONB PostgreSQL JSONB类型
-type JSONB map[string]interface{}
+type JSONB map[string]any
 
 // Value 实现driver.Valuer接口
 func (j JSONB) Value() (driver.Value, error) {
@@ -24,7 +24,7 @@ func (j JSONB) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (j *JSONB) Scan(value interface{}) error {
+func (j *JSONB) Scan(value any) error {
 	if value == nil {
 		*j = nil
 		return nil
@@ -71,7 +71,7 @@ func (e PostgreSQLEnum) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (e *PostgreSQLEnum) Scan(value interface{}) error {
+func (e *PostgreSQLEnum) Scan(value any) error {
 	if value == nil {
 		*e = ""
 		return nil
@@ -122,18 +122,18 @@ func (v Vector) Value() (driver.Value, error) {
 	if v == nil {
 		return nil, nil
 	}
-	
+
 	// 转换为PostgreSQL向量格式: [1.0,2.0,3.0]
 	strValues := make([]string, len(v))
 	for i, val := range v {
 		strValues[i] = strconv.FormatFloat(val, 'f', -1, 64)
 	}
-	
+
 	return "[" + strings.Join(strValues, ",") + "]", nil
 }
 
 // Scan 实现sql.Scanner接口
-func (v *Vector) Scan(value interface{}) error {
+func (v *Vector) Scan(value any) error {
 	if value == nil {
 		*v = nil
 		return nil
@@ -158,7 +158,7 @@ func (v *Vector) Scan(value interface{}) error {
 
 	parts := strings.Split(str, ",")
 	result := make(Vector, len(parts))
-	
+
 	for i, part := range parts {
 		val, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
 		if err != nil {
@@ -166,7 +166,7 @@ func (v *Vector) Scan(value interface{}) error {
 		}
 		result[i] = val
 	}
-	
+
 	*v = result
 	return nil
 }
@@ -202,7 +202,7 @@ func (u UUID) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (u *UUID) Scan(value interface{}) error {
+func (u *UUID) Scan(value any) error {
 	if value == nil {
 		*u = ""
 		return nil
@@ -251,7 +251,7 @@ func (i INET) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (i *INET) Scan(value interface{}) error {
+func (i *INET) Scan(value any) error {
 	if value == nil {
 		*i = ""
 		return nil
@@ -296,7 +296,7 @@ func (c CIDR) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (c *CIDR) Scan(value interface{}) error {
+func (c *CIDR) Scan(value any) error {
 	if value == nil {
 		*c = ""
 		return nil
@@ -332,7 +332,7 @@ func (CIDR) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 // ============= PostgreSQL特定工具函数 =============
 
 // NewJSONB 创建JSONB类型
-func NewJSONB(data map[string]interface{}) JSONB {
+func NewJSONB(data map[string]any) JSONB {
 	return JSONB(data)
 }
 
@@ -368,13 +368,13 @@ func (v Vector) Distance(other Vector) (float64, error) {
 	if len(v) != len(other) {
 		return 0, fmt.Errorf("向量维度不匹配: %d vs %d", len(v), len(other))
 	}
-	
+
 	var sum float64
 	for i := range v {
 		diff := v[i] - other[i]
 		sum += diff * diff
 	}
-	
+
 	return sum, nil // 返回平方距离，避免开方运算
 }
 
@@ -383,12 +383,12 @@ func (v Vector) DotProduct(other Vector) (float64, error) {
 	if len(v) != len(other) {
 		return 0, fmt.Errorf("向量维度不匹配: %d vs %d", len(v), len(other))
 	}
-	
+
 	var sum float64
 	for i := range v {
 		sum += v[i] * other[i]
 	}
-	
+
 	return sum, nil
 }
 
@@ -397,19 +397,19 @@ func (v Vector) CosineSimilarity(other Vector) (float64, error) {
 	if len(v) != len(other) {
 		return 0, fmt.Errorf("向量维度不匹配: %d vs %d", len(v), len(other))
 	}
-	
+
 	var dotProduct, normA, normB float64
-	
+
 	for i := range v {
 		dotProduct += v[i] * other[i]
 		normA += v[i] * v[i]
 		normB += other[i] * other[i]
 	}
-	
+
 	if normA == 0 || normB == 0 {
 		return 0, fmt.Errorf("零向量无法计算余弦相似度")
 	}
-	
+
 	return dotProduct / (normA * normB), nil
 }
 
@@ -419,16 +419,16 @@ func (v Vector) Normalize() Vector {
 	for _, val := range v {
 		norm += val * val
 	}
-	
+
 	if norm == 0 {
 		return v
 	}
-	
+
 	result := make(Vector, len(v))
 	for i, val := range v {
 		result[i] = val / norm
 	}
-	
+
 	return result
 }
 
@@ -445,24 +445,24 @@ func CreateEnumType(db *gorm.DB, enumDef EnumDefinition) error {
 	if db.Dialector.Name() != "postgres" {
 		return fmt.Errorf("枚举类型仅支持PostgreSQL")
 	}
-	
+
 	// 检查枚举类型是否已存在
 	var exists bool
 	err := db.Raw("SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = ?)", enumDef.Name).Scan(&exists).Error
 	if err != nil {
 		return fmt.Errorf("检查枚举类型失败: %w", err)
 	}
-	
+
 	if exists {
 		return nil // 枚举类型已存在
 	}
-	
+
 	// 创建枚举类型
 	values := make([]string, len(enumDef.Values))
 	for i, v := range enumDef.Values {
 		values[i] = fmt.Sprintf("'%s'", v)
 	}
-	
+
 	sql := fmt.Sprintf("CREATE TYPE %s AS ENUM (%s)", enumDef.Name, strings.Join(values, ", "))
 	return db.Exec(sql).Error
 }
@@ -472,7 +472,7 @@ func DropEnumType(db *gorm.DB, enumName string) error {
 	if db.Dialector.Name() != "postgres" {
 		return fmt.Errorf("枚举类型仅支持PostgreSQL")
 	}
-	
+
 	sql := fmt.Sprintf("DROP TYPE IF EXISTS %s", enumName)
 	return db.Exec(sql).Error
 }
@@ -482,7 +482,7 @@ func AddEnumValue(db *gorm.DB, enumName, value string) error {
 	if db.Dialector.Name() != "postgres" {
 		return fmt.Errorf("枚举类型仅支持PostgreSQL")
 	}
-	
+
 	sql := fmt.Sprintf("ALTER TYPE %s ADD VALUE '%s'", enumName, value)
 	return db.Exec(sql).Error
 }
@@ -492,7 +492,7 @@ func GetEnumValues(db *gorm.DB, enumName string) ([]string, error) {
 	if db.Dialector.Name() != "postgres" {
 		return nil, fmt.Errorf("枚举类型仅支持PostgreSQL")
 	}
-	
+
 	var values []string
 	err := db.Raw(`
 		SELECT enumlabel 
@@ -500,7 +500,7 @@ func GetEnumValues(db *gorm.DB, enumName string) ([]string, error) {
 		WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = ?) 
 		ORDER BY enumsortorder
 	`, enumName).Scan(&values).Error
-	
+
 	return values, err
 }
 
@@ -508,9 +508,9 @@ func GetEnumValues(db *gorm.DB, enumName string) ([]string, error) {
 
 // VectorSearchResult 向量搜索结果
 type VectorSearchResult struct {
-	ID       interface{} `json:"id"`
-	Distance float64     `json:"distance"`
-	Data     interface{} `json:"data"`
+	ID       any     `json:"id"`
+	Distance float64 `json:"distance"`
+	Data     any     `json:"data"`
 }
 
 // VectorSearch 向量相似度搜索
@@ -518,7 +518,7 @@ func VectorSearch(db *gorm.DB, tableName, vectorColumn string, queryVector Vecto
 	if db.Dialector.Name() != "postgres" {
 		return nil, fmt.Errorf("向量搜索仅支持PostgreSQL")
 	}
-	
+
 	// 构建向量搜索SQL
 	vectorStr, _ := queryVector.Value()
 	sql := fmt.Sprintf(`
@@ -527,7 +527,7 @@ func VectorSearch(db *gorm.DB, tableName, vectorColumn string, queryVector Vecto
 		ORDER BY %s <-> '%s'
 		LIMIT %d
 	`, vectorColumn, vectorStr, tableName, vectorColumn, vectorStr, limit)
-	
+
 	var results []VectorSearchResult
 	err := db.Raw(sql).Scan(&results).Error
 	return results, err
@@ -538,14 +538,14 @@ func CreateVectorIndex(db *gorm.DB, tableName, vectorColumn string, indexType st
 	if db.Dialector.Name() != "postgres" {
 		return fmt.Errorf("向量索引仅支持PostgreSQL")
 	}
-	
+
 	if indexType == "" {
 		indexType = "ivfflat" // 默认使用ivfflat索引
 	}
-	
+
 	indexName := fmt.Sprintf("idx_%s_%s_%s", tableName, vectorColumn, indexType)
 	sql := fmt.Sprintf("CREATE INDEX %s ON %s USING %s (%s)", indexName, tableName, indexType, vectorColumn)
-	
+
 	return db.Exec(sql).Error
 }
 
@@ -556,7 +556,7 @@ func GenerateUUID(db *gorm.DB) (UUID, error) {
 	if db.Dialector.Name() != "postgres" {
 		return "", fmt.Errorf("UUID生成仅支持PostgreSQL")
 	}
-	
+
 	var uuid string
 	err := db.Raw("SELECT gen_random_uuid()").Scan(&uuid).Error
 	return UUID(uuid), err
@@ -568,11 +568,11 @@ func IsValidUUID(uuid string) bool {
 	if len(uuid) != 36 {
 		return false
 	}
-	
+
 	// 检查连字符位置
 	if uuid[8] != '-' || uuid[13] != '-' || uuid[18] != '-' || uuid[23] != '-' {
 		return false
 	}
-	
+
 	return true
 }

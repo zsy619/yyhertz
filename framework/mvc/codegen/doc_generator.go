@@ -91,7 +91,7 @@ type Schema struct {
 	Type       string            `json:"type"`
 	Properties map[string]Schema `json:"properties,omitempty"`
 	Items      *Schema           `json:"items,omitempty"`
-	Example    interface{}       `json:"example,omitempty"`
+	Example    any               `json:"example,omitempty"`
 }
 
 // Components 组件

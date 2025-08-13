@@ -300,13 +300,13 @@ func (cpm *ConnectionPoolManager) checkConnection(ctx context.Context, db *gorm.
 }
 
 // GetStats 获取连接池统计信息
-func (cpm *ConnectionPoolManager) GetStats() map[string]interface{} {
-	stats := make(map[string]interface{})
+func (cpm *ConnectionPoolManager) GetStats() map[string]any {
+	stats := make(map[string]any)
 
 	// 获取主库统计信息
 	if sqlDB, err := cpm.masterPool.DB(); err == nil {
 		masterStats := sqlDB.Stats()
-		stats["master"] = map[string]interface{}{
+		stats["master"] = map[string]any{
 			"max_open_connections": masterStats.MaxOpenConnections,
 			"open_connections":     masterStats.OpenConnections,
 			"in_use":               masterStats.InUse,
@@ -319,11 +319,11 @@ func (cpm *ConnectionPoolManager) GetStats() map[string]interface{} {
 	}
 
 	// 获取从库统计信息
-	slaves := make([]map[string]interface{}, 0, len(cpm.slavePools))
+	slaves := make([]map[string]any, 0, len(cpm.slavePools))
 	for i, slave := range cpm.slavePools {
 		if sqlDB, err := slave.DB(); err == nil {
 			slaveStats := sqlDB.Stats()
-			slaves = append(slaves, map[string]interface{}{
+			slaves = append(slaves, map[string]any{
 				"id":                   i,
 				"max_open_connections": slaveStats.MaxOpenConnections,
 				"open_connections":     slaveStats.OpenConnections,
@@ -340,7 +340,7 @@ func (cpm *ConnectionPoolManager) GetStats() map[string]interface{} {
 
 	// 添加指标收集器的统计信息
 	if metrics := cpm.metricsCollector.GetMetrics(); metrics != nil {
-		stats["metrics"] = map[string]interface{}{
+		stats["metrics"] = map[string]any{
 			"total_connections":  metrics.TotalConnections,
 			"active_connections": metrics.ActiveConnections,
 			"connection_errors":  metrics.ConnectionErrors,

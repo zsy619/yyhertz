@@ -20,29 +20,29 @@ type UserXMLService struct {
 
 // UserQueryXML 用户查询参数
 type UserQueryXML struct {
-	Name     string    `json:"name"`
-	Email    string    `json:"email"`
-	Status   string    `json:"status"`
+	Name          string     `json:"name"`
+	Email         string     `json:"email"`
+	Status        string     `json:"status"`
 	CreateAtStart *time.Time `json:"createAtStart"`
 	CreateAtEnd   *time.Time `json:"createAtEnd"`
-	PageNum  int       `json:"pageNum"`
-	PageSize int       `json:"pageSize"`
+	PageNum       int        `json:"pageNum"`
+	PageSize      int        `json:"pageSize"`
 }
 
 // NewUserXMLService 创建使用XML Mapper的用户服务
 func NewUserXMLService(db *gorm.DB) (*UserXMLService, error) {
 	session := NewXMLSessionWithHooks(db, true)
-	
+
 	service := &UserXMLService{
 		session: session,
 	}
-	
+
 	// 加载XML映射文件
 	// 这里可以从不同位置加载
 	if err := service.loadMappers(); err != nil {
 		return nil, err
 	}
-	
+
 	return service, nil
 }
 
@@ -50,7 +50,7 @@ func NewUserXMLService(db *gorm.DB) (*UserXMLService, error) {
 func (s *UserXMLService) loadMappers() error {
 	// 方式1: 直接加载单个XML文件
 	// err := s.session.LoadMapperXML("./mappers/UserMapper.xml")
-	
+
 	// 方式2: 从字符串加载（用于演示）
 	userMapperXML := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
@@ -138,14 +138,14 @@ func (s *UserXMLService) loadMappers() error {
   </delete>
 
 </mapper>`
-	
+
 	if err := s.session.LoadMapperXMLFromString(userMapperXML); err != nil {
 		return err
 	}
-	
+
 	// 方式3: 批量加载目录（实际使用时推荐）
 	// err := s.session.LoadMapperDirectory("./mappers")
-	
+
 	return nil
 }
 
@@ -155,16 +155,16 @@ func (s *UserXMLService) GetUserById(ctx context.Context, id int64) (*User, erro
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if result == nil {
 		return nil, nil
 	}
-	
+
 	// 简单的结果转换
-	if userMap, ok := result.(map[string]interface{}); ok {
+	if userMap, ok := result.(map[string]any); ok {
 		return mapToUser(userMap), nil
 	}
-	
+
 	return nil, nil
 }
 
@@ -174,15 +174,15 @@ func (s *UserXMLService) GetUserWithMapping(ctx context.Context, id int64) (*Use
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if result == nil {
 		return nil, nil
 	}
-	
-	if userMap, ok := result.(map[string]interface{}); ok {
+
+	if userMap, ok := result.(map[string]any); ok {
 		return mapToUser(userMap), nil
 	}
-	
+
 	return nil, nil
 }
 
@@ -192,14 +192,14 @@ func (s *UserXMLService) FindUsersByCondition(ctx context.Context, query UserQue
 	if err != nil {
 		return nil, err
 	}
-	
+
 	users := make([]*User, 0, len(results))
 	for _, result := range results {
-		if userMap, ok := result.(map[string]interface{}); ok {
+		if userMap, ok := result.(map[string]any); ok {
 			users = append(users, mapToUser(userMap))
 		}
 	}
-	
+
 	return users, nil
 }
 
@@ -209,23 +209,23 @@ func (s *UserXMLService) FindUsersByConditionWithPage(ctx context.Context, query
 		Page: query.PageNum,
 		Size: query.PageSize,
 	}
-	
+
 	pageResult, err := s.session.SelectPageByID(ctx, "com.example.UserMapper.findUsersByCondition", query, pageReq)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 转换分页结果中的用户数据
-	users := make([]interface{}, len(pageResult.Items))
+	users := make([]any, len(pageResult.Items))
 	for i, item := range pageResult.Items {
-		if userMap, ok := item.(map[string]interface{}); ok {
+		if userMap, ok := item.(map[string]any); ok {
 			users[i] = mapToUser(userMap)
 		} else {
 			users[i] = item
 		}
 	}
 	pageResult.Items = users
-	
+
 	return pageResult, nil
 }
 
@@ -235,15 +235,15 @@ func (s *UserXMLService) CountUsersByStatus(ctx context.Context, status string) 
 	if err != nil {
 		return 0, err
 	}
-	
-	if countResult, ok := result.(map[string]interface{}); ok {
+
+	if countResult, ok := result.(map[string]any); ok {
 		if count, exists := countResult["COUNT(*)"]; exists {
 			if countVal, ok := count.(int64); ok {
 				return countVal, nil
 			}
 		}
 	}
-	
+
 	return 0, nil
 }
 
@@ -252,7 +252,7 @@ func (s *UserXMLService) CreateUser(ctx context.Context, user *User) (int64, err
 	if user.CreateAt.IsZero() {
 		user.CreateAt = time.Now()
 	}
-	
+
 	return s.session.InsertByID(ctx, "com.example.UserMapper.insertUser", user)
 }
 
@@ -263,7 +263,7 @@ func (s *UserXMLService) CreateUsers(ctx context.Context, users []*User) (int64,
 			user.CreateAt = time.Now()
 		}
 	}
-	
+
 	return s.session.InsertByID(ctx, "com.example.UserMapper.insertUsers", users)
 }
 
@@ -281,15 +281,15 @@ func (s *UserXMLService) DeleteUsersByStatus(ctx context.Context, status string)
 func (s *UserXMLService) ShowMapperInfo() {
 	namespaces := s.session.GetNamespaces()
 	log.Printf("已加载的命名空间数量: %d", len(namespaces))
-	
+
 	for _, namespace := range namespaces {
 		statementIds := s.session.GetStatementIds(namespace)
 		log.Printf("命名空间: %s, 语句数量: %d", namespace, len(statementIds))
-		
+
 		for _, statementId := range statementIds {
 			stmt := s.session.GetStatement(statementId)
 			if stmt != nil {
-				log.Printf("  - %s [%s] %s", statementId, stmt.StatementType, 
+				log.Printf("  - %s [%s] %s", statementId, stmt.StatementType,
 					truncateSQL(stmt.SQL, 50))
 			}
 		}
@@ -300,14 +300,13 @@ func (s *UserXMLService) ShowMapperInfo() {
 func truncateSQL(sql string, maxLen int) string {
 	// 移除多余的空白字符
 	sql = regexp.MustCompile(`\s+`).ReplaceAllString(strings.TrimSpace(sql), " ")
-	
+
 	if len(sql) <= maxLen {
 		return sql
 	}
-	
+
 	return sql[:maxLen] + "..."
 }
-
 
 // 示例使用函数
 
@@ -319,35 +318,35 @@ func ExampleXMLMapperBasicUsage(db *gorm.DB) {
 		log.Printf("Error creating XML service: %v", err)
 		return
 	}
-	
+
 	// 显示Mapper信息
 	userService.ShowMapperInfo()
-	
+
 	ctx := context.Background()
-	
+
 	// 基础查询
 	user, err := userService.GetUserById(ctx, 1)
 	if err != nil {
 		log.Printf("Error getting user: %v", err)
 		return
 	}
-	
+
 	if user != nil {
 		log.Printf("Found user: %+v", user)
 	}
-	
+
 	// 动态查询
 	query := UserQueryXML{
 		Name:   "%john%",
 		Status: "active",
 	}
-	
+
 	users, err := userService.FindUsersByCondition(ctx, query)
 	if err != nil {
 		log.Printf("Error finding users: %v", err)
 		return
 	}
-	
+
 	log.Printf("Found %d users matching condition", len(users))
 }
 
@@ -355,44 +354,44 @@ func ExampleXMLMapperBasicUsage(db *gorm.DB) {
 func ExampleXMLMapperAdvancedUsage(db *gorm.DB) {
 	userService, _ := NewUserXMLService(db)
 	ctx := context.Background()
-	
+
 	// 分页查询
 	query := UserQueryXML{
 		Status:   "active",
 		PageNum:  1,
 		PageSize: 10,
 	}
-	
+
 	pageResult, err := userService.FindUsersByConditionWithPage(ctx, query)
 	if err != nil {
 		log.Printf("Error in paged query: %v", err)
 		return
 	}
-	
-	log.Printf("Page result: %d items, total: %d, pages: %d", 
+
+	log.Printf("Page result: %d items, total: %d, pages: %d",
 		len(pageResult.Items), pageResult.Total, pageResult.TotalPages)
-	
+
 	// 统计查询
 	count, err := userService.CountUsersByStatus(ctx, "active")
 	if err != nil {
 		log.Printf("Error counting users: %v", err)
 		return
 	}
-	
+
 	log.Printf("Active users count: %d", count)
-	
+
 	// 创建用户
 	newUser := &User{
 		Name:  "XML User",
 		Email: "xml@example.com",
 	}
-	
+
 	_, err = userService.CreateUser(ctx, newUser)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
 		return
 	}
-	
+
 	log.Println("User created successfully via XML mapper")
 }
 
@@ -400,7 +399,7 @@ func ExampleXMLMapperAdvancedUsage(db *gorm.DB) {
 func ExampleDirectXMLSession(db *gorm.DB) {
 	// 直接创建XML会话
 	session := NewXMLMapper(db)
-	
+
 	// 加载XML（实际使用中应该从文件加载）
 	simpleMapperXML := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
@@ -414,30 +413,30 @@ func ExampleDirectXMLSession(db *gorm.DB) {
     SELECT * FROM users WHERE status = 'active' LIMIT 10
   </select>
 </mapper>`
-	
+
 	err := session.LoadMapperXMLFromString(simpleMapperXML)
 	if err != nil {
 		log.Printf("Error loading XML: %v", err)
 		return
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// 直接使用语句ID查询
 	countResult, err := session.SelectOneByID(ctx, "SimpleMapper.getUserCount", nil)
 	if err != nil {
 		log.Printf("Error getting count: %v", err)
 		return
 	}
-	
+
 	log.Printf("Total users: %+v", countResult)
-	
+
 	// 查询活跃用户列表
 	activeUsers, err := session.SelectListByID(ctx, "SimpleMapper.getActiveUsers", nil)
 	if err != nil {
 		log.Printf("Error getting active users: %v", err)
 		return
 	}
-	
+
 	log.Printf("Found %d active users", len(activeUsers))
 }

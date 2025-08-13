@@ -19,25 +19,25 @@ type BeegoFormatter struct {
 func (f *BeegoFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 获取日志级别标识
 	levelChar := f.getLevelChar(entry.Level)
-	
+
 	// 格式化时间
 	timestamp := entry.Time.Format(f.TimestampFormat)
 	if f.TimestampFormat == "" {
 		timestamp = entry.Time.Format("2006/01/02 15:04:05.000")
 	}
-	
+
 	// 构建基础日志信息
 	logLine := fmt.Sprintf("[%s] %s", levelChar, timestamp)
-	
+
 	// 添加调用位置信息
 	if f.ShowCaller && entry.HasCaller() {
 		filename := f.getShortFilename(entry.Caller.File)
 		logLine += fmt.Sprintf(" [%s:%d]", filename, entry.Caller.Line)
 	}
-	
+
 	// 添加日志消息
 	logLine += fmt.Sprintf(" %s", entry.Message)
-	
+
 	// 添加字段信息（如果有）
 	if len(entry.Data) > 0 {
 		fields := make([]string, 0, len(entry.Data))
@@ -46,7 +46,7 @@ func (f *BeegoFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 		logLine += fmt.Sprintf(" {%s}", strings.Join(fields, ", "))
 	}
-	
+
 	logLine += "\n"
 	return []byte(logLine), nil
 }
@@ -94,22 +94,22 @@ func (f *Log4GoFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if f.TimestampFormat == "" {
 		timestamp = entry.Time.Format("2006/01/02 15:04:05")
 	}
-	
+
 	// 获取级别名称
 	levelName := strings.ToUpper(entry.Level.String())
-	
+
 	// 构建基础日志信息
 	logLine := fmt.Sprintf("[%s] [%s]", timestamp, levelName)
-	
+
 	// 添加调用位置信息
 	if f.ShowCaller && entry.HasCaller() {
 		filename := f.getShortFilename(entry.Caller.File)
 		logLine += fmt.Sprintf(" (%s:%d)", filename, entry.Caller.Line)
 	}
-	
+
 	// 添加日志消息
 	logLine += fmt.Sprintf(" %s", entry.Message)
-	
+
 	// 添加字段信息（如果有）
 	if len(entry.Data) > 0 {
 		fields := make([]string, 0, len(entry.Data))
@@ -118,7 +118,7 @@ func (f *Log4GoFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 		logLine += fmt.Sprintf(" [%s]", strings.Join(fields, ", "))
 	}
-	
+
 	logLine += "\n"
 	return []byte(logLine), nil
 }
@@ -149,7 +149,7 @@ func (f *LogstashFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		"message":    entry.Message,
 		"logger":     "yyhertz",
 	}
-	
+
 	// 添加服务信息
 	if f.ServiceName != "" {
 		data["service"] = f.ServiceName
@@ -157,25 +157,25 @@ func (f *LogstashFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if f.Version != "" {
 		data["version"] = f.Version
 	}
-	
+
 	// 添加调用位置信息
 	if entry.HasCaller() {
 		data["file"] = entry.Caller.File
 		data["line"] = entry.Caller.Line
 		data["function"] = entry.Caller.Function
 	}
-	
+
 	// 合并字段数据
 	for k, v := range entry.Data {
 		data[k] = v
 	}
-	
+
 	// 序列化为JSON
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 添加换行符
 	bytes = append(bytes, '\n')
 	return bytes, nil
@@ -193,28 +193,28 @@ type SyslogFormatter struct {
 func (f *SyslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 计算优先级
 	priority := f.Facility*8 + f.getSyslogSeverity(entry.Level)
-	
+
 	// 格式化时间（RFC3164格式）
 	timestamp := entry.Time.Format("Jan 2 15:04:05")
 	if f.TimestampFormat != "" {
 		timestamp = entry.Time.Format(f.TimestampFormat)
 	}
-	
+
 	// 获取主机名
 	hostname := f.Hostname
 	if hostname == "" {
 		hostname = "localhost"
 	}
-	
+
 	// 获取标签
 	tag := f.Tag
 	if tag == "" {
 		tag = "yyhertz"
 	}
-	
+
 	// 构建Syslog消息
 	message := fmt.Sprintf("<%d>%s %s %s: %s", priority, timestamp, hostname, tag, entry.Message)
-	
+
 	// 添加字段信息
 	if len(entry.Data) > 0 {
 		fields := make([]string, 0, len(entry.Data))
@@ -223,7 +223,7 @@ func (f *SyslogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 		message += fmt.Sprintf(" [%s]", strings.Join(fields, " "))
 	}
-	
+
 	message += "\n"
 	return []byte(message), nil
 }
@@ -263,7 +263,7 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		"level":     entry.Level.String(),
 		"message":   entry.Message,
 	}
-	
+
 	// 添加服务信息
 	if f.ServiceName != "" {
 		data["service"] = f.ServiceName
@@ -271,27 +271,27 @@ func (f *FluentdFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if f.Environment != "" {
 		data["environment"] = f.Environment
 	}
-	
+
 	// 添加调用位置信息
 	if entry.HasCaller() {
-		data["source"] = map[string]interface{}{
+		data["source"] = map[string]any{
 			"file":     entry.Caller.File,
 			"line":     entry.Caller.Line,
 			"function": entry.Caller.Function,
 		}
 	}
-	
+
 	// 合并字段数据
 	for k, v := range entry.Data {
 		data[k] = v
 	}
-	
+
 	// 序列化为JSON
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	bytes = append(bytes, '\n')
 	return bytes, nil
 }
@@ -308,35 +308,35 @@ type CloudWatchFormatter struct {
 func (f *CloudWatchFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 创建CloudWatch格式的数据结构
 	data := logrus.Fields{
-		"timestamp":      entry.Time.UnixMilli(),
-		"level":          entry.Level.String(),
-		"message":        entry.Message,
-		"logGroup":       f.LogGroupName,
-		"logStream":      f.LogStreamName,
-		"awsRequestId":   "", // 可以从context中获取
+		"timestamp":    entry.Time.UnixMilli(),
+		"level":        entry.Level.String(),
+		"message":      entry.Message,
+		"logGroup":     f.LogGroupName,
+		"logStream":    f.LogStreamName,
+		"awsRequestId": "", // 可以从context中获取
 	}
-	
+
 	// 添加服务信息
 	if f.ServiceName != "" {
 		data["service"] = f.ServiceName
 	}
-	
+
 	// 添加调用位置信息
 	if entry.HasCaller() {
 		data["source"] = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
 	}
-	
+
 	// 合并字段数据
 	for k, v := range entry.Data {
 		data[k] = v
 	}
-	
+
 	// 序列化为JSON
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	bytes = append(bytes, '\n')
 	return bytes, nil
 }
@@ -351,37 +351,37 @@ type AzureInsightsFormatter struct {
 // Format 实现 logrus.Formatter 接口
 func (f *AzureInsightsFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 创建Application Insights格式的数据结构
-	data := map[string]interface{}{
-		"time":    entry.Time.Format(time.RFC3339),
-		"iKey":    f.InstrumentationKey,
-		"name":    "Microsoft.ApplicationInsights.Message",
+	data := map[string]any{
+		"time": entry.Time.Format(time.RFC3339),
+		"iKey": f.InstrumentationKey,
+		"name": "Microsoft.ApplicationInsights.Message",
 		"tags": map[string]string{
 			"ai.application.ver": "1.0.0",
 			"ai.cloud.role":      f.ServiceName,
 		},
-		"data": map[string]interface{}{
+		"data": map[string]any{
 			"baseType": "MessageData",
-			"baseData": map[string]interface{}{
-				"ver":         2,
-				"message":     entry.Message,
+			"baseData": map[string]any{
+				"ver":           2,
+				"message":       entry.Message,
 				"severityLevel": f.getInsightsSeverity(entry.Level),
-				"properties":  entry.Data,
+				"properties":    entry.Data,
 			},
 		},
 	}
-	
+
 	// 添加调用位置信息
 	if entry.HasCaller() {
-		baseData := data["data"].(map[string]interface{})["baseData"].(map[string]interface{})
+		baseData := data["data"].(map[string]any)["baseData"].(map[string]any)
 		baseData["source"] = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
 	}
-	
+
 	// 序列化为JSON
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	bytes = append(bytes, '\n')
 	return bytes, nil
 }

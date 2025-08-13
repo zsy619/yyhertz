@@ -211,7 +211,7 @@ func MultiOutputLogExample() {
 
 	// 输出日志到多个目标
 	logrusLogger.Info("这条日志会同时输出到控制台、文件、Fluentd和Syslog")
-	logrusLogger.WithFields(map[string]interface{}{
+	logrusLogger.WithFields(map[string]any{
 		"user_id":    "user123",
 		"session_id": "sess456",
 		"action":     "multi_output_test",
@@ -423,10 +423,10 @@ func WithRequestIDExample() {
 
 	fmt.Println("1. 有效RequestID示例：")
 	validIDs := []string{
-		"req-001-12345678",                       // HTTP请求ID
-		"batch-job-20250803101000",               // 批处理任务ID
-		"user.session.a1b2c3d4e5f6g7h8",         // 用户会话ID
-		"transaction-uuid-1234567890abcdef",      // 交易ID
+		"req-001-12345678",                  // HTTP请求ID
+		"batch-job-20250803101000",          // 批处理任务ID
+		"user.session.a1b2c3d4e5f6g7h8",     // 用户会话ID
+		"transaction-uuid-1234567890abcdef", // 交易ID
 	}
 
 	for _, requestID := range validIDs {

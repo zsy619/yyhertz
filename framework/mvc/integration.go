@@ -154,7 +154,7 @@ func (e *EnhancedFastEngine) createIntelligentErrorHandler() middleware.Middlewa
 			err := e.errorDispatcher.Dispatch(ctx, lastError)
 			if err != nil {
 				// 如果分发器也无法处理，使用默认处理
-				ctx.JSON(500, map[string]interface{}{
+				ctx.JSON(500, map[string]any{
 					"code":    500,
 					"message": "Internal Server Error",
 					"success": false,
@@ -241,7 +241,7 @@ func (e *EnhancedFastEngine) Use(name string, handler middleware.MiddlewareFunc,
 }
 
 // UseBuiltin 使用内置中间件
-func (e *EnhancedFastEngine) UseBuiltin(name string, config interface{}, priority int) *EnhancedFastEngine {
+func (e *EnhancedFastEngine) UseBuiltin(name string, config any, priority int) *EnhancedFastEngine {
 	if e.config.Middleware.EnableOptimization {
 		err := e.middlewareManager.UseBuiltin(middleware.LayerGlobal, name, config, priority)
 		if err != nil {

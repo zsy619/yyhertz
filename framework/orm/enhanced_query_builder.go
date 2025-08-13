@@ -30,7 +30,7 @@ type whereCondition struct {
 	Type     string                // 条件类型：where, orWhere, whereIn, whereNotIn, whereBetween, whereNull, whereNotNull
 	Column   string                // 列名
 	Operator string                // 操作符
-	Value    interface{}           // 值
+	Value    any                   // 值
 	Boolean  string                // 布尔连接符：AND, OR
 	SubQuery *EnhancedQueryBuilder // 子查询
 }
@@ -82,7 +82,7 @@ func (qb *EnhancedQueryBuilder) Distinct() *EnhancedQueryBuilder {
 }
 
 // Where 添加WHERE条件
-func (qb *EnhancedQueryBuilder) Where(column string, operator string, value interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) Where(column string, operator string, value any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:     "where",
 		Column:   column,
@@ -94,7 +94,7 @@ func (qb *EnhancedQueryBuilder) Where(column string, operator string, value inte
 }
 
 // OrWhere 添加OR WHERE条件
-func (qb *EnhancedQueryBuilder) OrWhere(column string, operator string, value interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) OrWhere(column string, operator string, value any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:     "where",
 		Column:   column,
@@ -106,7 +106,7 @@ func (qb *EnhancedQueryBuilder) OrWhere(column string, operator string, value in
 }
 
 // WhereIn 添加WHERE IN条件
-func (qb *EnhancedQueryBuilder) WhereIn(column string, values interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) WhereIn(column string, values any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:    "whereIn",
 		Column:  column,
@@ -117,7 +117,7 @@ func (qb *EnhancedQueryBuilder) WhereIn(column string, values interface{}) *Enha
 }
 
 // WhereNotIn 添加WHERE NOT IN条件
-func (qb *EnhancedQueryBuilder) WhereNotIn(column string, values interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) WhereNotIn(column string, values any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:    "whereNotIn",
 		Column:  column,
@@ -128,22 +128,22 @@ func (qb *EnhancedQueryBuilder) WhereNotIn(column string, values interface{}) *E
 }
 
 // WhereBetween 添加WHERE BETWEEN条件
-func (qb *EnhancedQueryBuilder) WhereBetween(column string, min, max interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) WhereBetween(column string, min, max any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:    "whereBetween",
 		Column:  column,
-		Value:   []interface{}{min, max},
+		Value:   []any{min, max},
 		Boolean: "AND",
 	})
 	return qb
 }
 
 // WhereNotBetween 添加WHERE NOT BETWEEN条件
-func (qb *EnhancedQueryBuilder) WhereNotBetween(column string, min, max interface{}) *EnhancedQueryBuilder {
+func (qb *EnhancedQueryBuilder) WhereNotBetween(column string, min, max any) *EnhancedQueryBuilder {
 	qb.wheres = append(qb.wheres, whereCondition{
 		Type:    "whereNotBetween",
 		Column:  column,
-		Value:   []interface{}{min, max},
+		Value:   []any{min, max},
 		Boolean: "AND",
 	})
 	return qb
@@ -287,9 +287,9 @@ func (qb *EnhancedQueryBuilder) Lock(lockType string) *EnhancedQueryBuilder {
 }
 
 // ToSQL 生成SQL语句
-func (qb *EnhancedQueryBuilder) ToSQL() (string, []interface{}) {
+func (qb *EnhancedQueryBuilder) ToSQL() (string, []any) {
 	var sql strings.Builder
-	var args []interface{}
+	var args []any
 
 	// SELECT子句
 	sql.WriteString("SELECT ")
@@ -329,11 +329,11 @@ func (qb *EnhancedQueryBuilder) ToSQL() (string, []interface{}) {
 				args = append(args, where.Value)
 			case "whereBetween":
 				sql.WriteString(fmt.Sprintf("%s BETWEEN ? AND ?", where.Column))
-				values := where.Value.([]interface{})
+				values := where.Value.([]any)
 				args = append(args, values[0], values[1])
 			case "whereNotBetween":
 				sql.WriteString(fmt.Sprintf("%s NOT BETWEEN ? AND ?", where.Column))
-				values := where.Value.([]interface{})
+				values := where.Value.([]any)
 				args = append(args, values[0], values[1])
 			case "whereNull":
 				sql.WriteString(fmt.Sprintf("%s IS NULL", where.Column))
@@ -434,14 +434,14 @@ func (qb *EnhancedQueryBuilder) ToGormDB() *gorm.DB {
 				db = db.Where(fmt.Sprintf("%s NOT IN (?)", where.Column), where.Value)
 			}
 		case "whereBetween":
-			values := where.Value.([]interface{})
+			values := where.Value.([]any)
 			if where.Boolean == "OR" {
 				db = db.Or(fmt.Sprintf("%s BETWEEN ? AND ?", where.Column), values[0], values[1])
 			} else {
 				db = db.Where(fmt.Sprintf("%s BETWEEN ? AND ?", where.Column), values[0], values[1])
 			}
 		case "whereNotBetween":
-			values := where.Value.([]interface{})
+			values := where.Value.([]any)
 			if where.Boolean == "OR" {
 				db = db.Or(fmt.Sprintf("%s NOT BETWEEN ? AND ?", where.Column), values[0], values[1])
 			} else {
@@ -503,12 +503,12 @@ func (qb *EnhancedQueryBuilder) ToGormDB() *gorm.DB {
 }
 
 // Get 执行查询并返回结果
-func (qb *EnhancedQueryBuilder) Get(dest interface{}) error {
+func (qb *EnhancedQueryBuilder) Get(dest any) error {
 	return qb.ToGormDB().Find(dest).Error
 }
 
 // First 执行查询并返回第一条记录
-func (qb *EnhancedQueryBuilder) First(dest interface{}) error {
+func (qb *EnhancedQueryBuilder) First(dest any) error {
 	return qb.ToGormDB().First(dest).Error
 }
 
@@ -526,7 +526,7 @@ func (qb *EnhancedQueryBuilder) Exists() (bool, error) {
 }
 
 // Paginate 分页查询
-func (qb *EnhancedQueryBuilder) Paginate(page, pageSize int, dest interface{}) (int64, error) {
+func (qb *EnhancedQueryBuilder) Paginate(page, pageSize int, dest any) (int64, error) {
 	// 计算总数
 	total, err := qb.Count()
 	if err != nil {

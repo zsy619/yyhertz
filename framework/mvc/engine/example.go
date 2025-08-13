@@ -65,17 +65,17 @@ func ExampleUsage() {
 func LoggerMiddleware() mvccontext.HandlerFunc {
 	return func(ctx *mvccontext.Context) {
 		start := time.Now()
-		path := ctx.Request.Path()
+		path := ctx.Request().Path()
 
 		ctx.Next()
 
 		latency := time.Since(start)
-		status := ctx.Writer.Status()
+		status := ctx.Writer().Status()
 		go func() {
 			log.Printf("[%s] %s %s %v %d",
-				ctx.Request.Method(),
+				ctx.Request().Method(),
 				string(path),
-				ctx.Request.RemoteAddr(),
+				ctx.Request().RemoteAddr(),
 				latency,
 				status,
 			)
@@ -126,7 +126,7 @@ func HomeHandler(ctx context.Context, c *core.RequestContext) {
 }
 
 func HealthHandler(ctx context.Context, c *core.RequestContext) {
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"status":    "healthy",
 		"timestamp": time.Now().Unix(),
 		"uptime":    time.Since(time.Now()).Seconds(),
@@ -135,13 +135,13 @@ func HealthHandler(ctx context.Context, c *core.RequestContext) {
 
 func ListUsersHandler(ctx context.Context, c *core.RequestContext) {
 	// 模拟从数据库获取用户列表
-	users := []map[string]interface{}{
+	users := []map[string]any{
 		{"id": 1, "name": "Alice", "email": "alice@example.com"},
 		{"id": 2, "name": "Bob", "email": "bob@example.com"},
 		{"id": 3, "name": "Charlie", "email": "charlie@example.com"},
 	}
 
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"users": users,
 		"total": len(users),
 	})
@@ -152,7 +152,7 @@ func GetUserHandler(ctx context.Context, c *core.RequestContext) {
 	userID := string(c.Param("id"))
 
 	// 模拟从数据库获取用户
-	user := map[string]interface{}{
+	user := map[string]any{
 		"id":    userID,
 		"name":  "User " + userID,
 		"email": "user" + userID + "@example.com",
@@ -172,7 +172,7 @@ func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
 	// c.ShouldBindJSON(&user)
 
 	// 模拟创建用户
-	result := map[string]interface{}{
+	result := map[string]any{
 		"id":      123,
 		"name":    user.Name,
 		"email":   user.Email,
@@ -185,7 +185,7 @@ func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
 func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
 	userID := string(c.Param("id"))
 
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"message": "User updated successfully",
 		"user_id": userID,
 	})
@@ -194,7 +194,7 @@ func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
 func DeleteUserHandler(ctx context.Context, c *core.RequestContext) {
 	userID := string(c.Param("id"))
 
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"message": "User deleted successfully",
 		"user_id": userID,
 	})
@@ -204,7 +204,7 @@ func GetProfileHandler(ctx context.Context, c *core.RequestContext) {
 	// 从中间件设置的用户ID获取用户信息
 	// userID := ctx.MustGet("user_id").(string)
 
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"user_id": "12345",
 		"name":    "Current User",
 		"email":   "user@example.com",
@@ -212,7 +212,7 @@ func GetProfileHandler(ctx context.Context, c *core.RequestContext) {
 }
 
 func UploadFileHandler(ctx context.Context, c *core.RequestContext) {
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"message":  "File uploaded successfully",
 		"filename": "example.jpg",
 		"size":     "1024KB",
@@ -222,7 +222,7 @@ func UploadFileHandler(ctx context.Context, c *core.RequestContext) {
 func StaticFileHandler(ctx context.Context, c *core.RequestContext) {
 	filepath := string(c.Param("filepath"))
 
-	c.JSON(200, map[string]interface{}{
+	c.JSON(200, map[string]any{
 		"message":  "Static file served",
 		"filepath": filepath,
 	})

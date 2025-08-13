@@ -12,49 +12,49 @@ import (
 
 // ParameterBinder 参数绑定器
 type ParameterBinder struct {
-	methodType    reflect.Type              // 方法类型
-	paramBinders  []ParamBinder            // 参数绑定器列表
-	typeConverter *TypeConverter           // 类型转换器
-	validator     *ParameterValidator      // 参数验证器
+	methodType    reflect.Type        // 方法类型
+	paramBinders  []ParamBinder       // 参数绑定器列表
+	typeConverter *TypeConverter      // 类型转换器
+	validator     *ParameterValidator // 参数验证器
 }
 
 // ParamBinder 单个参数绑定器
 type ParamBinder struct {
-	Name        string                    // 参数名
-	Type        reflect.Type              // 参数类型
-	Index       int                       // 参数索引
-	Source      ParameterSource           // 参数来源
-	Required    bool                      // 是否必需
-	DefaultValue interface{}              // 默认值
-	Converter   TypeConverterFunc         // 类型转换函数
-	Validator   ParameterValidatorFunc    // 参数验证函数
-	Tags        map[string]string         // 标签信息
+	Name         string                 // 参数名
+	Type         reflect.Type           // 参数类型
+	Index        int                    // 参数索引
+	Source       ParameterSource        // 参数来源
+	Required     bool                   // 是否必需
+	DefaultValue any                    // 默认值
+	Converter    TypeConverterFunc      // 类型转换函数
+	Validator    ParameterValidatorFunc // 参数验证函数
+	Tags         map[string]string      // 标签信息
 }
 
 // ParameterSource 参数来源枚举
 type ParameterSource int
 
 const (
-	SourceQuery  ParameterSource = iota // 查询参数
-	SourcePath                         // 路径参数
-	SourceForm                         // 表单参数
-	SourceJSON                         // JSON体参数
-	SourceHeader                       // 请求头参数
-	SourceCookie                       // Cookie参数
-	SourceContext                      // 上下文参数
-	SourceFile                         // 文件参数
+	SourceQuery   ParameterSource = iota // 查询参数
+	SourcePath                           // 路径参数
+	SourceForm                           // 表单参数
+	SourceJSON                           // JSON体参数
+	SourceHeader                         // 请求头参数
+	SourceCookie                         // Cookie参数
+	SourceContext                        // 上下文参数
+	SourceFile                           // 文件参数
 )
 
 // TypeConverterFunc 类型转换函数
-type TypeConverterFunc func(value interface{}, targetType reflect.Type) (interface{}, error)
+type TypeConverterFunc func(value any, targetType reflect.Type) (any, error)
 
 // ParameterValidatorFunc 参数验证函数
-type ParameterValidatorFunc func(value interface{}, param *ParamBinder) error
+type ParameterValidatorFunc func(value any, param *ParamBinder) error
 
 // BindingResult 绑定结果
 type BindingResult struct {
-	Values []interface{}         // 绑定的值
-	Errors []ParameterError     // 绑定错误
+	Values []any            // 绑定的值
+	Errors []ParameterError // 绑定错误
 }
 
 // ParameterError 参数错误
@@ -62,7 +62,7 @@ type ParameterError struct {
 	Parameter string // 参数名
 	Message   string // 错误消息
 	Code      string // 错误码
-	Value     interface{} // 原始值
+	Value     any    // 原始值
 }
 
 // NewParameterBinder 创建参数绑定器
@@ -91,20 +91,20 @@ func (pb *ParameterBinder) analyzeParameters() error {
 	// 跳过第一个参数（接收者）
 	for i := 1; i < pb.methodType.NumIn(); i++ {
 		paramType := pb.methodType.In(i)
-		
+
 		// 创建参数绑定器
 		paramBinder := ParamBinder{
-			Name:      fmt.Sprintf("param%d", i),
-			Type:      paramType,
-			Index:     i,
-			Source:    pb.inferParameterSource(paramType),
-			Required:  true,
-			Tags:      make(map[string]string),
+			Name:     fmt.Sprintf("param%d", i),
+			Type:     paramType,
+			Index:    i,
+			Source:   pb.inferParameterSource(paramType),
+			Required: true,
+			Tags:     make(map[string]string),
 		}
 
 		// 设置类型转换器
 		paramBinder.Converter = pb.typeConverter.GetConverter(paramType)
-		
+
 		// 设置参数验证器
 		paramBinder.Validator = pb.validator.GetValidator(paramType)
 
@@ -149,12 +149,12 @@ func (pb *ParameterBinder) inferParameterSource(paramType reflect.Type) Paramete
 }
 
 // BindParameters 绑定参数
-func (pb *ParameterBinder) BindParameters(ctx *context.Context) ([]interface{}, error) {
+func (pb *ParameterBinder) BindParameters(ctx *context.Context) ([]any, error) {
 	// 使用适配器
 	adapter := NewContextAdapter(ctx)
-	
+
 	result := &BindingResult{
-		Values: make([]interface{}, len(pb.paramBinders)),
+		Values: make([]any, len(pb.paramBinders)),
 		Errors: make([]ParameterError, 0),
 	}
 
@@ -182,7 +182,7 @@ func (pb *ParameterBinder) BindParameters(ctx *context.Context) ([]interface{}, 
 }
 
 // bindParameter 绑定单个参数
-func (pb *ParameterBinder) bindParameter(adapter *ContextAdapter, param *ParamBinder) (interface{}, error) {
+func (pb *ParameterBinder) bindParameter(adapter *ContextAdapter, param *ParamBinder) (any, error) {
 	// 获取原始值
 	rawValue, err := pb.extractRawValue(adapter, param)
 	if err != nil {
@@ -217,7 +217,7 @@ func (pb *ParameterBinder) bindParameter(adapter *ContextAdapter, param *ParamBi
 }
 
 // extractRawValue 提取原始值
-func (pb *ParameterBinder) extractRawValue(adapter *ContextAdapter, param *ParamBinder) (interface{}, error) {
+func (pb *ParameterBinder) extractRawValue(adapter *ContextAdapter, param *ParamBinder) (any, error) {
 	switch param.Source {
 	case SourceQuery:
 		return adapter.Query(param.Name), nil
@@ -236,10 +236,8 @@ func (pb *ParameterBinder) extractRawValue(adapter *ContextAdapter, param *Param
 		}
 		return cookie, nil
 	case SourceContext:
-		if adapter.ctx.Keys != nil {
-			return adapter.ctx.Keys[param.Name], nil
-		}
-		return nil, nil
+		val, _ := adapter.ctx.Get(param.Name)
+		return val, nil
 	case SourceFile:
 		return adapter.FormFile(param.Name)
 	default:
@@ -248,7 +246,7 @@ func (pb *ParameterBinder) extractRawValue(adapter *ContextAdapter, param *Param
 }
 
 // extractJSONValue 提取JSON值
-func (pb *ParameterBinder) extractJSONValue(adapter *ContextAdapter, param *ParamBinder) (interface{}, error) {
+func (pb *ParameterBinder) extractJSONValue(adapter *ContextAdapter, param *ParamBinder) (any, error) {
 	// 获取请求体
 	body, err := adapter.GetRawData()
 	if err != nil {
@@ -260,8 +258,8 @@ func (pb *ParameterBinder) extractJSONValue(adapter *ContextAdapter, param *Para
 	}
 
 	// 根据参数类型解析JSON
-	if param.Type.Kind() == reflect.Struct || 
-	   (param.Type.Kind() == reflect.Ptr && param.Type.Elem().Kind() == reflect.Struct) {
+	if param.Type.Kind() == reflect.Struct ||
+		(param.Type.Kind() == reflect.Ptr && param.Type.Elem().Kind() == reflect.Struct) {
 		// 解析整个结构体
 		valuePtr := reflect.New(param.Type)
 		if err := json.Unmarshal(body, valuePtr.Interface()); err != nil {
@@ -270,7 +268,7 @@ func (pb *ParameterBinder) extractJSONValue(adapter *ContextAdapter, param *Para
 		return valuePtr.Elem().Interface(), nil
 	} else {
 		// 解析特定字段
-		var data map[string]interface{}
+		var data map[string]any
 		if err := json.Unmarshal(body, &data); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 		}
@@ -279,7 +277,7 @@ func (pb *ParameterBinder) extractJSONValue(adapter *ContextAdapter, param *Para
 }
 
 // convertValue 转换值
-func (pb *ParameterBinder) convertValue(rawValue interface{}, param *ParamBinder) (interface{}, error) {
+func (pb *ParameterBinder) convertValue(rawValue any, param *ParamBinder) (any, error) {
 	if param.Converter != nil {
 		return param.Converter(rawValue, param.Type)
 	}
@@ -287,14 +285,14 @@ func (pb *ParameterBinder) convertValue(rawValue interface{}, param *ParamBinder
 }
 
 // getZeroValue 获取零值
-func (pb *ParameterBinder) getZeroValue(t reflect.Type) interface{} {
+func (pb *ParameterBinder) getZeroValue(t reflect.Type) any {
 	return reflect.Zero(t).Interface()
 }
 
 // BindToStruct 绑定到结构体
-func (pb *ParameterBinder) BindToStruct(ctx *context.Context, target interface{}) error {
+func (pb *ParameterBinder) BindToStruct(ctx *context.Context, target any) error {
 	adapter := NewContextAdapter(ctx)
-	
+
 	targetValue := reflect.ValueOf(target)
 	if targetValue.Kind() != reflect.Ptr || targetValue.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("target must be a pointer to struct")
@@ -386,7 +384,7 @@ func (pb *ParameterBinder) isRequiredField(field reflect.StructField) bool {
 	if tag := field.Tag.Get("validate"); tag != "" {
 		return strings.Contains(tag, "required")
 	}
-	
+
 	// 检查 binding 标签
 	if tag := field.Tag.Get("binding"); tag != "" {
 		return strings.Contains(tag, "required")
@@ -396,13 +394,13 @@ func (pb *ParameterBinder) isRequiredField(field reflect.StructField) bool {
 }
 
 // ShouldBindQuery 从查询参数绑定
-func (pb *ParameterBinder) ShouldBindQuery(ctx *context.Context, target interface{}) error {
+func (pb *ParameterBinder) ShouldBindQuery(ctx *context.Context, target any) error {
 	adapter := NewContextAdapter(ctx)
 	return pb.bindFromSource(adapter, target, SourceQuery)
 }
 
 // ShouldBindJSON 从JSON体绑定
-func (pb *ParameterBinder) ShouldBindJSON(ctx *context.Context, target interface{}) error {
+func (pb *ParameterBinder) ShouldBindJSON(ctx *context.Context, target any) error {
 	adapter := NewContextAdapter(ctx)
 	body, err := adapter.GetRawData()
 	if err != nil {
@@ -417,13 +415,13 @@ func (pb *ParameterBinder) ShouldBindJSON(ctx *context.Context, target interface
 }
 
 // ShouldBindForm 从表单绑定
-func (pb *ParameterBinder) ShouldBindForm(ctx *context.Context, target interface{}) error {
+func (pb *ParameterBinder) ShouldBindForm(ctx *context.Context, target any) error {
 	adapter := NewContextAdapter(ctx)
 	return pb.bindFromSource(adapter, target, SourceForm)
 }
 
 // bindFromSource 从指定来源绑定
-func (pb *ParameterBinder) bindFromSource(adapter *ContextAdapter, target interface{}, source ParameterSource) error {
+func (pb *ParameterBinder) bindFromSource(adapter *ContextAdapter, target any, source ParameterSource) error {
 	targetValue := reflect.ValueOf(target)
 	if targetValue.Kind() != reflect.Ptr || targetValue.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("target must be a pointer to struct")
@@ -448,7 +446,7 @@ func (pb *ParameterBinder) bindFromSource(adapter *ContextAdapter, target interf
 			paramName = strings.ToLower(field.Name)
 		}
 
-		var rawValue interface{}
+		var rawValue any
 		var err error
 
 		// 根据来源获取值
@@ -480,7 +478,7 @@ func (pb *ParameterBinder) bindFromSource(adapter *ContextAdapter, target interf
 }
 
 // ValidateParameters 验证参数
-func (pb *ParameterBinder) ValidateParameters(values []interface{}) error {
+func (pb *ParameterBinder) ValidateParameters(values []any) error {
 	for i, value := range values {
 		if i < len(pb.paramBinders) {
 			param := &pb.paramBinders[i]
@@ -495,7 +493,7 @@ func (pb *ParameterBinder) ValidateParameters(values []interface{}) error {
 }
 
 // MustBind 必须绑定（如果失败会panic）
-func (pb *ParameterBinder) MustBind(ctx *context.Context, target interface{}) {
+func (pb *ParameterBinder) MustBind(ctx *context.Context, target any) {
 	if err := pb.BindToStruct(ctx, target); err != nil {
 		panic(fmt.Sprintf("binding failed: %v", err))
 	}

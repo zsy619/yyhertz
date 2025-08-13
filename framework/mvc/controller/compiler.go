@@ -12,37 +12,37 @@ import (
 
 // ControllerCompiler 控制器编译器 - 预编译控制器减少反射调用
 type ControllerCompiler struct {
-	cache      sync.Map                    // 编译缓存
-	methods    sync.Map                    // 方法缓存
-	lifecycle  *LifecycleManager          // 生命周期管理器
+	cache       sync.Map                       // 编译缓存
+	methods     sync.Map                       // 方法缓存
+	lifecycle   *LifecycleManager              // 生命周期管理器
 	precompiled map[string]*CompiledController // 预编译的控制器
-	mu         sync.RWMutex               // 读写锁
+	mu          sync.RWMutex                   // 读写锁
 }
 
 // CompiledController 预编译的控制器
 type CompiledController struct {
-	Type         reflect.Type                    // 控制器类型
-	Methods      map[string]*CompiledMethod      // 编译后的方法
-	Instance     interface{}                     // 控制器实例
-	Pool         *ControllerPool                 // 控制器池
-	Metadata     *ControllerMetadata             // 控制器元数据
-	CreatedAt    time.Time                      // 创建时间
+	Type      reflect.Type               // 控制器类型
+	Methods   map[string]*CompiledMethod // 编译后的方法
+	Instance  any                        // 控制器实例
+	Pool      *ControllerPool            // 控制器池
+	Metadata  *ControllerMetadata        // 控制器元数据
+	CreatedAt time.Time                  // 创建时间
 }
 
 // CompiledMethod 预编译的方法
 type CompiledMethod struct {
-	Name         string                 // 方法名
-	Handler      MethodHandler          // 编译后的处理器
-	ParamBinder  *ParameterBinder       // 参数绑定器
-	Validator    *MethodValidator       // 方法验证器
-	HTTPMethods  []string               // 支持的HTTP方法
-	Path         string                 // 路径模式
-	Middleware   []string               // 中间件列表
-	CacheEnabled bool                   // 是否启用缓存
+	Name         string           // 方法名
+	Handler      MethodHandler    // 编译后的处理器
+	ParamBinder  *ParameterBinder // 参数绑定器
+	Validator    *MethodValidator // 方法验证器
+	HTTPMethods  []string         // 支持的HTTP方法
+	Path         string           // 路径模式
+	Middleware   []string         // 中间件列表
+	CacheEnabled bool             // 是否启用缓存
 }
 
 // MethodHandler 方法处理器类型
-type MethodHandler func(ctx *context.Context, controller interface{}) error
+type MethodHandler func(ctx *context.Context, controller any) error
 
 // ControllerMetadata 控制器元数据
 type ControllerMetadata struct {
@@ -56,13 +56,13 @@ type ControllerMetadata struct {
 
 // CompilerConfig 编译器配置
 type CompilerConfig struct {
-	EnableCache      bool          // 启用缓存
-	CacheSize        int           // 缓存大小
-	PrecompileAll    bool          // 预编译所有控制器
-	OptimizeLevel    int           // 优化级别 (0-3)
-	EnableLifecycle  bool          // 启用生命周期管理
-	PoolSize         int           // 控制器池大小
-	MaxIdleTime      time.Duration // 最大空闲时间
+	EnableCache     bool          // 启用缓存
+	CacheSize       int           // 缓存大小
+	PrecompileAll   bool          // 预编译所有控制器
+	OptimizeLevel   int           // 优化级别 (0-3)
+	EnableLifecycle bool          // 启用生命周期管理
+	PoolSize        int           // 控制器池大小
+	MaxIdleTime     time.Duration // 最大空闲时间
 }
 
 // DefaultCompilerConfig 默认编译器配置
@@ -93,14 +93,14 @@ func NewControllerCompiler(config *CompilerConfig) *ControllerCompiler {
 }
 
 // Compile 编译控制器
-func (cc *ControllerCompiler) Compile(controller interface{}) (*CompiledController, error) {
+func (cc *ControllerCompiler) Compile(controller any) (*CompiledController, error) {
 	controllerType := reflect.TypeOf(controller)
 	if controllerType.Kind() == reflect.Ptr {
 		controllerType = controllerType.Elem()
 	}
 
 	controllerName := controllerType.Name()
-	
+
 	// 检查缓存
 	if cached, exists := cc.getFromCache(controllerName); exists {
 		return cached, nil
@@ -114,14 +114,14 @@ func (cc *ControllerCompiler) Compile(controller interface{}) (*CompiledControll
 
 	// 缓存结果
 	cc.cache.Store(controllerName, compiled)
-	
+
 	return compiled, nil
 }
 
 // compileController 执行控制器编译
-func (cc *ControllerCompiler) compileController(controller interface{}, controllerType reflect.Type) (*CompiledController, error) {
+func (cc *ControllerCompiler) compileController(controller any, controllerType reflect.Type) (*CompiledController, error) {
 	controllerName := controllerType.Name()
-	
+
 	compiled := &CompiledController{
 		Type:      controllerType,
 		Methods:   make(map[string]*CompiledMethod),
@@ -134,7 +134,7 @@ func (cc *ControllerCompiler) compileController(controller interface{}, controll
 	// 编译所有公开方法
 	for i := 0; i < controllerType.NumMethod(); i++ {
 		method := controllerType.Method(i)
-		
+
 		// 跳过非公开方法和基础方法
 		if !method.IsExported() || cc.isBaseMethod(method.Name) {
 			continue
@@ -156,7 +156,7 @@ func (cc *ControllerCompiler) compileController(controller interface{}, controll
 // compileMethod 编译单个方法
 func (cc *ControllerCompiler) compileMethod(method reflect.Method, controllerType reflect.Type) (*CompiledMethod, error) {
 	methodType := method.Type
-	
+
 	// 检查方法签名
 	if methodType.NumIn() < 1 { // 至少需要接收者
 		return nil, nil
@@ -195,7 +195,7 @@ func (cc *ControllerCompiler) compileMethod(method reflect.Method, controllerTyp
 
 // createOptimizedHandler 创建优化的方法处理器
 func (cc *ControllerCompiler) createOptimizedHandler(method reflect.Method, binder *ParameterBinder, validator *MethodValidator) MethodHandler {
-	return func(ctx *context.Context, controller interface{}) error {
+	return func(ctx *context.Context, controller any) error {
 		// 1. 参数绑定和验证
 		params, err := binder.BindParameters(ctx)
 		if err != nil {
@@ -221,7 +221,7 @@ func (cc *ControllerCompiler) createOptimizedHandler(method reflect.Method, bind
 
 		// 执行方法调用
 		results := methodValue.Call(args)
-		
+
 		// 处理返回值
 		return cc.handleMethodResult(ctx, results)
 	}
@@ -260,7 +260,7 @@ func (cc *ControllerCompiler) handleMethodResult(ctx *context.Context, results [
 func (cc *ControllerCompiler) extractRouteInfo(methodName string) ([]string, string) {
 	// 解析方法名获取HTTP方法
 	methodName = strings.ToLower(methodName)
-	
+
 	var httpMethods []string
 	var path string
 
@@ -355,7 +355,7 @@ func (cc *ControllerCompiler) GetCompiledController(controllerName string) (*Com
 }
 
 // PrecompileAll 预编译所有已注册的控制器
-func (cc *ControllerCompiler) PrecompileAll(controllers []interface{}) error {
+func (cc *ControllerCompiler) PrecompileAll(controllers []any) error {
 	for _, controller := range controllers {
 		if _, err := cc.Compile(controller); err != nil {
 			return fmt.Errorf("failed to precompile controller: %w", err)
@@ -376,8 +376,8 @@ type CompilerStats struct {
 // GetStats 获取编译器统计信息
 func (cc *ControllerCompiler) GetStats() *CompilerStats {
 	stats := &CompilerStats{}
-	
-	cc.cache.Range(func(key, value interface{}) bool {
+
+	cc.cache.Range(func(key, value any) bool {
 		stats.CompiledControllers++
 		compiled := value.(*CompiledController)
 		stats.CompiledMethods += len(compiled.Methods)

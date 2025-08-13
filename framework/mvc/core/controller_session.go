@@ -11,13 +11,13 @@ func (c *BaseController) getSession() session.Store {
 	if c.Ctx == nil {
 		return nil
 	}
-	if s, exists := c.Ctx.RequestContext.Get("session"); exists {
+	if s, exists := c.Ctx.Request().Get("session"); exists {
 		if store, ok := s.(session.Store); ok {
 			return store
 		}
 	}
 	// 如果没有从中间件获取到Session，创建一个新的
-	return c.sessionHelper.GetOrCreateSession(c.Ctx.RequestContext)
+	return c.sessionHelper.GetOrCreateSession(c.Ctx.Request())
 }
 
 // SetSession 设置Session数据

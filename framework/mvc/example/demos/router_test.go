@@ -19,14 +19,14 @@ func TestRouter(t *testing.T) {
 
 	// 1. 测试基本的路由注册
 	mvc.GET("/test", func(ctx context.Context, c *core.RequestContext) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "GET route working",
 			"time":    time.Now(),
 		})
 	})
 
 	mvc.POST("/test", func(ctx context.Context, c *core.RequestContext) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "POST route working",
 			"time":    time.Now(),
 		})
@@ -34,7 +34,7 @@ func TestRouter(t *testing.T) {
 
 	mvc.Any("/any-test", func(ctx context.Context, c *core.RequestContext) {
 		method := string(c.Method())
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "ANY route working",
 			"method":  method,
 			"time":    time.Now(),

@@ -8,22 +8,23 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // FastEngine 高性能MVC引擎
 type FastEngine struct {
-	router      *RouterTree                // 路由树
-	contextPool *mvccontext.ContextPool    // Context池
-	middleware  []mvccontext.HandlerFunc   // 全局中间件
-	
+	router      *RouterTree              // 路由树
+	contextPool *mvccontext.ContextPool  // Context池
+	middleware  []mvccontext.HandlerFunc // 全局中间件
+
 	// 配置
 	config EngineConfig
-	
+
 	// 统计
 	stats EngineStats
-	
+
 	// 状态
 	started   bool
 	mu        sync.RWMutex
@@ -32,28 +33,28 @@ type FastEngine struct {
 
 // EngineConfig 引擎配置
 type EngineConfig struct {
-	MaxRouteCache   int           // 最大路由缓存
-	MaxContextPool  int32         // 最大Context池大小
-	EnableMetrics   bool          // 启用性能统计
-	EnablePprof     bool          // 启用性能分析
-	RequestTimeout  time.Duration // 请求超时
-	RedirectSlash   bool          // 自动重定向斜杠
-	HandleOptions   bool          // 处理OPTIONS请求
+	MaxRouteCache  int           // 最大路由缓存
+	MaxContextPool int32         // 最大Context池大小
+	EnableMetrics  bool          // 启用性能统计
+	EnablePprof    bool          // 启用性能分析
+	RequestTimeout time.Duration // 请求超时
+	RedirectSlash  bool          // 自动重定向斜杠
+	HandleOptions  bool          // 处理OPTIONS请求
 }
 
 // EngineStats 引擎统计
 type EngineStats struct {
-	TotalRequests   int64 // 总请求数
-	ActiveRequests  int64 // 活跃请求数
-	AverageLatency  int64 // 平均延迟(微秒)
-	RouteHitRate    float64 // 路由命中率
-	ContextHitRate  float64 // Context池命中率
+	TotalRequests  int64   // 总请求数
+	ActiveRequests int64   // 活跃请求数
+	AverageLatency int64   // 平均延迟(微秒)
+	RouteHitRate   float64 // 路由命中率
+	ContextHitRate float64 // Context池命中率
 }
 
 // NewFastEngine 创建高性能引擎
 func NewFastEngine() *FastEngine {
 	config := DefaultEngineConfig()
-	
+
 	engine := &FastEngine{
 		router:      NewRouterTree(),
 		contextPool: mvccontext.NewContextPool(),
@@ -61,10 +62,10 @@ func NewFastEngine() *FastEngine {
 		config:      config,
 		startTime:   time.Now(),
 	}
-	
+
 	// 设置Context池大小
 	mvccontext.SetMaxPoolSize(config.MaxContextPool)
-	
+
 	return engine
 }
 
@@ -85,7 +86,7 @@ func DefaultEngineConfig() EngineConfig {
 func (e *FastEngine) SetConfig(config EngineConfig) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	e.config = config
 	mvccontext.SetMaxPoolSize(config.MaxContextPool)
 }
@@ -94,7 +95,7 @@ func (e *FastEngine) SetConfig(config EngineConfig) {
 func (e *FastEngine) Use(middleware ...mvccontext.HandlerFunc) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	e.middleware = append(e.middleware, middleware...)
 }
 
@@ -111,16 +112,16 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 		// 从池中获取增强Context
 		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
-		
+
 		// 记录请求开始
 		if e.config.EnableMetrics {
 			atomic.AddInt64(&e.stats.TotalRequests, 1)
 			atomic.AddInt64(&e.stats.ActiveRequests, 1)
 			defer atomic.AddInt64(&e.stats.ActiveRequests, -1)
 		}
-		
+
 		start := time.Now()
-		
+
 		// 设置处理器链（全局中间件 + 路由处理器）
 		handlers := make([]mvccontext.HandlerFunc, len(e.middleware)+1)
 		copy(handlers, e.middleware)
@@ -128,10 +129,10 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 			// 调用原始处理器
 			handler(ctx, c)
 		}
-		
+
 		enhancedCtx.SetHandlers(handlers)
 		enhancedCtx.Next()
-		
+
 		// 记录延迟
 		if e.config.EnableMetrics {
 			latency := time.Since(start).Microseconds()
@@ -144,25 +145,25 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 func (e *FastEngine) HandleRequest(method, path string, c *core.RequestContext) {
 	// 查找路由
 	handler, params := e.router.GetRoute(method, path)
-	
+
 	if handler != nil {
 		// 创建增强Context
 		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
-		
+
 		// 设置路由参数
 		convertedParams := make(mvccontext.Params, len(params))
 		for i, p := range params {
 			convertedParams[i] = mvccontext.Param{Key: p.Key, Value: p.Value}
 		}
-		enhancedCtx.Params = convertedParams
-		enhancedCtx.FullPath = path
-		
+		enhancedCtx.SetParams(convertedParams)
+		enhancedCtx.SetFullPath(path)
+
 		// 执行处理器
 		handler(context.Background(), c)
 		return
 	}
-	
+
 	// 处理404
 	e.handle404(method, path, c)
 }
@@ -177,7 +178,7 @@ func (e *FastEngine) handle404(method, path string, c *core.RequestContext) {
 			}
 		}
 	}
-	
+
 	// 返回404
 	c.String(404, "404 page not found")
 }
@@ -185,7 +186,7 @@ func (e *FastEngine) handle404(method, path string, c *core.RequestContext) {
 // tryRedirect 尝试重定向
 func (e *FastEngine) tryRedirect(method, path string, c *core.RequestContext) bool {
 	var redirectPath string
-	
+
 	if len(path) > 1 && path[len(path)-1] == '/' {
 		// 移除尾部斜杠
 		redirectPath = path[:len(path)-1]
@@ -193,12 +194,12 @@ func (e *FastEngine) tryRedirect(method, path string, c *core.RequestContext) bo
 		// 添加尾部斜杠
 		redirectPath = path + "/"
 	}
-	
+
 	if handler, _ := e.router.GetRoute(method, redirectPath); handler != nil {
 		c.Redirect(301, []byte(redirectPath))
 		return true
 	}
-	
+
 	return false
 }
 
@@ -206,7 +207,7 @@ func (e *FastEngine) tryRedirect(method, path string, c *core.RequestContext) bo
 func (e *FastEngine) Compile() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	// 编译路由树
 	e.router.Compile()
 	e.started = true
@@ -217,9 +218,9 @@ func (e *FastEngine) GetStats() EngineStats {
 	if !e.config.EnableMetrics {
 		return EngineStats{}
 	}
-	
+
 	poolMetrics := mvccontext.GetPoolMetrics()
-	
+
 	return EngineStats{
 		TotalRequests:  atomic.LoadInt64(&e.stats.TotalRequests),
 		ActiveRequests: atomic.LoadInt64(&e.stats.ActiveRequests),
@@ -256,7 +257,7 @@ func (e *FastEngine) updateAverageLatency(latency int64) {
 func (e *FastEngine) PrintStats() {
 	stats := e.GetStats()
 	poolMetrics := mvccontext.GetPoolMetrics()
-	
+
 	fmt.Printf("=== FastEngine Statistics ===\n")
 	fmt.Printf("Total Requests: %d\n", stats.TotalRequests)
 	fmt.Printf("Active Requests: %d\n", stats.ActiveRequests)
@@ -350,18 +351,18 @@ func (g *Group) wrapGroupHandler(handler core.HandlerFunc) core.HandlerFunc {
 	if len(g.middleware) == 0 {
 		return handler
 	}
-	
+
 	return func(ctx context.Context, c *core.RequestContext) {
 		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
-		
+
 		// 设置组中间件 + 处理器
 		handlers := make([]mvccontext.HandlerFunc, len(g.middleware)+1)
 		copy(handlers, g.middleware)
 		handlers[len(handlers)-1] = func(ectx *mvccontext.Context) {
 			handler(ctx, c)
 		}
-		
+
 		enhancedCtx.SetHandlers(handlers)
 		enhancedCtx.Next()
 	}

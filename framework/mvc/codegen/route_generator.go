@@ -271,7 +271,7 @@ func (rg *RouteGenerator) typeToString(expr ast.Expr) string {
 	case *ast.StarExpr:
 		return "*" + rg.typeToString(t.X)
 	default:
-		return "interface{}"
+		return "any"
 	}
 }
 
@@ -304,16 +304,16 @@ func RegisterRoutes(app *mvc.App) {
 }
 
 // GetRouteInfo 获取路由信息
-func GetRouteInfo() map[string]interface{} {
-	return map[string]interface{}{
-		"controllers": []map[string]interface{}{
+func GetRouteInfo() map[string]any {
+	return map[string]any{
+		"controllers": []map[string]any{
 {{range .Controllers}}
 			{
 				"name": "{{.Name}}",
 				"package": "{{.Package}}",
 				"prefix": "{{.Prefix}}",
 				"middleware": []string{ {{range .Middleware}}"{{.}}",{{end}} },
-				"methods": []map[string]interface{}{
+				"methods": []map[string]any{
 {{range .Methods}}
 					{
 						"name": "{{.Name}}",

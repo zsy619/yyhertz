@@ -31,16 +31,16 @@ func TestParamValidation(t *testing.T) {
 
 		// 参数验证逻辑
 		if userID == "" {
-			c.JSON(400, map[string]interface{}{
+			c.JSON(400, map[string]any{
 				"error": "用户ID参数未获取到",
 			})
 			return
 		}
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "Direct PUT API - 参数获取成功",
 			"user_id": userID,
-			"data": map[string]interface{}{
+			"data": map[string]any{
 				"name": name,
 				"age":  age,
 			},
@@ -69,7 +69,7 @@ func TestParamValidation(t *testing.T) {
 		userID := c.Param("id")
 		postID := c.Param("postId")
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"user_id": userID,
 			"post_id": postID,
 		})
@@ -86,7 +86,7 @@ func TestParamValidation(t *testing.T) {
 	// 检查方法是否存在 (编译时检查)
 	var paramMethod func(string) string = testContext.Param
 	var postFormMethod func(string) string = testContext.PostForm
-	var jsonMethod func(int, interface{}) = testContext.JSON
+	var jsonMethod func(int, any) = testContext.JSON
 
 	if paramMethod != nil && postFormMethod != nil && jsonMethod != nil {
 		fmt.Println("   - c.Param() 方法: ✅ 存在")

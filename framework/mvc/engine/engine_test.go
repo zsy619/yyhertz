@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/mvc/core"
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // BenchmarkRouterTree_AddRoute 测试路由添加性能
 func BenchmarkRouterTree_AddRoute(b *testing.B) {
 	handler := func(ctx context.Context, c *core.RequestContext) {}
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		tree := NewRouterTree() // 每个goroutine使用独立的tree
@@ -30,14 +30,14 @@ func BenchmarkRouterTree_AddRoute(b *testing.B) {
 func BenchmarkRouterTree_GetRoute(b *testing.B) {
 	tree := NewRouterTree()
 	handler := func(ctx context.Context, c *core.RequestContext) {}
-	
+
 	// 预先添加路由
 	paths := generateTestPaths(1000)
 	for _, path := range paths {
 		tree.AddRoute("GET", path, handler)
 	}
 	tree.Compile()
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -53,7 +53,7 @@ func BenchmarkRouterTree_GetRoute(b *testing.B) {
 func BenchmarkRouterCache(b *testing.B) {
 	tree := NewRouterTree()
 	handler := func(ctx context.Context, c *core.RequestContext) {}
-	
+
 	// 添加一些路由
 	paths := []string{
 		"/users/:id",
@@ -62,12 +62,12 @@ func BenchmarkRouterCache(b *testing.B) {
 		"/api/v1/users",
 		"/api/v1/posts",
 	}
-	
+
 	for _, path := range paths {
 		tree.AddRoute("GET", path, handler)
 	}
 	tree.Compile()
-	
+
 	testPaths := []string{
 		"/users/123",
 		"/users/456/posts",
@@ -75,7 +75,7 @@ func BenchmarkRouterCache(b *testing.B) {
 		"/api/v1/users",
 		"/api/v1/posts",
 	}
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -98,13 +98,11 @@ func BenchmarkContextPool(b *testing.B) {
 			}
 		})
 	})
-	
+
 	b.Run("WithoutPool", func(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				ctx := &mvccontext.Context{
-					Keys: make(map[string]interface{}),
-				}
+				ctx := &mvccontext.Context{}
 				ctx.Set("key", "value")
 			}
 		})
@@ -114,7 +112,7 @@ func BenchmarkContextPool(b *testing.B) {
 // BenchmarkFastEngine 测试完整引擎性能
 func BenchmarkFastEngine(b *testing.B) {
 	engine := NewFastEngine()
-	
+
 	// 添加测试路由
 	engine.GET("/", func(ctx context.Context, c *core.RequestContext) {
 		// 简化测试，不调用c的方法
@@ -125,9 +123,9 @@ func BenchmarkFastEngine(b *testing.B) {
 	engine.POST("/users", func(ctx context.Context, c *core.RequestContext) {
 		// 简化测试
 	})
-	
+
 	engine.Compile()
-	
+
 	// 模拟请求
 	requests := []struct {
 		method string
@@ -137,7 +135,7 @@ func BenchmarkFastEngine(b *testing.B) {
 		{"GET", "/users/123"},
 		{"POST", "/users"},
 	}
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -153,12 +151,12 @@ func BenchmarkFastEngine(b *testing.B) {
 // generateTestPaths 生成测试路径
 func generateTestPaths(count int) []string {
 	paths := make([]string, count)
-	
+
 	for i := 0; i < count; i++ {
 		// 生成唯一路径
 		paths[i] = fmt.Sprintf("/test/%d", i)
 	}
-	
+
 	return paths
 }
 
@@ -166,18 +164,18 @@ func generateTestPaths(count int) []string {
 func TestRouterTree_BasicFunctionality(t *testing.T) {
 	tree := NewRouterTree()
 	handler := func(ctx context.Context, c *core.RequestContext) {}
-	
+
 	// 测试添加路由
 	tree.AddRoute("GET", "/users", handler)
 	tree.AddRoute("GET", "/users/:id", handler)
 	tree.AddRoute("POST", "/users", handler)
-	
+
 	// 测试路由查找
 	h, params := tree.GetRoute("GET", "/users")
 	if h == nil {
 		t.Error("Expected handler for /users")
 	}
-	
+
 	h, params = tree.GetRoute("GET", "/users/123")
 	if h == nil {
 		t.Error("Expected handler for /users/:id")
@@ -185,7 +183,7 @@ func TestRouterTree_BasicFunctionality(t *testing.T) {
 	if len(params) != 1 || params.ByName("id") != "123" {
 		t.Error("Expected param id=123")
 	}
-	
+
 	h, params = tree.GetRoute("POST", "/users")
 	if h == nil {
 		t.Error("Expected handler for POST /users")
@@ -195,23 +193,23 @@ func TestRouterTree_BasicFunctionality(t *testing.T) {
 // TestRouterCache_Functionality 测试路由缓存功能
 func TestRouterCache_Functionality(t *testing.T) {
 	cache := NewRouterCache(2)
-	
+
 	handler := func(ctx context.Context, c *core.RequestContext) {}
 	params := Params{{Key: "id", Value: "123"}}
-	
+
 	entry := &CacheEntry{
 		handler: handler,
 		params:  params,
 	}
-	
+
 	// 测试设置和获取
 	cache.Set("GET:/users/123", entry)
 	retrieved := cache.Get("GET:/users/123")
-	
+
 	if retrieved == nil {
 		t.Error("Expected cached entry")
 	}
-	
+
 	if retrieved.params.ByName("id") != "123" {
 		t.Error("Expected param id=123")
 	}
@@ -221,18 +219,18 @@ func TestRouterCache_Functionality(t *testing.T) {
 func TestContextPool_Functionality(t *testing.T) {
 	ctx1 := mvccontext.NewContext(nil)
 	ctx1.Set("test", "value1")
-	
+
 	// 释放到池中
 	ctx1.Release()
-	
+
 	// 从池中获取新的Context
 	ctx2 := mvccontext.NewContext(nil)
-	
+
 	// 验证Context被正确重置
 	if val, exists := ctx2.Get("test"); exists {
 		t.Errorf("Expected context to be reset, got %v", val)
 	}
-	
+
 	ctx2.Release()
 }
 
@@ -241,9 +239,9 @@ func TestFastEngine_LoadTest(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping load test in short mode")
 	}
-	
+
 	engine := NewFastEngine()
-	
+
 	// 添加大量路由
 	for i := 0; i < 1000; i++ {
 		path := fmt.Sprintf("/test/%d", i)
@@ -251,15 +249,15 @@ func TestFastEngine_LoadTest(t *testing.T) {
 			// 简化测试，不调用c的方法
 		})
 	}
-	
+
 	engine.Compile()
-	
+
 	// 并发测试
 	concurrency := 100
 	requestsPerGoroutine := 1000
-	
+
 	start := time.Now()
-	
+
 	// 启动多个goroutine
 	done := make(chan bool, concurrency)
 	for i := 0; i < concurrency; i++ {
@@ -272,21 +270,21 @@ func TestFastEngine_LoadTest(t *testing.T) {
 			done <- true
 		}(i)
 	}
-	
+
 	// 等待所有goroutine完成
 	for i := 0; i < concurrency; i++ {
 		<-done
 	}
-	
+
 	elapsed := time.Since(start)
 	totalRequests := concurrency * requestsPerGoroutine
 	qps := float64(totalRequests) / elapsed.Seconds()
-	
+
 	t.Logf("Load test completed:")
 	t.Logf("Total requests: %d", totalRequests)
 	t.Logf("Time elapsed: %v", elapsed)
 	t.Logf("QPS: %.2f", qps)
-	
+
 	// 打印引擎统计
 	engine.PrintStats()
 }
@@ -294,22 +292,22 @@ func TestFastEngine_LoadTest(t *testing.T) {
 // 内存泄漏测试
 func TestMemoryLeak(t *testing.T) {
 	engine := NewFastEngine()
-	
+
 	engine.GET("/test", func(ctx context.Context, c *core.RequestContext) {
 		// 简化测试
 	})
-	
+
 	// 执行大量请求
 	for i := 0; i < 10000; i++ {
 		_, _ = engine.router.GetRoute("GET", "/test")
 	}
-	
+
 	// 检查池大小是否正常
 	poolSize := mvccontext.GetCurrentPoolSize()
 	if poolSize > 1000 {
 		t.Errorf("Pool size too large: %d", poolSize)
 	}
-	
+
 	// 检查统计信息
 	stats := engine.GetStats()
 	if stats.ActiveRequests > 0 {

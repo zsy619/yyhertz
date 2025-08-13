@@ -27,11 +27,11 @@ type TransactionTracker struct {
 
 // TransactionInfo 事务信息
 type TransactionInfo struct {
-	ID        string            // 事务ID
-	StartTime time.Time         // 开始时间
-	UserID    string            // 用户ID
-	Status    TransactionStatus // 事务状态
-	Operations []Operation      // 操作记录
+	ID         string            // 事务ID
+	StartTime  time.Time         // 开始时间
+	UserID     string            // 用户ID
+	Status     TransactionStatus // 事务状态
+	Operations []Operation       // 操作记录
 }
 
 // TransactionStatus 事务状态
@@ -58,12 +58,12 @@ func (s TransactionStatus) String() string {
 
 // Operation 操作记录
 type Operation struct {
-	Type      string    // 操作类型
-	SQL       string    // SQL语句
-	Args      []interface{} // 参数
-	Timestamp time.Time // 执行时间
+	Type      string        // 操作类型
+	SQL       string        // SQL语句
+	Args      []any         // 参数
+	Timestamp time.Time     // 执行时间
 	Duration  time.Duration // 执行耗时
-	Error     error     // 错误信息
+	Error     error         // 错误信息
 }
 
 // NewTransactionManager 创建事务管理器
@@ -87,7 +87,7 @@ func (tm *TransactionManager) BeginTransaction(ctx context.Context, userID strin
 	if tx.Error != nil {
 		return ctx, fmt.Errorf("failed to begin transaction: %w", tx.Error)
 	}
-	
+
 	txID := generateTransactionID()
 	txInfo := &TransactionInfo{
 		ID:         txID,
@@ -96,14 +96,14 @@ func (tm *TransactionManager) BeginTransaction(ctx context.Context, userID strin
 		Status:     TransactionActive,
 		Operations: make([]Operation, 0),
 	}
-	
+
 	tm.tracker.addTransaction(txInfo)
-	
+
 	// 将事务信息存储到context中
 	ctx = context.WithValue(ctx, TxKey, tx)
 	ctx = context.WithValue(ctx, "tx_id", txID)
 	ctx = context.WithValue(ctx, "tx_info", txInfo)
-	
+
 	log.Printf("[TRANSACTION] Started transaction %s for user %s", txID, userID)
 	return ctx, nil
 }
@@ -114,21 +114,21 @@ func (tm *TransactionManager) CommitTransaction(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	err = tx.Commit().Error
 	if err != nil {
 		txInfo.Status = TransactionRollbacked
 		tm.tracker.updateTransaction(txInfo)
 		return fmt.Errorf("failed to commit transaction %s: %w", txInfo.ID, err)
 	}
-	
+
 	txInfo.Status = TransactionCommitted
 	tm.tracker.updateTransaction(txInfo)
-	
+
 	duration := time.Since(txInfo.StartTime)
-	log.Printf("[TRANSACTION] Committed transaction %s for user %s in %v", 
+	log.Printf("[TRANSACTION] Committed transaction %s for user %s in %v",
 		txInfo.ID, txInfo.UserID, duration)
-	
+
 	return nil
 }
 
@@ -138,19 +138,19 @@ func (tm *TransactionManager) RollbackTransaction(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	err = tx.Rollback().Error
 	if err != nil {
 		return fmt.Errorf("failed to rollback transaction %s: %w", txInfo.ID, err)
 	}
-	
+
 	txInfo.Status = TransactionRollbacked
 	tm.tracker.updateTransaction(txInfo)
-	
+
 	duration := time.Since(txInfo.StartTime)
-	log.Printf("[TRANSACTION] Rollbacked transaction %s for user %s in %v", 
+	log.Printf("[TRANSACTION] Rollbacked transaction %s for user %s in %v",
 		txInfo.ID, txInfo.UserID, duration)
-	
+
 	return nil
 }
 
@@ -162,16 +162,16 @@ func (tm *TransactionManager) ExecuteInTransaction(ctx context.Context, userID s
 		session := NewSimpleSession(GetTransactionDB(ctx))
 		return fn(ctx, session)
 	}
-	
+
 	// 开始新事务
 	txCtx, err := tm.BeginTransaction(ctx, userID)
 	if err != nil {
 		return err
 	}
-	
+
 	// 创建使用事务DB的session
 	session := NewSimpleSession(GetTransactionDB(txCtx))
-	
+
 	// 执行操作
 	err = fn(txCtx, session)
 	if err != nil {
@@ -181,22 +181,22 @@ func (tm *TransactionManager) ExecuteInTransaction(ctx context.Context, userID s
 		}
 		return err
 	}
-	
+
 	// 提交事务
 	return tm.CommitTransaction(txCtx)
 }
 
 // RecordOperation 记录操作
-func (tm *TransactionManager) RecordOperation(ctx context.Context, operationType, sql string, args []interface{}, duration time.Duration, err error) {
+func (tm *TransactionManager) RecordOperation(ctx context.Context, operationType, sql string, args []any, duration time.Duration, err error) {
 	if !IsInTransaction(ctx) {
 		return
 	}
-	
+
 	txInfo := GetTransactionInfo(ctx)
 	if txInfo == nil {
 		return
 	}
-	
+
 	operation := Operation{
 		Type:      operationType,
 		SQL:       sql,
@@ -205,7 +205,7 @@ func (tm *TransactionManager) RecordOperation(ctx context.Context, operationType
 		Duration:  duration,
 		Error:     err,
 	}
-	
+
 	tm.tracker.addOperation(txInfo.ID, operation)
 }
 
@@ -215,12 +215,12 @@ func (tm *TransactionManager) getTransactionFromContext(ctx context.Context) (*g
 	if !ok {
 		return nil, nil, fmt.Errorf("no active transaction found in context")
 	}
-	
+
 	txInfo, ok := ctx.Value("tx_info").(*TransactionInfo)
 	if !ok {
 		return nil, nil, fmt.Errorf("no transaction info found in context")
 	}
-	
+
 	return tx, txInfo, nil
 }
 
@@ -244,7 +244,7 @@ func (tt *TransactionTracker) updateTransaction(txInfo *TransactionInfo) {
 func (tt *TransactionTracker) addOperation(txID string, operation Operation) {
 	tt.mutex.Lock()
 	defer tt.mutex.Unlock()
-	
+
 	if txInfo, exists := tt.transactions[txID]; exists {
 		txInfo.Operations = append(txInfo.Operations, operation)
 	}
@@ -262,7 +262,7 @@ func (tt *TransactionTracker) GetTransaction(txID string) (*TransactionInfo, boo
 func (tt *TransactionTracker) GetAllTransactions() map[string]*TransactionInfo {
 	tt.mutex.RLock()
 	defer tt.mutex.RUnlock()
-	
+
 	result := make(map[string]*TransactionInfo)
 	for k, v := range tt.transactions {
 		result[k] = v
@@ -274,7 +274,7 @@ func (tt *TransactionTracker) GetAllTransactions() map[string]*TransactionInfo {
 func (tt *TransactionTracker) GetActiveTransactions() []*TransactionInfo {
 	tt.mutex.RLock()
 	defer tt.mutex.RUnlock()
-	
+
 	var active []*TransactionInfo
 	for _, txInfo := range tt.transactions {
 		if txInfo.Status == TransactionActive {
@@ -288,17 +288,17 @@ func (tt *TransactionTracker) GetActiveTransactions() []*TransactionInfo {
 func (tt *TransactionTracker) CleanupOldTransactions(maxAge time.Duration) int {
 	tt.mutex.Lock()
 	defer tt.mutex.Unlock()
-	
+
 	cutoff := time.Now().Add(-maxAge)
 	cleaned := 0
-	
+
 	for txID, txInfo := range tt.transactions {
 		if txInfo.Status != TransactionActive && txInfo.StartTime.Before(cutoff) {
 			delete(tt.transactions, txID)
 			cleaned++
 		}
 	}
-	
+
 	return cleaned
 }
 

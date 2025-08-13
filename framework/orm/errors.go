@@ -49,11 +49,11 @@ type ORMError struct {
 	// 堆栈信息
 	Stack []StackFrame `json:"stack,omitempty"`
 	// 上下文信息
-	Context map[string]interface{} `json:"context,omitempty"`
+	Context map[string]any `json:"context,omitempty"`
 	// SQL语句
 	SQL string `json:"sql,omitempty"`
 	// SQL参数
-	Args []interface{} `json:"args,omitempty"`
+	Args []any `json:"args,omitempty"`
 	// 表名
 	Table string `json:"table,omitempty"`
 	// 操作类型
@@ -99,16 +99,16 @@ func (e *ORMError) Is(target error) bool {
 }
 
 // WithContext 添加上下文信息
-func (e *ORMError) WithContext(key string, value interface{}) *ORMError {
+func (e *ORMError) WithContext(key string, value any) *ORMError {
 	if e.Context == nil {
-		e.Context = make(map[string]interface{})
+		e.Context = make(map[string]any)
 	}
 	e.Context[key] = value
 	return e
 }
 
 // WithSQL 添加SQL信息
-func (e *ORMError) WithSQL(sql string, args ...interface{}) *ORMError {
+func (e *ORMError) WithSQL(sql string, args ...any) *ORMError {
 	e.SQL = sql
 	e.Args = args
 	return e
@@ -133,7 +133,7 @@ func NewORMError(code ErrorCode, message string, cause error) *ORMError {
 		Message: message,
 		Cause:   cause,
 		Stack:   captureStack(2), // 跳过当前函数和调用者
-		Context: make(map[string]interface{}),
+		Context: make(map[string]any),
 	}
 }
 
@@ -287,7 +287,7 @@ func (h *ErrorHandler) Handle(err error) *ORMError {
 }
 
 // HandleWithContext 处理错误并添加上下文
-func (h *ErrorHandler) HandleWithContext(err error, context map[string]interface{}) *ORMError {
+func (h *ErrorHandler) HandleWithContext(err error, context map[string]any) *ORMError {
 	ormErr := h.Handle(err)
 	if ormErr != nil && context != nil {
 		for k, v := range context {
@@ -305,7 +305,7 @@ func HandleError(err error) *ORMError {
 }
 
 // HandleErrorWithContext 处理错误并添加上下文
-func HandleErrorWithContext(err error, context map[string]interface{}) *ORMError {
+func HandleErrorWithContext(err error, context map[string]any) *ORMError {
 	return DefaultErrorHandler.HandleWithContext(err, context)
 }
 
@@ -513,7 +513,7 @@ func (em *ErrorMiddleware) Handle(err error) *ORMError {
 }
 
 // HandleWithContext 处理错误并添加上下文
-func (em *ErrorMiddleware) HandleWithContext(err error, context map[string]interface{}) *ORMError {
+func (em *ErrorMiddleware) HandleWithContext(err error, context map[string]any) *ORMError {
 	ormErr := em.handler.HandleWithContext(err, context)
 	if ormErr != nil {
 		em.stats.Record(ormErr)
@@ -586,15 +586,15 @@ func FormatErrorJSON(ormErr *ORMError) ([]byte, error) {
 
 	// 创建一个可序列化的错误结构
 	type serializableError struct {
-		Code      ErrorCode              `json:"code"`
-		Message   string                 `json:"message"`
-		Cause     string                 `json:"cause,omitempty"`
-		Stack     []StackFrame           `json:"stack,omitempty"`
-		Context   map[string]interface{} `json:"context,omitempty"`
-		SQL       string                 `json:"sql,omitempty"`
-		Args      []interface{}          `json:"args,omitempty"`
-		Table     string                 `json:"table,omitempty"`
-		Operation string                 `json:"operation,omitempty"`
+		Code      ErrorCode      `json:"code"`
+		Message   string         `json:"message"`
+		Cause     string         `json:"cause,omitempty"`
+		Stack     []StackFrame   `json:"stack,omitempty"`
+		Context   map[string]any `json:"context,omitempty"`
+		SQL       string         `json:"sql,omitempty"`
+		Args      []any          `json:"args,omitempty"`
+		Table     string         `json:"table,omitempty"`
+		Operation string         `json:"operation,omitempty"`
 	}
 
 	serErr := serializableError{

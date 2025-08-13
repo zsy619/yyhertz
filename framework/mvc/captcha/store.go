@@ -19,10 +19,10 @@ func NewMemoryStore() *MemoryStore {
 		data:  make(map[string]*Captcha),
 		close: make(chan struct{}),
 	}
-	
+
 	// 启动清理协程
 	go store.cleanup()
-	
+
 	return store
 }
 
@@ -38,12 +38,12 @@ func (s *MemoryStore) Set(id string, captcha *Captcha) error {
 func (s *MemoryStore) Get(id string) (*Captcha, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	captcha, exists := s.data[id]
 	if !exists {
 		return nil, fmt.Errorf("captcha not found")
 	}
-	
+
 	return captcha, nil
 }
 
@@ -72,7 +72,7 @@ func (s *MemoryStore) Close() {
 func (s *MemoryStore) cleanup() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -87,7 +87,7 @@ func (s *MemoryStore) cleanup() {
 func (s *MemoryStore) cleanExpired() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	now := time.Now().Unix()
 	for id, captcha := range s.data {
 		if now > captcha.ExpireAt {
@@ -99,12 +99,12 @@ func (s *MemoryStore) cleanExpired() {
 // SessionStore Session存储实现（适配框架的session）
 type SessionStore struct {
 	sessionKey string
-	getSession func() interface{}
-	setSession func(key string, value interface{}) error
+	getSession func() any
+	setSession func(key string, value any) error
 }
 
 // NewSessionStore 创建Session存储
-func NewSessionStore(sessionKey string, getter func() interface{}, setter func(string, interface{}) error) *SessionStore {
+func NewSessionStore(sessionKey string, getter func() any, setter func(string, any) error) *SessionStore {
 	return &SessionStore{
 		sessionKey: sessionKey,
 		getSession: getter,
@@ -147,24 +147,24 @@ func (s *SessionStore) getSessionData() map[string]*Captcha {
 	if session == nil {
 		return make(map[string]*Captcha)
 	}
-	
+
 	data, ok := session.(map[string]*Captcha)
 	if !ok {
 		return make(map[string]*Captcha)
 	}
-	
+
 	return data
 }
 
 // RedisStore Redis存储实现（如果项目使用Redis）
 type RedisStore struct {
-	client    interface{} // Redis客户端接口
+	client    any // Redis客户端接口
 	keyPrefix string
 	ttl       time.Duration
 }
 
 // NewRedisStore 创建Redis存储
-func NewRedisStore(client interface{}, keyPrefix string, ttl time.Duration) *RedisStore {
+func NewRedisStore(client any, keyPrefix string, ttl time.Duration) *RedisStore {
 	return &RedisStore{
 		client:    client,
 		keyPrefix: keyPrefix,

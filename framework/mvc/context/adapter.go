@@ -45,30 +45,30 @@ type OutputData struct {
 
 // Cookie 设置Cookie (Output兼容性方法)
 func (o *OutputData) Cookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
-	if o.ctx.Request != nil {
-		o.ctx.Request.SetCookie(name, value, maxAge, path, domain, protocol.CookieSameSiteDefaultMode, secure, httpOnly)
+	if o.ctx.request != nil {
+		o.ctx.request.SetCookie(name, value, maxAge, path, domain, protocol.CookieSameSiteDefaultMode, secure, httpOnly)
 	}
 }
 
 // SetStatus 设置响应状态码 (Output兼容性方法)
 func (o *OutputData) SetStatus(code int) {
-	if o.ctx.Request != nil {
-		o.ctx.Request.SetStatusCode(code)
+	if o.ctx.request != nil {
+		o.ctx.request.SetStatusCode(code)
 	}
 }
 
 // JSON 输出JSON响应 (Output兼容性方法)
-func (o *OutputData) JSON(data interface{}) error {
-	if o.ctx.Request != nil {
-		o.ctx.Request.JSON(200, data)
+func (o *OutputData) JSON(data any) error {
+	if o.ctx.request != nil {
+		o.ctx.request.JSON(200, data)
 	}
 	return nil
 }
 
 // Header 设置响应头 (Output兼容性方法)
 func (o *OutputData) Header(key, value string) {
-	if o.ctx.Request != nil {
-		o.ctx.Request.Response.Header.Set(key, value)
+	if o.ctx.request != nil {
+		o.ctx.request.Response.Header.Set(key, value)
 	}
 }
 
@@ -76,15 +76,15 @@ func (o *OutputData) Header(key, value string) {
 
 // getExtension 获取session扩展（延迟初始化）(OutputData版本)
 func (o *OutputData) getExtension() *session.ContextExtension {
-	if o.extension == nil && o.ctx != nil && o.ctx.Request != nil {
+	if o.extension == nil && o.ctx != nil && o.ctx.request != nil {
 		// 创建session扩展
-		o.extension = session.NewExtensionForHertzContext(o.ctx.Request)
+		o.extension = session.NewExtensionForHertzContext(o.ctx.request)
 	}
 	return o.extension
 }
 
 // SetSession 设置session数据 (Output兼容性方法) - 代理到session包
-func (o *OutputData) SetSession(key string, value interface{}) error {
+func (o *OutputData) SetSession(key string, value any) error {
 	if ext := o.getExtension(); ext != nil {
 		return ext.SetSession(key, value)
 	}
@@ -92,7 +92,7 @@ func (o *OutputData) SetSession(key string, value interface{}) error {
 }
 
 // GetSession 获取session数据 (Output兼容性方法) - 代理到session包
-func (o *OutputData) GetSession(key string) interface{} {
+func (o *OutputData) GetSession(key string) any {
 	if ext := o.getExtension(); ext != nil {
 		return ext.GetSession(key)
 	}
@@ -101,9 +101,10 @@ func (o *OutputData) GetSession(key string) interface{} {
 
 // Session 获取或设置session数据的便捷方法 (OutputData)
 // 用法：
-//   value := ctx.Output.Session("adminId")          // 获取值
-//   ctx.Output.Session("adminId", "12345")          // 设置值
-func (o *OutputData) Session(key string, values ...interface{}) interface{} {
+//
+//	value := ctx.Output.Session("adminId")          // 获取值
+//	ctx.Output.Session("adminId", "12345")          // 设置值
+func (o *OutputData) Session(key string, values ...any) any {
 	if len(values) == 0 {
 		// 获取模式
 		return o.GetSession(key)
@@ -118,16 +119,16 @@ func (o *OutputData) Session(key string, values ...interface{}) interface{} {
 
 // Scheme 获取请求协议
 func (i *InputData) Scheme() string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.URI().Scheme())
+	if i.ctx.request != nil {
+		return string(i.ctx.request.URI().Scheme())
 	}
 	return "http"
 }
 
 // Domain 获取请求域名 (Input兼容性方法)
 func (i *InputData) Domain() string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.Host())
+	if i.ctx.request != nil {
+		return string(i.ctx.request.Host())
 	}
 	return ""
 }
@@ -139,40 +140,40 @@ func (i *InputData) Host() string {
 
 // Method 获取请求方法 (Input兼容性方法)
 func (i *InputData) Method() string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.Method())
+	if i.ctx.request != nil {
+		return string(i.ctx.request.Method())
 	}
 	return "GET"
 }
 
 // IP 获取客户端IP地址 (Input兼容性方法)
 func (i *InputData) IP() string {
-	if i.ctx.Request != nil {
-		return i.ctx.Request.ClientIP()
+	if i.ctx.request != nil {
+		return i.ctx.request.ClientIP()
 	}
 	return ""
 }
 
 // UserAgent 获取User-Agent (Input兼容性方法)
 func (i *InputData) UserAgent() string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.Request.Header.Peek("User-Agent"))
+	if i.ctx.request != nil {
+		return string(i.ctx.request.Request.Header.Peek("User-Agent"))
 	}
 	return ""
 }
 
 // IsAjax 判断是否为Ajax请求 (Input兼容性方法)
 func (i *InputData) IsAjax() bool {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.Request.Header.Peek("X-Requested-With")) == "XMLHttpRequest"
+	if i.ctx.request != nil {
+		return string(i.ctx.request.Request.Header.Peek("X-Requested-With")) == "XMLHttpRequest"
 	}
 	return false
 }
 
 // URL 获取请求URL (Input兼容性方法)
 func (i *InputData) URL() string {
-	if i.ctx.Request != nil {
-		return i.ctx.Request.URI().String()
+	if i.ctx.request != nil {
+		return i.ctx.request.URI().String()
 	}
 	return ""
 }
@@ -194,28 +195,27 @@ func (i *InputData) IsPost() bool {
 
 // Query 获取查询参数 (Input兼容性方法)
 func (i *InputData) Query(key string) string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.QueryArgs().Peek(key))
+	if i.ctx.request != nil {
+		return string(i.ctx.request.QueryArgs().Peek(key))
 	}
 	return ""
 }
 
 // Param 获取路径参数 (Input兼容性方法)
 func (i *InputData) Param(key string) string {
-	if i.ctx.Request != nil {
-		return i.ctx.Request.Param(key)
+	if i.ctx.request != nil {
+		return i.ctx.request.Param(key)
 	}
 	return ""
 }
 
 // Header 获取请求头 (Input兼容性方法)
 func (i *InputData) Header(key string) string {
-	if i.ctx.Request != nil {
-		return string(i.ctx.Request.GetHeader(key))
+	if i.ctx.request != nil {
+		return string(i.ctx.request.GetHeader(key))
 	}
 	return ""
 }
-
 
 // Referer 获取来源页面 (Input兼容性方法)
 func (i *InputData) Referer() string {
@@ -223,14 +223,14 @@ func (i *InputData) Referer() string {
 }
 
 // Data 设置上下文数据 (Input兼容性方法)
-func (i *InputData) Data(key string, val interface{}) {
+func (i *InputData) Data(key string, val any) {
 	if i.ctx != nil {
 		i.ctx.Set(key, val)
 	}
 }
 
 // GetData 获取上下文数据 (Input兼容性方法)
-func (i *InputData) GetData(key string) interface{} {
+func (i *InputData) GetData(key string) any {
 	if i.ctx != nil {
 		if val, exists := i.ctx.Get(key); exists {
 			return val
@@ -243,9 +243,9 @@ func (i *InputData) GetData(key string) interface{} {
 
 // getExtension 获取session扩展（延迟初始化）
 func (i *InputData) getExtension() *session.ContextExtension {
-	if i.extension == nil && i.ctx != nil && i.ctx.Request != nil {
+	if i.extension == nil && i.ctx != nil && i.ctx.request != nil {
 		// 创建session扩展
-		i.extension = session.NewExtensionForHertzContext(i.ctx.Request)
+		i.extension = session.NewExtensionForHertzContext(i.ctx.request)
 	}
 	return i.extension
 }
@@ -259,7 +259,7 @@ func (i *InputData) Cookie(key string) string {
 }
 
 // SetCookie 设置Cookie (beego兼容方法) - 代理到session包
-func (i *InputData) SetCookie(name, value string, others ...interface{}) {
+func (i *InputData) SetCookie(name, value string, others ...any) {
 	if ext := i.getExtension(); ext != nil {
 		ext.SetCookie(name, value, others...)
 	}
@@ -274,7 +274,7 @@ func (i *InputData) GetSecureCookie(secret, key string) (string, bool) {
 }
 
 // SetSecureCookie 设置安全Cookie (beego兼容方法) - 代理到session包
-func (i *InputData) SetSecureCookie(secret, name, value string, others ...interface{}) {
+func (i *InputData) SetSecureCookie(secret, name, value string, others ...any) {
 	if ext := i.getExtension(); ext != nil {
 		ext.SetSecureCookie(secret, name, value, others...)
 	}
@@ -329,7 +329,7 @@ func (i *InputData) ValidateSecureCookie(secret, key string) bool {
 // ============= 高级Cookie功能代理 =============
 
 // SetSecureCookieWithOptions 设置安全Cookie (增强版本) - 代理到session包
-func (i *InputData) SetSecureCookieWithOptions(name, value string, options session.CookieSecurityOptions, others ...interface{}) error {
+func (i *InputData) SetSecureCookieWithOptions(name, value string, options session.CookieSecurityOptions, others ...any) error {
 	if ext := i.getExtension(); ext != nil && ext.SecureCookie != nil {
 		return ext.SecureCookie.SetSecureWithOptions(name, value, options, others...)
 	}
@@ -355,7 +355,7 @@ func (i *InputData) StartSession() *session.Adapter {
 }
 
 // SetSession 设置session数据 (标准MVC兼容性方法) - 代理到session包
-func (i *InputData) SetSession(key string, value interface{}) error {
+func (i *InputData) SetSession(key string, value any) error {
 	if ext := i.getExtension(); ext != nil {
 		return ext.SetSession(key, value)
 	}
@@ -363,7 +363,7 @@ func (i *InputData) SetSession(key string, value interface{}) error {
 }
 
 // GetSession 获取session数据 (标准MVC兼容性方法) - 代理到session包
-func (i *InputData) GetSession(key string) interface{} {
+func (i *InputData) GetSession(key string) any {
 	if ext := i.getExtension(); ext != nil {
 		return ext.GetSession(key)
 	}
@@ -425,9 +425,10 @@ func (i *InputData) SessionRegenerateID() {
 
 // Session 获取或设置session数据的便捷方法 (InputData)
 // 用法：
-//   value := ctx.Input.Session("adminId")          // 获取值
-//   ctx.Input.Session("adminId", "12345")          // 设置值
-func (i *InputData) Session(key string, values ...interface{}) interface{} {
+//
+//	value := ctx.Input.Session("adminId")          // 获取值
+//	ctx.Input.Session("adminId", "12345")          // 设置值
+func (i *InputData) Session(key string, values ...any) any {
 	if len(values) == 0 {
 		// 获取模式
 		return i.GetSession(key)
@@ -470,13 +471,10 @@ type CookieSecurityOptions = session.CookieSecurityOptions
 // 用于在已创建的InputData实例上重新初始化Context
 func (i *InputData) Initialize(c *app.RequestContext) {
 	if i.ctx == nil {
-		i.ctx = &Context{
-			Request:        c,
-			RequestContext: c,
-		}
+		i.ctx = NewContext(c)
 	} else {
-		i.ctx.Request = c
-		i.ctx.RequestContext = c
+		// 重置现有Context
+		i.ctx.request = c
 	}
 	// 重置extension以便重新初始化
 	i.extension = nil
@@ -486,13 +484,10 @@ func (i *InputData) Initialize(c *app.RequestContext) {
 // 用于在已创建的OutputData实例上重新初始化Context
 func (o *OutputData) Initialize(c *app.RequestContext) {
 	if o.ctx == nil {
-		o.ctx = &Context{
-			Request:        c,
-			RequestContext: c,
-		}
+		o.ctx = NewContext(c)
 	} else {
-		o.ctx.Request = c
-		o.ctx.RequestContext = c
+		// 重置现有Context
+		o.ctx.request = c
 	}
 	// 重置extension以便重新初始化
 	o.extension = nil
@@ -566,13 +561,13 @@ func NewOutputData(ctx *Context) *OutputData {
    InputData:
    - Session(key) -> GetSession(key)              // 获取session值
    - Session(key, value) -> SetSession(key, value) // 设置session值
-   
+
    OutputData（新增完整session支持）:
    - Session(key) -> GetSession(key)              // 获取session值
    - Session(key, value) -> SetSession(key, value) // 设置session值
    - SetSession(key, value) error                 // 设置session数据
-   - GetSession(key) interface{}                  // 获取session数据
-   
+   - GetSession(key) any                  // 获取session数据
+
    使用示例：
    adminId := ctx.Input.Session("adminId")        // 获取
    ctx.Input.Session("adminId", "12345")          // 设置

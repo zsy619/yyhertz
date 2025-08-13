@@ -11,55 +11,55 @@ import (
 
 // LifecycleManager 控制器生命周期管理器
 type LifecycleManager struct {
-	pools       sync.Map                    // 控制器池映射
-	config      *CompilerConfig            // 配置
-	hooks       map[LifecycleHook][]HookFunc // 生命周期钩子
-	metrics     *LifecycleMetrics          // 生命周期指标
-	mu          sync.RWMutex               // 读写锁
+	pools   sync.Map                     // 控制器池映射
+	config  *CompilerConfig              // 配置
+	hooks   map[LifecycleHook][]HookFunc // 生命周期钩子
+	metrics *LifecycleMetrics            // 生命周期指标
+	mu      sync.RWMutex                 // 读写锁
 }
 
 // LifecycleHook 生命周期钩子类型
 type LifecycleHook int
 
 const (
-	HookBeforeCreate LifecycleHook = iota // 创建前
-	HookAfterCreate                       // 创建后
-	HookBeforeInit                        // 初始化前
-	HookAfterInit                         // 初始化后
-	HookBeforeDestroy                     // 销毁前
-	HookAfterDestroy                      // 销毁后
+	HookBeforeCreate  LifecycleHook = iota // 创建前
+	HookAfterCreate                        // 创建后
+	HookBeforeInit                         // 初始化前
+	HookAfterInit                          // 初始化后
+	HookBeforeDestroy                      // 销毁前
+	HookAfterDestroy                       // 销毁后
 )
 
 // HookFunc 钩子函数类型
-type HookFunc func(controller interface{}, ctx *mvcContext.Context) error
+type HookFunc func(controller any, ctx *mvcContext.Context) error
 
 // LifecycleMetrics 生命周期指标
 type LifecycleMetrics struct {
-	CreatedCount   int64         // 创建数量
-	DestroyedCount int64         // 销毁数量
-	ActiveCount    int64         // 活跃数量
-	PoolHitRate    float64       // 池命中率
+	CreatedCount    int64         // 创建数量
+	DestroyedCount  int64         // 销毁数量
+	ActiveCount     int64         // 活跃数量
+	PoolHitRate     float64       // 池命中率
 	AverageLifetime time.Duration // 平均生命周期
-	mu             sync.RWMutex  // 指标锁
+	mu              sync.RWMutex  // 指标锁
 }
 
 // ControllerPool 控制器池
 type ControllerPool struct {
-	factory    ControllerFactory           // 控制器工厂
-	pool       chan interface{}            // 控制器池
-	controllerType reflect.Type            // 控制器类型
-	maxSize    int                        // 最大池大小
-	created    int64                      // 已创建数量
-	borrowed   int64                      // 已借出数量
-	returned   int64                      // 已归还数量
-	mu         sync.RWMutex               // 池锁
+	factory        ControllerFactory // 控制器工厂
+	pool           chan any          // 控制器池
+	controllerType reflect.Type      // 控制器类型
+	maxSize        int               // 最大池大小
+	created        int64             // 已创建数量
+	borrowed       int64             // 已借出数量
+	returned       int64             // 已归还数量
+	mu             sync.RWMutex      // 池锁
 }
 
 // ControllerFactory 控制器工厂接口
 type ControllerFactory interface {
-	CreateController() (interface{}, error)
-	InitController(controller interface{}, ctx *mvcContext.Context) error
-	DestroyController(controller interface{}) error
+	CreateController() (any, error)
+	InitController(controller any, ctx *mvcContext.Context) error
+	DestroyController(controller any) error
 }
 
 // DefaultControllerFactory 默认控制器工厂
@@ -70,11 +70,11 @@ type DefaultControllerFactory struct {
 
 // ControllerInstance 控制器实例
 type ControllerInstance struct {
-	Controller interface{}   // 控制器对象
-	CreatedAt  time.Time     // 创建时间
-	LastUsed   time.Time     // 最后使用时间
-	UsageCount int64         // 使用次数
-	Pooled     bool          // 是否来自池
+	Controller any       // 控制器对象
+	CreatedAt  time.Time // 创建时间
+	LastUsed   time.Time // 最后使用时间
+	UsageCount int64     // 使用次数
+	Pooled     bool      // 是否来自池
 }
 
 // NewLifecycleManager 创建生命周期管理器
@@ -94,7 +94,7 @@ func NewLifecycleManager(config *CompilerConfig) *LifecycleManager {
 // NewControllerPool 创建控制器池
 func NewControllerPool(controllerType reflect.Type, maxSize int) *ControllerPool {
 	return &ControllerPool{
-		pool:           make(chan interface{}, maxSize),
+		pool:           make(chan any, maxSize),
 		controllerType: controllerType,
 		maxSize:        maxSize,
 	}
@@ -118,13 +118,13 @@ func (lm *LifecycleManager) CreateController(controllerType reflect.Type, ctx *m
 				LastUsed:   time.Now(),
 				Pooled:     true,
 			}
-			
+
 			// 初始化控制器
 			if err := lm.initController(controller, ctx); err != nil {
 				pool.Put(controller) // 归还到池
 				return nil, fmt.Errorf("failed to initialize controller: %w", err)
 			}
-			
+
 			lm.metrics.updateActive(1)
 			return instance, nil
 		}
@@ -151,7 +151,7 @@ func (lm *LifecycleManager) CreateController(controllerType reflect.Type, ctx *m
 }
 
 // createNewController 创建新的控制器实例
-func (lm *LifecycleManager) createNewController(controllerType reflect.Type, ctx *mvcContext.Context) (interface{}, error) {
+func (lm *LifecycleManager) createNewController(controllerType reflect.Type, ctx *mvcContext.Context) (any, error) {
 	// 执行创建前钩子
 	if err := lm.executeHooks(HookBeforeCreate, nil, ctx); err != nil {
 		return nil, fmt.Errorf("before create hook failed: %w", err)
@@ -175,7 +175,7 @@ func (lm *LifecycleManager) createNewController(controllerType reflect.Type, ctx
 }
 
 // initController 初始化控制器
-func (lm *LifecycleManager) initController(controller interface{}, ctx *mvcContext.Context) error {
+func (lm *LifecycleManager) initController(controller any, ctx *mvcContext.Context) error {
 	// 执行初始化前钩子
 	if err := lm.executeHooks(HookBeforeInit, controller, ctx); err != nil {
 		return fmt.Errorf("before init hook failed: %w", err)
@@ -226,7 +226,7 @@ func (lm *LifecycleManager) ReturnController(instance *ControllerInstance) error
 }
 
 // destroyController 销毁控制器
-func (lm *LifecycleManager) destroyController(controller interface{}) error {
+func (lm *LifecycleManager) destroyController(controller any) error {
 	// 执行销毁前钩子
 	if err := lm.executeHooks(HookBeforeDestroy, controller, nil); err != nil {
 		return fmt.Errorf("before destroy hook failed: %w", err)
@@ -262,7 +262,7 @@ func (lm *LifecycleManager) RegisterHook(hook LifecycleHook, fn HookFunc) {
 }
 
 // executeHooks 执行生命周期钩子
-func (lm *LifecycleManager) executeHooks(hook LifecycleHook, controller interface{}, ctx *mvcContext.Context) error {
+func (lm *LifecycleManager) executeHooks(hook LifecycleHook, controller any, ctx *mvcContext.Context) error {
 	lm.mu.RLock()
 	hooks := lm.hooks[hook]
 	lm.mu.RUnlock()
@@ -287,14 +287,14 @@ func (lm *LifecycleManager) getPool(controllerType reflect.Type) (*ControllerPoo
 // getOrCreatePool 获取或创建控制器池
 func (lm *LifecycleManager) getOrCreatePool(controllerType reflect.Type) *ControllerPool {
 	typeName := controllerType.Name()
-	
+
 	if value, exists := lm.pools.Load(typeName); exists {
 		return value.(*ControllerPool)
 	}
 
 	pool := NewControllerPool(controllerType, lm.config.PoolSize)
 	pool.factory = NewDefaultControllerFactory(controllerType, lm)
-	
+
 	lm.pools.Store(typeName, pool)
 	return pool
 }
@@ -314,7 +314,7 @@ func (lm *LifecycleManager) startCleanupRoutine() {
 
 // cleanup 清理过期的控制器
 func (lm *LifecycleManager) cleanup() {
-	lm.pools.Range(func(key, value interface{}) bool {
+	lm.pools.Range(func(key, value any) bool {
 		pool := value.(*ControllerPool)
 		pool.cleanup(lm.config.MaxIdleTime)
 		return true
@@ -324,7 +324,7 @@ func (lm *LifecycleManager) cleanup() {
 // ControllerPool 方法实现
 
 // Get 从池中获取控制器
-func (cp *ControllerPool) Get() interface{} {
+func (cp *ControllerPool) Get() any {
 	select {
 	case controller := <-cp.pool:
 		cp.mu.Lock()
@@ -338,7 +338,7 @@ func (cp *ControllerPool) Get() interface{} {
 }
 
 // Put 将控制器放回池中
-func (cp *ControllerPool) Put(controller interface{}) {
+func (cp *ControllerPool) Put(controller any) {
 	select {
 	case cp.pool <- controller:
 		cp.mu.Lock()
@@ -356,16 +356,16 @@ func (cp *ControllerPool) cleanup(maxIdleTime time.Duration) {
 }
 
 // Stats 获取池统计信息
-func (cp *ControllerPool) Stats() map[string]interface{} {
+func (cp *ControllerPool) Stats() map[string]any {
 	cp.mu.RLock()
 	defer cp.mu.RUnlock()
 
-	return map[string]interface{}{
-		"pool_size":  len(cp.pool),
-		"max_size":   cp.maxSize,
-		"created":    cp.created,
-		"borrowed":   cp.borrowed,
-		"returned":   cp.returned,
+	return map[string]any{
+		"pool_size": len(cp.pool),
+		"max_size":  cp.maxSize,
+		"created":   cp.created,
+		"borrowed":  cp.borrowed,
+		"returned":  cp.returned,
 	}
 }
 
@@ -416,22 +416,22 @@ func (lm *LifecycleManager) GetMetrics() *LifecycleMetrics {
 
 	// 返回指标的副本
 	return &LifecycleMetrics{
-		CreatedCount:   lm.metrics.CreatedCount,
-		DestroyedCount: lm.metrics.DestroyedCount,
-		ActiveCount:    lm.metrics.ActiveCount,
-		PoolHitRate:    lm.metrics.PoolHitRate,
+		CreatedCount:    lm.metrics.CreatedCount,
+		DestroyedCount:  lm.metrics.DestroyedCount,
+		ActiveCount:     lm.metrics.ActiveCount,
+		PoolHitRate:     lm.metrics.PoolHitRate,
 		AverageLifetime: lm.metrics.AverageLifetime,
 	}
 }
 
 // CreateController 默认工厂实现
-func (f *DefaultControllerFactory) CreateController() (interface{}, error) {
+func (f *DefaultControllerFactory) CreateController() (any, error) {
 	controllerValue := reflect.New(f.controllerType)
 	return controllerValue.Interface(), nil
 }
 
 // InitController 初始化控制器
-func (f *DefaultControllerFactory) InitController(controller interface{}, ctx *mvcContext.Context) error {
+func (f *DefaultControllerFactory) InitController(controller any, ctx *mvcContext.Context) error {
 	if initializer, ok := controller.(ControllerInitializer); ok {
 		return initializer.Init(ctx)
 	}
@@ -439,7 +439,7 @@ func (f *DefaultControllerFactory) InitController(controller interface{}, ctx *m
 }
 
 // DestroyController 销毁控制器
-func (f *DefaultControllerFactory) DestroyController(controller interface{}) error {
+func (f *DefaultControllerFactory) DestroyController(controller any) error {
 	if destroyer, ok := controller.(ControllerDestroyer); ok {
 		return destroyer.Destroy()
 	}

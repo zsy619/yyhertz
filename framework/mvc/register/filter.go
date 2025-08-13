@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 )
@@ -71,15 +72,15 @@ func (cr *ControllerRegister) createFilterTree(pattern string) *FilterTree {
 // LoggingFilter 日志记录过滤器
 func LoggingFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 	start := time.Now()
-	method := string(ctx.RequestContext.Method())
-	path := string(ctx.RequestContext.URI().Path())
+	method := string(ctx.Request().Method())
+	path := string(ctx.Request().URI().Path())
 
 	// 继续执行
 	chain.Next(ctx)
 
 	// 记录日志
 	duration := time.Since(start)
-	status := ctx.ResponseWriter.Status()
+	status := ctx.Writer().Status()
 
 	config.Infof("[%s] %s %s - %d - %v",
 		start.Format("2006/01/02 15:04:05"),
@@ -101,7 +102,7 @@ func CORSFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 	ctx.Output.Header("Access-Control-Max-Age", "3600")
 
 	// 处理预检请求
-	if string(ctx.RequestContext.Method()) == "OPTIONS" {
+	if ctx.Method() == "OPTIONS" {
 		ctx.Output.SetStatus(200)
 		return
 	}
@@ -174,7 +175,7 @@ func SecurityFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 	ctx.Output.Header("Content-Security-Policy", "default-src 'self'")
 
 	// 检查HTTP方法
-	method := string(ctx.RequestContext.Method())
+	method := string(ctx.Request().Method())
 	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 
 	allowed := false
@@ -235,7 +236,7 @@ func WrapMiddleware(middleware MiddlewareFunc) FilterFunc {
 func WrapHertzMiddleware(hertzMiddleware app.HandlerFunc) FilterFunc {
 	return func(ctx *contextenhanced.Context, chain *FilterChain) {
 		// 执行Hertz中间件
-		hertzMiddleware(context.Background(), ctx.RequestContext)
+		hertzMiddleware(context.Background(), ctx.Request())
 
 		// 继续执行过滤器链
 		chain.Next(ctx)

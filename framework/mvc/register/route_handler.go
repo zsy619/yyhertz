@@ -47,12 +47,12 @@ func (cr *ControllerRegister) serveHTTP(ctx *contextenhanced.Context) {
 
 // findRouter 查找匹配的路由
 func (cr *ControllerRegister) findRouter(ctx *contextenhanced.Context) (*ControllerInfo, bool) {
-	if ctx == nil || ctx.RequestContext == nil {
+	if ctx == nil || ctx.Request() == nil {
 		return nil, false
 	}
 
-	method := strings.ToUpper(string(ctx.RequestContext.Method()))
-	requestPath := string(ctx.RequestContext.URI().Path())
+	method := strings.ToUpper(string(ctx.Request().Method()))
+	requestPath := string(ctx.Request().URI().Path())
 
 	// 清理路径
 	requestPath = cr.cleanPath(requestPath)
@@ -116,7 +116,7 @@ func (cr *ControllerRegister) setRouteParams(ctx *contextenhanced.Context, info 
 		}
 	}
 
-	ctx.Params = params
+	ctx.SetParams(params)
 }
 
 // cleanPath 清理路径
@@ -152,7 +152,7 @@ func (cr *ControllerRegister) executeController(ctx *contextenhanced.Context, in
 	}()
 
 	// 获取HTTP方法
-	method := strings.ToUpper(string(ctx.RequestContext.Method()))
+	method := strings.ToUpper(string(ctx.Request().Method()))
 
 	// 查找方法信息
 	methodInfo := info.methods[method]
@@ -356,7 +356,7 @@ func (cr *ControllerRegister) handleNotFound(ctx *contextenhanced.Context) {
 	ctx.Output.JSON(map[string]any{
 		"error": "Not Found",
 		"code":  404,
-		"path":  string(ctx.RequestContext.URI().Path()),
+		"path":  string(ctx.Request().URI().Path()),
 	})
 }
 
@@ -410,7 +410,7 @@ func (cr *ControllerRegister) executeFilters(ctx *contextenhanced.Context, pos i
 	cr.mu.RUnlock()
 
 	for _, filterRouter := range filters {
-		if cr.matchFilterPattern(filterRouter.pattern, string(ctx.RequestContext.URI().Path())) {
+		if cr.matchFilterPattern(filterRouter.pattern, string(ctx.Request().URI().Path())) {
 			// 创建过滤器链
 			chain := &FilterChain{
 				filters: []FilterFunc{filterRouter.filterFunc},
@@ -421,7 +421,7 @@ func (cr *ControllerRegister) executeFilters(ctx *contextenhanced.Context, pos i
 			filterRouter.filterFunc(ctx, chain)
 
 			// 检查是否应该继续处理
-			if filterRouter.returnOnOutput && ctx.ResponseWriter.Written() {
+			if filterRouter.returnOnOutput && ctx.Writer().Written() {
 				return false
 			}
 		}

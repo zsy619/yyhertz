@@ -23,7 +23,7 @@ func NewJSONMapper() *JSONMapper {
 }
 
 // Map 使用JSON映射对象
-func (jm *JSONMapper) Map(src, dst any, config interface{}) error {
+func (jm *JSONMapper) Map(src, dst any, config any) error {
 	if src == nil {
 		return nil
 	}
@@ -95,7 +95,7 @@ func (jm *JSONMapper) isJSONMappable(t reflect.Type) bool {
 	// 移除检查标记并缓存结果
 	delete(jm.checking, t)
 	jm.typeCache[t] = result
-	
+
 	return result
 }
 
@@ -118,7 +118,7 @@ func (jm *JSONMapper) checkJSONMappable(t reflect.Type) bool {
 				if fieldType.Kind() == reflect.Ptr {
 					fieldType = fieldType.Elem()
 				}
-				
+
 				// 只检查基本类型和已知的安全类型
 				if !jm.isBasicJSONType(fieldType) {
 					return false
@@ -141,7 +141,7 @@ func (jm *JSONMapper) checkJSONMappable(t reflect.Type) bool {
 		return jm.isBasicJSONType(t.Elem())
 
 	case reflect.Interface:
-		return true // interface{} 通常可以JSON映射
+		return true // any 通常可以JSON映射
 
 	default:
 		return false

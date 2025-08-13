@@ -17,17 +17,17 @@ type ParameterValidator struct {
 
 // ValidationRule 验证规则
 type ValidationRule interface {
-	Validate(value interface{}, param string) error
+	Validate(value any, param string) error
 	Name() string
 }
 
 // ValidationError 验证错误
 type ValidationError struct {
-	Field   string      // 字段名
-	Tag     string      // 验证标签
-	Value   interface{} // 实际值
-	Param   string      // 验证参数
-	Message string      // 错误消息
+	Field   string // 字段名
+	Tag     string // 验证标签
+	Value   any    // 实际值
+	Param   string // 验证参数
+	Message string // 错误消息
 }
 
 // NewParameterValidator 创建参数验证器
@@ -68,13 +68,13 @@ func (pv *ParameterValidator) GetValidator(paramType reflect.Type) ParameterVali
 	}
 
 	// 返回通用验证器
-	return func(value interface{}, param *ParamBinder) error {
+	return func(value any, param *ParamBinder) error {
 		return pv.ValidateValue(value, param.Tags)
 	}
 }
 
 // ValidateValue 验证值
-func (pv *ParameterValidator) ValidateValue(value interface{}, tags map[string]string) error {
+func (pv *ParameterValidator) ValidateValue(value any, tags map[string]string) error {
 	for tag, param := range tags {
 		if rule, exists := pv.rules[tag]; exists {
 			if err := rule.Validate(value, param); err != nil {
@@ -91,7 +91,7 @@ func (pv *ParameterValidator) ValidateValue(value interface{}, tags map[string]s
 }
 
 // ValidateStruct 验证结构体
-func (pv *ParameterValidator) ValidateStruct(s interface{}) error {
+func (pv *ParameterValidator) ValidateStruct(s any) error {
 	v := reflect.ValueOf(s)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -130,7 +130,7 @@ func (pv *ParameterValidator) ValidateStruct(s interface{}) error {
 }
 
 // validateField 验证字段
-func (pv *ParameterValidator) validateField(fieldName string, value interface{}, validateTag string) error {
+func (pv *ParameterValidator) validateField(fieldName string, value any, validateTag string) error {
 	rules := strings.Split(validateTag, ",")
 
 	for _, rule := range rules {
@@ -176,7 +176,7 @@ type RequiredRule struct{}
 
 func (r *RequiredRule) Name() string { return "required" }
 
-func (r *RequiredRule) Validate(value interface{}, param string) error {
+func (r *RequiredRule) Validate(value any, param string) error {
 	if value == nil {
 		return fmt.Errorf("field is required")
 	}
@@ -205,7 +205,7 @@ type MinRule struct{}
 
 func (r *MinRule) Name() string { return "min" }
 
-func (r *MinRule) Validate(value interface{}, param string) error {
+func (r *MinRule) Validate(value any, param string) error {
 	min, err := strconv.ParseFloat(param, 64)
 	if err != nil {
 		return fmt.Errorf("invalid min parameter: %s", param)
@@ -245,7 +245,7 @@ type MaxRule struct{}
 
 func (r *MaxRule) Name() string { return "max" }
 
-func (r *MaxRule) Validate(value interface{}, param string) error {
+func (r *MaxRule) Validate(value any, param string) error {
 	max, err := strconv.ParseFloat(param, 64)
 	if err != nil {
 		return fmt.Errorf("invalid max parameter: %s", param)
@@ -285,7 +285,7 @@ type LenRule struct{}
 
 func (r *LenRule) Name() string { return "len" }
 
-func (r *LenRule) Validate(value interface{}, param string) error {
+func (r *LenRule) Validate(value any, param string) error {
 	length, err := strconv.Atoi(param)
 	if err != nil {
 		return fmt.Errorf("invalid len parameter: %s", param)
@@ -313,7 +313,7 @@ type EmailRule struct{}
 
 func (r *EmailRule) Name() string { return "email" }
 
-func (r *EmailRule) Validate(value interface{}, param string) error {
+func (r *EmailRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -332,7 +332,7 @@ type URLRule struct{}
 
 func (r *URLRule) Name() string { return "url" }
 
-func (r *URLRule) Validate(value interface{}, param string) error {
+func (r *URLRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -351,7 +351,7 @@ type NumericRule struct{}
 
 func (r *NumericRule) Name() string { return "numeric" }
 
-func (r *NumericRule) Validate(value interface{}, param string) error {
+func (r *NumericRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -369,7 +369,7 @@ type AlphaRule struct{}
 
 func (r *AlphaRule) Name() string { return "alpha" }
 
-func (r *AlphaRule) Validate(value interface{}, param string) error {
+func (r *AlphaRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -388,7 +388,7 @@ type AlphaNumRule struct{}
 
 func (r *AlphaNumRule) Name() string { return "alphanum" }
 
-func (r *AlphaNumRule) Validate(value interface{}, param string) error {
+func (r *AlphaNumRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -407,7 +407,7 @@ type RegexpRule struct{}
 
 func (r *RegexpRule) Name() string { return "regexp" }
 
-func (r *RegexpRule) Validate(value interface{}, param string) error {
+func (r *RegexpRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("field must be a string")
@@ -430,7 +430,7 @@ type OneOfRule struct{}
 
 func (r *OneOfRule) Name() string { return "oneof" }
 
-func (r *OneOfRule) Validate(value interface{}, param string) error {
+func (r *OneOfRule) Validate(value any, param string) error {
 	str := fmt.Sprintf("%v", value)
 	values := strings.Split(param, " ")
 
@@ -448,7 +448,7 @@ type RangeRule struct{}
 
 func (r *RangeRule) Name() string { return "range" }
 
-func (r *RangeRule) Validate(value interface{}, param string) error {
+func (r *RangeRule) Validate(value any, param string) error {
 	parts := strings.Split(param, "-")
 	if len(parts) != 2 {
 		return fmt.Errorf("invalid range parameter: %s", param)
@@ -490,7 +490,7 @@ type DateTimeRule struct{}
 
 func (r *DateTimeRule) Name() string { return "datetime" }
 
-func (r *DateTimeRule) Validate(value interface{}, param string) error {
+func (r *DateTimeRule) Validate(value any, param string) error {
 	str, ok := value.(string)
 	if !ok {
 		if _, ok := value.(time.Time); ok {

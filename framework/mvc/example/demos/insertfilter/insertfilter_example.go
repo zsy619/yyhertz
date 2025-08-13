@@ -17,7 +17,7 @@ type ExampleController struct {
 }
 
 func (c *ExampleController) GetIndex() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "Hello from Index",
 		"time":    time.Now().Format(time.RFC3339),
 	})
@@ -28,7 +28,7 @@ func (c *ExampleController) GetApi() {
 	userID, _ := c.Ctx.Get("user_id")
 	requestID, _ := c.Ctx.Get("request_id")
 
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message":    "API Response",
 		"user_id":    userID,
 		"request_id": requestID,
@@ -37,14 +37,14 @@ func (c *ExampleController) GetApi() {
 }
 
 func (c *ExampleController) PostApi() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "API POST Response",
 		"status":  "success",
 	})
 }
 
 func (c *ExampleController) GetAdmin() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "Admin Panel",
 		"level":   "administrator",
 	})
@@ -79,7 +79,7 @@ func setupFilters() {
 
 	// 1. BeforeStatic - 静态文件处理前的过滤器
 	staticFilter := func(ctx *context.Context) {
-		path := string(ctx.Request.Path())
+		path := string(ctx.Request().Path())
 		if strings.HasPrefix(path, "/static/") {
 			fmt.Printf("🗂️  [BeforeStatic] 访问静态文件: %s\n", path)
 			ctx.SetHeader("X-Static-File", "true")
@@ -94,8 +94,8 @@ func setupFilters() {
 		ctx.Set("request_id", requestID)
 		ctx.SetHeader("X-Request-ID", requestID)
 
-		path := string(ctx.Request.Path())
-		method := string(ctx.Request.Method())
+		path := string(ctx.Request().Path())
+		method := string(ctx.Request().Method())
 		fmt.Printf("🌐 [BeforeRouter] %s %s (ID: %s)\n", method, path, requestID)
 
 		// 记录请求开始时间
@@ -105,7 +105,7 @@ func setupFilters() {
 
 	// 3. 认证过滤器 - 只对API路径有效
 	authFilter := func(ctx *context.Context) {
-		path := string(ctx.Request.Path())
+		path := string(ctx.Request().Path())
 		fmt.Printf("🔐 [Auth] 检查路径权限: %s\n", path)
 
 		// 简单的token验证演示
@@ -149,7 +149,7 @@ func setupFilters() {
 
 	// 5. BeforeExec - 控制器执行前的日志过滤器
 	preExecFilter := func(ctx *context.Context) {
-		path := string(ctx.Request.Path())
+		path := string(ctx.Request().Path())
 		userID, _ := ctx.Get("user_id")
 		fmt.Printf("📝 [BeforeExec] 即将执行控制器 (用户: %v, 路径: %s)\n", userID, path)
 
@@ -178,7 +178,7 @@ func setupFilters() {
 
 	// 7. 限流过滤器（演示）
 	rateLimitFilter := func(ctx *context.Context) {
-		clientIP := ctx.Request.ClientIP()
+		clientIP := ctx.Request().ClientIP()
 		fmt.Printf("🚦 [RateLimit] 检查IP限流: %s\n", clientIP)
 
 		// 简化的限流检查（实际应用中应该用Redis等）
@@ -199,7 +199,7 @@ func setupFilters() {
 		}
 
 		// 处理预检请求
-		if string(ctx.Request.Method()) == "OPTIONS" {
+		if string(ctx.Request().Method()) == "OPTIONS" {
 			fmt.Printf("   ✓ 处理OPTIONS预检请求\n")
 			ctx.JSON(204, nil)
 			ctx.Abort()
@@ -214,8 +214,8 @@ func setupFilters() {
 		if exists {
 			totalDuration := time.Since(startTime.(time.Time))
 			requestID, _ := ctx.Get("request_id")
-			path := string(ctx.Request.Path())
-			method := string(ctx.Request.Method())
+			path := string(ctx.Request().Path())
+			method := string(ctx.Request().Method())
 
 			fmt.Printf("🏁 [FinishRouter] 请求完成\n")
 			fmt.Printf("   📊 总耗时: %v\n", totalDuration)

@@ -11,9 +11,9 @@ import (
 // CacheProvider 缓存提供者接口
 type CacheProvider interface {
 	// Get 获取缓存
-	Get(key string, value interface{}) (bool, error)
+	Get(key string, value any) (bool, error)
 	// Set 设置缓存
-	Set(key string, value interface{}, expiration time.Duration) error
+	Set(key string, value any, expiration time.Duration) error
 	// Delete 删除缓存
 	Delete(key string) error
 	// Clear 清空缓存
@@ -21,7 +21,7 @@ type CacheProvider interface {
 	// GetMulti 批量获取缓存
 	GetMulti(keys []string) (map[string][]byte, error)
 	// SetMulti 批量设置缓存
-	SetMulti(items map[string]interface{}, expiration time.Duration) error
+	SetMulti(items map[string]any, expiration time.Duration) error
 	// DeleteMulti 批量删除缓存
 	DeleteMulti(keys []string) error
 	// Close 关闭缓存
@@ -99,7 +99,7 @@ func (p *MemoryCacheProvider) deleteExpired() {
 }
 
 // Get 获取缓存
-func (p *MemoryCacheProvider) Get(key string, value interface{}) (bool, error) {
+func (p *MemoryCacheProvider) Get(key string, value any) (bool, error) {
 	p.mutex.RLock()
 	item, found := p.items[key]
 	if !found {
@@ -128,7 +128,7 @@ func (p *MemoryCacheProvider) Get(key string, value interface{}) (bool, error) {
 }
 
 // Set 设置缓存
-func (p *MemoryCacheProvider) Set(key string, value interface{}, expiration time.Duration) error {
+func (p *MemoryCacheProvider) Set(key string, value any, expiration time.Duration) error {
 	// 序列化值
 	b, err := json.Marshal(value)
 	if err != nil {
@@ -257,7 +257,7 @@ func (p *MemoryCacheProvider) GetMulti(keys []string) (map[string][]byte, error)
 }
 
 // SetMulti 批量设置缓存
-func (p *MemoryCacheProvider) SetMulti(items map[string]interface{}, expiration time.Duration) error {
+func (p *MemoryCacheProvider) SetMulti(items map[string]any, expiration time.Duration) error {
 	// 计算过期时间
 	var exp int64
 	if expiration > 0 {
@@ -388,7 +388,7 @@ func NewCacheManager(config *CacheConfig) (*CacheManager, error) {
 }
 
 // Get 获取缓存
-func (cm *CacheManager) Get(key string, value interface{}) (bool, error) {
+func (cm *CacheManager) Get(key string, value any) (bool, error) {
 	startTime := time.Now()
 	cacheKey := cm.buildKey(key)
 
@@ -410,7 +410,7 @@ func (cm *CacheManager) Get(key string, value interface{}) (bool, error) {
 }
 
 // Set 设置缓存
-func (cm *CacheManager) Set(key string, value interface{}, expiration time.Duration) error {
+func (cm *CacheManager) Set(key string, value any, expiration time.Duration) error {
 	if expiration == 0 {
 		expiration = cm.config.DefaultExpiration
 	}
@@ -470,12 +470,12 @@ func (cm *CacheManager) GetMulti(keys []string) (map[string][]byte, error) {
 }
 
 // SetMulti 批量设置缓存
-func (cm *CacheManager) SetMulti(items map[string]interface{}, expiration time.Duration) error {
+func (cm *CacheManager) SetMulti(items map[string]any, expiration time.Duration) error {
 	if expiration == 0 {
 		expiration = cm.config.DefaultExpiration
 	}
 
-	cacheItems := make(map[string]interface{})
+	cacheItems := make(map[string]any)
 	for key, value := range items {
 		cacheItems[cm.buildKey(key)] = value
 	}
@@ -584,12 +584,12 @@ func SetGlobalCacheManager(cm *CacheManager) {
 // ============= 便捷函数 =============
 
 // GetCache 获取缓存
-func GetCache(key string, value interface{}) (bool, error) {
+func GetCache(key string, value any) (bool, error) {
 	return GetGlobalCacheManager().Get(key, value)
 }
 
 // SetCache 设置缓存
-func SetCache(key string, value interface{}, expiration time.Duration) error {
+func SetCache(key string, value any, expiration time.Duration) error {
 	return GetGlobalCacheManager().Set(key, value, expiration)
 }
 

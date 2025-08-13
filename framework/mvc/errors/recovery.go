@@ -13,24 +13,24 @@ import (
 type RecoveryAction int
 
 const (
-	ActionRetry       RecoveryAction = iota // 重试
-	ActionFallback                          // 降级
-	ActionCircuitBreak                      // 熔断
-	ActionIgnore                            // 忽略
-	ActionEscalate                          // 上报
+	ActionRetry        RecoveryAction = iota // 重试
+	ActionFallback                           // 降级
+	ActionCircuitBreak                       // 熔断
+	ActionIgnore                             // 忽略
+	ActionEscalate                           // 上报
 )
 
 // RecoveryStrategy 恢复策略
 type RecoveryStrategy struct {
-	Name           string            // 策略名称
-	Condition      RecoveryCondition // 触发条件
-	Action         RecoveryAction    // 恢复动作
-	MaxRetries     int               // 最大重试次数
-	RetryInterval  time.Duration     // 重试间隔
-	BackoffFactor  float64           // 退避因子
-	Timeout        time.Duration     // 超时时间
-	FallbackFunc   FallbackFunc      // 降级函数
-	Metadata       map[string]interface{} // 元数据
+	Name          string            // 策略名称
+	Condition     RecoveryCondition // 触发条件
+	Action        RecoveryAction    // 恢复动作
+	MaxRetries    int               // 最大重试次数
+	RetryInterval time.Duration     // 重试间隔
+	BackoffFactor float64           // 退避因子
+	Timeout       time.Duration     // 超时时间
+	FallbackFunc  FallbackFunc      // 降级函数
+	Metadata      map[string]any    // 元数据
 }
 
 // RecoveryCondition 恢复条件接口
@@ -44,65 +44,65 @@ type FallbackFunc func(ctx *mvccontext.Context, err error) error
 
 // RecoveryResult 恢复结果
 type RecoveryResult struct {
-	Original      error             // 原始错误
-	Strategy      string            // 使用的策略
-	Action        RecoveryAction    // 执行的动作
-	Attempts      int               // 尝试次数
-	Success       bool              // 是否成功
-	FinalError    error             // 最终错误
-	Duration      time.Duration     // 恢复耗时
-	Metadata      map[string]interface{} // 结果元数据
-	RecoveredAt   time.Time         // 恢复时间
+	Original    error          // 原始错误
+	Strategy    string         // 使用的策略
+	Action      RecoveryAction // 执行的动作
+	Attempts    int            // 尝试次数
+	Success     bool           // 是否成功
+	FinalError  error          // 最终错误
+	Duration    time.Duration  // 恢复耗时
+	Metadata    map[string]any // 结果元数据
+	RecoveredAt time.Time      // 恢复时间
 }
 
 // AutoRecovery 自动错误恢复系统
 type AutoRecovery struct {
-	strategies    []RecoveryStrategy    // 恢复策略
-	classifier    *IntelligentClassifier // 错误分类器
-	circuitBreaker *CircuitBreaker      // 熔断器
-	statistics    RecoveryStats         // 统计信息
-	config        RecoveryConfig        // 配置
-	mu            sync.RWMutex          // 读写锁
+	strategies     []RecoveryStrategy     // 恢复策略
+	classifier     *IntelligentClassifier // 错误分类器
+	circuitBreaker *CircuitBreaker        // 熔断器
+	statistics     RecoveryStats          // 统计信息
+	config         RecoveryConfig         // 配置
+	mu             sync.RWMutex           // 读写锁
 }
 
 // RecoveryStats 恢复统计
 type RecoveryStats struct {
-	TotalAttempts    int64                     // 总尝试次数
-	SuccessfulRecoveries int64                 // 成功恢复次数
-	FailedRecoveries int64                     // 失败恢复次数
-	ActionCounts     map[RecoveryAction]int64  // 各动作统计
-	StrategyStats    map[string]*StrategyStats // 策略统计
-	AverageRecoveryTime time.Duration          // 平均恢复时间
+	TotalAttempts        int64                     // 总尝试次数
+	SuccessfulRecoveries int64                     // 成功恢复次数
+	FailedRecoveries     int64                     // 失败恢复次数
+	ActionCounts         map[RecoveryAction]int64  // 各动作统计
+	StrategyStats        map[string]*StrategyStats // 策略统计
+	AverageRecoveryTime  time.Duration             // 平均恢复时间
 }
 
 // StrategyStats 策略统计
 type StrategyStats struct {
-	UsageCount    int64         // 使用次数
-	SuccessCount  int64         // 成功次数
-	FailureCount  int64         // 失败次数
-	AverageTime   time.Duration // 平均耗时
-	LastUsed      time.Time     // 最后使用时间
+	UsageCount   int64         // 使用次数
+	SuccessCount int64         // 成功次数
+	FailureCount int64         // 失败次数
+	AverageTime  time.Duration // 平均耗时
+	LastUsed     time.Time     // 最后使用时间
 }
 
 // RecoveryConfig 恢复配置
 type RecoveryConfig struct {
-	EnableAutoRecovery    bool          // 启用自动恢复
-	EnableCircuitBreaker  bool          // 启用熔断器
-	EnableStatistics      bool          // 启用统计
-	MaxConcurrentRecoveries int         // 最大并发恢复数
-	DefaultTimeout        time.Duration // 默认超时时间
-	HealthCheckInterval   time.Duration // 健康检查间隔
+	EnableAutoRecovery      bool          // 启用自动恢复
+	EnableCircuitBreaker    bool          // 启用熔断器
+	EnableStatistics        bool          // 启用统计
+	MaxConcurrentRecoveries int           // 最大并发恢复数
+	DefaultTimeout          time.Duration // 默认超时时间
+	HealthCheckInterval     time.Duration // 健康检查间隔
 }
 
 // CircuitBreaker 熔断器
 type CircuitBreaker struct {
-	name           string        // 名称
-	maxFailures    int           // 最大失败次数
-	timeout        time.Duration // 熔断超时时间
-	failureCount   int64         // 当前失败次数
-	lastFailureTime time.Time    // 最后失败时间
-	state          CircuitState  // 熔断器状态
-	mu             sync.RWMutex  // 读写锁
+	name            string        // 名称
+	maxFailures     int           // 最大失败次数
+	timeout         time.Duration // 熔断超时时间
+	failureCount    int64         // 当前失败次数
+	lastFailureTime time.Time     // 最后失败时间
+	state           CircuitState  // 熔断器状态
+	mu              sync.RWMutex  // 读写锁
 }
 
 // CircuitState 熔断器状态
@@ -126,10 +126,10 @@ func NewAutoRecovery(classifier *IntelligentClassifier) *AutoRecovery {
 		},
 		config: DefaultRecoveryConfig(),
 	}
-	
+
 	// 初始化默认策略
 	recovery.initDefaultStrategies()
-	
+
 	return recovery
 }
 
@@ -157,13 +157,13 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResu
 			RecoveredAt: time.Now(),
 		}
 	}
-	
+
 	start := time.Now()
 	atomic.AddInt64(&r.statistics.TotalAttempts, 1)
-	
+
 	// 分类错误
 	classification := r.classifier.Classify(err, ctx)
-	
+
 	// 检查熔断器状态
 	if r.config.EnableCircuitBreaker && !r.circuitBreaker.AllowRequest() {
 		return &RecoveryResult{
@@ -176,7 +176,7 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResu
 			RecoveredAt: time.Now(),
 		}
 	}
-	
+
 	// 选择恢复策略
 	strategy := r.selectStrategy(classification, ctx)
 	if strategy == nil {
@@ -190,16 +190,16 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResu
 			RecoveredAt: time.Now(),
 		}
 	}
-	
+
 	// 执行恢复
 	result := r.executeRecovery(ctx, err, classification, strategy)
 	result.Duration = time.Since(start)
-	
+
 	// 更新统计信息
 	if r.config.EnableStatistics {
 		r.updateStatistics(result)
 	}
-	
+
 	// 更新熔断器状态
 	if r.config.EnableCircuitBreaker {
 		if result.Success {
@@ -208,7 +208,7 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResu
 			r.circuitBreaker.OnFailure()
 		}
 	}
-	
+
 	return result
 }
 
@@ -216,10 +216,10 @@ func (r *AutoRecovery) Recover(ctx *mvccontext.Context, err error) *RecoveryResu
 func (r *AutoRecovery) selectStrategy(classification *ErrorClassification, ctx *mvccontext.Context) *RecoveryStrategy {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	var bestStrategy *RecoveryStrategy
 	var bestPriority int = -1
-	
+
 	for i := range r.strategies {
 		strategy := &r.strategies[i]
 		if strategy.Condition.ShouldRecover(classification, ctx) {
@@ -230,7 +230,7 @@ func (r *AutoRecovery) selectStrategy(classification *ErrorClassification, ctx *
 			}
 		}
 	}
-	
+
 	return bestStrategy
 }
 
@@ -241,9 +241,9 @@ func (r *AutoRecovery) executeRecovery(ctx *mvccontext.Context, err error, class
 		Strategy:    strategy.Name,
 		Action:      strategy.Action,
 		RecoveredAt: time.Now(),
-		Metadata:    make(map[string]interface{}),
+		Metadata:    make(map[string]any),
 	}
-	
+
 	switch strategy.Action {
 	case ActionRetry:
 		result = r.executeRetry(ctx, err, strategy)
@@ -259,7 +259,7 @@ func (r *AutoRecovery) executeRecovery(ctx *mvccontext.Context, err error, class
 		result.Success = false
 		result.FinalError = fmt.Errorf("unknown recovery action: %v", strategy.Action)
 	}
-	
+
 	result.Strategy = strategy.Name
 	result.Action = strategy.Action
 	return result
@@ -271,13 +271,13 @@ func (r *AutoRecovery) executeRetry(ctx *mvccontext.Context, err error, strategy
 		Original: err,
 		Action:   ActionRetry,
 	}
-	
+
 	var lastErr error = err
 	interval := strategy.RetryInterval
-	
+
 	for attempt := 1; attempt <= strategy.MaxRetries; attempt++ {
 		result.Attempts = attempt
-		
+
 		if attempt > 1 {
 			// 等待重试间隔
 			time.Sleep(interval)
@@ -286,7 +286,7 @@ func (r *AutoRecovery) executeRetry(ctx *mvccontext.Context, err error, strategy
 				interval = time.Duration(float64(interval) * strategy.BackoffFactor)
 			}
 		}
-		
+
 		// 这里应该重新执行原始操作
 		// 由于我们只有错误信息，这里模拟重试逻辑
 		if r.simulateRetrySuccess(attempt, strategy.MaxRetries) {
@@ -294,14 +294,14 @@ func (r *AutoRecovery) executeRetry(ctx *mvccontext.Context, err error, strategy
 			result.FinalError = nil
 			break
 		}
-		
+
 		lastErr = fmt.Errorf("retry %d failed: %w", attempt, err)
 	}
-	
+
 	if !result.Success {
 		result.FinalError = lastErr
 	}
-	
+
 	return result
 }
 
@@ -312,7 +312,7 @@ func (r *AutoRecovery) executeFallback(ctx *mvccontext.Context, err error, strat
 		Action:   ActionFallback,
 		Attempts: 1,
 	}
-	
+
 	if strategy.FallbackFunc != nil {
 		fallbackErr := strategy.FallbackFunc(ctx, err)
 		if fallbackErr == nil {
@@ -328,7 +328,7 @@ func (r *AutoRecovery) executeFallback(ctx *mvccontext.Context, err error, strat
 		result.FinalError = nil
 		result.Metadata["fallback_response"] = "Service temporarily unavailable, please try again later"
 	}
-	
+
 	return result
 }
 
@@ -358,14 +358,14 @@ func (r *AutoRecovery) executeIgnore(ctx *mvccontext.Context, err error, strateg
 func (r *AutoRecovery) executeEscalate(ctx *mvccontext.Context, err error, strategy *RecoveryStrategy) *RecoveryResult {
 	// 这里可以集成告警系统
 	fmt.Printf("[ESCALATED ERROR] %v\n", err)
-	
+
 	return &RecoveryResult{
 		Original:   err,
 		Action:     ActionEscalate,
 		Attempts:   1,
 		Success:    true,
 		FinalError: err, // 保留原错误但标记为已处理
-		Metadata:   map[string]interface{}{"escalated": true},
+		Metadata:   map[string]any{"escalated": true},
 	}
 }
 
@@ -380,9 +380,9 @@ func (r *AutoRecovery) simulateRetrySuccess(attempt, maxRetries int) bool {
 func (r *AutoRecovery) AddStrategy(strategy RecoveryStrategy) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	r.strategies = append(r.strategies, strategy)
-	
+
 	// 初始化策略统计
 	if r.config.EnableStatistics {
 		r.statistics.StrategyStats[strategy.Name] = &StrategyStats{}
@@ -401,7 +401,7 @@ func (r *AutoRecovery) initDefaultStrategies() {
 		BackoffFactor: 1.5,
 		Timeout:       10 * time.Second,
 	})
-	
+
 	// 网络错误重试策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:          "network-retry",
@@ -412,7 +412,7 @@ func (r *AutoRecovery) initDefaultStrategies() {
 		BackoffFactor: 2.0,
 		Timeout:       15 * time.Second,
 	})
-	
+
 	// 数据库错误重试策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:          "database-retry",
@@ -423,7 +423,7 @@ func (r *AutoRecovery) initDefaultStrategies() {
 		BackoffFactor: 1.5,
 		Timeout:       20 * time.Second,
 	})
-	
+
 	// 限流错误等待策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:          "ratelimit-retry",
@@ -434,21 +434,21 @@ func (r *AutoRecovery) initDefaultStrategies() {
 		BackoffFactor: 1.2,
 		Timeout:       30 * time.Second,
 	})
-	
+
 	// 业务错误忽略策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:      "business-ignore",
 		Condition: &CategoryCondition{Category: CategoryBusiness},
 		Action:    ActionIgnore,
 	})
-	
+
 	// 严重错误上报策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:      "critical-escalate",
 		Condition: &SeverityCondition{Severity: SeverityCritical},
 		Action:    ActionEscalate,
 	})
-	
+
 	// 外部服务错误降级策略
 	r.AddStrategy(RecoveryStrategy{
 		Name:         "external-fallback",
@@ -462,17 +462,17 @@ func (r *AutoRecovery) initDefaultStrategies() {
 func (r *AutoRecovery) updateStatistics(result *RecoveryResult) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	// 更新总体统计
 	if result.Success {
 		atomic.AddInt64(&r.statistics.SuccessfulRecoveries, 1)
 	} else {
 		atomic.AddInt64(&r.statistics.FailedRecoveries, 1)
 	}
-	
+
 	// 更新动作统计
 	r.statistics.ActionCounts[result.Action]++
-	
+
 	// 更新策略统计
 	if stats, exists := r.statistics.StrategyStats[result.Strategy]; exists {
 		stats.UsageCount++
@@ -481,13 +481,13 @@ func (r *AutoRecovery) updateStatistics(result *RecoveryResult) {
 		} else {
 			stats.FailureCount++
 		}
-		
+
 		// 更新平均时间
 		totalCount := stats.SuccessCount + stats.FailureCount
 		stats.AverageTime = (stats.AverageTime*time.Duration(totalCount-1) + result.Duration) / time.Duration(totalCount)
 		stats.LastUsed = time.Now()
 	}
-	
+
 	// 更新平均恢复时间
 	totalAttempts := atomic.LoadInt64(&r.statistics.TotalAttempts)
 	r.statistics.AverageRecoveryTime = (r.statistics.AverageRecoveryTime*time.Duration(totalAttempts-1) + result.Duration) / time.Duration(totalAttempts)
@@ -497,21 +497,21 @@ func (r *AutoRecovery) updateStatistics(result *RecoveryResult) {
 func (r *AutoRecovery) GetStatistics() RecoveryStats {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	// 深拷贝统计信息
 	stats := RecoveryStats{
-		TotalAttempts:       atomic.LoadInt64(&r.statistics.TotalAttempts),
+		TotalAttempts:        atomic.LoadInt64(&r.statistics.TotalAttempts),
 		SuccessfulRecoveries: atomic.LoadInt64(&r.statistics.SuccessfulRecoveries),
-		FailedRecoveries:    atomic.LoadInt64(&r.statistics.FailedRecoveries),
-		ActionCounts:        make(map[RecoveryAction]int64),
-		StrategyStats:       make(map[string]*StrategyStats),
-		AverageRecoveryTime: r.statistics.AverageRecoveryTime,
+		FailedRecoveries:     atomic.LoadInt64(&r.statistics.FailedRecoveries),
+		ActionCounts:         make(map[RecoveryAction]int64),
+		StrategyStats:        make(map[string]*StrategyStats),
+		AverageRecoveryTime:  r.statistics.AverageRecoveryTime,
 	}
-	
+
 	for k, v := range r.statistics.ActionCounts {
 		stats.ActionCounts[k] = v
 	}
-	
+
 	for k, v := range r.statistics.StrategyStats {
 		stats.StrategyStats[k] = &StrategyStats{
 			UsageCount:   v.UsageCount,
@@ -521,7 +521,7 @@ func (r *AutoRecovery) GetStatistics() RecoveryStats {
 			LastUsed:     v.LastUsed,
 		}
 	}
-	
+
 	return stats
 }
 
@@ -580,9 +580,9 @@ func NewCircuitBreaker(name string, maxFailures int, timeout time.Duration) *Cir
 func (cb *CircuitBreaker) AllowRequest() bool {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	now := time.Now()
-	
+
 	switch cb.state {
 	case StateClosed:
 		return true
@@ -603,7 +603,7 @@ func (cb *CircuitBreaker) AllowRequest() bool {
 func (cb *CircuitBreaker) OnSuccess() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	cb.failureCount = 0
 	if cb.state == StateHalfOpen {
 		cb.state = StateClosed
@@ -614,10 +614,10 @@ func (cb *CircuitBreaker) OnSuccess() {
 func (cb *CircuitBreaker) OnFailure() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	cb.failureCount++
 	cb.lastFailureTime = time.Now()
-	
+
 	if cb.failureCount >= int64(cb.maxFailures) {
 		cb.state = StateOpen
 	}
@@ -632,7 +632,7 @@ func (cb *CircuitBreaker) GetState() CircuitState {
 
 // 默认降级处理器
 func defaultFallbackHandler(ctx *mvccontext.Context, err error) error {
-	ctx.JSON(503, map[string]interface{}{
+	ctx.JSON(503, map[string]any{
 		"code":    503,
 		"message": "Service temporarily unavailable",
 		"success": false,
@@ -661,13 +661,13 @@ func AddGlobalStrategy(strategy RecoveryStrategy) {
 // GetActionName 获取动作名称
 func GetActionName(action RecoveryAction) string {
 	names := map[RecoveryAction]string{
-		ActionRetry:       "Retry",
-		ActionFallback:    "Fallback",
+		ActionRetry:        "Retry",
+		ActionFallback:     "Fallback",
 		ActionCircuitBreak: "CircuitBreak",
-		ActionIgnore:      "Ignore",
-		ActionEscalate:    "Escalate",
+		ActionIgnore:       "Ignore",
+		ActionEscalate:     "Escalate",
 	}
-	
+
 	if name, exists := names[action]; exists {
 		return name
 	}
@@ -677,25 +677,25 @@ func GetActionName(action RecoveryAction) string {
 // PrintRecoveryInfo 打印恢复系统信息
 func PrintRecoveryInfo() {
 	stats := globalRecovery.GetStatistics()
-	
+
 	fmt.Println("=== Auto Recovery Statistics ===")
 	fmt.Printf("Total Recovery Attempts: %d\n", stats.TotalAttempts)
 	fmt.Printf("Successful Recoveries: %d\n", stats.SuccessfulRecoveries)
 	fmt.Printf("Failed Recoveries: %d\n", stats.FailedRecoveries)
-	
+
 	if stats.TotalAttempts > 0 {
 		successRate := float64(stats.SuccessfulRecoveries) / float64(stats.TotalAttempts) * 100
 		fmt.Printf("Success Rate: %.2f%%\n", successRate)
 	}
-	
+
 	fmt.Printf("Average Recovery Time: %v\n", stats.AverageRecoveryTime)
-	
+
 	fmt.Println("\nAction Distribution:")
 	for action, count := range stats.ActionCounts {
 		percentage := float64(count) / float64(stats.TotalAttempts) * 100
 		fmt.Printf("  %s: %d (%.1f%%)\n", GetActionName(action), count, percentage)
 	}
-	
+
 	fmt.Println("\nStrategy Performance:")
 	for name, strategyStats := range stats.StrategyStats {
 		if strategyStats.UsageCount > 0 {

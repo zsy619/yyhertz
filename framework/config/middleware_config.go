@@ -136,7 +136,7 @@ type MiddlewareConfig struct {
 	} `mapstructure:"builtin" yaml:"builtin" json:"builtin"`
 
 	// 自定义中间件配置
-	Custom map[string]interface{} `mapstructure:"custom" yaml:"custom" json:"custom"`
+	Custom map[string]any `mapstructure:"custom" yaml:"custom" json:"custom"`
 }
 
 // GetConfigName 实现 ConfigInterface 接口
@@ -407,7 +407,7 @@ func (c *MiddlewareConfig) IsAutoMode() bool {
 }
 
 // GetBuiltinConfig 获取内置中间件配置
-func (c *MiddlewareConfig) GetBuiltinConfig(name string) interface{} {
+func (c *MiddlewareConfig) GetBuiltinConfig(name string) any {
 	switch name {
 	case "logger":
 		return c.Builtin.Logger

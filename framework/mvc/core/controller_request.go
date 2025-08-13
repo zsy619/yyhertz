@@ -16,14 +16,14 @@ func (c *BaseController) GetString(key string, def ...string) string {
 		}
 		return ""
 	}
-	
+
 	// 直接从Hertz RequestContext获取查询参数
-	if c.Ctx.RequestContext != nil {
-		if pathBytes := c.Ctx.RequestContext.QueryArgs().Peek(key); pathBytes != nil {
+	if c.Ctx.Request() != nil {
+		if pathBytes := c.Ctx.Request().QueryArgs().Peek(key); pathBytes != nil {
 			return string(pathBytes)
 		}
 	}
-	
+
 	// 备用方法
 	if val := c.Ctx.Query(key); val != "" {
 		return val
@@ -140,7 +140,7 @@ func (c *BaseController) GetUserAgent() string {
 	if c.Ctx == nil {
 		return ""
 	}
-	return string(c.Ctx.RequestContext.GetHeader("User-Agent"))
+	return string(c.Ctx.Request().GetHeader("User-Agent"))
 }
 
 // GetHeader 获取请求头
@@ -148,7 +148,7 @@ func (c *BaseController) GetHeader(key string) string {
 	if c.Ctx == nil {
 		return ""
 	}
-	return string(c.Ctx.RequestContext.GetHeader(key))
+	return string(c.Ctx.Request().GetHeader(key))
 }
 
 // GetClientIP 获取客户端IP地址
@@ -157,7 +157,7 @@ func (c *BaseController) GetClientIP() string {
 		return ""
 	}
 	// 尝试从X-Forwarded-For获取真实IP
-	if xff := c.Ctx.RequestContext.GetHeader("X-Forwarded-For"); len(xff) > 0 {
+	if xff := c.Ctx.Request().GetHeader("X-Forwarded-For"); len(xff) > 0 {
 		xffStr := string(xff)
 		ips := strings.Split(xffStr, ",")
 		if len(ips) > 0 {
@@ -169,12 +169,12 @@ func (c *BaseController) GetClientIP() string {
 	}
 
 	// 尝试从X-Real-IP获取
-	if xri := c.Ctx.RequestContext.GetHeader("X-Real-IP"); len(xri) > 0 {
+	if xri := c.Ctx.Request().GetHeader("X-Real-IP"); len(xri) > 0 {
 		return string(xri)
 	}
 
 	// 从RemoteAddr获取
-	remoteAddr := c.Ctx.RequestContext.RemoteAddr().String()
+	remoteAddr := c.Ctx.Request().RemoteAddr().String()
 	host, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
 		return remoteAddr
@@ -189,7 +189,7 @@ func (c *BaseController) IsAjax() bool {
 	if c.Ctx == nil {
 		return false
 	}
-	return string(c.Ctx.RequestContext.GetHeader("X-Requested-With")) == "XMLHttpRequest"
+	return string(c.Ctx.Request().GetHeader("X-Requested-With")) == "XMLHttpRequest"
 }
 
 // IsMethod 判断HTTP方法
@@ -197,7 +197,7 @@ func (c *BaseController) IsMethod(method string) bool {
 	if c.Ctx == nil {
 		return false
 	}
-	return strings.ToUpper(string(c.Ctx.RequestContext.Method())) == strings.ToUpper(method)
+	return strings.ToUpper(string(c.Ctx.Request().Method())) == strings.ToUpper(method)
 }
 
 // IsPost 判断是否为POST请求

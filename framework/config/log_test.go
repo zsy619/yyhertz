@@ -105,10 +105,10 @@ func TestLogConfig_ConfigMethods(t *testing.T) {
 			Tag:      "test",
 		}
 		newConfig := config.AddOutput("syslog", syslogConfig)
-		
+
 		assert.Contains(t, newConfig.Outputs, "syslog")
 		assert.Contains(t, newConfig.OutputConfig, "syslog")
-		
+
 		retrievedConfig, exists := newConfig.GetOutputConfig("syslog")
 		assert.True(t, exists)
 		assert.Equal(t, syslogConfig, retrievedConfig)
@@ -118,7 +118,7 @@ func TestLogConfig_ConfigMethods(t *testing.T) {
 		// 先添加一个输出
 		newConfig := config.AddOutput("syslog", nil)
 		assert.Contains(t, newConfig.Outputs, "syslog")
-		
+
 		// 然后移除
 		finalConfig := newConfig.RemoveOutput("syslog")
 		assert.NotContains(t, finalConfig.Outputs, "syslog")
@@ -222,7 +222,7 @@ func TestLogConfig_CreateLogger(t *testing.T) {
 	t.Run("DefaultConfig", func(t *testing.T) {
 		config := DefaultLogConfig()
 		logger := config.CreateLogger()
-		
+
 		assert.NotNil(t, logger)
 		assert.NotNil(t, logger.Logger())
 	})
@@ -245,7 +245,7 @@ func TestLogConfig_CreateLogger(t *testing.T) {
 				config := DefaultLogConfig()
 				config.Format = format
 				logger := config.CreateLogger()
-				
+
 				assert.NotNil(t, logger)
 				assert.NotNil(t, logger.Logger())
 			})
@@ -276,7 +276,6 @@ func TestLogConfig_ConfigInterface(t *testing.T) {
 		assert.Contains(t, content, "azure_insights:")
 	})
 }
-
 
 func TestLogOutputs(t *testing.T) {
 	outputs := []LogOutput{
@@ -309,7 +308,7 @@ func BenchmarkDefaultLogConfig(b *testing.B) {
 func BenchmarkCreateLogger(b *testing.B) {
 	config := DefaultLogConfig()
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		logger := config.CreateLogger()
 		_ = logger
@@ -321,9 +320,9 @@ func BenchmarkLogMessage(b *testing.B) {
 	config.EnableFile = false // 只输出到控制台以提高性能
 	logger := config.CreateLogger()
 	logrusLogger := logger.Logger()
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		logrusLogger.Info("benchmark log message")
 	}
@@ -334,15 +333,15 @@ func BenchmarkLogWithFields(b *testing.B) {
 	config.EnableFile = false // 只输出到控制台以提高性能
 	logger := config.CreateLogger()
 	logrusLogger := logger.Logger()
-	
-	fields := map[string]interface{}{
+
+	fields := map[string]any{
 		"user_id":    "user123",
 		"request_id": "req456",
 		"action":     "benchmark",
 	}
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		logrusLogger.WithFields(fields).Info("benchmark log message with fields")
 	}

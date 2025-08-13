@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
@@ -14,10 +15,10 @@ func BasicToMVC(basicHandler Middleware) MiddlewareFunc {
 	return func(ctx *mvccontext.Context) {
 		// 创建基础上下文
 		c := context.Background()
-		
-		// 获取底层的 Hertz RequestContext
-		hertzCtx := ctx.Request
-		
+
+		// 获取底层的 Hertz Request
+		hertzCtx := ctx.Request()
+
 		// 调用基础中间件
 		basicHandler(c, hertzCtx)
 	}
@@ -28,10 +29,10 @@ func HandlerFuncToMVC(basicHandler HandlerFunc) MiddlewareFunc {
 	return func(ctx *mvccontext.Context) {
 		// 创建基础中间件Context
 		basicCtx := CreateBasicContext(ctx)
-		
+
 		// 调用基础处理器
 		basicHandler(basicCtx)
-		
+
 		// 同步状态回MVC Context
 		SyncContextState(basicCtx, ctx)
 	}
@@ -42,7 +43,7 @@ func MVCToBasic(mvcHandler MiddlewareFunc) Middleware {
 	return func(c context.Context, hertzCtx *app.RequestContext) {
 		// 创建MVC增强上下文
 		enhancedCtx := mvccontext.NewContext(hertzCtx)
-		
+
 		// 调用MVC处理器
 		mvcHandler(enhancedCtx)
 	}
@@ -50,22 +51,23 @@ func MVCToBasic(mvcHandler MiddlewareFunc) Middleware {
 
 // CreateBasicContext 从MVC Context创建基础Context
 func CreateBasicContext(mvcCtx *mvccontext.Context) *Context {
-	hertzCtx := mvcCtx.Request
-	
+	hertzCtx := mvcCtx.Request()
+
 	// 创建基础中间件引擎的Context
 	engine := NewEngine()
 	basicCtx := engine.NewContext(hertzCtx)
-	
+
 	// 同步现有数据
-	for key, value := range mvcCtx.Keys {
+	maps := mvcCtx.ParamMap()
+	for key, value := range maps {
 		basicCtx.Set(key, value)
 	}
-	
+
 	// 同步错误信息
 	for _, err := range mvcCtx.GetErrors() {
 		basicCtx.AddError(err)
 	}
-	
+
 	return basicCtx
 }
 
@@ -75,12 +77,12 @@ func SyncContextState(basicCtx *Context, mvcCtx *mvccontext.Context) {
 	for key, value := range basicCtx.Keys {
 		mvcCtx.Set(key, value)
 	}
-	
+
 	// 同步错误
 	for _, err := range basicCtx.Errors {
 		mvcCtx.AddError(err)
 	}
-	
+
 	// 同步状态
 	if basicCtx.IsAborted() {
 		mvcCtx.Abort()
@@ -107,7 +109,7 @@ func NewMiddlewareAdapter(name string) *MiddlewareAdapter {
 func (adapter *MiddlewareAdapter) UseBasicMiddleware(layer MiddlewareLayer, name string, handler Middleware, priority int) error {
 	// 转换为MVC中间件
 	mvcHandler := BasicToMVC(handler)
-	
+
 	// 注册到MVC系统
 	err := adapter.mvcManager.RegisterCustom(name, mvcHandler, MiddlewareMetadata{
 		Name:        name,
@@ -117,7 +119,7 @@ func (adapter *MiddlewareAdapter) UseBasicMiddleware(layer MiddlewareLayer, name
 	if err != nil {
 		return err
 	}
-	
+
 	// 使用中间件
 	return adapter.mvcManager.UseCustom(layer, name, priority)
 }
@@ -126,7 +128,7 @@ func (adapter *MiddlewareAdapter) UseBasicMiddleware(layer MiddlewareLayer, name
 func (adapter *MiddlewareAdapter) UseBasicHandlerFunc(layer MiddlewareLayer, name string, handler HandlerFunc, priority int) error {
 	// 转换为MVC中间件
 	mvcHandler := HandlerFuncToMVC(handler)
-	
+
 	// 注册到MVC系统
 	err := adapter.mvcManager.RegisterCustom(name, mvcHandler, MiddlewareMetadata{
 		Name:        name,
@@ -136,7 +138,7 @@ func (adapter *MiddlewareAdapter) UseBasicHandlerFunc(layer MiddlewareLayer, nam
 	if err != nil {
 		return err
 	}
-	
+
 	// 使用中间件
 	return adapter.mvcManager.UseCustom(layer, name, priority)
 }

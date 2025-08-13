@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/response"
 )
@@ -76,7 +77,7 @@ func (c *BaseController) Redirect(url string, code ...int) {
 	if len(code) > 0 {
 		statusCode = code[0]
 	}
-	c.Ctx.RequestContext.Redirect(statusCode, []byte(url))
+	c.Ctx.Request().Redirect(statusCode, []byte(url))
 }
 
 // Error 返回错误响应

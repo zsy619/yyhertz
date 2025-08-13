@@ -109,21 +109,21 @@ func (c *BaseController) validateStruct(obj any) error {
 	if obj == nil {
 		return fmt.Errorf("validation object is nil")
 	}
-	
+
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	if v.Kind() != reflect.Struct {
 		return fmt.Errorf("validation object must be a struct")
 	}
-	
+
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
-		
+
 		// 检查required标签
 		if tag := fieldType.Tag.Get("validate"); tag != "" {
 			if strings.Contains(tag, "required") {
@@ -133,7 +133,7 @@ func (c *BaseController) validateStruct(obj any) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -178,8 +178,8 @@ func (c *BaseController) GetBodySize() int64 {
 	if c.Ctx == nil || c.Ctx.Request == nil {
 		return 0
 	}
-	
-	body, err := c.Ctx.Request.Body()
+
+	body, err := c.Ctx.Request().Body()
 	if err != nil {
 		return 0
 	}
@@ -207,7 +207,7 @@ func (c *BaseController) GetMultipartForm() (*multipart.Form, error) {
 	if c.Ctx == nil {
 		return nil, fmt.Errorf("context is nil")
 	}
-	return c.Ctx.Request.MultipartForm()
+	return c.Ctx.Request().MultipartForm()
 }
 
 // ParseMultipartForm 解析多部分表单
@@ -324,11 +324,8 @@ func (c *BaseController) GetParamNames() []string {
 	if c.Ctx == nil {
 		return nil
 	}
-	
-	var names []string
-	for _, param := range c.Ctx.Params {
-		names = append(names, param.Key)
-	}
+
+	names := c.Ctx.ParamKeys()
 	return names
 }
 
@@ -337,11 +334,8 @@ func (c *BaseController) GetParamValues() []string {
 	if c.Ctx == nil {
 		return nil
 	}
-	
-	var values []string
-	for _, param := range c.Ctx.Params {
-		values = append(values, param.Value)
-	}
+
+	values := c.Ctx.ParamValues()
 	return values
 }
 
@@ -350,11 +344,8 @@ func (c *BaseController) GetAllParams() map[string]string {
 	if c.Ctx == nil {
 		return make(map[string]string)
 	}
-	
-	result := make(map[string]string)
-	for _, param := range c.Ctx.Params {
-		result[param.Key] = param.Value
-	}
+
+	result := c.Ctx.ParamMap()
 	return result
 }
 
@@ -421,7 +412,7 @@ func (c *BaseController) IsXML() bool {
 	}
 	contentType := c.Ctx.ContentType()
 	return strings.Contains(strings.ToLower(contentType), "application/xml") ||
-		   strings.Contains(strings.ToLower(contentType), "text/xml")
+		strings.Contains(strings.ToLower(contentType), "text/xml")
 }
 
 // IsForm 判断请求是否为表单格式

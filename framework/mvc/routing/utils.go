@@ -3,7 +3,7 @@ package routing
 import (
 	"reflect"
 	"strings"
-	
+
 	"github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
@@ -11,15 +11,15 @@ import (
 func CombinePath(basePath, methodPath string) string {
 	basePath = NormalizePath(basePath)
 	methodPath = NormalizePath(methodPath)
-	
+
 	if basePath == "" {
 		return methodPath
 	}
-	
+
 	if methodPath == "" || methodPath == "/" {
 		return basePath
 	}
-	
+
 	return basePath + methodPath
 }
 
@@ -28,15 +28,15 @@ func NormalizePath(path string) string {
 	if path == "" {
 		return ""
 	}
-	
+
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
-	
+
 	if strings.HasSuffix(path, "/") && path != "/" {
 		path = strings.TrimSuffix(path, "/")
 	}
-	
+
 	return path
 }
 
@@ -45,15 +45,15 @@ func GetPackageName(pkgPath string) string {
 	if pkgPath == "" {
 		return ""
 	}
-	
+
 	parts := strings.Split(pkgPath, "/")
 	return parts[len(parts)-1]
 }
 
 // IsContextType 检查是否为Context类型（从comment包提取）
 func IsContextType(t reflect.Type) bool {
-	return t.String() == "*context.Context" || 
-		   strings.Contains(t.String(), "Context")
+	return t.String() == "*context.Context" ||
+		strings.Contains(t.String(), "Context")
 }
 
 // IsStructType 检查是否为结构体类型（从comment包提取）
@@ -102,12 +102,12 @@ func GetMethodType(controllerType reflect.Type, methodName string) (reflect.Type
 	if controllerType.Kind() != reflect.Ptr {
 		controllerType = reflect.PtrTo(controllerType)
 	}
-	
+
 	method, exists := controllerType.MethodByName(methodName)
 	if !exists {
 		return nil, false
 	}
-	
+
 	return method.Type, true
 }
 
@@ -119,20 +119,20 @@ func ValidateControllerType(controllerType reflect.Type) error {
 			Message: "controller type is nil",
 		}
 	}
-	
+
 	// 确保是结构体类型
 	elemType := controllerType
 	if elemType.Kind() == reflect.Ptr {
 		elemType = elemType.Elem()
 	}
-	
+
 	if elemType.Kind() != reflect.Struct {
 		return &RouteError{
 			Type:    ErrorTypeInvalidController,
 			Message: "controller must be a struct type",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -144,7 +144,7 @@ func ValidateMethodName(controllerType reflect.Type, methodName string) error {
 			Message: "method name is empty",
 		}
 	}
-	
+
 	// 确保方法存在
 	_, exists := GetMethodType(controllerType, methodName)
 	if !exists {
@@ -153,7 +153,7 @@ func ValidateMethodName(controllerType reflect.Type, methodName string) error {
 			Message: "method '" + methodName + "' not found in controller",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -161,13 +161,13 @@ func ValidateMethodName(controllerType reflect.Type, methodName string) error {
 func ValidateHTTPMethod(method string) error {
 	method = strings.ToUpper(method)
 	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "ANY"}
-	
+
 	for _, valid := range validMethods {
 		if method == valid {
 			return nil
 		}
 	}
-	
+
 	return &RouteError{
 		Type:    ErrorTypeInvalidHTTPMethod,
 		Message: "invalid HTTP method: " + method,
@@ -182,7 +182,7 @@ func ValidatePath(path string) error {
 			Message: "path is empty",
 		}
 	}
-	
+
 	// 简单的路径验证
 	if !strings.HasPrefix(path, "/") && path != "*" {
 		return &RouteError{
@@ -190,17 +190,17 @@ func ValidatePath(path string) error {
 			Message: "path must start with '/' or be '*'",
 		}
 	}
-	
+
 	return nil
 }
 
 // CreateContext 创建增强的上下文（从comment包提取）
-func CreateContext(c interface{}) *context.Context {
+func CreateContext(c any) *context.Context {
 	// 这里需要根据实际的RequestContext类型进行适配
 	if ctx, ok := c.(*context.Context); ok {
 		return ctx
 	}
-	
+
 	// 如果是其他类型，需要进行转换
 	// 这里简化处理，实际使用时需要具体实现
 	return &context.Context{}
@@ -224,13 +224,13 @@ func (e *RouteError) Error() string {
 type ErrorType string
 
 const (
-	ErrorTypeInvalidController  ErrorType = "invalid_controller"
-	ErrorTypeInvalidMethod      ErrorType = "invalid_method"
-	ErrorTypeInvalidHTTPMethod  ErrorType = "invalid_http_method"
-	ErrorTypeInvalidPath        ErrorType = "invalid_path"
-	ErrorTypeInvalidParam       ErrorType = "invalid_param"
-	ErrorTypeRegistrationError  ErrorType = "registration_error"
-	ErrorTypeParsingError       ErrorType = "parsing_error"
+	ErrorTypeInvalidController ErrorType = "invalid_controller"
+	ErrorTypeInvalidMethod     ErrorType = "invalid_method"
+	ErrorTypeInvalidHTTPMethod ErrorType = "invalid_http_method"
+	ErrorTypeInvalidPath       ErrorType = "invalid_path"
+	ErrorTypeInvalidParam      ErrorType = "invalid_param"
+	ErrorTypeRegistrationError ErrorType = "registration_error"
+	ErrorTypeParsingError      ErrorType = "parsing_error"
 )
 
 // RouteConflictError 路由冲突错误
@@ -240,8 +240,8 @@ type RouteConflictError struct {
 }
 
 func (e *RouteConflictError) Error() string {
-	return "route conflict: " + e.NewRoute.HTTPMethod + " " + e.NewRoute.Path + 
-		   " already registered by " + e.ExistingRoute.TypeName + "." + e.ExistingRoute.MethodName
+	return "route conflict: " + e.NewRoute.HTTPMethod + " " + e.NewRoute.Path +
+		" already registered by " + e.ExistingRoute.TypeName + "." + e.ExistingRoute.MethodName
 }
 
 // Helper functions for creating common parameter info

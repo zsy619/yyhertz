@@ -176,11 +176,11 @@ func (c *UserController) UpdateUser(req *UserRequest) (*UserResponse, error) {
 
 // DeleteUser 删除用户
 // 对应路由: DELETE /api/users/{id}
-func (c *UserController) DeleteUser() (map[string]interface{}, error) {
+func (c *UserController) DeleteUser() (map[string]any, error) {
 	id := c.GetParam("id")
 
 	// 模拟删除用户
-	result := map[string]interface{}{
+	result := map[string]any{
 		"success": true,
 		"message": "用户删除成功",
 		"id":      id,
@@ -264,8 +264,8 @@ func (c *ProductController) CreateProduct(req *ProductRequest) (*ProductResponse
 
 // GetDashboard 管理员仪表板
 // 对应路由: GET /api/admin/dashboard
-func (c *AdminController) GetDashboard() (map[string]interface{}, error) {
-	dashboard := map[string]interface{}{
+func (c *AdminController) GetDashboard() (map[string]any, error) {
+	dashboard := map[string]any{
 		"userCount":    1000,
 		"productCount": 500,
 		"orderCount":   2000,
@@ -277,8 +277,8 @@ func (c *AdminController) GetDashboard() (map[string]interface{}, error) {
 
 // GetSystemInfo 获取系统信息
 // 对应路由: GET /api/admin/system/info
-func (c *AdminController) GetSystemInfo() (map[string]interface{}, error) {
-	info := map[string]interface{}{
+func (c *AdminController) GetSystemInfo() (map[string]any, error) {
+	info := map[string]any{
 		"version":    "1.0.0",
 		"uptime":     "30 days",
 		"memory":     "512MB",
@@ -291,8 +291,8 @@ func (c *AdminController) GetSystemInfo() (map[string]interface{}, error) {
 
 // SystemBackup 系统备份
 // 对应路由: POST /api/admin/system/backup
-func (c *AdminController) SystemBackup() (map[string]interface{}, error) {
-	result := map[string]interface{}{
+func (c *AdminController) SystemBackup() (map[string]any, error) {
+	result := map[string]any{
 		"success":   true,
 		"message":   "系统备份已启动",
 		"backupId":  "backup_20240801_001",

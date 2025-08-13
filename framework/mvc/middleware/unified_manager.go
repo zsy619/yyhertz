@@ -102,7 +102,7 @@ func NewAutoModeSwitcher(manager *UnifiedMiddlewareManager) *AutoModeSwitcher {
 }
 
 // Use 注册中间件 (统一接口)
-func (m *UnifiedMiddlewareManager) Use(name string, handler interface{}, options ...MiddlewareOption) error {
+func (m *UnifiedMiddlewareManager) Use(name string, handler any, options ...MiddlewareOption) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -125,7 +125,7 @@ func (m *UnifiedMiddlewareManager) Use(name string, handler interface{}, options
 }
 
 // UseBuiltin 使用内置中间件
-func (m *UnifiedMiddlewareManager) UseBuiltin(name string, config interface{}, options ...MiddlewareOption) error {
+func (m *UnifiedMiddlewareManager) UseBuiltin(name string, config any, options ...MiddlewareOption) error {
 	opts := parseMiddlewareOptions(options...)
 
 	switch m.currentMode {
@@ -168,7 +168,7 @@ func (m *UnifiedMiddlewareManager) GetCurrentMode() config.MiddlewareMode {
 }
 
 // ExecuteMiddleware 执行中间件链 (统一接口)
-func (m *UnifiedMiddlewareManager) ExecuteMiddleware(ctx interface{}) error {
+func (m *UnifiedMiddlewareManager) ExecuteMiddleware(ctx any) error {
 	switch m.currentMode {
 	case config.BasicMode:
 		return m.executeInBasicMode(ctx)
@@ -207,7 +207,7 @@ func (m *UnifiedMiddlewareManager) StopAutoSwitcher() error {
 
 // 私有方法实现
 
-func (m *UnifiedMiddlewareManager) useInBasicMode(name string, handler interface{}, opts MiddlewareOptions) error {
+func (m *UnifiedMiddlewareManager) useInBasicMode(name string, handler any, opts MiddlewareOptions) error {
 	switch h := handler.(type) {
 	case HandlerFunc:
 		m.basicEngine.Use(h)
@@ -226,7 +226,7 @@ func (m *UnifiedMiddlewareManager) useInBasicMode(name string, handler interface
 	}
 }
 
-func (m *UnifiedMiddlewareManager) useInMVCMode(name string, handler interface{}, opts MiddlewareOptions) error {
+func (m *UnifiedMiddlewareManager) useInMVCMode(name string, handler any, opts MiddlewareOptions) error {
 	layer := opts.Layer
 	if layer == nil {
 		defaultLayer := LayerGlobal
@@ -267,7 +267,7 @@ func (m *UnifiedMiddlewareManager) useInMVCMode(name string, handler interface{}
 	}
 }
 
-func (m *UnifiedMiddlewareManager) useBuiltinInBasicMode(name string, config interface{}, opts MiddlewareOptions) error {
+func (m *UnifiedMiddlewareManager) useBuiltinInBasicMode(name string, config any, opts MiddlewareOptions) error {
 	// 基础模式下使用基础中间件系统的内置中间件
 	switch name {
 	case "logger":
@@ -280,7 +280,7 @@ func (m *UnifiedMiddlewareManager) useBuiltinInBasicMode(name string, config int
 	return nil
 }
 
-func (m *UnifiedMiddlewareManager) useBuiltinInMVCMode(name string, config interface{}, opts MiddlewareOptions) error {
+func (m *UnifiedMiddlewareManager) useBuiltinInMVCMode(name string, config any, opts MiddlewareOptions) error {
 	layer := opts.Layer
 	if layer == nil {
 		defaultLayer := LayerGlobal
@@ -296,7 +296,7 @@ func (m *UnifiedMiddlewareManager) useBuiltinInMVCMode(name string, config inter
 	return m.mvcManager.UseBuiltin(*layer, name, config, *priority)
 }
 
-func (m *UnifiedMiddlewareManager) executeInBasicMode(ctx interface{}) error {
+func (m *UnifiedMiddlewareManager) executeInBasicMode(ctx any) error {
 	if basicCtx, ok := ctx.(*Context); ok {
 		basicCtx.Next()
 		m.updateStats(config.BasicMode, time.Since(time.Now()))
@@ -305,7 +305,7 @@ func (m *UnifiedMiddlewareManager) executeInBasicMode(ctx interface{}) error {
 	return fmt.Errorf("invalid context type for basic mode")
 }
 
-func (m *UnifiedMiddlewareManager) executeInMVCMode(ctx interface{}) error {
+func (m *UnifiedMiddlewareManager) executeInMVCMode(ctx any) error {
 	if mvcCtx, ok := ctx.(*mvccontext.Context); ok {
 		mvcCtx.Next()
 		m.updateStats(config.AdvancedMode, time.Since(time.Now()))
@@ -314,7 +314,7 @@ func (m *UnifiedMiddlewareManager) executeInMVCMode(ctx interface{}) error {
 	return fmt.Errorf("invalid context type for MVC mode")
 }
 
-func (m *UnifiedMiddlewareManager) executeInAutoMode(ctx interface{}) error {
+func (m *UnifiedMiddlewareManager) executeInAutoMode(ctx any) error {
 	start := time.Now()
 
 	// 根据当前性能决定使用哪种模式执行
@@ -477,7 +477,7 @@ func (switcher *AutoModeSwitcher) shouldDowngrade(stats UnifiedStats) bool {
 type MiddlewareOptions struct {
 	Layer    *MiddlewareLayer
 	Priority *int
-	Config   interface{}
+	Config   any
 }
 
 type MiddlewareOption func(*MiddlewareOptions)
@@ -494,7 +494,7 @@ func WithPriority(priority int) MiddlewareOption {
 	}
 }
 
-func WithConfig(config interface{}) MiddlewareOption {
+func WithConfig(config any) MiddlewareOption {
 	return func(opts *MiddlewareOptions) {
 		opts.Config = config
 	}
@@ -523,12 +523,12 @@ func GetGlobalUnifiedManager() *UnifiedMiddlewareManager {
 // 全局便捷函数
 
 // UseMiddleware 全局使用中间件
-func UseMiddleware(name string, handler interface{}, options ...MiddlewareOption) error {
+func UseMiddleware(name string, handler any, options ...MiddlewareOption) error {
 	return globalUnifiedManager.Use(name, handler, options...)
 }
 
 // UseBuiltinMiddleware 全局使用内置中间件
-func UseBuiltinMiddleware(name string, config interface{}, options ...MiddlewareOption) error {
+func UseBuiltinMiddleware(name string, config any, options ...MiddlewareOption) error {
 	return globalUnifiedManager.UseBuiltin(name, config, options...)
 }
 

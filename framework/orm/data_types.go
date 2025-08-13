@@ -13,7 +13,7 @@ import (
 )
 
 // JSON 自定义JSON类型
-type JSON map[string]interface{}
+type JSON map[string]any
 
 // Value 实现driver.Valuer接口
 func (j JSON) Value() (driver.Value, error) {
@@ -24,7 +24,7 @@ func (j JSON) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (j *JSON) Scan(value interface{}) error {
+func (j *JSON) Scan(value any) error {
 	if value == nil {
 		*j = nil
 		return nil
@@ -63,7 +63,7 @@ func (JSON) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // JSONArray 自定义JSON数组类型
-type JSONArray []interface{}
+type JSONArray []any
 
 // Value 实现driver.Valuer接口
 func (ja JSONArray) Value() (driver.Value, error) {
@@ -74,7 +74,7 @@ func (ja JSONArray) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (ja *JSONArray) Scan(value interface{}) error {
+func (ja *JSONArray) Scan(value any) error {
 	if value == nil {
 		*ja = nil
 		return nil
@@ -130,7 +130,7 @@ func (sa StringArray) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (sa *StringArray) Scan(value interface{}) error {
+func (sa *StringArray) Scan(value any) error {
 	if value == nil {
 		*sa = nil
 		return nil
@@ -198,7 +198,7 @@ func (ia IntArray) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (ia *IntArray) Scan(value interface{}) error {
+func (ia *IntArray) Scan(value any) error {
 	if value == nil {
 		*ia = nil
 		return nil
@@ -267,7 +267,7 @@ func (b BLOB) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (b *BLOB) Scan(value interface{}) error {
+func (b *BLOB) Scan(value any) error {
 	if value == nil {
 		*b = nil
 		return nil
@@ -315,7 +315,7 @@ func (gj GenericJSON[T]) Value() (driver.Value, error) {
 }
 
 // Scan 实现sql.Scanner接口
-func (gj *GenericJSON[T]) Scan(value interface{}) error {
+func (gj *GenericJSON[T]) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
@@ -355,12 +355,12 @@ func (GenericJSON[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 // ============= 数据类型工具函数 =============
 
 // NewJSON 创建JSON类型
-func NewJSON(data map[string]interface{}) JSON {
+func NewJSON(data map[string]any) JSON {
 	return JSON(data)
 }
 
 // NewJSONArray 创建JSON数组类型
-func NewJSONArray(data []interface{}) JSONArray {
+func NewJSONArray(data []any) JSONArray {
 	return JSONArray(data)
 }
 
@@ -387,9 +387,9 @@ func NewGenericJSON[T any](data T) GenericJSON[T] {
 // ============= 数据类型转换函数 =============
 
 // ToJSON 转换为JSON类型
-func ToJSON(v interface{}) (JSON, error) {
+func ToJSON(v any) (JSON, error) {
 	switch val := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return JSON(val), nil
 	case JSON:
 		return val, nil
@@ -411,9 +411,9 @@ func ToJSON(v interface{}) (JSON, error) {
 }
 
 // ToJSONArray 转换为JSON数组类型
-func ToJSONArray(v interface{}) (JSONArray, error) {
+func ToJSONArray(v any) (JSONArray, error) {
 	switch val := v.(type) {
-	case []interface{}:
+	case []any:
 		return JSONArray(val), nil
 	case JSONArray:
 		return val, nil
@@ -434,7 +434,7 @@ func ToJSONArray(v interface{}) (JSONArray, error) {
 }
 
 // ToStringArray 转换为字符串数组类型
-func ToStringArray(v interface{}) (StringArray, error) {
+func ToStringArray(v any) (StringArray, error) {
 	switch val := v.(type) {
 	case []string:
 		return StringArray(val), nil
@@ -457,7 +457,7 @@ func ToStringArray(v interface{}) (StringArray, error) {
 }
 
 // ToIntArray 转换为整数数组类型
-func ToIntArray(v interface{}) (IntArray, error) {
+func ToIntArray(v any) (IntArray, error) {
 	switch val := v.(type) {
 	case []int:
 		return IntArray(val), nil
@@ -490,7 +490,7 @@ func ToIntArray(v interface{}) (IntArray, error) {
 }
 
 // ToBLOB 转换为BLOB类型
-func ToBLOB(v interface{}) (BLOB, error) {
+func ToBLOB(v any) (BLOB, error) {
 	switch val := v.(type) {
 	case []byte:
 		return BLOB(val), nil

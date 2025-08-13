@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/mvc/core"
 	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // 测试控制器
@@ -24,9 +24,9 @@ func NewBenchmarkController() *BenchmarkController {
 }
 
 // GetIndex 测试方法
-func (bc *BenchmarkController) GetIndex() map[string]interface{} {
+func (bc *BenchmarkController) GetIndex() map[string]any {
 	bc.RequestCount++
-	return map[string]interface{}{
+	return map[string]any{
 		"message": "Hello World",
 		"count":   bc.RequestCount,
 		"time":    time.Now(),
@@ -40,7 +40,7 @@ func (bc *BenchmarkController) PostCreate() error {
 }
 
 // PutUpdate 带参数的测试方法
-func (bc *BenchmarkController) PutUpdate(id int, data map[string]interface{}) error {
+func (bc *BenchmarkController) PutUpdate(id int, data map[string]any) error {
 	bc.RequestCount++
 	return nil
 }
@@ -68,12 +68,12 @@ func (tc *TestUserController) PostCreateUser(req UserCreateRequest) error {
 func BenchmarkControllerCompilation(b *testing.B) {
 	config := DefaultCompilerConfig()
 	compiler := NewControllerCompiler(config)
-	
+
 	controller := NewBenchmarkController()
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := compiler.Compile(controller)
 		if err != nil {
@@ -86,21 +86,19 @@ func BenchmarkControllerCompilation(b *testing.B) {
 func BenchmarkMethodExecution(b *testing.B) {
 	config := DefaultCompilerConfig()
 	manager := NewOptimizedControllerManager(config)
-	
+
 	// 注册控制器
 	controller := NewBenchmarkController()
 	if err := manager.RegisterController(controller); err != nil {
 		b.Fatalf("Failed to register controller: %v", err)
 	}
-	
+
 	// 创建模拟上下文
-	ctx := &mvcContext.Context{
-		Keys: make(map[string]interface{}),
-	}
-	
+	ctx := &mvcContext.Context{}
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		err := manager.HandleRequest(ctx, "BenchmarkController", "GetIndex")
 		if err != nil {
@@ -116,15 +114,13 @@ func BenchmarkParameterBinding(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to create parameter binder: %v", err)
 	}
-	
+
 	// 创建模拟上下文
-	ctx := &mvcContext.Context{
-		Keys: make(map[string]interface{}),
-	}
-	
+	ctx := &mvcContext.Context{}
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := binder.BindParameters(ctx)
 		if err != nil {
@@ -138,20 +134,20 @@ func BenchmarkParameterBinding(b *testing.B) {
 func BenchmarkControllerLifecycle(b *testing.B) {
 	config := DefaultCompilerConfig()
 	lifecycleManager := NewLifecycleManager(config)
-	
+
 	controllerType := reflect.TypeOf((*BenchmarkController)(nil)).Elem()
 	ctx := &mvcContext.Context{}
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		// 创建控制器
 		instance, err := lifecycleManager.CreateController(controllerType, ctx)
 		if err != nil {
 			b.Fatalf("Failed to create controller: %v", err)
 		}
-		
+
 		// 归还控制器
 		err = lifecycleManager.ReturnController(instance)
 		if err != nil {
@@ -165,21 +161,19 @@ func BenchmarkConcurrentRequests(b *testing.B) {
 	config := DefaultCompilerConfig()
 	config.PoolSize = 100 // 增大池大小
 	manager := NewOptimizedControllerManager(config)
-	
+
 	// 注册控制器
 	controller := NewBenchmarkController()
 	if err := manager.RegisterController(controller); err != nil {
 		b.Fatalf("Failed to register controller: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	b.RunParallel(func(pb *testing.PB) {
-		ctx := &mvcContext.Context{
-			Keys: make(map[string]interface{}),
-		}
-		
+		ctx := &mvcContext.Context{}
+
 		for pb.Next() {
 			err := manager.HandleRequest(ctx, "BenchmarkController", "GetIndex")
 			if err != nil {
@@ -192,32 +186,32 @@ func BenchmarkConcurrentRequests(b *testing.B) {
 // BenchmarkReflectionVsCompiled 反射调用 vs 编译调用对比测试
 func BenchmarkReflectionVsCompiled(b *testing.B) {
 	controller := NewBenchmarkController()
-	
+
 	b.Run("Reflection", func(b *testing.B) {
 		method := reflect.ValueOf(controller).MethodByName("GetIndex")
 		b.ResetTimer()
 		b.ReportAllocs()
-		
+
 		for i := 0; i < b.N; i++ {
 			method.Call([]reflect.Value{})
 		}
 	})
-	
+
 	b.Run("Compiled", func(b *testing.B) {
 		config := DefaultCompilerConfig()
 		compiler := NewControllerCompiler(config)
-		
+
 		compiled, err := compiler.Compile(controller)
 		if err != nil {
 			b.Fatalf("Compilation failed: %v", err)
 		}
-		
+
 		compiledMethod := compiled.Methods["GetIndex"]
 		ctx := &mvcContext.Context{}
-		
+
 		b.ResetTimer()
 		b.ReportAllocs()
-		
+
 		for i := 0; i < b.N; i++ {
 			compiledMethod.Handler(ctx, controller)
 		}
@@ -230,24 +224,24 @@ func BenchmarkReflectionVsCompiled(b *testing.B) {
 func TestControllerCompiler(t *testing.T) {
 	config := DefaultCompilerConfig()
 	compiler := NewControllerCompiler(config)
-	
+
 	controller := NewBenchmarkController()
-	
+
 	// 测试编译
 	compiled, err := compiler.Compile(controller)
 	if err != nil {
 		t.Fatalf("Compilation failed: %v", err)
 	}
-	
+
 	// 验证编译结果
 	if compiled == nil {
 		t.Fatal("Compiled controller is nil")
 	}
-	
+
 	if len(compiled.Methods) == 0 {
 		t.Fatal("No methods compiled")
 	}
-	
+
 	// 检查方法
 	expectedMethods := []string{"GetIndex", "PostCreate", "PutUpdate"}
 	for _, methodName := range expectedMethods {
@@ -255,13 +249,13 @@ func TestControllerCompiler(t *testing.T) {
 			t.Errorf("Method %s not found in compiled controller", methodName)
 		}
 	}
-	
+
 	// 测试缓存
 	compiled2, err := compiler.Compile(controller)
 	if err != nil {
 		t.Fatalf("Second compilation failed: %v", err)
 	}
-	
+
 	if compiled != compiled2 {
 		t.Error("Compilation caching not working")
 	}
@@ -272,38 +266,38 @@ func TestLifecycleManager(t *testing.T) {
 	config := DefaultCompilerConfig()
 	config.PoolSize = 5
 	lifecycleManager := NewLifecycleManager(config)
-	
+
 	controllerType := reflect.TypeOf((*BenchmarkController)(nil)).Elem()
 	ctx := &mvcContext.Context{}
-	
+
 	// 测试创建控制器
 	instance, err := lifecycleManager.CreateController(controllerType, ctx)
 	if err != nil {
 		t.Fatalf("Failed to create controller: %v", err)
 	}
-	
+
 	if instance == nil || instance.Controller == nil {
 		t.Fatal("Controller instance is nil")
 	}
-	
+
 	// 测试归还控制器
 	err = lifecycleManager.ReturnController(instance)
 	if err != nil {
 		t.Fatalf("Failed to return controller: %v", err)
 	}
-	
+
 	// 测试钩子
 	hookCalled := false
-	lifecycleManager.RegisterHook(HookAfterCreate, func(controller interface{}, ctx *mvcContext.Context) error {
+	lifecycleManager.RegisterHook(HookAfterCreate, func(controller any, ctx *mvcContext.Context) error {
 		hookCalled = true
 		return nil
 	})
-	
+
 	_, err = lifecycleManager.CreateController(controllerType, ctx)
 	if err != nil {
 		t.Fatalf("Failed to create controller with hook: %v", err)
 	}
-	
+
 	if !hookCalled {
 		t.Error("Hook was not called")
 	}
@@ -314,43 +308,41 @@ func TestOptimizedControllerManager(t *testing.T) {
 	config := DefaultCompilerConfig()
 	manager := NewOptimizedControllerManager(config)
 	manager.RegisterLifecycleHooks()
-	
+
 	// 注册控制器
 	controller := NewBenchmarkController()
 	err := manager.RegisterController(controller)
 	if err != nil {
 		t.Fatalf("Failed to register controller: %v", err)
 	}
-	
+
 	// 创建上下文
-	ctx := &mvcContext.Context{
-		Keys: make(map[string]interface{}),
-	}
-	
+	ctx := &mvcContext.Context{}
+
 	// 测试请求处理
 	err = manager.HandleRequest(ctx, "BenchmarkController", "GetIndex")
 	if err != nil {
 		t.Fatalf("Request handling failed: %v", err)
 	}
-	
+
 	// 检查统计信息
 	stats := manager.GetStats()
 	if stats.TotalRequests == 0 {
 		t.Error("Request count not updated")
 	}
-	
+
 	// 测试详细统计
 	detailedStats := manager.GetDetailedStats()
 	if detailedStats == nil {
 		t.Error("Detailed stats is nil")
 	}
-	
+
 	// 测试缓存预热
 	err = manager.WarmupCache()
 	if err != nil {
 		t.Errorf("Cache warmup failed: %v", err)
 	}
-	
+
 	// 测试优雅关闭
 	err = manager.Shutdown()
 	if err != nil {
@@ -362,19 +354,19 @@ func TestOptimizedControllerManager(t *testing.T) {
 func TestParameterBinding(t *testing.T) {
 	// 这里需要实际的HTTP上下文来测试参数绑定
 	// 由于我们使用的是简化的Context，这个测试会比较基础
-	
+
 	controller := &TestUserController{}
 	methodType := reflect.TypeOf(controller).Method(0).Type
-	
+
 	binder, err := NewParameterBinder(methodType)
 	if err != nil {
 		t.Fatalf("Failed to create parameter binder: %v", err)
 	}
-	
+
 	if binder == nil {
 		t.Fatal("Parameter binder is nil")
 	}
-	
+
 	// 这里可以添加更多的参数绑定测试
 	// 但需要模拟真实的HTTP请求上下文
 }
@@ -398,7 +390,7 @@ func Example() {
 	fmt.Println("4. Concurrent Requests:")
 	fmt.Println("   - Throughput: 50,000 requests/second")
 	fmt.Println("   - Average latency: 2ms")
-	
+
 	// Output:
 	// Performance Benchmark Results:
 	// ==============================

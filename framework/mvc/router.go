@@ -51,7 +51,7 @@ func AdaptHandlerToHertz(handler core.HandlerFunc) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		// 创建增强的上下文
 		enhancedCtx := contextenhanced.NewContext(c)
-		
+
 		// 🔧 关键修复：复制路由参数从 Hertz RequestContext 到增强Context
 		hertzParams := c.Params
 		enhancedParams := make(contextenhanced.Params, len(hertzParams))
@@ -61,7 +61,7 @@ func AdaptHandlerToHertz(handler core.HandlerFunc) app.HandlerFunc {
 				Value: param.Value,
 			}
 		}
-		enhancedCtx.Params = enhancedParams
+		enhancedCtx.SetParams(enhancedParams)
 
 		// 执行 BeforeStatic 过滤器
 		if HertzApp != nil {
@@ -101,7 +101,7 @@ func AdaptSimpleHandlerToHertz(handler SimpleHandlerFunc) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		// 创建增强的上下文
 		enhancedCtx := contextenhanced.NewContext(c)
-		
+
 		// 🔧 关键修复：复制路由参数从 Hertz RequestContext 到增强Context
 		hertzParams := c.Params
 		enhancedParams := make(contextenhanced.Params, len(hertzParams))
@@ -111,7 +111,7 @@ func AdaptSimpleHandlerToHertz(handler SimpleHandlerFunc) app.HandlerFunc {
 				Value: param.Value,
 			}
 		}
-		enhancedCtx.Params = enhancedParams
+		enhancedCtx.SetParams(enhancedParams)
 
 		// 执行 BeforeStatic 过滤器
 		if HertzApp != nil {
@@ -154,7 +154,7 @@ func AdaptDirectHandlerToHertz(handler DirectHandlerFunc) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		// 创建增强的上下文
 		enhancedCtx := contextenhanced.NewContext(c)
-		
+
 		// 🔧 关键修复：复制路由参数从 Hertz RequestContext 到增强Context
 		// 将 Hertz 的路由参数复制到增强Context的Params字段
 		hertzParams := c.Params
@@ -165,7 +165,7 @@ func AdaptDirectHandlerToHertz(handler DirectHandlerFunc) app.HandlerFunc {
 				Value: param.Value,
 			}
 		}
-		enhancedCtx.Params = enhancedParams
+		enhancedCtx.SetParams(enhancedParams)
 
 		// 执行 BeforeStatic 过滤器
 		if HertzApp != nil {

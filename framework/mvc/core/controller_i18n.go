@@ -19,13 +19,13 @@ func (c *BaseController) SetLanguage(lang string) {
 		config.Error("Context is nil when trying to set language")
 		return
 	}
-	
+
 	// 标准化语言代码（转小写并处理下划线）
 	lang = strings.ToLower(strings.Replace(lang, "_", "-", -1))
-	
+
 	// 存储在上下文数据中
 	c.SetData("current_language", lang)
-	
+
 	// 设置响应头
 	c.SetHeader("Content-Language", lang)
 }
@@ -35,12 +35,12 @@ func (c *BaseController) GetLanguage() string {
 	if lang, ok := c.GetData("current_language").(string); ok {
 		return lang
 	}
-	
+
 	// 从Accept-Language头部检测
 	if detectedLang := c.DetectLanguageFromHeader(); detectedLang != "" {
 		return detectedLang
 	}
-	
+
 	// 返回默认语言
 	return c.GetDefaultLanguage()
 }
@@ -56,15 +56,15 @@ func (c *BaseController) DetectLanguageFromHeader() string {
 	if c.Ctx == nil {
 		return ""
 	}
-	
+
 	acceptLang := c.GetHeader("Accept-Language")
 	if acceptLang == "" {
 		return ""
 	}
-	
+
 	// 解析Accept-Language头部
 	languages := c.parseAcceptLanguage(acceptLang)
-	
+
 	// 返回权重最高的支持语言
 	supportedLangs := c.GetSupportedLanguages()
 	for _, lang := range languages {
@@ -74,7 +74,7 @@ func (c *BaseController) DetectLanguageFromHeader() string {
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -87,14 +87,14 @@ type LanguagePreference struct {
 // parseAcceptLanguage 解析Accept-Language头部
 func (c *BaseController) parseAcceptLanguage(acceptLang string) []LanguagePreference {
 	var preferences []LanguagePreference
-	
+
 	parts := strings.Split(acceptLang, ",")
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
-		
+
 		var code string
 		var weight float64 = 1.0
-		
+
 		if strings.Contains(part, ";q=") {
 			segments := strings.Split(part, ";q=")
 			code = strings.TrimSpace(segments[0])
@@ -104,21 +104,21 @@ func (c *BaseController) parseAcceptLanguage(acceptLang string) []LanguagePrefer
 		} else {
 			code = part
 		}
-		
+
 		// 标准化语言代码
 		code = strings.ToLower(strings.Replace(code, "_", "-", -1))
-		
+
 		preferences = append(preferences, LanguagePreference{
 			Code:   code,
 			Weight: weight,
 		})
 	}
-	
+
 	// 按权重排序
 	sort.Slice(preferences, func(i, j int) bool {
 		return preferences[i].Weight > preferences[j].Weight
 	})
-	
+
 	return preferences
 }
 
@@ -126,16 +126,16 @@ func (c *BaseController) parseAcceptLanguage(acceptLang string) []LanguagePrefer
 func (c *BaseController) isLanguageMatch(requested, supported string) bool {
 	requested = strings.ToLower(requested)
 	supported = strings.ToLower(supported)
-	
+
 	// 完全匹配
 	if requested == supported {
 		return true
 	}
-	
+
 	// 语言主代码匹配（如zh匹配zh-cn）
 	reqParts := strings.Split(requested, "-")
 	supParts := strings.Split(supported, "-")
-	
+
 	return reqParts[0] == supParts[0]
 }
 
@@ -149,10 +149,10 @@ func (c *BaseController) T(key string, args ...any) string {
 // Translate 翻译消息
 func (c *BaseController) Translate(key string, args ...any) string {
 	lang := c.GetLanguage()
-	
+
 	// 获取翻译消息
 	message := c.getTranslationMessage(lang, key)
-	
+
 	// 如果找不到翻译，尝试使用默认语言
 	if message == "" {
 		defaultLang := c.GetDefaultLanguage()
@@ -160,17 +160,17 @@ func (c *BaseController) Translate(key string, args ...any) string {
 			message = c.getTranslationMessage(defaultLang, key)
 		}
 	}
-	
+
 	// 如果仍然找不到，返回键名
 	if message == "" {
 		message = key
 	}
-	
+
 	// 格式化消息
 	if len(args) > 0 {
 		return fmt.Sprintf(message, args...)
 	}
-	
+
 	return message
 }
 
@@ -190,7 +190,7 @@ func (c *BaseController) getTranslations(lang string) map[string]string {
 	// 这里应该实现真正的翻译加载逻辑
 	// 示例数据
 	translations := make(map[string]string)
-	
+
 	switch lang {
 	case "zh-cn":
 		translations["welcome"] = "欢迎"
@@ -214,7 +214,7 @@ func (c *BaseController) getTranslations(lang string) map[string]string {
 		translations["error.forbidden"] = "禁止されています"
 		translations["success.saved"] = "保存成功"
 	}
-	
+
 	return translations
 }
 
@@ -223,7 +223,7 @@ func (c *BaseController) getTranslations(lang string) map[string]string {
 // SetLocale 设置地区（语言+地区）
 func (c *BaseController) SetLocale(locale string) {
 	c.SetData("current_locale", locale)
-	
+
 	// 从locale中提取语言部分
 	if lang := c.extractLanguageFromLocale(locale); lang != "" {
 		c.SetLanguage(lang)
@@ -235,7 +235,7 @@ func (c *BaseController) GetLocale() string {
 	if locale, ok := c.GetData("current_locale").(string); ok {
 		return locale
 	}
-	
+
 	// 基于语言构建默认locale
 	lang := c.GetLanguage()
 	return c.buildDefaultLocale(lang)
@@ -266,11 +266,11 @@ func (c *BaseController) buildDefaultLocale(lang string) string {
 		"de":    "de_DE",
 		"de-de": "de_DE",
 	}
-	
+
 	if locale, exists := localeMap[lang]; exists {
 		return locale
 	}
-	
+
 	return "en_US" // 默认值
 }
 
@@ -279,7 +279,7 @@ func (c *BaseController) buildDefaultLocale(lang string) string {
 // FormatNumber 格式化数字
 func (c *BaseController) FormatNumber(number float64, precision int) string {
 	locale := c.GetLocale()
-	
+
 	// 根据locale格式化数字
 	switch {
 	case strings.HasPrefix(locale, "zh"):
@@ -304,9 +304,9 @@ func (c *BaseController) formatNumberWithSeparator(number float64, precision int
 	// 简单实现，实际项目中建议使用专业的本地化库
 	format := fmt.Sprintf("%%.%df", precision)
 	str := fmt.Sprintf(format, number)
-	
+
 	parts := strings.Split(str, ".")
-	
+
 	// 处理整数部分的千位分隔符
 	intPart := parts[0]
 	if len(intPart) > 3 {
@@ -318,18 +318,18 @@ func (c *BaseController) formatNumberWithSeparator(number float64, precision int
 		result = append([]string{intPart}, result...)
 		intPart = strings.Join(result, thousandSep)
 	}
-	
+
 	if len(parts) > 1 && precision > 0 {
 		return intPart + decimalSep + parts[1]
 	}
-	
+
 	return intPart
 }
 
 // FormatCurrency 格式化货币
 func (c *BaseController) FormatCurrency(amount float64) string {
 	locale := c.GetLocale()
-	
+
 	switch {
 	case strings.HasPrefix(locale, "zh"):
 		return "¥" + c.FormatNumber(amount, 2)
@@ -351,7 +351,7 @@ func (c *BaseController) FormatCurrency(amount float64) string {
 // FormatDate 格式化日期
 func (c *BaseController) FormatDate(t time.Time) string {
 	locale := c.GetLocale()
-	
+
 	switch {
 	case strings.HasPrefix(locale, "zh"):
 		return t.Format("2006年01月02日")
@@ -373,7 +373,7 @@ func (c *BaseController) FormatDate(t time.Time) string {
 // FormatDateTime 格式化日期时间
 func (c *BaseController) FormatDateTime(t time.Time) string {
 	locale := c.GetLocale()
-	
+
 	switch {
 	case strings.HasPrefix(locale, "zh"):
 		return t.Format("2006年01月02日 15:04:05")
@@ -404,13 +404,13 @@ func (c *BaseController) GetSupportedLanguages() []string {
 func (c *BaseController) IsSupportedLanguage(lang string) bool {
 	lang = strings.ToLower(lang)
 	supportedLangs := c.GetSupportedLanguages()
-	
+
 	for _, supported := range supportedLangs {
 		if c.isLanguageMatch(lang, supported) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -430,11 +430,11 @@ func (c *BaseController) GetLanguageName(langCode string) string {
 		"pt-pt": "Português",
 		"ru-ru": "Русский",
 	}
-	
+
 	if name, exists := langNames[strings.ToLower(langCode)]; exists {
 		return name
 	}
-	
+
 	return langCode
 }
 
@@ -444,12 +444,12 @@ func (c *BaseController) SwitchLanguage(lang string, redirectURL ...string) {
 		config.Warnf("Unsupported language: %s", lang)
 		return
 	}
-	
+
 	c.SetLanguage(lang)
-	
+
 	// 设置语言Cookie，便于下次访问记住用户偏好
 	c.SetLanguageCookie(lang)
-	
+
 	// 重定向到指定URL或当前页面
 	var url string
 	if len(redirectURL) > 0 && redirectURL[0] != "" {
@@ -457,7 +457,7 @@ func (c *BaseController) SwitchLanguage(lang string, redirectURL ...string) {
 	} else {
 		url = c.GetCurrentURL()
 	}
-	
+
 	c.Redirect(url)
 }
 
@@ -466,7 +466,7 @@ func (c *BaseController) SetLanguageCookie(lang string) {
 	// 设置1年有效期的语言Cookie
 	expiry := time.Now().AddDate(1, 0, 0)
 	maxAge := int(expiry.Sub(time.Now()).Seconds())
-	
+
 	// 使用临时方法，避免导入cookie包
 	if c.Ctx != nil && c.Ctx.Request != nil {
 		cookieStr := fmt.Sprintf("language=%s; Max-Age=%d; Path=/; HttpOnly", lang, maxAge)
@@ -486,23 +486,23 @@ func (c *BaseController) GetCurrentURL() string {
 	if c.Ctx == nil {
 		return "/"
 	}
-	return c.Ctx.Request.URI().String()
+	return c.Ctx.Request().URI().String()
 }
 
 // GetLanguageDirection 获取语言方向（LTR或RTL）
 func (c *BaseController) GetLanguageDirection() string {
 	lang := c.GetLanguage()
-	
+
 	// RTL语言列表
 	rtlLanguages := []string{"ar", "he", "fa", "ur"}
-	
+
 	langCode := strings.Split(lang, "-")[0]
 	for _, rtlLang := range rtlLanguages {
 		if langCode == rtlLang {
 			return "rtl"
 		}
 	}
-	
+
 	return "ltr"
 }
 
@@ -514,7 +514,7 @@ func (c *BaseController) BuildLocalizedURL(path string, lang ...string) string {
 	} else {
 		targetLang = c.GetLanguage()
 	}
-	
+
 	// 简单实现：在路径前添加语言代码
 	return fmt.Sprintf("/%s%s", targetLang, path)
 }

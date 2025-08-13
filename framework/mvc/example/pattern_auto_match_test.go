@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/constant"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // TestPatternAutoMatching 测试框架自动进行pattern匹配
@@ -41,21 +42,21 @@ func TestPatternAutoMatching(t *testing.T) {
 
 	// 测试用例
 	testCases := []struct {
-		path                string
-		expectedApi         int
-		expectedUser        int
-		expectedGlobal      int
+		path           string
+		expectedApi    int
+		expectedUser   int
+		expectedGlobal int
 	}{
-		{"/api/test", 1, 0, 1},      // API + 全局
-		{"/user/profile", 1, 1, 2},  // 用户 + 全局
-		{"/other/path", 1, 1, 3},    // 只有全局
-		{"/api/users", 2, 1, 4},     // API + 全局
+		{"/api/test", 1, 0, 1},     // API + 全局
+		{"/user/profile", 1, 1, 2}, // 用户 + 全局
+		{"/other/path", 1, 1, 3},   // 只有全局
+		{"/api/users", 2, 1, 4},    // API + 全局
 	}
 
 	for i, tc := range testCases {
 		// 创建模拟上下文
 		mockCtx := createMockContextWithPath(tc.path)
-		
+
 		// 执行过滤器
 		app.ExecuteFilters(mockCtx, constant.BeforeRouter)
 
@@ -84,7 +85,7 @@ func TestNoManualPathCheckNeeded(t *testing.T) {
 	// 过滤器记录执行的路径，不做任何路径判断
 	pathRecorderFilter := func(ctx *contextenhanced.Context) {
 		// 注意：这里故意不检查路径，依赖框架的自动匹配
-		path := string(ctx.Request.Path())
+		path := string(ctx.Request().Path())
 		executedPaths = append(executedPaths, path)
 	}
 
@@ -93,16 +94,16 @@ func TestNoManualPathCheckNeeded(t *testing.T) {
 
 	// 测试不同路径
 	testPaths := []string{
-		"/secure/admin",     // 应该执行
-		"/secure/user",      // 应该执行
-		"/public/info",      // 不应该执行
-		"/secure/api/data",  // 应该执行
-		"/other/path",       // 不应该执行
+		"/secure/admin",    // 应该执行
+		"/secure/user",     // 应该执行
+		"/public/info",     // 不应该执行
+		"/secure/api/data", // 应该执行
+		"/other/path",      // 不应该执行
 	}
 
 	expectedPaths := []string{
 		"/secure/admin",
-		"/secure/user", 
+		"/secure/user",
 		"/secure/api/data",
 	}
 
@@ -118,7 +119,7 @@ func TestNoManualPathCheckNeeded(t *testing.T) {
 
 	for i, expectedPath := range expectedPaths {
 		if i >= len(executedPaths) || executedPaths[i] != expectedPath {
-			t.Errorf("Expected path %s at position %d, got %s", 
+			t.Errorf("Expected path %s at position %d, got %s",
 				expectedPath, i, executedPaths[i])
 		}
 	}
@@ -163,7 +164,7 @@ func TestComplexPatternMatching(t *testing.T) {
 		{"/api/v1.json", []string{"prefix", "suffix"}},
 		{"/api/v1/users", []string{"prefix", "middle"}},
 		{"/api/v2/users.json", []string{"prefix", "suffix"}}, // /api/*/users不匹配.json结尾的路径
-		{"/api/v2/users", []string{"prefix", "middle"}}, // 这个会匹配middle模式
+		{"/api/v2/users", []string{"prefix", "middle"}},      // 这个会匹配middle模式
 		{"/other/path", []string{}},
 	}
 
@@ -177,7 +178,7 @@ func TestComplexPatternMatching(t *testing.T) {
 
 		// 验证执行结果
 		if len(executions) != len(tc.expected) {
-			t.Errorf("Path %s: expected %d executions, got %d (%v)", 
+			t.Errorf("Path %s: expected %d executions, got %d (%v)",
 				tc.path, len(tc.expected), len(executions), executions)
 			continue
 		}
@@ -191,7 +192,7 @@ func TestComplexPatternMatching(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("Path %s: expected execution '%s' not found in %v", 
+				t.Errorf("Path %s: expected execution '%s' not found in %v",
 					tc.path, expected, executions)
 			}
 		}
@@ -202,13 +203,13 @@ func TestComplexPatternMatching(t *testing.T) {
 func createMockContextWithPath(path string) *contextenhanced.Context {
 	// 创建模拟的RequestContext
 	reqCtx := &app.RequestContext{}
-	
+
 	// 设置请求路径
 	reqCtx.Request.SetRequestURI(path)
 	reqCtx.Request.Header.SetMethod("GET")
-	
+
 	// 创建增强上下文
 	enhancedCtx := contextenhanced.NewContext(reqCtx)
-	
+
 	return enhancedCtx
 }

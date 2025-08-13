@@ -114,7 +114,7 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 }
 
 // Request 发送HTTP请求
-func (c *Client) Request(method, path string, body interface{}, result interface{}) error {
+func (c *Client) Request(method, path string, body any, result any) error {
 	url := c.BaseURL + path
 
 	var reqBody io.Reader
@@ -166,7 +166,7 @@ func (c *Client) Request(method, path string, body interface{}, result interface
 }
 
 // Get 发送GET请求
-func (c *Client) Get(path string, params map[string]string, result interface{}) error {
+func (c *Client) Get(path string, params map[string]string, result any) error {
 	if len(params) > 0 {
 		values := url.Values{}
 		for k, v := range params {
@@ -178,17 +178,17 @@ func (c *Client) Get(path string, params map[string]string, result interface{}) 
 }
 
 // Post 发送POST请求
-func (c *Client) Post(path string, body interface{}, result interface{}) error {
+func (c *Client) Post(path string, body any, result any) error {
 	return c.Request("POST", path, body, result)
 }
 
 // Put 发送PUT请求
-func (c *Client) Put(path string, body interface{}, result interface{}) error {
+func (c *Client) Put(path string, body any, result any) error {
 	return c.Request("PUT", path, body, result)
 }
 
 // Delete 发送DELETE请求
-func (c *Client) Delete(path string, result interface{}) error {
+func (c *Client) Delete(path string, result any) error {
 	return c.Request("DELETE", path, nil, result)
 }
 `
@@ -246,7 +246,7 @@ func (c *{{$.Controller.Name}}Client) {{.Name}}({{range $i, $param := .Params}}{
 	}
 	return c.client.Get("{{$.Controller.Prefix}}{{.Path}}", params, nil)
 	{{else}}
-	body := map[string]interface{}{
+	body := map[string]any{
 		{{range .Params}}
 		{{if and (ne .Name "ctx") (ne .Name "c")}}
 		"{{.Name}}": {{.Name}},
@@ -295,7 +295,7 @@ package {{.PackageName}}
 type Response struct {
 	Code    int         ` + "`json:\"code\"`" + `
 	Message string      ` + "`json:\"message\"`" + `
-	Data    interface{} ` + "`json:\"data\"`" + `
+	Data    any ` + "`json:\"data\"`" + `
 }
 
 // Error 错误响应

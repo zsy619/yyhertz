@@ -9,15 +9,11 @@ import (
 
 // TestInputDataCookieCompatibility 测试InputData的Cookie兼容性
 func TestInputDataCookieCompatibility(t *testing.T) {
-	// 创建测试上下文
-	ctx := &Context{
-		Keys: make(map[string]interface{}),
-	}
-	
 	// 模拟Request上下文
 	mockRequest := &app.RequestContext{}
-	ctx.Request = mockRequest
-	ctx.RequestContext = mockRequest
+	
+	// 创建测试上下文（使用构造函数）
+	ctx := NewContext(mockRequest)
 	
 	// 初始化InputData
 	ctx.Input = &InputData{ctx: ctx}
@@ -63,15 +59,11 @@ func TestInputDataCookieCompatibility(t *testing.T) {
 }
 
 func TestInputDataSessionCompatibility(t *testing.T) {
-	// 创建测试上下文
-	ctx := &Context{
-		Keys: make(map[string]interface{}),
-	}
-	
 	// 模拟Request上下文
 	mockRequest := &app.RequestContext{}
-	ctx.Request = mockRequest
-	ctx.RequestContext = mockRequest
+	
+	// 创建测试上下文（使用构造函数）
+	ctx := NewContext(mockRequest)
 	
 	// 初始化InputData
 	ctx.Input = &InputData{ctx: ctx}
@@ -123,15 +115,11 @@ func TestInputDataSessionCompatibility(t *testing.T) {
 }
 
 func TestContextCookieCompatibility(t *testing.T) {
-	// 创建测试上下文
-	ctx := &Context{
-		Keys: make(map[string]interface{}),
-	}
-	
 	// 模拟Request上下文
 	mockRequest := &app.RequestContext{}
-	ctx.Request = mockRequest
-	ctx.RequestContext = mockRequest
+	
+	// 创建测试上下文（使用构造函数）
+	ctx := NewContext(mockRequest)
 	
 	// 初始化InputData和OutputData
 	ctx.Input = &InputData{ctx: ctx}
@@ -157,15 +145,11 @@ func TestContextCookieCompatibility(t *testing.T) {
 }
 
 func TestSessionExtensionAccess(t *testing.T) {
-	// 创建测试上下文
-	ctx := &Context{
-		Keys: make(map[string]interface{}),
-	}
-	
 	// 模拟Request上下文
 	mockRequest := &app.RequestContext{}
-	ctx.Request = mockRequest
-	ctx.RequestContext = mockRequest
+	
+	// 创建测试上下文（使用构造函数）
+	ctx := NewContext(mockRequest)
 	
 	// 初始化InputData
 	ctx.Input = &InputData{ctx: ctx}
@@ -237,15 +221,11 @@ func TestBackwardCompatibilityTypes(t *testing.T) {
 }
 
 func TestInputDataBasicMethods(t *testing.T) {
-	// 创建测试上下文
-	ctx := &Context{
-		Keys: make(map[string]interface{}),
-	}
-	
 	// 模拟Request上下文
 	mockRequest := &app.RequestContext{}
-	ctx.Request = mockRequest
-	ctx.RequestContext = mockRequest
+	
+	// 创建测试上下文（使用构造函数）
+	ctx := NewContext(mockRequest)
 	
 	// 初始化InputData
 	ctx.Input = &InputData{ctx: ctx}

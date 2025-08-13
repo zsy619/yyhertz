@@ -11,23 +11,23 @@ import (
 
 // OptimizedControllerManager 优化的控制器管理器
 type OptimizedControllerManager struct {
-	compiler       *ControllerCompiler     // 控制器编译器
-	lifecycleManager *LifecycleManager     // 生命周期管理器
-	controllers    sync.Map                // 已注册的控制器
-	config         *CompilerConfig         // 配置
-	stats          *PerformanceStats       // 性能统计
-	mu             sync.RWMutex           // 读写锁
+	compiler         *ControllerCompiler // 控制器编译器
+	lifecycleManager *LifecycleManager   // 生命周期管理器
+	controllers      sync.Map            // 已注册的控制器
+	config           *CompilerConfig     // 配置
+	stats            *PerformanceStats   // 性能统计
+	mu               sync.RWMutex        // 读写锁
 }
 
 // PerformanceStats 性能统计
 type PerformanceStats struct {
 	TotalRequests       int64         // 总请求数
 	AverageResponseTime time.Duration // 平均响应时间
-	CacheHitRate       float64       // 缓存命中率
-	CompilationTime    time.Duration // 编译时间
+	CacheHitRate        float64       // 缓存命中率
+	CompilationTime     time.Duration // 编译时间
 	ControllerInstances int64         // 控制器实例数
-	ActiveConnections  int64         // 活跃连接数
-	mu                 sync.RWMutex  // 统计锁
+	ActiveConnections   int64         // 活跃连接数
+	mu                  sync.RWMutex  // 统计锁
 }
 
 // NewOptimizedControllerManager 创建优化的控制器管理器
@@ -39,13 +39,13 @@ func NewOptimizedControllerManager(config *CompilerConfig) *OptimizedControllerM
 	return &OptimizedControllerManager{
 		compiler:         NewControllerCompiler(config),
 		lifecycleManager: NewLifecycleManager(config),
-		config:          config,
-		stats:           &PerformanceStats{},
+		config:           config,
+		stats:            &PerformanceStats{},
 	}
 }
 
 // RegisterController 注册控制器
-func (ocm *OptimizedControllerManager) RegisterController(controller interface{}) error {
+func (ocm *OptimizedControllerManager) RegisterController(controller any) error {
 	controllerType := reflect.TypeOf(controller)
 	if controllerType.Kind() == reflect.Ptr {
 		controllerType = controllerType.Elem()
@@ -123,9 +123,9 @@ func (ocm *OptimizedControllerManager) getCompiledController(controllerName stri
 
 // PrecompileAll 预编译所有控制器
 func (ocm *OptimizedControllerManager) PrecompileAll() error {
-	var controllers []interface{}
-	
-	ocm.controllers.Range(func(key, value interface{}) bool {
+	var controllers []any
+
+	ocm.controllers.Range(func(key, value any) bool {
 		compiled := value.(*CompiledController)
 		controllers = append(controllers, compiled.Instance)
 		return true
@@ -142,28 +142,28 @@ func (ocm *OptimizedControllerManager) GetStats() *PerformanceStats {
 	return &PerformanceStats{
 		TotalRequests:       ocm.stats.TotalRequests,
 		AverageResponseTime: ocm.stats.AverageResponseTime,
-		CacheHitRate:       ocm.stats.CacheHitRate,
-		CompilationTime:    ocm.stats.CompilationTime,
+		CacheHitRate:        ocm.stats.CacheHitRate,
+		CompilationTime:     ocm.stats.CompilationTime,
 		ControllerInstances: ocm.stats.ControllerInstances,
-		ActiveConnections:  ocm.stats.ActiveConnections,
+		ActiveConnections:   ocm.stats.ActiveConnections,
 	}
 }
 
 // GetDetailedStats 获取详细统计信息
-func (ocm *OptimizedControllerManager) GetDetailedStats() map[string]interface{} {
-	stats := map[string]interface{}{
+func (ocm *OptimizedControllerManager) GetDetailedStats() map[string]any {
+	stats := map[string]any{
 		"performance": ocm.GetStats(),
 		"compiler":    ocm.compiler.GetStats(),
 		"lifecycle":   ocm.lifecycleManager.GetMetrics(),
 	}
 
 	// 控制器统计
-	controllerStats := make(map[string]interface{})
-	ocm.controllers.Range(func(key, value interface{}) bool {
+	controllerStats := make(map[string]any)
+	ocm.controllers.Range(func(key, value any) bool {
 		controllerName := key.(string)
 		compiled := value.(*CompiledController)
-		
-		controllerStats[controllerName] = map[string]interface{}{
+
+		controllerStats[controllerName] = map[string]any{
 			"methods_count": len(compiled.Methods),
 			"created_at":    compiled.CreatedAt,
 			"metadata":      compiled.Metadata,
@@ -179,18 +179,18 @@ func (ocm *OptimizedControllerManager) GetDetailedStats() map[string]interface{}
 // RegisterLifecycleHooks 注册生命周期钩子
 func (ocm *OptimizedControllerManager) RegisterLifecycleHooks() {
 	// 注册性能监控钩子
-	ocm.lifecycleManager.RegisterHook(HookAfterCreate, func(controller interface{}, ctx *context.Context) error {
+	ocm.lifecycleManager.RegisterHook(HookAfterCreate, func(controller any, ctx *context.Context) error {
 		ocm.stats.updateControllerInstances(1)
 		return nil
 	})
 
-	ocm.lifecycleManager.RegisterHook(HookAfterDestroy, func(controller interface{}, ctx *context.Context) error {
+	ocm.lifecycleManager.RegisterHook(HookAfterDestroy, func(controller any, ctx *context.Context) error {
 		ocm.stats.updateControllerInstances(-1)
 		return nil
 	})
 
 	// 注册缓存预热钩子
-	ocm.lifecycleManager.RegisterHook(HookAfterInit, func(controller interface{}, ctx *context.Context) error {
+	ocm.lifecycleManager.RegisterHook(HookAfterInit, func(controller any, ctx *context.Context) error {
 		// 这里可以实现缓存预热逻辑
 		return nil
 	})
@@ -262,12 +262,12 @@ type OptimizedController interface {
 }
 
 // ============= BaseOptimizedController 已完全移除 =============
-// 
+//
 // BaseOptimizedController 已完全合并到 framework/mvc/core.BaseController 中
 // 所有优化特性现在通过 BaseController.EnableOptimization() 启用
 //
 // 迁移指南:
-// 旧方式: controller.BaseOptimizedController  
+// 旧方式: controller.BaseOptimizedController
 // 新方式: core.BaseController + ctrl.EnableOptimization()
 //
 // 参考: framework/mvc/MIGRATION_GUIDE.md
@@ -277,13 +277,13 @@ type OptimizedController interface {
 // WarmupCache 缓存预热
 func (ocm *OptimizedControllerManager) WarmupCache() error {
 	fmt.Println("Warming up controller cache...")
-	
-	ocm.controllers.Range(func(key, value interface{}) bool {
+
+	ocm.controllers.Range(func(key, value any) bool {
 		controllerName := key.(string)
 		compiled := value.(*CompiledController)
-		
+
 		fmt.Printf("Preloading controller: %s\n", controllerName)
-		
+
 		// 预创建一些控制器实例到池中
 		for i := 0; i < 5; i++ {
 			instance, err := ocm.lifecycleManager.CreateController(compiled.Type, nil)
@@ -291,16 +291,16 @@ func (ocm *OptimizedControllerManager) WarmupCache() error {
 				fmt.Printf("Failed to precreate controller instance: %v\n", err)
 				continue
 			}
-			
+
 			// 立即归还到池中
 			if err := ocm.lifecycleManager.ReturnController(instance); err != nil {
 				fmt.Printf("Failed to return prewarmed controller: %v\n", err)
 			}
 		}
-		
+
 		return true
 	})
-	
+
 	fmt.Println("Cache warmup completed")
 	return nil
 }
@@ -308,9 +308,9 @@ func (ocm *OptimizedControllerManager) WarmupCache() error {
 // OptimizeMemory 内存优化
 func (ocm *OptimizedControllerManager) OptimizeMemory() {
 	fmt.Println("Optimizing memory usage...")
-	
+
 	// 这里可以实现内存优化逻辑
 	// 例如：清理过期的控制器实例、压缩缓存等
-	
+
 	fmt.Println("Memory optimization completed")
 }

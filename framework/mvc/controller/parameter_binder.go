@@ -26,14 +26,14 @@ type ParameterBinder struct {
 }
 
 // BindParameters 绑定参数
-func (pb *ParameterBinder) BindParameters(ctx *context.Context) ([]interface{}, error) {
+func (pb *ParameterBinder) BindParameters(ctx *context.Context) ([]any, error) {
 	return pb.binder.BindParameters(ctx)
 }
 
 // NewMethodValidator 创建方法验证器
 func NewMethodValidator(methodType reflect.Type) *MethodValidator {
 	return &MethodValidator{
-		validator: binding.NewParameterValidator(),
+		validator:  binding.NewParameterValidator(),
 		methodType: methodType,
 	}
 }
@@ -45,7 +45,7 @@ type MethodValidator struct {
 }
 
 // ValidateParameters 验证参数
-func (mv *MethodValidator) ValidateParameters(params []interface{}) error {
+func (mv *MethodValidator) ValidateParameters(params []any) error {
 	for _, param := range params {
 		if err := mv.validator.ValidateStruct(param); err != nil {
 			return fmt.Errorf("parameter validation failed: %w", err)

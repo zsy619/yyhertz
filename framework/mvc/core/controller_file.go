@@ -156,7 +156,7 @@ func (c *BaseController) GetFiles(key string) ([]*multipart.FileHeader, error) {
 	}
 
 	// 解析多部分表单
-	form, err := c.Ctx.Request.MultipartForm()
+	form, err := c.Ctx.Request().MultipartForm()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse multipart form: %v", err)
 	}
@@ -286,7 +286,7 @@ func (c *BaseController) StreamFile(filename string) error {
 
 	// 流式传输 - 使用Write方法替代Stream
 	c.SetContentType("application/octet-stream")
-	if _, err := io.Copy(c.Ctx.Writer, file); err != nil {
+	if _, err := c.Ctx.Copy(file); err != nil {
 		return fmt.Errorf("failed to stream file: %v", err)
 	}
 	return nil
@@ -299,7 +299,7 @@ func (c *BaseController) StreamReader(contentType string, reader io.Reader) {
 		return
 	}
 	c.SetContentType(contentType)
-	io.Copy(c.Ctx.Writer, reader)
+	c.Ctx.Copy(reader)
 }
 
 // ============= 文件响应辅助方法 =============

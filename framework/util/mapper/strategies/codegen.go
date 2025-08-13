@@ -25,7 +25,7 @@ func NewCodegenMapper() *CodegenMapper {
 }
 
 // Map 使用代码生成映射对象
-func (cm *CodegenMapper) Map(src, dst any, config interface{}) error {
+func (cm *CodegenMapper) Map(src, dst any, config any) error {
 	srcType := reflect.TypeOf(src)
 	dstType := reflect.TypeOf(dst)
 

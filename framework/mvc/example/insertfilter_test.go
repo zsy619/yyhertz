@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/constant"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // TestAppInsertFilter 测试基本的过滤器插入功能
@@ -112,7 +113,7 @@ func TestPatternMatchingViaFilters(t *testing.T) {
 	// 创建测试过滤器
 	testFilter := func(ctx *contextenhanced.Context) {
 		mu.Lock()
-		path := string(ctx.Request.Path())
+		path := string(ctx.Request().Path())
 		matchedPaths = append(matchedPaths, path)
 		mu.Unlock()
 	}
@@ -122,8 +123,8 @@ func TestPatternMatchingViaFilters(t *testing.T) {
 
 	// 测试路径
 	testPaths := []struct {
-		path          string
-		shouldMatch   bool
+		path        string
+		shouldMatch bool
 	}{
 		{"/api/users", true},
 		{"/api/users/123", true},
@@ -149,7 +150,7 @@ func TestPatternMatchingViaFilters(t *testing.T) {
 	}
 
 	if len(matchedPaths) != expectedMatches {
-		t.Errorf("Expected %d matches, got %d. Matched paths: %v", 
+		t.Errorf("Expected %d matches, got %d. Matched paths: %v",
 			expectedMatches, len(matchedPaths), matchedPaths)
 	}
 }
@@ -343,17 +344,13 @@ func TestFilterThreadSafety(t *testing.T) {
 func createMockContext(path string) *contextenhanced.Context {
 	// 使用hertz的测试工具创建真实的上下文
 	ctx := app.NewContext(0)
-	
+
 	// 设置请求路径
 	ctx.Request.SetRequestURI(path)
 	ctx.Request.SetMethod("GET")
-	
+
 	// 包装成增强上下文
-	enhancedCtx := &contextenhanced.Context{
-		Request:        ctx,
-		RequestContext: ctx,
-		Keys:          make(map[string]interface{}),
-	}
-	
+	enhancedCtx := contextenhanced.NewContext(ctx)
+
 	return enhancedCtx
 }

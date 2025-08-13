@@ -1,6 +1,6 @@
 package middleware
 
-import (	
+import (
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
@@ -12,7 +12,7 @@ type UnifiedContext interface {
 	Next()
 	Abort()
 	IsAborted() bool
-	
+
 	// 数据存取
 	Set(key string, value any)
 	Get(key string) (any, bool)
@@ -21,13 +21,13 @@ type UnifiedContext interface {
 	GetInt(key string) int
 	GetInt64(key string) int64
 	GetFloat64(key string) float64
-	
+
 	// 错误处理
 	AddError(err error) error
 	GetErrors() []error
 	HasErrors() bool
 	LastError() error
-	
+
 	// HTTP相关
 	Header(key, value string)
 	JSON(code int, obj any)
@@ -35,7 +35,7 @@ type UnifiedContext interface {
 	ClientIP() string
 	Method() []byte
 	Path() []byte
-	
+
 	// 状态控制
 	AbortWithStatus(code int)
 	AbortWithError(code int, err error) error
@@ -139,7 +139,7 @@ func (w *MVCContextWrapper) LastError() error {
 }
 
 func (w *MVCContextWrapper) Header(key, value string) {
-	w.ctx.Request.Response.Header.Set(key, value)
+	w.ctx.Request().Response.Header.Set(key, value)
 }
 
 func (w *MVCContextWrapper) JSON(code int, obj any) {
@@ -147,19 +147,19 @@ func (w *MVCContextWrapper) JSON(code int, obj any) {
 }
 
 func (w *MVCContextWrapper) SetStatusCode(code int) {
-	w.ctx.Request.SetStatusCode(code)
+	w.ctx.Request().SetStatusCode(code)
 }
 
 func (w *MVCContextWrapper) ClientIP() string {
-	return string(w.ctx.Request.ClientIP())
+	return string(w.ctx.Request().ClientIP())
 }
 
 func (w *MVCContextWrapper) Method() []byte {
-	return w.ctx.Request.Method()
+	return w.ctx.Request().Method()
 }
 
 func (w *MVCContextWrapper) Path() []byte {
-	return w.ctx.Request.Path()
+	return w.ctx.Request().Path()
 }
 
 func (w *MVCContextWrapper) AbortWithStatus(code int) {
@@ -291,7 +291,7 @@ func NewContextConverter() *ContextConverter {
 }
 
 // ToUnified 转换为统一Context接口
-func (c *ContextConverter) ToUnified(ctx interface{}) UnifiedContext {
+func (c *ContextConverter) ToUnified(ctx any) UnifiedContext {
 	switch v := ctx.(type) {
 	case *mvccontext.Context:
 		return NewMVCContextWrapper(v)
@@ -311,30 +311,30 @@ func (c *ContextConverter) MVCToBasicContext(mvcCtx *mvccontext.Context) *Contex
 func (c *ContextConverter) BasicToMVCContext(basicCtx *Context) *mvccontext.Context {
 	// 获取底层的Hertz RequestContext
 	hertzCtx := basicCtx.RequestContext
-	
+
 	// 创建MVC增强上下文
 	mvcCtx := mvccontext.NewContext(hertzCtx)
-	
+
 	// 同步数据
 	for key, value := range basicCtx.Keys {
 		mvcCtx.Set(key, value)
 	}
-	
+
 	// 同步错误
 	for _, err := range basicCtx.Errors {
 		mvcCtx.AddError(err)
 	}
-	
+
 	// 同步状态
 	if basicCtx.IsAborted() {
 		mvcCtx.Abort()
 	}
-	
+
 	return mvcCtx
 }
 
 // CreateCompatibleHandler 创建兼容的处理器
-func (c *ContextConverter) CreateCompatibleHandler(handler interface{}) interface{} {
+func (c *ContextConverter) CreateCompatibleHandler(handler any) any {
 	switch h := handler.(type) {
 	case MiddlewareFunc:
 		// MVC中间件转换为基础中间件
@@ -366,11 +366,11 @@ func GetGlobalConverter() *ContextConverter {
 }
 
 // ToUnified 便捷函数 - 转换为统一Context
-func ToUnified(ctx interface{}) UnifiedContext {
+func ToUnified(ctx any) UnifiedContext {
 	return globalConverter.ToUnified(ctx)
 }
 
 // CreateCompatible 便捷函数 - 创建兼容处理器
-func CreateCompatible(handler interface{}) interface{} {
+func CreateCompatible(handler any) any {
 	return globalConverter.CreateCompatibleHandler(handler)
 }

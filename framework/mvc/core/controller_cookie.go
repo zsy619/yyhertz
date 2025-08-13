@@ -14,7 +14,7 @@ func (c *BaseController) SetCookie(name, value string, options ...*cookie.Option
 	if c.Ctx == nil {
 		return
 	}
-	c.cookieHelper.Set(c.Ctx.RequestContext, name, value, options...)
+	c.cookieHelper.Set(c.Ctx.Request(), name, value, options...)
 }
 
 // GetCookie 获取Cookie
@@ -22,7 +22,7 @@ func (c *BaseController) GetCookie(name string) string {
 	if c.Ctx == nil {
 		return ""
 	}
-	return c.cookieHelper.Get(c.Ctx.RequestContext, name)
+	return c.cookieHelper.Get(c.Ctx.Request(), name)
 }
 
 // DeleteCookie 删除Cookie
@@ -30,7 +30,7 @@ func (c *BaseController) DeleteCookie(name string, path ...string) {
 	if c.Ctx == nil {
 		return
 	}
-	c.cookieHelper.Delete(c.Ctx.RequestContext, name, path...)
+	c.cookieHelper.Delete(c.Ctx.Request(), name, path...)
 }
 
 // HasCookie 检查Cookie是否存在
@@ -38,7 +38,7 @@ func (c *BaseController) HasCookie(name string) bool {
 	if c.Ctx == nil {
 		return false
 	}
-	return c.cookieHelper.Has(c.Ctx.RequestContext, name)
+	return c.cookieHelper.Has(c.Ctx.Request(), name)
 }
 
 // SetSecureCookie 设置安全Cookie（Beego兼容）

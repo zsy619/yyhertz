@@ -21,9 +21,9 @@ func TestSimpleRouter(t *testing.T) {
 	// 1. 测试简化GET路由
 	mvc.SimpleGET("/simple/users", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "简化GET API正常工作",
-			"users": []map[string]interface{}{
+			"users": []map[string]any{
 				{"id": 1, "name": "张三"},
 				{"id": 2, "name": "李四"},
 			},
@@ -34,9 +34,9 @@ func TestSimpleRouter(t *testing.T) {
 	// 2. 测试简化POST路由
 	mvc.SimplePOST("/simple/users", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
-		c.JSON(201, map[string]interface{}{
+		c.JSON(201, map[string]any{
 			"message": "简化POST API正常工作",
-			"created": map[string]interface{}{
+			"created": map[string]any{
 				"id":   123,
 				"name": "新用户",
 			},
@@ -48,10 +48,10 @@ func TestSimpleRouter(t *testing.T) {
 	mvc.SimpleGET("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "简化参数获取正常工作",
 			"user_id": id,
-			"user": map[string]interface{}{
+			"user": map[string]any{
 				"id":   id,
 				"name": "用户" + id,
 			},
@@ -64,7 +64,7 @@ func TestSimpleRouter(t *testing.T) {
 		c := mvc.FromContext(ctx)
 		keyword := c.Query("q")
 		limit := c.Query("limit")
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "简化查询参数获取正常工作",
 			"keyword": keyword,
 			"limit":   limit,
@@ -79,7 +79,7 @@ func TestSimpleRouter(t *testing.T) {
 
 		// 模拟权限检查
 		if c.Header("Authorization") == "" {
-			c.JSON(401, map[string]interface{}{
+			c.JSON(401, map[string]any{
 				"error": "未授权访问",
 				"code":  401,
 			})
@@ -87,7 +87,7 @@ func TestSimpleRouter(t *testing.T) {
 			return
 		}
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "授权成功",
 			"time":    time.Now(),
 		})
@@ -97,9 +97,9 @@ func TestSimpleRouter(t *testing.T) {
 	mvc.SimplePUT("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "简化PUT API正常工作",
-			"updated_user": map[string]interface{}{
+			"updated_user": map[string]any{
 				"id":   id,
 				"name": "更新的用户" + id,
 			},
@@ -111,7 +111,7 @@ func TestSimpleRouter(t *testing.T) {
 	mvc.SimpleDELETE("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message":         "简化DELETE API正常工作",
 			"deleted_user_id": id,
 			"time":            time.Now(),
@@ -121,8 +121,8 @@ func TestSimpleRouter(t *testing.T) {
 	// 8. 测试ANY路由
 	mvc.SimpleAny("/simple/health", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
-		method := string(c.Request.Method())
-		c.JSON(200, map[string]interface{}{
+		method := string(c.Request().Method())
+		c.JSON(200, map[string]any{
 			"message": "简化ANY API正常工作",
 			"method":  method,
 			"status":  "健康",
@@ -134,7 +134,7 @@ func TestSimpleRouter(t *testing.T) {
 
 	// 9. 测试原有API仍然工作
 	mvc.GET("/legacy/test", func(ctx context.Context, c *mvc.RequestContext) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "原有API仍然正常工作",
 			"time":    time.Now(),
 		})
@@ -157,14 +157,14 @@ func TestSimpleRouter(t *testing.T) {
 		requestID, _ := c.Get("request_id")
 
 		// 复杂响应
-		response := map[string]interface{}{
+		response := map[string]any{
 			"message":    "复杂业务逻辑处理成功",
 			"request_id": requestID,
-			"parameters": map[string]interface{}{
+			"parameters": map[string]any{
 				"type": userType,
 				"page": page,
 			},
-			"processing_info": map[string]interface{}{
+			"processing_info": map[string]any{
 				"processed_at": time.Now(),
 				"handler":      "SimpleHandlerFunc",
 				"context_type": "mvc.FromContext",
@@ -206,8 +206,8 @@ func loggingMiddleware(ctx context.Context) {
 	start := time.Now()
 
 	// 记录请求开始
-	method := string(c.Request.Method())
-	path := string(c.Request.Path())
+	method := string(c.Request().Method())
+	path := string(c.Request().Path())
 	fmt.Printf("[%s] %s - 开始处理\n", method, path)
 
 	// 模拟处理时间

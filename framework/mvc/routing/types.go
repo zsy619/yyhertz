@@ -6,27 +6,27 @@ import (
 
 // RouteInfo 路由信息（统一结构）
 type RouteInfo struct {
-	Path            string            // 路径
-	HTTPMethod      string            // HTTP方法
-	PackageName     string            // 包名
-	TypeName        string            // 类型名
-	ControllerType  reflect.Type      // 控制器类型
-	MethodName      string            // 方法名
-	Description     string            // 描述
-	Params          []*ParamInfo      // 参数信息
-	Middlewares     []string          // 中间件
-	Tags            map[string]string // 标签
-	Source          AnnotationSource  // 注解来源
+	Path           string            // 路径
+	HTTPMethod     string            // HTTP方法
+	PackageName    string            // 包名
+	TypeName       string            // 类型名
+	ControllerType reflect.Type      // 控制器类型
+	MethodName     string            // 方法名
+	Description    string            // 描述
+	Params         []*ParamInfo      // 参数信息
+	Middlewares    []string          // 中间件
+	Tags           map[string]string // 标签
+	Source         AnnotationSource  // 注解来源
 }
 
 // AnnotationSource 注解来源枚举
 type AnnotationSource string
 
 const (
-	SourceStructTag   AnnotationSource = "struct_tag"   // struct标签
-	SourceComment     AnnotationSource = "comment"      // Go注释
-	SourceManual      AnnotationSource = "manual"       // 手动注册
-	SourceHybrid      AnnotationSource = "hybrid"       // 混合方式
+	SourceStructTag AnnotationSource = "struct_tag" // struct标签
+	SourceComment   AnnotationSource = "comment"    // Go注释
+	SourceManual    AnnotationSource = "manual"     // 手动注册
+	SourceHybrid    AnnotationSource = "hybrid"     // 混合方式
 )
 
 // ParamInfo 参数信息（统一结构）
@@ -66,27 +66,27 @@ type ControllerInfo struct {
 
 // MethodInfo 方法信息（统一结构）
 type MethodInfo struct {
-	PackageName string          // 包名
-	TypeName    string          // 类型名
-	MethodName  string          // 方法名
-	HTTPMethod  string          // HTTP方法
-	Path        string          // 路径
-	Description string          // 描述
-	Params      []*ParamInfo    // 参数信息
-	Middlewares []string        // 中间件
+	PackageName string            // 包名
+	TypeName    string            // 类型名
+	MethodName  string            // 方法名
+	HTTPMethod  string            // HTTP方法
+	Path        string            // 路径
+	Description string            // 描述
+	Params      []*ParamInfo      // 参数信息
+	Middlewares []string          // 中间件
 	Tags        map[string]string // 标签
-	Source      AnnotationSource // 注解来源
+	Source      AnnotationSource  // 注解来源
 }
 
 // MethodMapping 方法映射信息（用于annotation包）
 type MethodMapping struct {
-	ControllerType reflect.Type   // 控制器类型
-	MethodName     string         // 方法名
-	HTTPMethod     string         // HTTP方法
-	Path           string         // 路径
-	Description    string         // 描述
-	Params         []*ParamInfo   // 参数信息
-	Middlewares    []string       // 中间件
+	ControllerType reflect.Type      // 控制器类型
+	MethodName     string            // 方法名
+	HTTPMethod     string            // HTTP方法
+	Path           string            // 路径
+	Description    string            // 描述
+	Params         []*ParamInfo      // 参数信息
+	Middlewares    []string          // 中间件
 	Tags           map[string]string // 标签
 }
 
@@ -107,10 +107,10 @@ type MethodMappingBuilder interface {
 type Router interface {
 	// 注册路由
 	RegisterRoute(route *RouteInfo) error
-	
+
 	// 获取已注册的路由
 	GetRegisteredRoutes() []*RouteInfo
-	
+
 	// 检查路由是否存在
 	RouteExists(path, method string) bool
 }
@@ -118,11 +118,11 @@ type Router interface {
 // Parser接口，定义解析器的基本功能
 type Parser interface {
 	// 解析控制器
-	ParseController(controller interface{}) (*ControllerInfo, error)
-	
+	ParseController(controller any) (*ControllerInfo, error)
+
 	// 解析方法
-	ParseMethods(controller interface{}) ([]*MethodInfo, error)
-	
+	ParseMethods(controller any) ([]*MethodInfo, error)
+
 	// 获取解析器类型
 	GetParserType() AnnotationSource
 }
@@ -131,13 +131,13 @@ type Parser interface {
 type Registry interface {
 	// 注册方法映射
 	RegisterMethodMapping(mapping *MethodMapping) error
-	
+
 	// 获取控制器的所有映射
 	GetControllerMappings(controllerType reflect.Type) []*MethodMapping
-	
+
 	// 获取特定方法的映射
 	GetMethodMapping(controllerType reflect.Type, methodName string) *MethodMapping
-	
+
 	// 清空注册表
 	Clear()
 }

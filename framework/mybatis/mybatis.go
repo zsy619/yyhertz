@@ -38,12 +38,12 @@ import (
 	"sync"
 	"time"
 
-	"gorm.io/gorm"
 	frameworkConfig "github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/mybatis/cache"
 	"github.com/zsy619/yyhertz/framework/mybatis/config"
 	"github.com/zsy619/yyhertz/framework/mybatis/mapper"
 	"github.com/zsy619/yyhertz/framework/mybatis/session"
+	"gorm.io/gorm"
 )
 
 // MyBatis MyBatis框架主类
@@ -445,15 +445,15 @@ type MyBatisGorm struct {
 type GormConfig struct {
 	// 数据库配置
 	DatabaseConfig *frameworkConfig.DatabaseConfig
-	
+
 	// 映射器配置
 	MapperLocations []string // XML映射文件路径
 	TypeAliases     map[string]reflect.Type
-	
+
 	// 缓存配置
-	CacheEnabled    bool
-	CacheSize       int
-	
+	CacheEnabled bool
+	CacheSize    int
+
 	// 其他配置
 	MapUnderscoreToCamelCase bool
 	LogLevel                 string
@@ -461,9 +461,9 @@ type GormConfig struct {
 
 // MapperInfo 映射器信息
 type MapperInfo struct {
-	Namespace   string
-	Statements  map[string]*Statement
-	ResultMaps  map[string]*ResultMap
+	Namespace  string
+	Statements map[string]*Statement
+	ResultMaps map[string]*ResultMap
 }
 
 // Statement SQL语句定义
@@ -491,9 +491,9 @@ const (
 
 // ResultMap 结果映射
 type ResultMap struct {
-	ID       string
-	Type     reflect.Type
-	Columns  []ColumnMapping
+	ID      string
+	Type    reflect.Type
+	Columns []ColumnMapping
 }
 
 // ColumnMapping 列映射
@@ -505,19 +505,19 @@ type ColumnMapping struct {
 
 // LegacyCache 缓存实现（保持向后兼容）
 type LegacyCache struct {
-	data    map[string]interface{}
+	data    map[string]any
 	mutex   sync.RWMutex
 	maxSize int
 }
 
 // SqlSession SQL会话接口
 type SqlSession interface {
-	SelectOne(statement string, parameter interface{}) (interface{}, error)
-	SelectList(statement string, parameter interface{}) ([]interface{}, error)
-	Insert(statement string, parameter interface{}) (int64, error)
-	Update(statement string, parameter interface{}) (int64, error)
-	Delete(statement string, parameter interface{}) (int64, error)
-	GetMapper(mapperType reflect.Type) interface{}
+	SelectOne(statement string, parameter any) (any, error)
+	SelectList(statement string, parameter any) ([]any, error)
+	Insert(statement string, parameter any) (int64, error)
+	Update(statement string, parameter any) (int64, error)
+	Delete(statement string, parameter any) (int64, error)
+	GetMapper(mapperType reflect.Type) any
 	Commit() error
 	Rollback() error
 	Close() error
@@ -541,14 +541,14 @@ func NewMyBatisGorm(db *gorm.DB, config *GormConfig) *MyBatisGorm {
 	if config == nil {
 		config = DefaultGormConfig()
 	}
-	
+
 	mb := &MyBatisGorm{
 		db:      db,
 		config:  config,
 		mappers: make(map[string]*MapperInfo),
 		cache:   NewLegacyCache(config.CacheSize),
 	}
-	
+
 	return mb
 }
 
@@ -556,18 +556,18 @@ func NewMyBatisGorm(db *gorm.DB, config *GormConfig) *MyBatisGorm {
 func DefaultGormConfig() *GormConfig {
 	return &GormConfig{
 		CacheEnabled:             true,
-		CacheSize:               1000,
+		CacheSize:                1000,
 		MapUnderscoreToCamelCase: true,
-		LogLevel:                "info",
-		TypeAliases:             make(map[string]reflect.Type),
-		MapperLocations:         []string{},
+		LogLevel:                 "info",
+		TypeAliases:              make(map[string]reflect.Type),
+		MapperLocations:          []string{},
 	}
 }
 
 // NewLegacyCache 创建缓存
 func NewLegacyCache(maxSize int) *LegacyCache {
 	return &LegacyCache{
-		data:    make(map[string]interface{}),
+		data:    make(map[string]any),
 		maxSize: maxSize,
 	}
 }
@@ -594,7 +594,7 @@ func (mb *MyBatisGorm) OpenSessionWithTx() SqlSession {
 func (mb *MyBatisGorm) RegisterMapper(namespace string, statements map[string]*Statement) {
 	mb.mutex.Lock()
 	defer mb.mutex.Unlock()
-	
+
 	mb.mappers[namespace] = &MapperInfo{
 		Namespace:  namespace,
 		Statements: statements,
@@ -612,116 +612,116 @@ func (mb *MyBatisGorm) LoadMapperFromXML(xmlPath string) error {
 // 实现SqlSession接口
 
 // SelectOne 查询单条记录
-func (session *DefaultSqlSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (session *DefaultSqlSession) SelectOne(statement string, parameter any) (any, error) {
 	results, err := session.SelectList(statement, parameter)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(results) == 0 {
 		return nil, nil
 	}
-	
+
 	if len(results) > 1 {
 		return nil, fmt.Errorf("expected one result but got %d", len(results))
 	}
-	
+
 	return results[0], nil
 }
 
 // SelectList 查询多条记录
-func (session *DefaultSqlSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (session *DefaultSqlSession) SelectList(statement string, parameter any) ([]any, error) {
 	stmt, err := session.getStatement(statement)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if stmt.StatementType != StatementTypeSelect {
 		return nil, fmt.Errorf("statement %s is not a select statement", statement)
 	}
-	
+
 	// 检查缓存
 	if stmt.UseCache && session.mybatis.config.CacheEnabled {
 		cacheKey := session.buildCacheKey(statement, parameter)
 		if cached := session.mybatis.cache.Get(cacheKey); cached != nil {
-			return cached.([]interface{}), nil
+			return cached.([]any), nil
 		}
 	}
-	
+
 	// 构建SQL和参数
 	sql, args, err := session.buildSQL(stmt, parameter)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 执行查询
 	db := session.getDB()
-	var results []map[string]interface{}
+	var results []map[string]any
 	err = db.Raw(sql, args...).Scan(&results).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
-	
+
 	// 转换结果
-	convertedResults := make([]interface{}, len(results))
+	convertedResults := make([]any, len(results))
 	for i, result := range results {
 		converted := session.convertResult(result, stmt)
 		convertedResults[i] = converted
 	}
-	
+
 	// 缓存结果
 	if stmt.UseCache && session.mybatis.config.CacheEnabled {
 		cacheKey := session.buildCacheKey(statement, parameter)
 		session.mybatis.cache.Put(cacheKey, convertedResults)
 	}
-	
+
 	return convertedResults, nil
 }
 
 // Insert 插入记录
-func (session *DefaultSqlSession) Insert(statement string, parameter interface{}) (int64, error) {
+func (session *DefaultSqlSession) Insert(statement string, parameter any) (int64, error) {
 	return session.executeUpdate(statement, parameter, StatementTypeInsert)
 }
 
 // Update 更新记录
-func (session *DefaultSqlSession) Update(statement string, parameter interface{}) (int64, error) {
+func (session *DefaultSqlSession) Update(statement string, parameter any) (int64, error) {
 	return session.executeUpdate(statement, parameter, StatementTypeUpdate)
 }
 
 // Delete 删除记录
-func (session *DefaultSqlSession) Delete(statement string, parameter interface{}) (int64, error) {
+func (session *DefaultSqlSession) Delete(statement string, parameter any) (int64, error) {
 	return session.executeUpdate(statement, parameter, StatementTypeDelete)
 }
 
 // executeUpdate 执行更新操作
-func (session *DefaultSqlSession) executeUpdate(statement string, parameter interface{}, expectedType StatementType) (int64, error) {
+func (session *DefaultSqlSession) executeUpdate(statement string, parameter any, expectedType StatementType) (int64, error) {
 	stmt, err := session.getStatement(statement)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	if stmt.StatementType != expectedType {
 		return 0, fmt.Errorf("statement %s type mismatch", statement)
 	}
-	
+
 	// 构建SQL和参数
 	sql, args, err := session.buildSQL(stmt, parameter)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// 执行更新
 	db := session.getDB()
 	result := db.Exec(sql, args...)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to execute update: %w", result.Error)
 	}
-	
+
 	return result.RowsAffected, nil
 }
 
 // GetMapper 获取映射器代理
-func (session *DefaultSqlSession) GetMapper(mapperType reflect.Type) interface{} {
+func (session *DefaultSqlSession) GetMapper(mapperType reflect.Type) any {
 	// 简化实现：返回一个包含session的映射器实例
 	// 实际应该创建动态代理
 	return NewMapperProxy(mapperType, session)
@@ -762,23 +762,23 @@ func (session *DefaultSqlSession) getStatement(statementId string) (*Statement, 
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid statement id: %s", statementId)
 	}
-	
+
 	namespace := parts[0]
 	statementName := parts[1]
-	
+
 	session.mybatis.mutex.RLock()
 	mapperInfo, exists := session.mybatis.mappers[namespace]
 	session.mybatis.mutex.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("namespace not found: %s", namespace)
 	}
-	
+
 	statement, exists := mapperInfo.Statements[statementName]
 	if !exists {
 		return nil, fmt.Errorf("statement not found: %s", statementId)
 	}
-	
+
 	return statement, nil
 }
 
@@ -791,38 +791,38 @@ func (session *DefaultSqlSession) getDB() *gorm.DB {
 }
 
 // buildSQL 构建SQL和参数
-func (session *DefaultSqlSession) buildSQL(stmt *Statement, parameter interface{}) (string, []interface{}, error) {
+func (session *DefaultSqlSession) buildSQL(stmt *Statement, parameter any) (string, []any, error) {
 	sql := stmt.SQL
-	var args []interface{}
-	
+	var args []any
+
 	// 简化的参数处理
 	if parameter != nil {
 		args = session.extractParameters(parameter, sql)
 	}
-	
+
 	return sql, args, nil
 }
 
 // extractParameters 提取参数
-func (session *DefaultSqlSession) extractParameters(parameter interface{}, sql string) []interface{} {
+func (session *DefaultSqlSession) extractParameters(parameter any, sql string) []any {
 	// 计算SQL中的参数占位符数量
 	paramCount := strings.Count(sql, "?")
-	
+
 	if paramCount == 0 {
-		return []interface{}{}
+		return []any{}
 	}
-	
+
 	paramValue := reflect.ValueOf(parameter)
 	paramType := reflect.TypeOf(parameter)
-	
+
 	// 处理指针
 	if paramType.Kind() == reflect.Ptr {
 		paramValue = paramValue.Elem()
 		paramType = paramType.Elem()
 	}
-	
-	var args []interface{}
-	
+
+	var args []any
+
 	switch paramType.Kind() {
 	case reflect.Struct:
 		// 结构体：提取字段值
@@ -852,33 +852,33 @@ func (session *DefaultSqlSession) extractParameters(parameter interface{}, sql s
 			args = append(args, parameter)
 		}
 	}
-	
+
 	// 如果参数不够，用nil填充
 	for len(args) < paramCount {
 		args = append(args, nil)
 	}
-	
+
 	return args
 }
 
 // convertResult 转换查询结果
-func (session *DefaultSqlSession) convertResult(result map[string]interface{}, stmt *Statement) interface{} {
+func (session *DefaultSqlSession) convertResult(result map[string]any, stmt *Statement) any {
 	if !session.mybatis.config.MapUnderscoreToCamelCase {
 		return result
 	}
-	
+
 	// 下划线转驼峰
-	converted := make(map[string]interface{})
+	converted := make(map[string]any)
 	for key, value := range result {
 		camelKey := underscoreToCamelCase(key)
 		converted[camelKey] = value
 	}
-	
+
 	return converted
 }
 
 // buildCacheKey 构建缓存键
-func (session *DefaultSqlSession) buildCacheKey(statement string, parameter interface{}) string {
+func (session *DefaultSqlSession) buildCacheKey(statement string, parameter any) string {
 	return fmt.Sprintf("%s:%v", statement, parameter)
 }
 
@@ -896,17 +896,17 @@ func underscoreToCamelCase(name string) string {
 // LegacyCache方法实现
 
 // Get 获取缓存
-func (cache *LegacyCache) Get(key string) interface{} {
+func (cache *LegacyCache) Get(key string) any {
 	cache.mutex.RLock()
 	defer cache.mutex.RUnlock()
 	return cache.data[key]
 }
 
 // Put 放入缓存
-func (cache *LegacyCache) Put(key string, value interface{}) {
+func (cache *LegacyCache) Put(key string, value any) {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
-	
+
 	// 简单的LRU实现：如果超过最大大小，清除一半
 	if len(cache.data) >= cache.maxSize {
 		for k := range cache.data {
@@ -916,7 +916,7 @@ func (cache *LegacyCache) Put(key string, value interface{}) {
 			}
 		}
 	}
-	
+
 	cache.data[key] = value
 }
 
@@ -924,7 +924,7 @@ func (cache *LegacyCache) Put(key string, value interface{}) {
 func (cache *LegacyCache) Clear() {
 	cache.mutex.Lock()
 	defer cache.mutex.Unlock()
-	cache.data = make(map[string]interface{})
+	cache.data = make(map[string]any)
 }
 
 // MapperProxy 映射器代理
@@ -1018,13 +1018,13 @@ func (session *DefaultSqlSession) WithContext(ctx context.Context) *ContextualSe
 }
 
 // SelectOne 带上下文的查询单条
-func (cs *ContextualSession) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (cs *ContextualSession) SelectOne(statement string, parameter any) (any, error) {
 	// TODO: 实现超时和取消
 	return cs.session.SelectOne(statement, parameter)
 }
 
 // SelectList 带上下文的查询多条
-func (cs *ContextualSession) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (cs *ContextualSession) SelectList(statement string, parameter any) ([]any, error) {
 	// TODO: 实现超时和取消
 	return cs.session.SelectList(statement, parameter)
 }
@@ -1034,12 +1034,12 @@ func (cs *ContextualSession) SelectList(statement string, parameter interface{})
 // ===============================================
 
 // SelectOne 查询单条记录（适配器实现）
-func (adapter *SqlSessionAdapter) SelectOne(statement string, parameter interface{}) (interface{}, error) {
+func (adapter *SqlSessionAdapter) SelectOne(statement string, parameter any) (any, error) {
 	return adapter.sqlSession.SelectOne(statement, parameter)
 }
 
 // SelectList 查询多条记录（适配器实现）
-func (adapter *SqlSessionAdapter) SelectList(statement string, parameter interface{}) ([]interface{}, error) {
+func (adapter *SqlSessionAdapter) SelectList(statement string, parameter any) ([]any, error) {
 	result, err := adapter.sqlSession.SelectList(statement, parameter)
 	if err != nil {
 		return nil, err
@@ -1048,22 +1048,22 @@ func (adapter *SqlSessionAdapter) SelectList(statement string, parameter interfa
 }
 
 // Insert 插入记录（适配器实现）
-func (adapter *SqlSessionAdapter) Insert(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Insert(statement string, parameter any) (int64, error) {
 	return adapter.sqlSession.Insert(statement, parameter)
 }
 
 // Update 更新记录（适配器实现）
-func (adapter *SqlSessionAdapter) Update(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Update(statement string, parameter any) (int64, error) {
 	return adapter.sqlSession.Update(statement, parameter)
 }
 
 // Delete 删除记录（适配器实现）
-func (adapter *SqlSessionAdapter) Delete(statement string, parameter interface{}) (int64, error) {
+func (adapter *SqlSessionAdapter) Delete(statement string, parameter any) (int64, error) {
 	return adapter.sqlSession.Delete(statement, parameter)
 }
 
 // GetMapper 获取映射器（适配器实现）
-func (adapter *SqlSessionAdapter) GetMapper(mapperType reflect.Type) interface{} {
+func (adapter *SqlSessionAdapter) GetMapper(mapperType reflect.Type) any {
 	mapper, _ := adapter.sqlSession.GetMapper(mapperType)
 	return mapper
 }
@@ -1092,19 +1092,19 @@ func NewMyBatisWithGormConfig(db *gorm.DB, gormConfig *GormConfig) (*MyBatis, er
 	if gormConfig == nil {
 		gormConfig = DefaultGormConfig()
 	}
-	
+
 	// 创建完整版配置
 	configuration := config.NewConfiguration()
-	
+
 	// 如果有数据库配置，设置到完整版配置中
 	if gormConfig.DatabaseConfig != nil {
 		configuration.SetDatabaseConfig(gormConfig.DatabaseConfig)
 	}
-	
+
 	// 设置其他配置项
 	configuration.CacheEnabled = gormConfig.CacheEnabled
 	configuration.MapUnderscoreToCamelCase = gormConfig.MapUnderscoreToCamelCase
-	
+
 	// 创建完整版MyBatis
 	return NewMyBatis(configuration)
 }
@@ -1116,10 +1116,10 @@ func CreateUnifiedMyBatis(db *gorm.DB, gormConfig *GormConfig) (*MyBatis, *MyBat
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create full MyBatis: %w", err)
 	}
-	
+
 	// 创建GORM集成版
 	gormMyBatis := NewMyBatisGorm(db, gormConfig)
-	
+
 	return fullMyBatis, gormMyBatis, nil
 }
 
@@ -1135,19 +1135,19 @@ func NewSimple(db *gorm.DB) SimpleSession {
 // NewSimpleWithHooks 创建带常用钩子的简化版会话
 func NewSimpleWithHooks(db *gorm.DB, enableDebug bool) SimpleSession {
 	session := NewSimpleSession(db).Debug(enableDebug)
-	
+
 	// 添加常用钩子
 	session = session.AddBeforeHook(AuditHook())
-	
+
 	// 添加性能监控钩子（100ms慢查询阈值）
 	beforeHook, afterHook := PerformanceHook(100 * time.Millisecond)
 	session = session.AddBeforeHook(beforeHook).AddAfterHook(afterHook)
-	
+
 	if enableDebug {
 		debugBefore, debugAfter := DebugHook()
 		session = session.AddBeforeHook(debugBefore).AddAfterHook(debugAfter)
 	}
-	
+
 	return session
 }
 

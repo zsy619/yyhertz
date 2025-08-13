@@ -10,7 +10,7 @@ import (
 
 // TypeConverter 类型转换器
 type TypeConverter struct {
-	converters map[reflect.Type]TypeConverterFunc // 类型转换器映射
+	converters       map[reflect.Type]TypeConverterFunc // 类型转换器映射
 	customConverters map[reflect.Type]TypeConverterFunc // 自定义转换器
 }
 
@@ -31,37 +31,37 @@ func NewTypeConverter() *TypeConverter {
 func (tc *TypeConverter) registerBuiltinConverters() {
 	// 字符串转换器
 	tc.converters[reflect.TypeOf("")] = tc.toString
-	
+
 	// 整数转换器
 	tc.converters[reflect.TypeOf(int(0))] = tc.toInt
 	tc.converters[reflect.TypeOf(int8(0))] = tc.toInt8
 	tc.converters[reflect.TypeOf(int16(0))] = tc.toInt16
 	tc.converters[reflect.TypeOf(int32(0))] = tc.toInt32
 	tc.converters[reflect.TypeOf(int64(0))] = tc.toInt64
-	
+
 	// 无符号整数转换器
 	tc.converters[reflect.TypeOf(uint(0))] = tc.toUint
 	tc.converters[reflect.TypeOf(uint8(0))] = tc.toUint8
 	tc.converters[reflect.TypeOf(uint16(0))] = tc.toUint16
 	tc.converters[reflect.TypeOf(uint32(0))] = tc.toUint32
 	tc.converters[reflect.TypeOf(uint64(0))] = tc.toUint64
-	
+
 	// 浮点数转换器
 	tc.converters[reflect.TypeOf(float32(0))] = tc.toFloat32
 	tc.converters[reflect.TypeOf(float64(0))] = tc.toFloat64
-	
+
 	// 布尔值转换器
 	tc.converters[reflect.TypeOf(bool(false))] = tc.toBool
-	
+
 	// 时间转换器
 	tc.converters[reflect.TypeOf(time.Time{})] = tc.toTime
-	
+
 	// 字节切片转换器
 	tc.converters[reflect.TypeOf([]byte{})] = tc.toBytes
 }
 
 // Convert 转换值到目标类型
-func (tc *TypeConverter) Convert(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) Convert(value any, targetType reflect.Type) (any, error) {
 	if value == nil {
 		return reflect.Zero(targetType).Interface(), nil
 	}
@@ -79,7 +79,7 @@ func (tc *TypeConverter) Convert(value interface{}, targetType reflect.Type) (in
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// 创建指针
 		ptrValue := reflect.New(elemType)
 		ptrValue.Elem().Set(reflect.ValueOf(convertedValue))
@@ -123,9 +123,9 @@ func (tc *TypeConverter) GetConverter(targetType reflect.Type) TypeConverterFunc
 	if converter, exists := tc.converters[targetType]; exists {
 		return converter
 	}
-	
+
 	// 返回通用转换器
-	return func(value interface{}, targetType reflect.Type) (interface{}, error) {
+	return func(value any, targetType reflect.Type) (any, error) {
 		return tc.Convert(value, targetType)
 	}
 }
@@ -138,7 +138,7 @@ func (tc *TypeConverter) RegisterConverter(targetType reflect.Type, converter Ty
 // 内置转换器实现
 
 // toString 转换为字符串
-func (tc *TypeConverter) toString(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toString(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		return v, nil
@@ -160,7 +160,7 @@ func (tc *TypeConverter) toString(value interface{}, targetType reflect.Type) (i
 }
 
 // toInt 转换为int
-func (tc *TypeConverter) toInt(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toInt(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -184,7 +184,7 @@ func (tc *TypeConverter) toInt(value interface{}, targetType reflect.Type) (inte
 }
 
 // toInt8 转换为int8
-func (tc *TypeConverter) toInt8(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toInt8(value any, targetType reflect.Type) (any, error) {
 	intVal, err := tc.toInt(value, reflect.TypeOf(int(0)))
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func (tc *TypeConverter) toInt8(value interface{}, targetType reflect.Type) (int
 }
 
 // toInt16 转换为int16
-func (tc *TypeConverter) toInt16(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toInt16(value any, targetType reflect.Type) (any, error) {
 	intVal, err := tc.toInt(value, reflect.TypeOf(int(0)))
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (tc *TypeConverter) toInt16(value interface{}, targetType reflect.Type) (in
 }
 
 // toInt32 转换为int32
-func (tc *TypeConverter) toInt32(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toInt32(value any, targetType reflect.Type) (any, error) {
 	intVal, err := tc.toInt(value, reflect.TypeOf(int(0)))
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (tc *TypeConverter) toInt32(value interface{}, targetType reflect.Type) (in
 }
 
 // toInt64 转换为int64
-func (tc *TypeConverter) toInt64(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toInt64(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -235,7 +235,7 @@ func (tc *TypeConverter) toInt64(value interface{}, targetType reflect.Type) (in
 }
 
 // toUint 转换为uint
-func (tc *TypeConverter) toUint(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toUint(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -263,7 +263,7 @@ func (tc *TypeConverter) toUint(value interface{}, targetType reflect.Type) (int
 }
 
 // toUint8 转换为uint8
-func (tc *TypeConverter) toUint8(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toUint8(value any, targetType reflect.Type) (any, error) {
 	uintVal, err := tc.toUint(value, reflect.TypeOf(uint(0)))
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func (tc *TypeConverter) toUint8(value interface{}, targetType reflect.Type) (in
 }
 
 // toUint16 转换为uint16
-func (tc *TypeConverter) toUint16(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toUint16(value any, targetType reflect.Type) (any, error) {
 	uintVal, err := tc.toUint(value, reflect.TypeOf(uint(0)))
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (tc *TypeConverter) toUint16(value interface{}, targetType reflect.Type) (i
 }
 
 // toUint32 转换为uint32
-func (tc *TypeConverter) toUint32(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toUint32(value any, targetType reflect.Type) (any, error) {
 	uintVal, err := tc.toUint(value, reflect.TypeOf(uint(0)))
 	if err != nil {
 		return nil, err
@@ -290,7 +290,7 @@ func (tc *TypeConverter) toUint32(value interface{}, targetType reflect.Type) (i
 }
 
 // toUint64 转换为uint64
-func (tc *TypeConverter) toUint64(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toUint64(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -315,7 +315,7 @@ func (tc *TypeConverter) toUint64(value interface{}, targetType reflect.Type) (i
 }
 
 // toFloat32 转换为float32
-func (tc *TypeConverter) toFloat32(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toFloat32(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -337,7 +337,7 @@ func (tc *TypeConverter) toFloat32(value interface{}, targetType reflect.Type) (
 }
 
 // toFloat64 转换为float64
-func (tc *TypeConverter) toFloat64(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toFloat64(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -358,7 +358,7 @@ func (tc *TypeConverter) toFloat64(value interface{}, targetType reflect.Type) (
 }
 
 // toBool 转换为布尔值
-func (tc *TypeConverter) toBool(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toBool(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		switch strings.ToLower(v) {
@@ -383,7 +383,7 @@ func (tc *TypeConverter) toBool(value interface{}, targetType reflect.Type) (int
 }
 
 // toTime 转换为时间
-func (tc *TypeConverter) toTime(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toTime(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		if v == "" {
@@ -414,7 +414,7 @@ func (tc *TypeConverter) toTime(value interface{}, targetType reflect.Type) (int
 }
 
 // toBytes 转换为字节切片
-func (tc *TypeConverter) toBytes(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) toBytes(value any, targetType reflect.Type) (any, error) {
 	switch v := value.(type) {
 	case string:
 		return []byte(v), nil
@@ -426,9 +426,9 @@ func (tc *TypeConverter) toBytes(value interface{}, targetType reflect.Type) (in
 }
 
 // convertToSlice 转换为切片
-func (tc *TypeConverter) convertToSlice(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) convertToSlice(value any, targetType reflect.Type) (any, error) {
 	elemType := targetType.Elem()
-	
+
 	switch v := value.(type) {
 	case string:
 		// 字符串分割为切片
@@ -442,8 +442,8 @@ func (tc *TypeConverter) convertToSlice(value interface{}, targetType reflect.Ty
 			slice.Index(i).Set(reflect.ValueOf(convertedValue))
 		}
 		return slice.Interface(), nil
-	case []interface{}:
-		// interface{}切片转换
+	case []any:
+		// any切片转换
 		slice := reflect.MakeSlice(targetType, len(v), len(v))
 		for i, item := range v {
 			convertedValue, err := tc.Convert(item, elemType)
@@ -459,17 +459,17 @@ func (tc *TypeConverter) convertToSlice(value interface{}, targetType reflect.Ty
 }
 
 // convertToArray 转换为数组
-func (tc *TypeConverter) convertToArray(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) convertToArray(value any, targetType reflect.Type) (any, error) {
 	elemType := targetType.Elem()
 	arrayLen := targetType.Len()
-	
+
 	switch v := value.(type) {
 	case string:
 		parts := strings.Split(v, ",")
 		if len(parts) > arrayLen {
 			parts = parts[:arrayLen]
 		}
-		
+
 		array := reflect.New(targetType).Elem()
 		for i, part := range parts {
 			if i >= arrayLen {
@@ -488,24 +488,24 @@ func (tc *TypeConverter) convertToArray(value interface{}, targetType reflect.Ty
 }
 
 // convertToStruct 转换为结构体
-func (tc *TypeConverter) convertToStruct(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) convertToStruct(value any, targetType reflect.Type) (any, error) {
 	// 这里可以实现更复杂的结构体转换逻辑
 	// 暂时只处理简单的情况
 	if reflect.TypeOf(value) == targetType {
 		return value, nil
 	}
-	
+
 	return nil, fmt.Errorf("cannot convert %T to struct %s", value, targetType.Name())
 }
 
 // reflectConvert 反射转换
-func (tc *TypeConverter) reflectConvert(value interface{}, targetType reflect.Type) (interface{}, error) {
+func (tc *TypeConverter) reflectConvert(value any, targetType reflect.Type) (any, error) {
 	valueReflect := reflect.ValueOf(value)
-	
+
 	// 检查是否可以直接转换
 	if valueReflect.Type().ConvertibleTo(targetType) {
 		return valueReflect.Convert(targetType).Interface(), nil
 	}
-	
+
 	return nil, fmt.Errorf("cannot convert %T to %s", value, targetType.Name())
 }

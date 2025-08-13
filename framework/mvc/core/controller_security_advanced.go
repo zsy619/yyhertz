@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
 	"github.com/zsy619/yyhertz/framework/config"
 )
 
@@ -95,13 +96,13 @@ func (c *BaseController) GenerateCSRFToken() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", fmt.Errorf("failed to generate random bytes: %v", err)
 	}
-	
+
 	// Base64编码
 	token := base64.URLEncoding.EncodeToString(bytes)
-	
+
 	// 存储在Session中
 	c.SetSession("_csrf_token", token)
-	
+
 	return token, nil
 }
 
@@ -113,14 +114,14 @@ func (c *BaseController) GetCSRFToken() string {
 			return tokenStr
 		}
 	}
-	
+
 	// 如果没有，生成新的
 	token, err := c.GenerateCSRFToken()
 	if err != nil {
 		config.Errorf("Failed to generate CSRF token: %v", err)
 		return ""
 	}
-	
+
 	return token
 }
 
@@ -130,12 +131,12 @@ func (c *BaseController) ValidateCSRFToken(providedToken string) bool {
 	if sessionToken == nil {
 		return false
 	}
-	
+
 	sessionTokenStr, ok := sessionToken.(string)
 	if !ok || sessionTokenStr == "" {
 		return false
 	}
-	
+
 	// 使用constant time比较防止时序攻击
 	return subtle.ConstantTimeCompare([]byte(providedToken), []byte(sessionTokenStr)) == 1
 }
@@ -147,20 +148,20 @@ func (c *BaseController) RequireCSRFToken() bool {
 	if method == "GET" || method == "HEAD" || method == "OPTIONS" {
 		return true
 	}
-	
+
 	// 获取提供的令牌
 	token := c.getCSRFTokenFromRequest()
 	if token == "" {
 		c.CSRFError("CSRF token missing")
 		return false
 	}
-	
+
 	// 验证令牌
 	if !c.ValidateCSRFToken(token) {
 		c.CSRFError("Invalid CSRF token")
 		return false
 	}
-	
+
 	return true
 }
 
@@ -170,12 +171,12 @@ func (c *BaseController) getCSRFTokenFromRequest() string {
 	if token := c.GetHeader("X-CSRF-Token"); token != "" {
 		return token
 	}
-	
+
 	// 然后检查表单字段
 	if token := c.GetForm("_csrf_token"); token != "" {
 		return token
 	}
-	
+
 	return ""
 }
 
@@ -190,19 +191,19 @@ func (c *BaseController) CSRFError(message string) {
 // SanitizeHTML 清理HTML内容，防止XSS
 func (c *BaseController) SanitizeHTML(input string) string {
 	// 简单的HTML标签清理（实际项目中建议使用专业的HTML清理库）
-	
+
 	// 移除script标签
 	scriptRegex := regexp.MustCompile(`(?i)<script[^>]*>.*?</script>`)
 	input = scriptRegex.ReplaceAllString(input, "")
-	
+
 	// 移除危险的事件处理属性
 	eventRegex := regexp.MustCompile(`(?i)\s*on\w+\s*=\s*['""][^'"]*['"]`)
 	input = eventRegex.ReplaceAllString(input, "")
-	
+
 	// 移除javascript: 协议
 	jsRegex := regexp.MustCompile(`(?i)javascript\s*:`)
 	input = jsRegex.ReplaceAllString(input, "")
-	
+
 	return input
 }
 
@@ -235,11 +236,11 @@ func (c *BaseController) SanitizeFilename(filename string) string {
 	filename = strings.ReplaceAll(filename, "/", "")
 	filename = strings.ReplaceAll(filename, "\\", "")
 	filename = strings.ReplaceAll(filename, "..", "")
-	
+
 	// 移除控制字符
 	controlRegex := regexp.MustCompile(`[\x00-\x1f\x7f]`)
 	filename = controlRegex.ReplaceAllString(filename, "")
-	
+
 	return filename
 }
 
@@ -248,26 +249,26 @@ func (c *BaseController) SanitizeFilename(filename string) string {
 // CheckIPWhitelist 检查IP白名单
 func (c *BaseController) CheckIPWhitelist(whitelist []string) bool {
 	clientIP := c.GetClientIP()
-	
+
 	for _, allowedIP := range whitelist {
 		if c.isIPMatched(clientIP, allowedIP) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 // CheckIPBlacklist 检查IP黑名单
 func (c *BaseController) CheckIPBlacklist(blacklist []string) bool {
 	clientIP := c.GetClientIP()
-	
+
 	for _, blockedIP := range blacklist {
 		if c.isIPMatched(clientIP, blockedIP) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -282,7 +283,7 @@ func (c *BaseController) isIPMatched(clientIP, pattern string) bool {
 		ip := net.ParseIP(clientIP)
 		return ip != nil && ipNet.Contains(ip)
 	}
-	
+
 	// 直接IP比较
 	return clientIP == pattern
 }
@@ -291,10 +292,10 @@ func (c *BaseController) isIPMatched(clientIP, pattern string) bool {
 func (c *BaseController) RateLimitCheck(key string, limit int, window time.Duration) bool {
 	// 这里应该使用Redis或内存缓存实现真正的速率限制
 	// 示例实现：使用Session模拟
-	
+
 	now := time.Now()
 	sessionKey := fmt.Sprintf("rate_limit_%s", key)
-	
+
 	// 获取上次请求时间和计数
 	if lastData := c.GetSession(sessionKey); lastData != nil {
 		if lastDataStr, ok := lastData.(string); ok && lastDataStr != "" {
@@ -317,7 +318,7 @@ func (c *BaseController) RateLimitCheck(key string, limit int, window time.Durat
 			}
 		}
 	}
-	
+
 	// 新的时间窗口，重置计数
 	newData := fmt.Sprintf("%s|1", now.Format(time.RFC3339))
 	c.SetSession(sessionKey, newData)
@@ -328,10 +329,10 @@ func (c *BaseController) RateLimitCheck(key string, limit int, window time.Durat
 func (c *BaseController) RequireHTTPS() bool {
 	if !c.IsHTTPS() {
 		// 重定向到HTTPS
-		host := string(c.Ctx.Request.Host())
+		host := string(c.Ctx.Request().Host())
 		path := c.Ctx.Path()
 		httpsURL := "https://" + host + path
-		if query := c.Ctx.Request.URI().QueryString(); len(query) > 0 {
+		if query := c.Ctx.Request().URI().QueryString(); len(query) > 0 {
 			httpsURL += "?" + string(query)
 		}
 		c.Redirect(httpsURL, consts.StatusMovedPermanently)
@@ -345,22 +346,22 @@ func (c *BaseController) IsHTTPS() bool {
 	if c.Ctx == nil {
 		return false
 	}
-	
+
 	// 检查协议
-	if string(c.Ctx.Request.URI().Scheme()) == "https" {
+	if string(c.Ctx.Request().URI().Scheme()) == "https" {
 		return true
 	}
-	
+
 	// 检查X-Forwarded-Proto头（代理后面）
 	if proto := c.GetHeader("X-Forwarded-Proto"); strings.ToLower(proto) == "https" {
 		return true
 	}
-	
+
 	// 检查X-Forwarded-SSL头
 	if ssl := c.GetHeader("X-Forwarded-SSL"); strings.ToLower(ssl) == "on" {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -374,12 +375,12 @@ func (c *BaseController) HashPassword(password string, salt ...string) string {
 	} else {
 		saltStr = c.GenerateSalt()
 	}
-	
+
 	// 使用HMAC-SHA256
 	h := hmac.New(sha256.New, []byte(saltStr))
 	h.Write([]byte(password))
 	hash := hex.EncodeToString(h.Sum(nil))
-	
+
 	return saltStr + "$" + hash
 }
 
@@ -389,15 +390,15 @@ func (c *BaseController) VerifyPassword(password, hashedPassword string) bool {
 	if len(parts) != 2 {
 		return false
 	}
-	
+
 	salt := parts[0]
 	expectedHash := parts[1]
-	
+
 	// 计算提供密码的哈希
 	h := hmac.New(sha256.New, []byte(salt))
 	h.Write([]byte(password))
 	actualHash := hex.EncodeToString(h.Sum(nil))
-	
+
 	// 使用constant time比较
 	return subtle.ConstantTimeCompare([]byte(expectedHash), []byte(actualHash)) == 1
 }
@@ -417,13 +418,13 @@ func (c *BaseController) GenerateSecureToken(length int) string {
 	if length <= 0 {
 		length = 32
 	}
-	
+
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
 		// 降级实现
 		return c.generateFallbackToken(length)
 	}
-	
+
 	return base64.URLEncoding.EncodeToString(bytes)[:length]
 }
 
@@ -432,7 +433,7 @@ func (c *BaseController) generateFallbackToken(length int) string {
 	timestamp := time.Now().UnixNano()
 	hash := md5.Sum([]byte(fmt.Sprintf("%d", timestamp)))
 	token := hex.EncodeToString(hash[:])
-	
+
 	if len(token) > length {
 		return token[:length]
 	}
@@ -446,10 +447,10 @@ func (c *BaseController) RegenerateSessionID() {
 	// 这里应该调用session管理器的重新生成方法
 	// 示例：删除旧session，创建新的
 	oldSessionID := c.GetSessionID()
-	
+
 	// 生成新的session ID
 	newSessionID := c.GenerateSecureToken(32)
-	
+
 	// 更新session ID（具体实现依赖于session存储方式）
 	config.Infof("Session ID regenerated: %s -> %s", oldSessionID, newSessionID)
 }
@@ -458,13 +459,13 @@ func (c *BaseController) RegenerateSessionID() {
 func (c *BaseController) SetSecureSessionCookie(sessionID string) {
 	expiry := time.Now().Add(24 * time.Hour) // 24小时过期
 	maxAge := int(expiry.Sub(time.Now()).Seconds())
-	
+
 	// 设置安全的Cookie选项
 	secure := ""
 	if c.IsHTTPS() {
 		secure = "; Secure"
 	}
-	
+
 	cookieStr := fmt.Sprintf("session_id=%s; Max-Age=%d; Path=/; HttpOnly%s", sessionID, maxAge, secure)
 	c.SetHeader("Set-Cookie", cookieStr)
 }
@@ -477,24 +478,24 @@ func (c *BaseController) ValidateSessionTimeout(timeoutMinutes int) bool {
 		c.SetSession("last_active", time.Now().Format(time.RFC3339))
 		return true
 	}
-	
+
 	lastActiveStr, ok := lastActive.(string)
 	if !ok || lastActiveStr == "" {
 		// 首次访问，设置当前时间
 		c.SetSession("last_active", time.Now().Format(time.RFC3339))
 		return true
 	}
-	
+
 	lastActiveTime, err := time.Parse(time.RFC3339, lastActiveStr)
 	if err != nil {
 		return false
 	}
-	
+
 	// 检查是否超时
 	if time.Since(lastActiveTime) > time.Duration(timeoutMinutes)*time.Minute {
 		return false
 	}
-	
+
 	// 更新最后活动时间
 	c.SetSession("last_active", time.Now().Format(time.RFC3339))
 	return true
@@ -508,23 +509,23 @@ func (c *BaseController) ValidateFileUpload(fileKey string, allowedExts []string
 	if !c.HasFile(fileKey) {
 		return fmt.Errorf("no file uploaded")
 	}
-	
+
 	// 验证文件大小
 	if err := c.ValidateFileSize(fileKey, maxSize); err != nil {
 		return err
 	}
-	
+
 	// 验证文件扩展名
 	if err := c.ValidateFileExtension(fileKey, allowedExts); err != nil {
 		return err
 	}
-	
+
 	// 验证文件内容类型
 	filename := c.GetFileName(fileKey)
 	if c.isExecutableFile(filename) {
 		return fmt.Errorf("executable files are not allowed")
 	}
-	
+
 	return nil
 }
 
@@ -534,14 +535,14 @@ func (c *BaseController) isExecutableFile(filename string) bool {
 		".exe", ".bat", ".cmd", ".com", ".pif", ".scr", ".vbs", ".js",
 		".jar", ".sh", ".php", ".asp", ".aspx", ".jsp", ".py", ".rb",
 	}
-	
+
 	ext := strings.ToLower(filepath.Ext(filename))
 	for _, dangerous := range dangerousExts {
 		if ext == dangerous {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -559,7 +560,7 @@ func (c *BaseController) LogSecurityEvent(eventType, message string, details map
 		"method":      c.Ctx.Method(),
 		"details":     details,
 	}
-	
+
 	config.Infof("Security Event: %+v", logData)
 }
 

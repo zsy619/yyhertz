@@ -47,7 +47,7 @@ func NewReflectionMapper() *ReflectionMapper {
 }
 
 // Map 使用反射映射对象
-func (rm *ReflectionMapper) Map(src, dst any, config interface{}) error {
+func (rm *ReflectionMapper) Map(src, dst any, config any) error {
 	srcValue := reflect.ValueOf(src)
 	dstValue := reflect.ValueOf(dst)
 

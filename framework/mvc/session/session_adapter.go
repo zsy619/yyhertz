@@ -7,14 +7,14 @@ import (
 // Adapter session接口适配器
 // 桥接YYHertz session.Store到标准MVC框架Store接口，实现100%兼容性
 type Adapter struct {
-	store   Store       // YYHertz原生Store
-	context interface{} // 支持多种context类型
-	started bool        // session是否已启动
+	store   Store // YYHertz原生Store
+	context any   // 支持多种context类型
+	started bool  // session是否已启动
 }
 
 // NewAdapter 创建session适配器
 // 支持多种context类型，提供统一的session接口
-func NewAdapter(store Store, ctx interface{}) *Adapter {
+func NewAdapter(store Store, ctx any) *Adapter {
 	return &Adapter{
 		store:   store,
 		context: ctx,
@@ -27,7 +27,7 @@ func (a *Adapter) Set(key, value any) error {
 	if a.store == nil {
 		return nil // 静默处理，兼容没有启动session的情况
 	}
-	
+
 	// 转换key为string类型
 	var keyStr string
 	if k, ok := key.(string); ok {
@@ -35,7 +35,7 @@ func (a *Adapter) Set(key, value any) error {
 	} else {
 		keyStr = toString(key)
 	}
-	
+
 	a.store.Set(keyStr, value)
 	return nil
 }
@@ -45,7 +45,7 @@ func (a *Adapter) Get(key any) any {
 	if a.store == nil {
 		return nil
 	}
-	
+
 	// 转换key为string类型
 	var keyStr string
 	if k, ok := key.(string); ok {
@@ -53,7 +53,7 @@ func (a *Adapter) Get(key any) any {
 	} else {
 		keyStr = toString(key)
 	}
-	
+
 	return a.store.Get(keyStr)
 }
 
@@ -62,7 +62,7 @@ func (a *Adapter) Delete(key any) error {
 	if a.store == nil {
 		return nil // 静默处理
 	}
-	
+
 	// 转换key为string类型
 	var keyStr string
 	if k, ok := key.(string); ok {
@@ -70,7 +70,7 @@ func (a *Adapter) Delete(key any) error {
 	} else {
 		keyStr = toString(key)
 	}
-	
+
 	a.store.Delete(keyStr)
 	return nil
 }
@@ -88,17 +88,17 @@ func (a *Adapter) Release(w http.ResponseWriter) {
 	if a.store == nil {
 		return
 	}
-	
+
 	// 保存session数据
 	if err := a.store.Save(); err != nil {
 		// 在生产环境中，这里应该记录错误日志
 		// 但为了兼容性，我们不抛出错误
-		
+
 		// 记录session操作日志（可选）
-		if ctx, ok := a.context.(map[string]interface{}); ok && ctx != nil {
+		if ctx, ok := a.context.(map[string]any); ok && ctx != nil {
 			ctx["session_released"] = true
 		}
-		
+
 		// 可选：添加错误到context
 		// ctx.AddError(errors.New("session released"))
 	}
@@ -133,12 +133,12 @@ func (a *Adapter) IsStarted() bool {
 }
 
 // GetContext 获取关联的上下文
-func (a *Adapter) GetContext() interface{} {
+func (a *Adapter) GetContext() any {
 	return a.context
 }
 
 // SetContext 设置关联的上下文
-func (a *Adapter) SetContext(ctx interface{}) {
+func (a *Adapter) SetContext(ctx any) {
 	a.context = ctx
 }
 
@@ -147,14 +147,14 @@ func (a *Adapter) Exists(key any) bool {
 	if a.store == nil {
 		return false
 	}
-	
+
 	var keyStr string
 	if k, ok := key.(string); ok {
 		keyStr = k
 	} else {
 		keyStr = toString(key)
 	}
-	
+
 	return a.store.Exists(keyStr)
 }
 
@@ -211,7 +211,7 @@ func NewSessionManagerFromConfig() *SessionManager {
 }
 
 // CreateSession 创建新的session
-func (sm *SessionManager) CreateSession(ctx interface{}) *Adapter {
+func (sm *SessionManager) CreateSession(ctx any) *Adapter {
 	// 这里需要根据context类型进行适配
 	// 目前简化实现，创建内存session
 	sessionID := sm.manager.generateSessionID()
@@ -220,11 +220,11 @@ func (sm *SessionManager) CreateSession(ctx interface{}) *Adapter {
 }
 
 // GetSession 获取现有session
-func (sm *SessionManager) GetSession(ctx interface{}, sessionID string) *Adapter {
+func (sm *SessionManager) GetSession(ctx any, sessionID string) *Adapter {
 	if sessionID == "" {
 		return nil
 	}
-	
+
 	// 创建对应的store
 	store := NewMemoryStore(sessionID)
 	return NewAdapter(store, ctx)
@@ -262,7 +262,7 @@ func toString(value any) string {
 	if value == nil {
 		return ""
 	}
-	
+
 	switch v := value.(type) {
 	case string:
 		return v

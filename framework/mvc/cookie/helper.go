@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
 )
 
@@ -20,12 +21,12 @@ type Options struct {
 // DefaultOptions 默认Cookie配置
 func DefaultOptions() *Options {
 	return &Options{
-		MaxAge:   3600,    // 1小时
-		Path:     "/",     // 根路径
-		Domain:   "",      // 当前域名
-		Secure:   false,   // 开发环境通常不用HTTPS
-		HttpOnly: true,    // 防XSS攻击
-		SameSite: "Lax",   // 防CSRF攻击
+		MaxAge:   3600,  // 1小时
+		Path:     "/",   // 根路径
+		Domain:   "",    // 当前域名
+		Secure:   false, // 开发环境通常不用HTTPS
+		HttpOnly: true,  // 防XSS攻击
+		SameSite: "Lax", // 防CSRF攻击
 	}
 }
 
@@ -69,9 +70,9 @@ func LoadFromConfig() *Config {
 		SameSite:      sessionConfig.Cookie.SameSite,
 	}
 
-	config.Infof("Cookie config loaded from session.yaml: maxAge=%d, path=%s, secure=%t", 
+	config.Infof("Cookie config loaded from session.yaml: maxAge=%d, path=%s, secure=%t",
 		cookieConfig.DefaultMaxAge, cookieConfig.DefaultPath, cookieConfig.DefaultSecure)
-	
+
 	return cookieConfig
 }
 
@@ -110,7 +111,7 @@ func (h *Helper) Set(ctx *app.RequestContext, name, value string, options ...*Op
 
 	// 构建cookie字符串
 	cookie := fmt.Sprintf("%s=%s; Max-Age=%d; Path=%s", name, value, opts.MaxAge, opts.Path)
-	
+
 	if opts.Domain != "" {
 		cookie += "; Domain=" + opts.Domain
 	}
@@ -160,7 +161,7 @@ func (h *Helper) Delete(ctx *app.RequestContext, name string, path ...string) {
 	if len(path) > 0 {
 		cookiePath = path[0]
 	}
-	
+
 	opts := &Options{
 		MaxAge:   -1,
 		Path:     cookiePath,
@@ -174,8 +175,8 @@ func (h *Helper) SetSecure(ctx *app.RequestContext, name, value string, maxAge i
 	opts := &Options{
 		MaxAge:   maxAge,
 		Path:     "/",
-		Secure:   true,  // 仅HTTPS
-		HttpOnly: true,  // 防XSS
+		Secure:   true,     // 仅HTTPS
+		HttpOnly: true,     // 防XSS
 		SameSite: "Strict", // 严格的CSRF保护
 	}
 	h.Set(ctx, name, value, opts)
@@ -205,16 +206,16 @@ func (h *Helper) SetWithGlobalConfig(ctx *app.RequestContext, name, value string
 	}
 
 	cookie := fmt.Sprintf("%s=%s; Max-Age=%d; Path=%s; HttpOnly=%t; SameSite=%s",
-		name, value, age, h.config.DefaultPath, 
+		name, value, age, h.config.DefaultPath,
 		h.config.HttpOnly, h.config.SameSite)
-	
+
 	if h.config.DefaultDomain != "" {
 		cookie += "; Domain=" + h.config.DefaultDomain
 	}
 	if h.config.DefaultSecure {
 		cookie += "; Secure"
 	}
-	
+
 	ctx.Header("Set-Cookie", cookie)
 }
 
@@ -222,10 +223,10 @@ func (h *Helper) SetWithGlobalConfig(ctx *app.RequestContext, name, value string
 func (h *Helper) DeleteWithGlobalConfig(ctx *app.RequestContext, name string) {
 	cookie := fmt.Sprintf("%s=; Max-Age=-1; Path=%s",
 		name, h.config.DefaultPath)
-	
+
 	if h.config.DefaultDomain != "" {
 		cookie += "; Domain=" + h.config.DefaultDomain
 	}
-	
+
 	ctx.Header("Set-Cookie", cookie)
 }

@@ -23,9 +23,9 @@ func TestDirectRouter(t *testing.T) {
 
 	// 1. DirectGET - 用户列表
 	mvc.DirectGET("/direct/users", func(c *contextenhanced.Context) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "Direct GET API - 用户列表",
-			"users": []map[string]interface{}{
+			"users": []map[string]any{
 				{"id": 1, "name": "张三", "age": 25},
 				{"id": 2, "name": "李四", "age": 30},
 			},
@@ -38,9 +38,9 @@ func TestDirectRouter(t *testing.T) {
 		name := c.PostForm("name")
 		age := c.PostForm("age")
 
-		c.JSON(201, map[string]interface{}{
+		c.JSON(201, map[string]any{
 			"message": "Direct POST API - 用户创建成功",
-			"data": map[string]interface{}{
+			"data": map[string]any{
 				"id":   100,
 				"name": name,
 				"age":  age,
@@ -54,10 +54,10 @@ func TestDirectRouter(t *testing.T) {
 		name := c.PostForm("name")
 		age := c.PostForm("age")
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "Direct PUT API - 用户更新成功",
 			"user_id": userID,
-			"data": map[string]interface{}{
+			"data": map[string]any{
 				"name": name,
 				"age":  age,
 			},
@@ -68,7 +68,7 @@ func TestDirectRouter(t *testing.T) {
 	mvc.DirectDELETE("/direct/users/:id", func(c *contextenhanced.Context) {
 		userID := c.Param("id")
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message":         "Direct DELETE API - 用户删除成功",
 			"deleted_user_id": userID,
 		})
@@ -79,7 +79,7 @@ func TestDirectRouter(t *testing.T) {
 		userID := c.Param("id")
 		status := c.PostForm("status")
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message":    "Direct PATCH API - 用户状态更新",
 			"user_id":    userID,
 			"new_status": status,
@@ -104,12 +104,12 @@ func TestDirectRouter(t *testing.T) {
 		c.SetHeader("Access-Control-Allow-Origin", "*")
 		c.SetHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS")
 		c.SetHeader("Access-Control-Allow-Headers", "Content-Type,Authorization")
-		c.JSON(200, map[string]interface{}{"message": "CORS OK"})
+		c.JSON(200, map[string]any{"message": "CORS OK"})
 	})
 
 	// 8. DirectAny - 处理任意HTTP方法
 	mvc.DirectAny("/direct/webhook", func(c *contextenhanced.Context) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message": "Direct Any API - Webhook处理",
 			"status":  "received",
 		})
@@ -121,7 +121,7 @@ func TestDirectRouter(t *testing.T) {
 	authMiddleware := func(c *contextenhanced.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
-			c.JSON(401, map[string]interface{}{
+			c.JSON(401, map[string]any{
 				"error": "缺少Authorization头",
 			})
 			c.Abort()
@@ -138,7 +138,7 @@ func TestDirectRouter(t *testing.T) {
 		userID, _ := c.Get("user_id")
 		username, _ := c.Get("username")
 
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message":  "Direct API 中间件演示",
 			"user_id":  userID,
 			"username": username,
@@ -166,7 +166,7 @@ func TestDirectRouter(t *testing.T) {
 		content := c.PostForm("content")
 
 		// 响应数据
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"query_params": map[string]string{
 				"page": page,
 				"size": size,
@@ -189,22 +189,22 @@ func TestDirectRouter(t *testing.T) {
 
 		switch errorType {
 		case "400":
-			c.JSON(400, map[string]interface{}{
+			c.JSON(400, map[string]any{
 				"error":   "Bad Request",
 				"message": "请求参数有误",
 			})
 		case "404":
-			c.JSON(404, map[string]interface{}{
+			c.JSON(404, map[string]any{
 				"error":   "Not Found",
 				"message": "资源不存在",
 			})
 		case "500":
-			c.JSON(500, map[string]interface{}{
+			c.JSON(500, map[string]any{
 				"error":   "Internal Server Error",
 				"message": "服务器内部错误",
 			})
 		default:
-			c.JSON(200, map[string]interface{}{
+			c.JSON(200, map[string]any{
 				"message": "Direct API 正常响应",
 				"tip":     "使用 ?type=400/404/500 测试错误响应",
 			})
@@ -224,7 +224,7 @@ func TestDirectRouter(t *testing.T) {
 	mvc.SimpleGET("/compare/simple", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		if c != nil {
-			c.JSON(200, map[string]interface{}{
+			c.JSON(200, map[string]any{
 				"message":  "简化API - 需要FromContext()获取增强Context",
 				"api_type": "simple",
 			})
@@ -233,7 +233,7 @@ func TestDirectRouter(t *testing.T) {
 
 	// Direct API (最简洁)
 	mvc.DirectGET("/compare/direct", func(c *contextenhanced.Context) {
-		c.JSON(200, map[string]interface{}{
+		c.JSON(200, map[string]any{
 			"message":  "Direct API - 直接使用增强Context，最简洁",
 			"api_type": "direct",
 		})

@@ -386,9 +386,7 @@ func main() {
 	for i, req := range testRequests {
 		fmt.Printf("\n%d. %s\n", i+1, req.desc)
 
-		ctx := &context.Context{
-			Keys: make(map[string]interface{}),
-		}
+		ctx := &context.Context{}
 
 		start := time.Now()
 		err := manager.HandleRequest(ctx, req.controller, req.method)
@@ -432,9 +430,7 @@ func testConcurrentRequests(manager *controller.OptimizedControllerManager, requ
 			semaphore <- struct{}{}        // 获取信号量
 			defer func() { <-semaphore }() // 释放信号量
 
-			ctx := &context.Context{
-				Keys: make(map[string]interface{}),
-			}
+			ctx := &context.Context{}
 
 			err := manager.HandleRequest(ctx, "OptimizedUserController", "GetIndex")
 			results <- err

@@ -73,7 +73,7 @@ func NewCachedORM(orm *ORM, cacheManager *CacheManager, config *CachedORMConfig)
 }
 
 // buildCacheKey 构建缓存键
-func (c *CachedORM) buildCacheKey(model interface{}, id interface{}) string {
+func (c *CachedORM) buildCacheKey(model any, id any) string {
 	modelType := reflect.TypeOf(model)
 	modelName := modelType.String()
 	if modelType.Kind() == reflect.Ptr {
@@ -84,7 +84,7 @@ func (c *CachedORM) buildCacheKey(model interface{}, id interface{}) string {
 }
 
 // buildQueryCacheKey 构建查询缓存键
-func (c *CachedORM) buildQueryCacheKey(query string, args ...interface{}) string {
+func (c *CachedORM) buildQueryCacheKey(query string, args ...any) string {
 	argsStr := ""
 	for _, arg := range args {
 		argsStr += fmt.Sprintf(":%v", arg)
@@ -93,13 +93,13 @@ func (c *CachedORM) buildQueryCacheKey(query string, args ...interface{}) string
 }
 
 // First 查询第一条记录（带缓存）
-func (c *CachedORM) First(dest interface{}, conds ...interface{}) error {
+func (c *CachedORM) First(dest any, conds ...any) error {
 	if !c.cacheConfig.Enabled || !c.cacheConfig.CacheSingleRecords {
 		return c.ORM.DB().First(dest, conds...).Error
 	}
 
 	// 尝试从缓存获取
-	var id interface{}
+	var id any
 	if len(conds) > 0 {
 		id = conds[0]
 	} else {
@@ -146,14 +146,14 @@ func (c *CachedORM) First(dest interface{}, conds ...interface{}) error {
 }
 
 // Find 查询多条记录（带缓存）
-func (c *CachedORM) Find(dest interface{}, conds ...interface{}) error {
+func (c *CachedORM) Find(dest any, conds ...any) error {
 	if !c.cacheConfig.Enabled || !c.cacheConfig.CacheQueries {
 		return c.ORM.DB().Find(dest, conds...).Error
 	}
 
 	// 构建缓存键
 	query := ""
-	args := make([]interface{}, 0)
+	args := make([]any, 0)
 	if len(conds) > 0 {
 		query, _ = conds[0].(string)
 		if len(conds) > 1 {
@@ -186,7 +186,7 @@ func (c *CachedORM) Find(dest interface{}, conds ...interface{}) error {
 }
 
 // Create 创建记录（自动清除缓存）
-func (c *CachedORM) Create(value interface{}) error {
+func (c *CachedORM) Create(value any) error {
 	err := c.ORM.DB().Create(value).Error
 	if err == nil && c.cacheConfig.Enabled && c.cacheConfig.AutoInvalidate {
 		// 获取ID
@@ -209,7 +209,7 @@ func (c *CachedORM) Create(value interface{}) error {
 }
 
 // Save 保存记录（自动清除缓存）
-func (c *CachedORM) Save(value interface{}) error {
+func (c *CachedORM) Save(value any) error {
 	err := c.ORM.DB().Save(value).Error
 	if err == nil && c.cacheConfig.Enabled && c.cacheConfig.AutoInvalidate {
 		// 获取ID
@@ -232,9 +232,9 @@ func (c *CachedORM) Save(value interface{}) error {
 }
 
 // Delete 删除记录（自动清除缓存）
-func (c *CachedORM) Delete(value interface{}, conds ...interface{}) error {
+func (c *CachedORM) Delete(value any, conds ...any) error {
 	// 先获取ID
-	var id interface{}
+	var id any
 	if len(conds) > 0 {
 		id = conds[0]
 	}
@@ -258,7 +258,7 @@ func (c *CachedORM) ClearCache() error {
 }
 
 // ClearModelCache 清空模型缓存
-func (c *CachedORM) ClearModelCache(model interface{}) error {
+func (c *CachedORM) ClearModelCache(model any) error {
 	if !c.cacheConfig.Enabled {
 		return nil
 	}
@@ -299,27 +299,27 @@ func SetGlobalCachedORM(orm *CachedORM) {
 // ============= 便捷函数 =============
 
 // FirstWithCache 使用缓存查询第一条记录
-func FirstWithCache(dest interface{}, conds ...interface{}) error {
+func FirstWithCache(dest any, conds ...any) error {
 	return GetGlobalCachedORM().First(dest, conds...)
 }
 
 // FindWithCache 使用缓存查询多条记录
-func FindWithCache(dest interface{}, conds ...interface{}) error {
+func FindWithCache(dest any, conds ...any) error {
 	return GetGlobalCachedORM().Find(dest, conds...)
 }
 
 // CreateWithCache 使用缓存创建记录
-func CreateWithCache(value interface{}) error {
+func CreateWithCache(value any) error {
 	return GetGlobalCachedORM().Create(value)
 }
 
 // SaveWithCache 使用缓存保存记录
-func SaveWithCache(value interface{}) error {
+func SaveWithCache(value any) error {
 	return GetGlobalCachedORM().Save(value)
 }
 
 // DeleteWithCache 使用缓存删除记录
-func DeleteWithCache(value interface{}, conds ...interface{}) error {
+func DeleteWithCache(value any, conds ...any) error {
 	return GetGlobalCachedORM().Delete(value, conds...)
 }
 

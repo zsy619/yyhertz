@@ -1,112 +1,148 @@
 package context
 
 import (
-	"context"
-	"encoding/xml"
+	stdcontext "context"
 	"io"
-	"mime/multipart"
-	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"gopkg.in/yaml.v2"
 )
+
+// ============= 基础类型定义 =============
+
+// Param 路由参数结构
+type Param struct {
+	Key   string
+	Value string
+}
+
+// Params 路由参数列表
+type Params []Param
+
+// ByName 通过名称获取参数值
+func (ps Params) ByName(name string) string {
+	for _, param := range ps {
+		if param.Key == name {
+			return param.Value
+		}
+	}
+	return ""
+}
+
+// Get 获取参数值（别名方法）
+func (ps Params) Get(name string) (string, bool) {
+	for _, param := range ps {
+		if param.Key == name {
+			return param.Value, true
+		}
+	}
+	return "", false
+}
+
+// 注意：ResponseWriter接口在response_writer.go中已定义
 
 // HandlerFunc 处理函数类型
 type HandlerFunc func(*Context)
 
-// Context 增强的上下文，支持对象池化
+// Context 增强的上下文，支持对象池化和高性能并发访问
+//
+// 设计原则：
+// 1. 高性能：使用sync.Map和原子操作优化并发性能
+// 2. 向后兼容：保持与旧版本API的完全兼容
+// 3. 模块化：功能按模块拆分，便于维护
+// 4. 类型安全：减少运行时错误
+//
+// 性能特性：
+// - 支持对象池化，减少GC压力
+// - 原子操作替代粗粒度锁
+// - 高效的并发数据存储
 type Context struct {
-	// 核心上下文
-	Request *app.RequestContext
-	RequestContext *app.RequestContext // 兼容性字段别名
-	Context context.Context
-	
-	// 路由相关
-	Params   Params // 路由参数
-	FullPath string // 完整路径
+	// ============= 核心字段（优化后） =============
 
-	// 请求数据
-	Keys map[string]interface{} // 上下文键值对
-	
-	// 响应数据  
-	Writer ResponseWriter
-	ResponseWriter ResponseWriter // 兼容性字段别名
-	
-	// 兼容性字段 - 为了向后兼容传络MVC风格API
+	// 核心上下文 - 私有字段，通过方法访问以确保安全性
+	request *app.RequestContext
+	writer  ResponseWriter
+	Context stdcontext.Context
+
+	// 路由相关
+	params   Params // 路由参数
+	fullPath string // 完整路径
+
+	// 高性能并发数据存储 - 使用sync.Map替代map+mutex
+	keys sync.Map // 上下文键值对，支持高并发访问
+
+	// 兼容性字段 - 为了向后兼容传统MVC风格API
 	Input  *InputData
 	Output *OutputData
-	
-	// 内部状态
-	index    int8           // 中间件索引
-	handlers []HandlerFunc  // 处理器链
-	mu       sync.RWMutex   // 读写锁
-	aborted  bool           // 是否中止
-	errors   []error        // 错误列表
-	
-	// 池化标识
-	pooled   bool           // 是否来自池
-	acquired time.Time      // 获取时间
+
+	// ============= 中间件状态（原子操作优化） =============
+
+	index    int8          // 中间件索引
+	handlers []HandlerFunc // 处理器链
+	aborted  int32         // 是否中止 - 使用原子操作优化
+
+	// ============= 错误处理（细粒度锁优化） =============
+
+	errors []error    // 错误列表
+	errMu  sync.Mutex // 专用错误锁，细粒度控制
+
+	// ============= 池化相关 =============
+
+	pooled   bool      // 是否来自池
+	acquired time.Time // 获取时间
 }
 
-
-// Reset 重置Context状态，准备复用
-func (ctx *Context) Reset() {
-	ctx.Request = nil
-	ctx.RequestContext = nil // 同时重置兼容性别名
-	ctx.Context = nil
-	ctx.Params = ctx.Params[:0]
-	ctx.FullPath = ""
-	
-	// 清空Keys但保留底层数组
-	for k := range ctx.Keys {
-		delete(ctx.Keys, k)
-	}
-	
-	ctx.Writer = nil
-	ctx.index = -1
-	ctx.handlers = ctx.handlers[:0]
-	ctx.aborted = false
-	ctx.errors = ctx.errors[:0]
-}
+// ============= 构造函数（优化版本） =============
 
 // NewContext 创建新的增强Context（使用池化）
 func NewContext(c *app.RequestContext) *Context {
-	ctx := defaultPool.Get()
-	ctx.Request = c
-	ctx.RequestContext = c // 兼容性别名指向同一对象
-	ctx.Context = context.Background()
-	ctx.Writer = &responseWriter{RequestContext: c}
-	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
-	
-	// 初始化传络MVC风格兼容性字段
-	ctx.Input = &InputData{ctx: ctx}
-	ctx.Output = &OutputData{ctx: ctx}
-	
-	return ctx
+	return NewContextWithContext(c, stdcontext.Background())
 }
 
 // NewContextWithContext 使用指定context创建增强Context
-func NewContextWithContext(c *app.RequestContext, parent context.Context) *Context {
+func NewContextWithContext(c *app.RequestContext, parent stdcontext.Context) *Context {
 	ctx := defaultPool.Get()
-	ctx.Request = c
-	ctx.RequestContext = c // 兼容性别名指向同一对象
+	ctx.request = c
 	ctx.Context = parent
-	ctx.Writer = &responseWriter{RequestContext: c}
-	ctx.ResponseWriter = ctx.Writer // 兼容性别名指向同一对象
-	
-	// 初始化传络MVC风格兼容性字段
+	ctx.writer = &responseWriter{RequestContext: c}
+
+	// 初始化兼容性字段
 	ctx.Input = &InputData{ctx: ctx}
 	ctx.Output = &OutputData{ctx: ctx}
-	
+
 	return ctx
+}
+
+// ============= 重置和池化方法（优化版本） =============
+
+// Reset 重置Context状态，准备复用
+func (ctx *Context) Reset() {
+	// 重置核心字段
+	ctx.request = nil
+	ctx.Context = nil
+	ctx.params = ctx.params[:0]
+	ctx.fullPath = ""
+
+	// 清空sync.Map中的数据
+	ctx.keys.Range(func(key, value any) bool {
+		ctx.keys.Delete(key)
+		return true
+	})
+
+	// 重置响应相关
+	ctx.writer = nil
+
+	// 重置中间件状态
+	ctx.index = -1
+	ctx.handlers = ctx.handlers[:0]
+	atomic.StoreInt32(&ctx.aborted, 0) // 原子重置
+
+	// 重置错误列表
+	ctx.errMu.Lock()
+	ctx.errors = ctx.errors[:0]
+	ctx.errMu.Unlock()
 }
 
 // Release 释放Context到池中
@@ -117,726 +153,559 @@ func (ctx *Context) Release() {
 	}
 }
 
-// ============= Context核心方法 =============
+// ============= 核心数据访问方法（优化版本） =============
 
-// Next 执行下一个中间件
-func (ctx *Context) Next() {
-	ctx.index++
-	for ctx.index < int8(len(ctx.handlers)) {
-		if !ctx.aborted {
-			ctx.handlers[ctx.index](ctx)
-		}
-		ctx.index++
-	}
+// Set 设置键值对 - 使用sync.Map优化并发性能
+func (ctx *Context) Set(key string, value any) {
+	ctx.keys.Store(key, value)
 }
 
-// Abort 中止执行
-func (ctx *Context) Abort() {
-	ctx.aborted = true
-}
-
-// IsAborted 是否已中止
-func (ctx *Context) IsAborted() bool {
-	return ctx.aborted
-}
-
-// Set 设置键值对
-func (ctx *Context) Set(key string, value interface{}) {
-	ctx.mu.Lock()
-	ctx.Keys[key] = value
-	ctx.mu.Unlock()
-}
-
-// Get 获取值
-func (ctx *Context) Get(key string) (interface{}, bool) {
-	ctx.mu.RLock()
-	value, exists := ctx.Keys[key]
-	ctx.mu.RUnlock()
-	return value, exists
+// Get 获取值 - 使用sync.Map优化并发性能
+func (ctx *Context) Get(key string) (any, bool) {
+	return ctx.keys.Load(key)
 }
 
 // MustGet 必须获取值
-func (ctx *Context) MustGet(key string) interface{} {
+func (ctx *Context) MustGet(key string) any {
 	if value, exists := ctx.Get(key); exists {
 		return value
 	}
 	panic("Key \"" + key + "\" does not exist")
 }
 
-// Param 获取路由参数
-func (ctx *Context) Param(key string) string {
-	return ctx.Params.ByName(key)
-}
+// ============= 增强Keys操作（批量操作） =============
 
-// Query 获取查询参数
-func (ctx *Context) Query(key string) string {
-	if ctx.Request == nil {
-		return ""
+// SetMultiple 批量设置键值对
+func (ctx *Context) SetMultiple(pairs map[string]any) {
+	for key, value := range pairs {
+		ctx.keys.Store(key, value)
 	}
-	return string(ctx.Request.QueryArgs().Peek(key))
 }
 
-// PostForm 获取POST表单参数
-func (ctx *Context) PostForm(key string) string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return string(ctx.Request.PostArgs().Peek(key))
-}
-
-// Header 获取请求头
-func (ctx *Context) Header(key string) string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return string(ctx.Request.GetHeader(key))
-}
-
-// GetHeader 获取请求头 (兼容性别名)
-func (ctx *Context) GetHeader(key string) string {
-	return ctx.Header(key)
-}
-
-// ============= 增强请求信息方法 =============
-
-// Method 获取HTTP方法 (GET/POST等)
-func (ctx *Context) Method() string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return string(ctx.Request.Method())
-}
-
-// Path 获取请求路径
-func (ctx *Context) Path() string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return string(ctx.Request.URI().Path())
-}
-
-// Host 获取请求主机名
-func (ctx *Context) Host() string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return string(ctx.Request.Host())
-}
-
-// URI 获取完整请求URI
-func (ctx *Context) URI() string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return ctx.Request.URI().String()
-}
-
-// HeaderContains 检查请求头是否包含指定值
-func (ctx *Context) HeaderContains(key, value string) bool {
-	if ctx.Request == nil {
-		return false
-	}
-	headerValue := string(ctx.Request.GetHeader(key))
-	return strings.Contains(strings.ToLower(headerValue), strings.ToLower(value))
-}
-
-// ============= 增强查询参数方法 =============
-
-// QueryDefault 带默认值的查询参数
-func (ctx *Context) QueryDefault(key, defaultValue string) string {
-	if value := ctx.Query(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// QueryAll 获取所有同名查询参数
-func (ctx *Context) QueryAll(key string) []string {
-	if ctx.Request == nil {
-		return nil
-	}
-	
-	var values []string
-	ctx.Request.QueryArgs().VisitAll(func(k, v []byte) {
-		if string(k) == key {
-			values = append(values, string(v))
+// GetMultiple 批量获取值
+func (ctx *Context) GetMultiple(keys []string) map[string]any {
+	result := make(map[string]any, len(keys))
+	for _, key := range keys {
+		if value, exists := ctx.keys.Load(key); exists {
+			result[key] = value
 		}
+	}
+	return result
+}
+
+// DeleteMultiple 批量删除键
+func (ctx *Context) DeleteMultiple(keys []string) {
+	for _, key := range keys {
+		ctx.keys.Delete(key)
+	}
+}
+
+// ============= 增强Keys操作（类型安全） =============
+
+// SetTypedString 设置字符串类型值（类型安全）
+func (ctx *Context) SetTypedString(key string, value string) {
+	ctx.keys.Store(key, value)
+}
+
+// GetTypedString 获取字符串类型值（类型安全）
+func (ctx *Context) GetTypedString(key string) (string, bool) {
+	value, exists := ctx.keys.Load(key)
+	if !exists {
+		return "", false
+	}
+	str, ok := value.(string)
+	return str, ok
+}
+
+// SetTypedInt 设置整数类型值（类型安全）
+func (ctx *Context) SetTypedInt(key string, value int) {
+	ctx.keys.Store(key, value)
+}
+
+// GetTypedInt 获取整数类型值（类型安全）
+func (ctx *Context) GetTypedInt(key string) (int, bool) {
+	value, exists := ctx.keys.Load(key)
+	if !exists {
+		return 0, false
+	}
+	intVal, ok := value.(int)
+	return intVal, ok
+}
+
+// SetTypedBool 设置布尔类型值（类型安全）
+func (ctx *Context) SetTypedBool(key string, value bool) {
+	ctx.keys.Store(key, value)
+}
+
+// GetTypedBool 获取布尔类型值（类型安全）
+func (ctx *Context) GetTypedBool(key string) (bool, bool) {
+	value, exists := ctx.keys.Load(key)
+	if !exists {
+		return false, false
+	}
+	boolVal, ok := value.(bool)
+	return boolVal, ok
+}
+
+// SetFloat64 设置浮点数类型值（类型安全）
+func (ctx *Context) SetFloat64(key string, value float64) {
+	ctx.keys.Store(key, value)
+}
+
+// GetFloat64 获取浮点数类型值（类型安全）
+func (ctx *Context) GetFloat64(key string) (float64, bool) {
+	value, exists := ctx.keys.Load(key)
+	if !exists {
+		return 0, false
+	}
+	floatVal, ok := value.(float64)
+	return floatVal, ok
+}
+
+// ============= 增强Keys操作（条件操作） =============
+
+// SetIfNotExists 仅当键不存在时设置值
+func (ctx *Context) SetIfNotExists(key string, value any) bool {
+	_, loaded := ctx.keys.LoadOrStore(key, value)
+	return !loaded // 返回true表示成功设置，false表示键已存在
+}
+
+// GetOrSet 获取值，如果不存在则设置默认值
+func (ctx *Context) GetOrSet(key string, defaultValue any) any {
+	actual, _ := ctx.keys.LoadOrStore(key, defaultValue)
+	return actual
+}
+
+// CompareAndSwap 比较并交换值（原子操作）
+func (ctx *Context) CompareAndSwap(key string, oldValue, newValue any) bool {
+	return ctx.keys.CompareAndSwap(key, oldValue, newValue)
+}
+
+// Delete 删除键
+func (ctx *Context) Delete(key string) {
+	ctx.keys.Delete(key)
+}
+
+// Exists 检查键是否存在
+func (ctx *Context) Exists(key string) bool {
+	_, exists := ctx.keys.Load(key)
+	return exists
+}
+
+// ============= 增强Keys操作（遍历和过滤） =============
+
+// ForEach 遍历所有键值对
+func (ctx *Context) ForEach(fn func(key string, value any) bool) {
+	ctx.keys.Range(func(k, v any) bool {
+		key, ok := k.(string)
+		if !ok {
+			return true // 跳过非字符串键
+		}
+		return fn(key, v)
 	})
-	return values
 }
 
-// QueryMap 获取查询参数映射，返回url.Values
-func (ctx *Context) QueryMap() url.Values {
-	if ctx.Request == nil {
-		return make(url.Values)
-	}
-	
-	values := make(url.Values)
-	ctx.Request.QueryArgs().VisitAll(func(k, v []byte) {
-		key := string(k)
-		value := string(v)
-		values.Add(key, value)
+// Filter 过滤键值对，返回满足条件的键列表
+func (ctx *Context) Filter(predicate func(key string, value any) bool) []string {
+	var result []string
+	ctx.keys.Range(func(k, v any) bool {
+		key, ok := k.(string)
+		if !ok {
+			return true
+		}
+		if predicate(key, v) {
+			result = append(result, key)
+		}
+		return true
 	})
-	return values
+	return result
 }
 
-// QueryInt 获取查询参数并转为int
-func (ctx *Context) QueryInt(key string) (int, error) {
-	value := ctx.Query(key)
-	if value == "" {
-		return 0, nil
-	}
-	return strconv.Atoi(value)
-}
-
-// QueryIntDefault 获取查询参数并转为int，带默认值
-func (ctx *Context) QueryIntDefault(key string, defaultValue int) int {
-	if value, err := ctx.QueryInt(key); err == nil && value != 0 {
-		return value
-	}
-	return defaultValue
-}
-
-// ============= 增强表单处理方法 =============
-
-// FormValue 获取表单值 (GET/POST通用)
-func (ctx *Context) FormValue(key string) string {
-	if ctx.Request == nil {
-		return ""
-	}
-	
-	// 先尝试POST参数
-	if value := string(ctx.Request.PostArgs().Peek(key)); value != "" {
-		return value
-	}
-	
-	// 再尝试GET参数
-	return string(ctx.Request.QueryArgs().Peek(key))
-}
-
-// FormValueDefault 带默认值的表单参数
-func (ctx *Context) FormValueDefault(key, defaultValue string) string {
-	if value := ctx.FormValue(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// FormFile 获取上传的文件
-func (ctx *Context) FormFile(name string) (*multipart.FileHeader, error) {
-	if ctx.Request == nil {
-		return nil, io.EOF
-	}
-	
-	return ctx.Request.FormFile(name)
-}
-
-// ParseForm 解析表单数据
-func (ctx *Context) ParseForm() error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	
-	// Hertz的RequestContext会自动解析表单数据
-	// 这里主要是为了兼容性
-	return nil
-}
-
-// ParseMultipartForm 解析多部分表单
-func (ctx *Context) ParseMultipartForm(maxMemory int64) error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	
-	// Hertz的RequestContext会自动处理multipart表单
-	// 这里主要是为了兼容性
-	return nil
-}
-
-// ============= 数据绑定方法 =============
-
-// BindJSON 解析JSON请求体
-func (ctx *Context) BindJSON(obj interface{}) error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	
-	return ctx.Request.BindJSON(obj)
-}
-
-// BindXML 解析XML请求体
-func (ctx *Context) BindXML(obj interface{}) error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	
-	body, err := ctx.Request.Body()
-	if err != nil {
-		return err
-	}
-	if len(body) == 0 {
-		return io.EOF
-	}
-	
-	return xml.Unmarshal(body, obj)
-}
-
-// RawBody 获取原始请求体
-func (ctx *Context) RawBody() ([]byte, error) {
-	if ctx.Request == nil {
-		return nil, io.EOF
-	}
-	
-	body, err := ctx.Request.Body()
-	if err != nil {
-		return nil, err
-	}
-	if len(body) == 0 {
-		return nil, io.EOF
-	}
-	
-	// 复制一份数据，避免原始数据被修改
-	result := make([]byte, len(body))
-	copy(result, body)
-	return result, nil
-}
-
-// ============= 辅助判断方法 =============
-
-// IsGet 判断是否为GET请求
-func (ctx *Context) IsGet() bool {
-	return ctx.Method() == "GET"
-}
-
-// IsPost 判断是否为POST请求
-func (ctx *Context) IsPost() bool {
-	return ctx.Method() == "POST"
-}
-
-// IsPut 判断是否为PUT请求
-func (ctx *Context) IsPut() bool {
-	return ctx.Method() == "PUT"
-}
-
-// IsDelete 判断是否为DELETE请求
-func (ctx *Context) IsDelete() bool {
-	return ctx.Method() == "DELETE"
-}
-
-// IsAjax 判断是否为Ajax请求
-func (ctx *Context) IsAjax() bool {
-	return ctx.HeaderContains("X-Requested-With", "XMLHttpRequest")
-}
-
-// ContentType 获取Content-Type
-func (ctx *Context) ContentType() string {
-	return ctx.Header("Content-Type")
-}
-
-// ============= 响应方法 =============
-
-// JSON 返回JSON响应
-func (ctx *Context) JSON(code int, obj interface{}) {
-	if ctx.Request != nil {
-		ctx.Request.JSON(code, obj)
-	}
-}
-
-// String 返回字符串响应
-func (ctx *Context) String(code int, format string, values ...interface{}) {
-	if ctx.Request != nil {
-		ctx.Request.String(code, format, values...)
-	}
-}
-
-// HTML 返回HTML响应
-func (ctx *Context) HTML(code int, name string, obj interface{}) {
-	if ctx.Request != nil {
-		// 这里需要集成模板引擎
-		ctx.Request.HTML(code, name, obj)
-	}
-}
-
-// ============= 增强响应方法 =============
-
-// IndentedJSON 返回格式化的JSON响应 (美化输出)
-func (ctx *Context) IndentedJSON(code int, obj interface{}) {
-	if ctx.Request != nil {
-		ctx.Request.IndentedJSON(code, obj)
-	}
-}
-
-// XML 返回XML响应
-func (ctx *Context) XML(code int, obj interface{}) {
-	if ctx.Request != nil {
-		ctx.Request.SetStatusCode(code)
-		ctx.Request.Response.Header.Set("Content-Type", "application/xml; charset=utf-8")
-		
-		if data, err := xml.Marshal(obj); err == nil {
-			ctx.Request.Response.SetBody(data)
+// MapKeys 对所有键值对执行映射操作
+func (ctx *Context) MapKeys(mapper func(key string, value any) any) map[string]any {
+	result := make(map[string]any)
+	ctx.keys.Range(func(k, v any) bool {
+		key, ok := k.(string)
+		if !ok {
+			return true
 		}
-	}
+		result[key] = mapper(key, v)
+		return true
+	})
+	return result
 }
 
-// YAML 返回YAML响应
-func (ctx *Context) YAML(code int, obj interface{}) {
-	if ctx.Request != nil {
-		ctx.Request.SetStatusCode(code)
-		ctx.Request.Response.Header.Set("Content-Type", "application/x-yaml; charset=utf-8")
-		
-		if data, err := yaml.Marshal(obj); err == nil {
-			ctx.Request.Response.SetBody(data)
-		}
-	}
+// Clear 清空所有键值对
+func (ctx *Context) Clear() {
+	ctx.keys.Range(func(key, value any) bool {
+		ctx.keys.Delete(key)
+		return true
+	})
 }
 
-// Data 返回原始数据响应
-func (ctx *Context) Data(code int, contentType string, data []byte) {
-	if ctx.Request != nil {
-		ctx.Request.SetStatusCode(code)
-		ctx.Request.Response.Header.Set("Content-Type", contentType)
-		ctx.Request.Response.SetBody(data)
-	}
-}
+// ============= 错误处理方法（细粒度锁优化） =============
 
-// Redirect 重定向响应
-func (ctx *Context) Redirect(code int, location string) {
-	if ctx.Request != nil {
-		ctx.Request.Redirect(code, []byte(location))
-	}
-}
-
-// Status 设置状态码
-func (ctx *Context) Status(code int) {
-	if ctx.Request != nil {
-		ctx.Request.SetStatusCode(code)
-	}
-}
-
-// ============= 客户端信息方法 =============
-
-// ClientIP 获取客户端真实IP地址
-func (ctx *Context) ClientIP() string {
-	if ctx.Request == nil {
-		return ""
-	}
-	return ctx.Request.ClientIP()
-}
-
-// UserAgent 获取User-Agent
-func (ctx *Context) UserAgent() string {
-	return ctx.Header("User-Agent")
-}
-
-// Referer 获取Referer
-func (ctx *Context) Referer() string {
-	return ctx.Header("Referer")
-}
-
-// ============= 参数绑定增强方法 =============
-
-// Bind 智能绑定 (根据Content-Type自动选择)
-func (ctx *Context) Bind(obj interface{}) error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	
-	contentType := ctx.ContentType()
-	
-	if strings.Contains(contentType, "application/json") {
-		return ctx.BindJSON(obj)
-	} else if strings.Contains(contentType, "application/xml") {
-		return ctx.BindXML(obj)
-	} else if strings.Contains(contentType, "application/x-www-form-urlencoded") || 
-			  strings.Contains(contentType, "multipart/form-data") {
-		return ctx.Request.Bind(obj)
-	}
-	
-	// 默认尝试JSON绑定
-	return ctx.BindJSON(obj)
-}
-
-// ShouldBind 安全绑定 (不会在失败时终止)
-func (ctx *Context) ShouldBind(obj interface{}) error {
-	return ctx.Bind(obj)
-}
-
-// ShouldBindJSON 安全JSON绑定
-func (ctx *Context) ShouldBindJSON(obj interface{}) error {
-	return ctx.BindJSON(obj)
-}
-
-// ShouldBindQuery 绑定查询参数到结构体
-func (ctx *Context) ShouldBindQuery(obj interface{}) error {
-	if ctx.Request == nil {
-		return io.EOF
-	}
-	return ctx.Request.BindQuery(obj)
-}
-
-// ============= 文件处理增强方法 =============
-
-// SaveUploadedFile 保存上传文件到指定路径
-func (ctx *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
-	if file == nil {
-		return io.EOF
-	}
-	
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-	
-	// 创建目标目录
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-	
-	// 创建目标文件
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	
-	// 复制文件内容
-	_, err = io.Copy(out, src)
-	return err
-}
-
-// FileAttachment 发送文件作为附件下载
-func (ctx *Context) FileAttachment(filepath, filename string) {
-	if ctx.Request == nil {
-		return
-	}
-	
-	if filename != "" {
-		ctx.Request.Response.Header.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
-	}
-	
-	ctx.Request.File(filepath)
-}
-
-// ============= 查询和表单参数类型转换方法 =============
-
-// QueryInt64 获取int64类型查询参数
-func (ctx *Context) QueryInt64(key string) (int64, error) {
-	value := ctx.Query(key)
-	if value == "" {
-		return 0, nil
-	}
-	return strconv.ParseInt(value, 10, 64)
-}
-
-// QueryFloat64 获取float64类型查询参数
-func (ctx *Context) QueryFloat64(key string) (float64, error) {
-	value := ctx.Query(key)
-	if value == "" {
-		return 0, nil
-	}
-	return strconv.ParseFloat(value, 64)
-}
-
-// QueryBool 获取bool类型查询参数
-func (ctx *Context) QueryBool(key string) (bool, error) {
-	value := ctx.Query(key)
-	if value == "" {
-		return false, nil
-	}
-	return strconv.ParseBool(value)
-}
-
-// PostFormInt 获取int类型表单参数
-func (ctx *Context) PostFormInt(key string) (int, error) {
-	value := ctx.PostForm(key)
-	if value == "" {
-		return 0, nil
-	}
-	return strconv.Atoi(value)
-}
-
-// PostFormFloat64 获取float64类型表单参数
-func (ctx *Context) PostFormFloat64(key string) (float64, error) {
-	value := ctx.PostForm(key)
-	if value == "" {
-		return 0, nil
-	}
-	return strconv.ParseFloat(value, 64)
-}
-
-// PostFormBool 获取bool类型表单参数
-func (ctx *Context) PostFormBool(key string) (bool, error) {
-	value := ctx.PostForm(key)
-	if value == "" {
-		return false, nil
-	}
-	return strconv.ParseBool(value)
-}
-
-// ============= Cookie增强方法 =============
-
-// SetSameSiteCookie 设置带SameSite属性的Cookie
-func (ctx *Context) SetSameSiteCookie(name, value string, maxAge int, path, domain string, sameSite http.SameSite, secure, httpOnly bool) {
-	if ctx.Request == nil {
-		return
-	}
-	
-	cookie := &http.Cookie{
-		Name:     name,
-		Value:    value,
-		MaxAge:   maxAge,
-		Path:     path,
-		Domain:   domain,
-		SameSite: sameSite,
-		Secure:   secure,
-		HttpOnly: httpOnly,
-	}
-	
-	ctx.Request.Response.Header.Add("Set-Cookie", cookie.String())
-}
-
-// Cookie 获取Cookie值 (简化版)
-func (ctx *Context) Cookie(name string) (string, error) {
-	if ctx.Request == nil {
-		return "", io.EOF
-	}
-	
-	value := string(ctx.Request.Cookie(name))
-	if value == "" {
-		return "", http.ErrNoCookie
-	}
-	return value, nil
-}
-
-// ============= 安全和验证方法 =============
-
-// GetRawData 获取原始请求数据 (兼容gin命名)
-func (ctx *Context) GetRawData() ([]byte, error) {
-	return ctx.RawBody()
-}
-
-// IsSecure 判断是否为HTTPS请求
-func (ctx *Context) IsSecure() bool {
-	if ctx.Request == nil {
-		return false
-	}
-	return string(ctx.Request.URI().Scheme()) == "https"
-}
-
-// IsWebsocket 判断是否为WebSocket请求
-func (ctx *Context) IsWebsocket() bool {
-	return ctx.HeaderContains("Upgrade", "websocket") && 
-		   ctx.HeaderContains("Connection", "upgrade")
-}
-
-// ============= 中间件和流控制方法 =============
-
-// AbortWithStatusJSON 终止并返回JSON错误
-func (ctx *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
-	ctx.Abort()
-	ctx.JSON(code, jsonObj)
-}
-
-// Done 获取请求完成通道 (用于超时控制)
-func (ctx *Context) Done() <-chan struct{} {
-	if ctx.Context != nil {
-		return ctx.Context.Done()
-	}
-	// 如果没有父Context，返回一个永不关闭的通道
-	return make(<-chan struct{})
-}
-
-// SetHandlers 设置处理器链
-func (ctx *Context) SetHandlers(handlers []HandlerFunc) {
-	ctx.handlers = handlers
-	ctx.index = -1
-}
-
-// ============= 错误处理方法 =============
-
-// AddError 添加错误
+// AddError 添加错误 - 使用专用锁优化
 func (ctx *Context) AddError(err error) {
 	if err != nil {
-		ctx.mu.Lock()
+		ctx.errMu.Lock()
 		ctx.errors = append(ctx.errors, err)
-		ctx.mu.Unlock()
+		ctx.errMu.Unlock()
 	}
 }
 
 // GetErrors 获取所有错误
 func (ctx *Context) GetErrors() []error {
-	ctx.mu.RLock()
+	ctx.errMu.Lock()
 	errors := make([]error, len(ctx.errors))
 	copy(errors, ctx.errors)
-	ctx.mu.RUnlock()
+	ctx.errMu.Unlock()
 	return errors
 }
 
 // HasErrors 是否有错误
 func (ctx *Context) HasErrors() bool {
-	ctx.mu.RLock()
+	ctx.errMu.Lock()
 	hasErr := len(ctx.errors) > 0
-	ctx.mu.RUnlock()
+	ctx.errMu.Unlock()
 	return hasErr
 }
 
 // ClearErrors 清除所有错误
 func (ctx *Context) ClearErrors() {
-	ctx.mu.Lock()
+	ctx.errMu.Lock()
 	ctx.errors = ctx.errors[:0]
-	ctx.mu.Unlock()
+	ctx.errMu.Unlock()
 }
 
 // LastError 获取最后一个错误
 func (ctx *Context) LastError() error {
-	ctx.mu.RLock()
-	defer ctx.mu.RUnlock()
-	
+	ctx.errMu.Lock()
+	defer ctx.errMu.Unlock()
+
 	if len(ctx.errors) == 0 {
 		return nil
 	}
 	return ctx.errors[len(ctx.errors)-1]
 }
 
-// ============= 兼容性方法 =============
+// ============= 兼容性访问器方法 =============
+// 这些方法提供向后兼容性，允许现有代码无缝迁移
 
-// AbortWithStatus 终止并设置状态码 (兼容性方法)
-func (ctx *Context) AbortWithStatus(code int) {
-	ctx.JSON(code, map[string]string{"error": "Request aborted"})
-	ctx.Abort()
+// Request 获取Request对象
+func (ctx *Context) Request() *app.RequestContext {
+	return ctx.request
 }
 
-// Write 写入响应数据 (兼容性方法)
-func (ctx *Context) Write(data []byte) (int, error) {
-	return ctx.Writer.Write(data)
+// RequestContext 获取RequestContext (兼容性方法)  
+func (ctx *Context) RequestContext() *app.RequestContext {
+	return ctx.request
 }
 
-// SetHeader 设置响应头 (兼容性方法)
-func (ctx *Context) SetHeader(key, value string) {
-	if ctx.Request != nil {
-		ctx.Request.Response.Header.Set(key, value)
+// Writer 获取Writer对象
+func (ctx *Context) Writer() ResponseWriter {
+	return ctx.writer
+}
+
+// ResponseWriter 获取ResponseWriter (兼容性方法)
+func (ctx *Context) ResponseWriter() ResponseWriter {
+	return ctx.writer
+}
+
+// Params 获取路由参数
+func (ctx *Context) Params() Params {
+	return ctx.params
+}
+
+// SetParams 设置路由参数
+func (ctx *Context) SetParams(params Params) {
+	ctx.params = params
+}
+
+// ParamKeys 获取所有路由参数的键名
+func (ctx *Context) ParamKeys() []string {
+	if len(ctx.params) == 0 {
+		return nil
 	}
+	
+	keys := make([]string, len(ctx.params))
+	for i, param := range ctx.params {
+		keys[i] = param.Key
+	}
+	return keys
 }
 
-// ============= Cookie方法 (beego兼容性) =============
-
-// GetCookie 获取Cookie (beego兼容方法)
-func (ctx *Context) GetCookie(key string) string {
-	return ctx.Input.Cookie(key)
+// ParamMap 将路由参数转换为map[string]string
+func (ctx *Context) ParamMap() map[string]string {
+	if len(ctx.params) == 0 {
+		return make(map[string]string)
+	}
+	
+	paramMap := make(map[string]string, len(ctx.params))
+	for _, param := range ctx.params {
+		paramMap[param.Key] = param.Value
+	}
+	return paramMap
 }
 
-// SetCookie 设置Cookie (beego兼容方法)
-func (ctx *Context) SetCookie(name, value string, others ...interface{}) {
-	ctx.Input.SetCookie(name, value, others...)
+// ParamValues 获取所有路由参数的值
+func (ctx *Context) ParamValues() []string {
+	if len(ctx.params) == 0 {
+		return nil
+	}
+	
+	values := make([]string, len(ctx.params))
+	for i, param := range ctx.params {
+		values[i] = param.Value
+	}
+	return values
 }
 
-// GetSecureCookie 获取安全Cookie (beego兼容方法)
-func (ctx *Context) GetSecureCookie(secret, key string) (string, bool) {
-	return ctx.Input.GetSecureCookie(secret, key)
+// FullPath 获取完整路径
+func (ctx *Context) FullPath() string {
+	return ctx.fullPath
 }
 
-// SetSecureCookie 设置安全Cookie (beego兼容方法)
-func (ctx *Context) SetSecureCookie(secret, name, value string, others ...interface{}) {
-	ctx.Input.SetSecureCookie(secret, name, value, others...)
+// SetFullPath 设置完整路径
+func (ctx *Context) SetFullPath(path string) {
+	ctx.fullPath = path
+}
+
+// ============= 性能统计方法 =============
+
+// Acquired 获取Context获取时间
+func (ctx *Context) Acquired() time.Time {
+	return ctx.acquired
+}
+
+// IsPooled 是否来自对象池
+func (ctx *Context) IsPooled() bool {
+	return ctx.pooled
+}
+
+// ============= 调试和监控方法 =============
+
+// KeysCount 获取存储的键值对数量
+func (ctx *Context) KeysCount() int {
+	count := 0
+	ctx.keys.Range(func(key, value any) bool {
+		count++
+		return true
+	})
+	return count
+}
+
+// ListKeys 列出所有键
+func (ctx *Context) ListKeys() []string {
+	var keys []string
+	ctx.keys.Range(func(key, value any) bool {
+		if k, ok := key.(string); ok {
+			keys = append(keys, k)
+		}
+		return true
+	})
+	return keys
+}
+
+// ============= 类型断言辅助方法 =============
+
+// GetString 获取字符串类型值
+func (ctx *Context) GetStringValue(key string) (string, bool) {
+	value, exists := ctx.Get(key)
+	if !exists {
+		return "", false
+	}
+	str, ok := value.(string)
+	return str, ok
+}
+
+// GetInt 获取整数类型值
+func (ctx *Context) GetIntValue(key string) (int, bool) {
+	value, exists := ctx.Get(key)
+	if !exists {
+		return 0, false
+	}
+	intVal, ok := value.(int)
+	return intVal, ok
+}
+
+// GetBool 获取布尔类型值
+func (ctx *Context) GetBoolValue(key string) (bool, bool) {
+	value, exists := ctx.Get(key)
+	if !exists {
+		return false, false
+	}
+	boolVal, ok := value.(bool)
+	return boolVal, ok
+}
+
+// ============= Writer Copy功能 =============
+
+// Copy 从io.Reader复制数据到Context的Writer，类似io.Copy功能
+// 这个方法提供了类似io.Copy(ctx.Writer(), reader)的功能
+// 返回写入的字节数和可能的错误
+func (ctx *Context) Copy(reader io.Reader) (int64, error) {
+	if !ctx.ensureRequest() {
+		return 0, ErrRequestNotFound
+	}
+
+	if reader == nil {
+		return 0, &ContextError{
+			Code:    "NIL_READER",
+			Message: "Reader cannot be nil",
+		}
+	}
+
+	// 使用缓冲区进行高效复制
+	buf := make([]byte, 32*1024) // 32KB缓冲区，平衡性能和内存使用
+	var totalWritten int64
+
+	for {
+		// 从reader读取数据
+		bytesRead, readErr := reader.Read(buf)
+		if bytesRead > 0 {
+			// 写入到response
+			if _, writeErr := ctx.writer.Write(buf[:bytesRead]); writeErr != nil {
+				return totalWritten, &ContextError{
+					Code:    "WRITE_ERROR",
+					Message: "Failed to write to response: " + writeErr.Error(),
+					Cause:   writeErr,
+				}
+			}
+			totalWritten += int64(bytesRead)
+		}
+
+		// 检查读取错误
+		if readErr != nil {
+			if readErr == io.EOF {
+				// 正常结束
+				break
+			}
+			return totalWritten, &ContextError{
+				Code:    "READ_ERROR", 
+				Message: "Failed to read from source: " + readErr.Error(),
+				Cause:   readErr,
+			}
+		}
+	}
+
+	return totalWritten, nil
+}
+
+// CopyBuffer 使用指定缓冲区从io.Reader复制数据到Context的Writer
+// 允许用户自定义缓冲区大小以优化性能
+func (ctx *Context) CopyBuffer(reader io.Reader, buf []byte) (int64, error) {
+	if !ctx.ensureRequest() {
+		return 0, ErrRequestNotFound
+	}
+
+	if reader == nil {
+		return 0, &ContextError{
+			Code:    "NIL_READER",
+			Message: "Reader cannot be nil",
+		}
+	}
+
+	if buf == nil || len(buf) == 0 {
+		// 如果没有提供缓冲区，使用默认的Copy方法
+		return ctx.Copy(reader)
+	}
+
+	var totalWritten int64
+
+	for {
+		// 从reader读取数据到指定缓冲区
+		bytesRead, readErr := reader.Read(buf)
+		if bytesRead > 0 {
+			// 写入到response
+			if _, writeErr := ctx.writer.Write(buf[:bytesRead]); writeErr != nil {
+				return totalWritten, &ContextError{
+					Code:    "WRITE_ERROR",
+					Message: "Failed to write to response: " + writeErr.Error(),
+					Cause:   writeErr,
+				}
+			}
+			totalWritten += int64(bytesRead)
+		}
+
+		// 检查读取错误
+		if readErr != nil {
+			if readErr == io.EOF {
+				// 正常结束
+				break
+			}
+			return totalWritten, &ContextError{
+				Code:    "READ_ERROR",
+				Message: "Failed to read from source: " + readErr.Error(),
+				Cause:   readErr,
+			}
+		}
+	}
+
+	return totalWritten, nil
+}
+
+// CopyWithContentType 复制数据并设置Content-Type
+// 这是一个便捷方法，将Copy和设置Content-Type结合
+func (ctx *Context) CopyWithContentType(reader io.Reader, contentType string) (int64, error) {
+	// 设置Content-Type
+	ctx.SetContentType(contentType)
+	
+	// 执行复制
+	return ctx.Copy(reader)
+}
+
+// StreamCopy 流式复制，支持实时写入（适合大文件或流数据）
+// 每次写入后会刷新缓冲区，适合需要实时传输的场景
+func (ctx *Context) StreamCopy(reader io.Reader) (int64, error) {
+	if !ctx.ensureRequest() {
+		return 0, ErrRequestNotFound
+	}
+
+	if reader == nil {
+		return 0, &ContextError{
+			Code:    "NIL_READER",
+			Message: "Reader cannot be nil",
+		}
+	}
+
+	// 对于流式传输，使用较小的缓冲区以减少延迟
+	buf := make([]byte, 8*1024) // 8KB缓冲区
+	var totalWritten int64
+
+	for {
+		// 从reader读取数据
+		bytesRead, readErr := reader.Read(buf)
+		if bytesRead > 0 {
+			// 写入到response
+			if _, writeErr := ctx.writer.Write(buf[:bytesRead]); writeErr != nil {
+				return totalWritten, &ContextError{
+					Code:    "WRITE_ERROR",
+					Message: "Failed to write to response: " + writeErr.Error(),
+					Cause:   writeErr,
+				}
+			}
+			totalWritten += int64(bytesRead)
+			
+			// 流式传输时，每次写入后尝试刷新（如果writer支持）
+			if flusher, ok := ctx.writer.(interface{ Flush() error }); ok {
+				flusher.Flush()
+			}
+		}
+
+		// 检查读取错误
+		if readErr != nil {
+			if readErr == io.EOF {
+				// 正常结束
+				break
+			}
+			return totalWritten, &ContextError{
+				Code:    "READ_ERROR",
+				Message: "Failed to read from source: " + readErr.Error(), 
+				Cause:   readErr,
+			}
+		}
+	}
+
+	return totalWritten, nil
 }

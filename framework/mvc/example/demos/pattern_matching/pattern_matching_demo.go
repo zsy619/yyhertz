@@ -15,23 +15,23 @@ type DemoController struct {
 }
 
 func (c *DemoController) GetApi() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "API endpoint",
-		"path":    string(c.Ctx.Request.Path()),
+		"path":    string(c.Ctx.Request().Path()),
 	})
 }
 
 func (c *DemoController) GetUser() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "User endpoint",
-		"path":    string(c.Ctx.Request.Path()),
+		"path":    string(c.Ctx.Request().Path()),
 	})
 }
 
 func (c *DemoController) GetAdmin() {
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "Admin endpoint",
-		"path":    string(c.Ctx.Request.Path()),
+		"path":    string(c.Ctx.Request().Path()),
 	})
 }
 
@@ -44,33 +44,33 @@ func main() {
 	// 1. API路径过滤器 - 只对 /demo/api* 路径有效
 	apiFilter := func(ctx *context.Context) {
 		// 注意：这里不需要检查路径，框架已经自动匹配了！
-		fmt.Printf("🔹 API过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("🔹 API过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 		ctx.Set("api_filtered", true)
 	}
 
 	// 2. 用户路径过滤器 - 只对 /demo/user* 路径有效
 	userFilter := func(ctx *context.Context) {
 		// 不需要判断路径，框架保证只在匹配时执行
-		fmt.Printf("👤 用户过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("👤 用户过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 		ctx.Set("user_filtered", true)
 	}
 
 	// 3. 管理员路径过滤器 - 只对 /demo/admin* 路径有效
 	adminFilter := func(ctx *context.Context) {
 		// 框架已经做了pattern匹配，这里直接执行业务逻辑
-		fmt.Printf("👑 管理员过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("👑 管理员过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 		ctx.Set("admin_filtered", true)
 	}
 
 	// 4. 全局过滤器 - 对所有路径有效
 	globalFilter := func(ctx *context.Context) {
-		fmt.Printf("🌐 全局过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("🌐 全局过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 		ctx.Set("global_filtered", true)
 	}
 
 	// 5. JSON响应过滤器 - 只对.json结尾的路径有效
 	jsonFilter := func(ctx *context.Context) {
-		fmt.Printf("📄 JSON过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("📄 JSON过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 		ctx.SetHeader("Content-Type", "application/json")
 	}
 
@@ -94,7 +94,7 @@ func main() {
 
 	// 演示中间通配符
 	middlewareFilter := func(ctx *context.Context) {
-		fmt.Printf("🔗 中间件过滤器执行 - 路径: %s\n", string(ctx.Request.Path()))
+		fmt.Printf("🔗 中间件过滤器执行 - 路径: %s\n", string(ctx.Request().Path()))
 	}
 	mvc.InsertFilter("/demo/*/info", constant.BeforeExec, middlewareFilter)
 	fmt.Println("   ✓ 中间件过滤器: /demo/*/info")

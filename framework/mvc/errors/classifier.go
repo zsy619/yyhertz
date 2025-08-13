@@ -50,15 +50,15 @@ const (
 
 // ErrorClassification 错误分类结果
 type ErrorClassification struct {
-	Original     error                  // 原始错误
-	Category     ErrorCategory          // 错误分类
-	Severity     ErrorSeverity          // 严重等级
-	Retryable    bool                   // 是否可重试
-	Timeout      *time.Duration         // 建议超时时间
-	Context      map[string]interface{} // 分类上下文
-	Score        float64                // 分类置信度
-	Classifier   string                 // 分类器名称
-	ClassifiedAt time.Time              // 分类时间
+	Original     error          // 原始错误
+	Category     ErrorCategory  // 错误分类
+	Severity     ErrorSeverity  // 严重等级
+	Retryable    bool           // 是否可重试
+	Timeout      *time.Duration // 建议超时时间
+	Context      map[string]any // 分类上下文
+	Score        float64        // 分类置信度
+	Classifier   string         // 分类器名称
+	ClassifiedAt time.Time      // 分类时间
 }
 
 // ErrorClassifier 错误分类器接口
@@ -71,12 +71,12 @@ type ErrorClassifier interface {
 
 // ClassificationRule 分类规则
 type ClassificationRule struct {
-	Name      string                 // 规则名称
-	Matcher   ErrorMatcher           // 匹配器
-	Category  ErrorCategory          // 分类
-	Severity  ErrorSeverity          // 严重等级
-	Retryable bool                   // 是否可重试
-	Metadata  map[string]interface{} // 元数据
+	Name      string         // 规则名称
+	Matcher   ErrorMatcher   // 匹配器
+	Category  ErrorCategory  // 分类
+	Severity  ErrorSeverity  // 严重等级
+	Retryable bool           // 是否可重试
+	Metadata  map[string]any // 元数据
 }
 
 // ErrorMatcher 错误匹配器

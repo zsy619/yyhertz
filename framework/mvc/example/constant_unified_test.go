@@ -139,7 +139,7 @@ func (c *DemoController) GetIndex() {
 		fmt.Printf("  - %s\n", name)
 	}
 
-	c.Ctx.JSON(200, map[string]interface{}{
+	c.Ctx.JSON(200, map[string]any{
 		"message": "演示控制器",
 		"layers":  constant.GetAllExecutionLayers(),
 	})

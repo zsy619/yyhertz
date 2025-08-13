@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	hertzApp "github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
@@ -420,7 +421,7 @@ func (app *AppWithControllerRegister) setDefaultErrorHandlers() {
 		ctx.Output.JSON(map[string]any{
 			"error": "Not Found",
 			"code":  404,
-			"path":  string(ctx.RequestContext.URI().Path()),
+			"path":  string(ctx.Request().URI().Path()),
 		})
 	})
 

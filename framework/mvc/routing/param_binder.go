@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
@@ -24,16 +25,16 @@ func NewParamBinder() *ParamBinder {
 func (pb *ParamBinder) PrepareMethodArgs(methodInfo *MethodInfo, c *app.RequestContext, controllerValue reflect.Value) ([]reflect.Value, error) {
 	method := controllerValue.MethodByName(methodInfo.MethodName)
 	methodType := method.Type()
-	
+
 	args := make([]reflect.Value, methodType.NumIn())
-	
+
 	// 处理参数
 	for i := 0; i < methodType.NumIn(); i++ {
 		paramType := methodType.In(i)
-		
+
 		var paramValue reflect.Value
 		var err error
-		
+
 		// 根据参数信息获取参数值
 		if i < len(methodInfo.Params) {
 			paramInfo := methodInfo.Params[i]
@@ -42,14 +43,14 @@ func (pb *ParamBinder) PrepareMethodArgs(methodInfo *MethodInfo, c *app.RequestC
 			// 如果没有参数信息，尝试自动推断
 			paramValue, err = pb.InferParamValue(paramType, c)
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to get parameter %d: %w", i, err)
 		}
-		
+
 		args[i] = paramValue
 	}
-	
+
 	return args, nil
 }
 
@@ -60,7 +61,7 @@ func (pb *ParamBinder) GetParamValueFromInfo(paramInfo *ParamInfo, paramType ref
 		// 路径参数
 		value := c.Param(paramInfo.Name)
 		return pb.ConvertValue(value, paramType)
-		
+
 	case ParamSourceQuery:
 		// 查询参数
 		value := c.Query(paramInfo.Name)
@@ -68,11 +69,11 @@ func (pb *ParamBinder) GetParamValueFromInfo(paramInfo *ParamInfo, paramType ref
 			value = paramInfo.DefaultValue
 		}
 		return pb.ConvertValue(value, paramType)
-		
+
 	case ParamSourceBody:
 		// 请求体参数
 		return pb.ParseBodyParam(paramType, c)
-		
+
 	case ParamSourceHeader:
 		// 请求头参数
 		value := c.GetHeader(paramInfo.Name)
@@ -80,7 +81,7 @@ func (pb *ParamBinder) GetParamValueFromInfo(paramInfo *ParamInfo, paramType ref
 			value = []byte(paramInfo.DefaultValue)
 		}
 		return pb.ConvertValue(string(value), paramType)
-		
+
 	case ParamSourceCookie:
 		// Cookie参数
 		value := string(c.Cookie(paramInfo.Name))
@@ -88,7 +89,7 @@ func (pb *ParamBinder) GetParamValueFromInfo(paramInfo *ParamInfo, paramType ref
 			value = paramInfo.DefaultValue
 		}
 		return pb.ConvertValue(value, paramType)
-		
+
 	case ParamSourceForm:
 		// 表单参数
 		value := string(c.FormValue(paramInfo.Name))
@@ -96,7 +97,7 @@ func (pb *ParamBinder) GetParamValueFromInfo(paramInfo *ParamInfo, paramType ref
 			value = paramInfo.DefaultValue
 		}
 		return pb.ConvertValue(value, paramType)
-		
+
 	default:
 		return pb.InferParamValue(paramType, c)
 	}
@@ -107,17 +108,17 @@ func (pb *ParamBinder) InferParamValue(paramType reflect.Type, c *app.RequestCon
 	switch {
 	case IsContextType(paramType):
 		// Context类型
-		ctx := &contextenhanced.Context{RequestContext: c}
+		ctx := contextenhanced.NewContext(c)
 		return reflect.ValueOf(ctx), nil
-		
+
 	case IsStructType(paramType):
 		// 结构体类型，解析为请求体
 		return pb.ParseBodyParam(paramType, c)
-		
+
 	case IsStringType(paramType):
 		// 字符串类型，返回空字符串
 		return reflect.ValueOf(""), nil
-		
+
 	default:
 		// 创建零值
 		return reflect.Zero(paramType), nil
@@ -131,24 +132,24 @@ func (pb *ParamBinder) ParseBodyParam(paramType reflect.Type, c *app.RequestCont
 		// 指针类型
 		elemType := paramType.Elem()
 		elemValue := reflect.New(elemType)
-		
+
 		// 绑定JSON数据
 		err := c.BindAndValidate(elemValue.Interface())
 		if err != nil {
 			return reflect.Value{}, fmt.Errorf("failed to bind request body: %w", err)
 		}
-		
+
 		return elemValue, nil
 	} else {
 		// 值类型
 		paramValue := reflect.New(paramType)
-		
+
 		// 绑定JSON数据
 		err := c.BindAndValidate(paramValue.Interface())
 		if err != nil {
 			return reflect.Value{}, fmt.Errorf("failed to bind request body: %w", err)
 		}
-		
+
 		return paramValue.Elem(), nil
 	}
 }
@@ -158,7 +159,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 	switch targetType.Kind() {
 	case reflect.String:
 		return reflect.ValueOf(value), nil
-		
+
 	case reflect.Int:
 		if value == "" {
 			return reflect.ValueOf(0), nil
@@ -168,7 +169,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to int: %w", value, err)
 		}
 		return reflect.ValueOf(intVal), nil
-		
+
 	case reflect.Int8:
 		if value == "" {
 			return reflect.ValueOf(int8(0)), nil
@@ -178,7 +179,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to int8: %w", value, err)
 		}
 		return reflect.ValueOf(int8(intVal)), nil
-		
+
 	case reflect.Int16:
 		if value == "" {
 			return reflect.ValueOf(int16(0)), nil
@@ -188,7 +189,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to int16: %w", value, err)
 		}
 		return reflect.ValueOf(int16(intVal)), nil
-		
+
 	case reflect.Int32:
 		if value == "" {
 			return reflect.ValueOf(int32(0)), nil
@@ -198,7 +199,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to int32: %w", value, err)
 		}
 		return reflect.ValueOf(int32(intVal)), nil
-		
+
 	case reflect.Int64:
 		if value == "" {
 			return reflect.ValueOf(int64(0)), nil
@@ -208,7 +209,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to int64: %w", value, err)
 		}
 		return reflect.ValueOf(intVal), nil
-		
+
 	case reflect.Uint:
 		if value == "" {
 			return reflect.ValueOf(uint(0)), nil
@@ -218,7 +219,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to uint: %w", value, err)
 		}
 		return reflect.ValueOf(uint(uintVal)), nil
-		
+
 	case reflect.Uint8:
 		if value == "" {
 			return reflect.ValueOf(uint8(0)), nil
@@ -228,7 +229,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to uint8: %w", value, err)
 		}
 		return reflect.ValueOf(uint8(uintVal)), nil
-		
+
 	case reflect.Uint16:
 		if value == "" {
 			return reflect.ValueOf(uint16(0)), nil
@@ -238,7 +239,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to uint16: %w", value, err)
 		}
 		return reflect.ValueOf(uint16(uintVal)), nil
-		
+
 	case reflect.Uint32:
 		if value == "" {
 			return reflect.ValueOf(uint32(0)), nil
@@ -248,7 +249,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to uint32: %w", value, err)
 		}
 		return reflect.ValueOf(uint32(uintVal)), nil
-		
+
 	case reflect.Uint64:
 		if value == "" {
 			return reflect.ValueOf(uint64(0)), nil
@@ -258,7 +259,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to uint64: %w", value, err)
 		}
 		return reflect.ValueOf(uintVal), nil
-		
+
 	case reflect.Float32:
 		if value == "" {
 			return reflect.ValueOf(float32(0)), nil
@@ -268,7 +269,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to float32: %w", value, err)
 		}
 		return reflect.ValueOf(float32(floatVal)), nil
-		
+
 	case reflect.Float64:
 		if value == "" {
 			return reflect.ValueOf(float64(0)), nil
@@ -278,7 +279,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to float64: %w", value, err)
 		}
 		return reflect.ValueOf(floatVal), nil
-		
+
 	case reflect.Bool:
 		if value == "" {
 			return reflect.ValueOf(false), nil
@@ -288,7 +289,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.Value{}, fmt.Errorf("cannot convert '%s' to bool: %w", value, err)
 		}
 		return reflect.ValueOf(boolVal), nil
-		
+
 	case reflect.Slice:
 		// 处理切片类型（例如 []string）
 		if targetType.Elem().Kind() == reflect.String {
@@ -303,7 +304,7 @@ func (pb *ParamBinder) ConvertValue(value string, targetType reflect.Type) (refl
 			return reflect.ValueOf(parts), nil
 		}
 		return reflect.Zero(targetType), nil
-		
+
 	default:
 		return reflect.Zero(targetType), nil
 	}
@@ -314,7 +315,7 @@ func (pb *ParamBinder) ValidateParams(params []*ParamInfo, c *app.RequestContext
 	for _, param := range params {
 		if param.Required {
 			var value string
-			
+
 			switch param.Source {
 			case ParamSourcePath:
 				value = c.Param(param.Name)
@@ -330,7 +331,7 @@ func (pb *ParamBinder) ValidateParams(params []*ParamInfo, c *app.RequestContext
 				// 请求体参数的验证需要特殊处理
 				continue
 			}
-			
+
 			if value == "" && param.DefaultValue == "" {
 				return &RouteError{
 					Type:    ErrorTypeInvalidParam,
@@ -339,20 +340,20 @@ func (pb *ParamBinder) ValidateParams(params []*ParamInfo, c *app.RequestContext
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 // GetParamInfo 从方法签名中提取参数信息（辅助函数）
 func (pb *ParamBinder) GetParamInfo(methodType reflect.Type) []*ParamInfo {
 	var params []*ParamInfo
-	
+
 	// 跳过receiver参数（第0个参数）
 	for i := 0; i < methodType.NumIn(); i++ {
 		paramType := methodType.In(i)
-		
+
 		var paramInfo *ParamInfo
-		
+
 		// 根据类型推断参数来源
 		switch {
 		case IsContextType(paramType):
@@ -368,11 +369,11 @@ func (pb *ParamBinder) GetParamInfo(methodType reflect.Type) []*ParamInfo {
 			// 其他类型，默认为查询参数
 			paramInfo = NewQueryParam(fmt.Sprintf("param%d", i), "", false)
 		}
-		
+
 		if paramInfo != nil {
 			params = append(params, paramInfo)
 		}
 	}
-	
+
 	return params
 }

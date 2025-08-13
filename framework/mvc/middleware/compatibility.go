@@ -42,7 +42,7 @@ func (w *BasicMiddlewareWrapper) Use(middleware ...HandlerFunc) {
 		name := fmt.Sprintf("basic-middleware-%d", i)
 		w.compat.unifiedManager.Use(name, handler, WithLayer(LayerGlobal), WithPriority(i*10))
 	}
-	
+
 	// 同时在原引擎中注册（保持兼容性）
 	w.engine.Use(middleware...)
 }
@@ -75,19 +75,19 @@ func (w *MVCMiddlewareWrapper) RegisterCustom(name string, handler MiddlewareFun
 	if err != nil {
 		return err
 	}
-	
+
 	// 同时在原管理器中注册（保持兼容性）
 	return w.manager.RegisterCustom(name, handler, metadata)
 }
 
 // UseBuiltin 使用内置中间件 - 兼容原API
-func (w *MVCMiddlewareWrapper) UseBuiltin(layer MiddlewareLayer, name string, config interface{}, priority int) error {
+func (w *MVCMiddlewareWrapper) UseBuiltin(layer MiddlewareLayer, name string, config any, priority int) error {
 	// 通过统一管理器注册
 	err := w.compat.unifiedManager.UseBuiltin(name, config, WithLayer(layer), WithPriority(priority))
 	if err != nil {
 		return err
 	}
-	
+
 	// 同时在原管理器中注册（保持兼容性）
 	return w.manager.UseBuiltin(layer, name, config, priority)
 }
@@ -107,15 +107,15 @@ func (w *MVCMiddlewareWrapper) GetStatistics() ManagerStatistics {
 // MiddlewareCompat 中间件兼容性接口
 type MiddlewareCompat interface {
 	// 基础功能
-	Use(name string, handler interface{}, options ...interface{}) error
-	UseBuiltin(name string, config interface{}, options ...interface{}) error
-	
+	Use(name string, handler any, options ...any) error
+	UseBuiltin(name string, config any, options ...any) error
+
 	// 模式控制
 	SwitchMode(mode string) error
 	GetCurrentMode() string
-	
+
 	// 统计信息
-	GetStats() map[string]interface{}
+	GetStats() map[string]any
 }
 
 // UnifiedCompat 统一兼容性实现
@@ -131,14 +131,14 @@ func NewUnifiedCompat() MiddlewareCompat {
 }
 
 // Use 使用中间件 - 统一接口
-func (c *UnifiedCompat) Use(name string, handler interface{}, options ...interface{}) error {
+func (c *UnifiedCompat) Use(name string, handler any, options ...any) error {
 	// 解析选项
 	opts := c.parseOptions(options...)
 	return c.manager.Use(name, handler, opts...)
 }
 
 // UseBuiltin 使用内置中间件 - 统一接口
-func (c *UnifiedCompat) UseBuiltin(name string, config interface{}, options ...interface{}) error {
+func (c *UnifiedCompat) UseBuiltin(name string, config any, options ...any) error {
 	opts := c.parseOptions(options...)
 	return c.manager.UseBuiltin(name, config, opts...)
 }
@@ -156,7 +156,7 @@ func (c *UnifiedCompat) SwitchMode(mode string) error {
 	default:
 		return fmt.Errorf("unsupported mode: %s", mode)
 	}
-	
+
 	return c.manager.SwitchMode(middlewareMode)
 }
 
@@ -167,23 +167,23 @@ func (c *UnifiedCompat) GetCurrentMode() string {
 }
 
 // GetStats 获取统计信息 - 统一接口
-func (c *UnifiedCompat) GetStats() map[string]interface{} {
+func (c *UnifiedCompat) GetStats() map[string]any {
 	stats := c.manager.GetStats()
-	return map[string]interface{}{
-		"current_mode":         stats.CurrentMode,
-		"total_requests":      stats.TotalRequests,
-		"basic_mode_requests": stats.BasicModeRequests,
-		"mvc_mode_requests":   stats.MVCModeRequests,
+	return map[string]any{
+		"current_mode":          stats.CurrentMode,
+		"total_requests":        stats.TotalRequests,
+		"basic_mode_requests":   stats.BasicModeRequests,
+		"mvc_mode_requests":     stats.MVCModeRequests,
 		"average_response_time": stats.AverageResponseTime.String(),
-		"mode_switch_count":   stats.ModeSwitchCount,
-		"last_switch_time":    stats.LastSwitchTime,
+		"mode_switch_count":     stats.ModeSwitchCount,
+		"last_switch_time":      stats.LastSwitchTime,
 	}
 }
 
 // parseOptions 解析选项
-func (c *UnifiedCompat) parseOptions(options ...interface{}) []MiddlewareOption {
+func (c *UnifiedCompat) parseOptions(options ...any) []MiddlewareOption {
 	var opts []MiddlewareOption
-	
+
 	for _, option := range options {
 		switch v := option.(type) {
 		case string:
@@ -197,12 +197,12 @@ func (c *UnifiedCompat) parseOptions(options ...interface{}) []MiddlewareOption 
 		case MiddlewareLayer:
 			// 直接的层级参数
 			opts = append(opts, WithLayer(v))
-		case map[string]interface{}:
+		case map[string]any:
 			// 配置参数
 			opts = append(opts, WithConfig(v))
 		}
 	}
-	
+
 	return opts
 }
 
@@ -246,7 +246,7 @@ func UseMVCMiddleware(layer MiddlewareLayer, name string, handler MiddlewareFunc
 }
 
 // UseMVCBuiltin 使用MVC内置中间件（向下兼容）
-func UseMVCBuiltin(layer MiddlewareLayer, name string, config interface{}, priority int) error {
+func UseMVCBuiltin(layer MiddlewareLayer, name string, config any, priority int) error {
 	return globalUnifiedManager.UseBuiltin(name, config, WithLayer(layer), WithPriority(priority))
 }
 
@@ -268,7 +268,7 @@ func NewMigrationHelper() *MigrationHelper {
 func (h *MigrationHelper) MigrateBasicEngine(engine *Engine) error {
 	// 这里需要反射或其他方法来提取已注册的中间件
 	// 由于基础引擎没有提供获取中间件列表的方法，这里提供框架
-	
+
 	fmt.Println("Migrating basic engine to unified system...")
 	// TODO: 实现具体的迁移逻辑
 	return nil
@@ -277,10 +277,10 @@ func (h *MigrationHelper) MigrateBasicEngine(engine *Engine) error {
 // MigrateMVCManager 迁移MVC管理器到统一系统
 func (h *MigrationHelper) MigrateMVCManager(manager *MiddlewareManager) error {
 	fmt.Println("Migrating MVC manager to unified system...")
-	
+
 	// 获取所有注册的中间件
 	middlewares := manager.ListMiddlewares()
-	
+
 	for _, middleware := range middlewares {
 		// 根据中间件元数据进行迁移
 		if middleware.IsBuiltin {
@@ -290,7 +290,7 @@ func (h *MigrationHelper) MigrateMVCManager(manager *MiddlewareManager) error {
 			// 这里需要扩展MiddlewareManager API来支持获取处理函数
 		}
 	}
-	
+
 	return nil
 }
 
@@ -299,7 +299,7 @@ func (h *MigrationHelper) GenerateMigrationReport() MigrationReport {
 	return MigrationReport{
 		TotalMiddlewares: 0, // TODO: 计算实际数量
 		BasicMiddlewares: 0,
-		MVCMiddlewares:  0,
+		MVCMiddlewares:   0,
 		Recommendations: []string{
 			"Consider upgrading to advanced mode for better performance",
 			"Enable auto mode for dynamic switching",
@@ -318,7 +318,7 @@ type MigrationReport struct {
 // ===== 全局兼容性实例 =====
 
 var (
-	globalCompat       = NewUnifiedCompat()
+	globalCompat          = NewUnifiedCompat()
 	globalMigrationHelper = NewMigrationHelper()
 )
 
@@ -350,7 +350,7 @@ func EnableAutoMode() error {
 }
 
 // GetSystemStatus 获取系统状态
-func GetSystemStatus() map[string]interface{} {
+func GetSystemStatus() map[string]any {
 	stats := globalCompat.GetStats()
 	stats["current_mode"] = globalCompat.GetCurrentMode()
 	return stats

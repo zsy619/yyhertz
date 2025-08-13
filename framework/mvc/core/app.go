@@ -931,7 +931,7 @@ func (app *App) ExecuteFilters(ctx *contextenhanced.Context, position int) {
 	}
 
 	// 获取请求路径
-	path := string(ctx.Request.Path())
+	path := string(ctx.Request().Path())
 
 	// 执行匹配的过滤器
 	for _, filter := range filters {

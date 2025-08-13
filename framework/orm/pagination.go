@@ -55,7 +55,7 @@ func DefaultPaginationConfig() *PaginationConfig {
 // PaginationResult 分页结果
 type PaginationResult struct {
 	// 数据
-	Data interface{} `json:"data"`
+	Data any `json:"data"`
 	// 分页信息
 	Pagination *PaginationInfo `json:"pagination"`
 }
@@ -98,7 +98,7 @@ func NewOffsetPaginator(db *gorm.DB, config *PaginationConfig) *OffsetPaginator 
 }
 
 // Paginate 执行偏移分页
-func (p *OffsetPaginator) Paginate(page, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (p *OffsetPaginator) Paginate(page, pageSize int, dest any) (*PaginationResult, error) {
 	// 验证参数
 	if page < 1 {
 		page = 1
@@ -176,10 +176,10 @@ func NewCursorPaginator(db *gorm.DB, config *PaginationConfig) *CursorPaginator 
 
 // CursorInfo 游标信息
 type CursorInfo struct {
-	Field     string      `json:"field"`
-	Value     interface{} `json:"value"`
-	Direction string      `json:"direction"`
-	Timestamp time.Time   `json:"timestamp"`
+	Field     string    `json:"field"`
+	Value     any       `json:"value"`
+	Direction string    `json:"direction"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // EncodeCursor 编码游标
@@ -212,7 +212,7 @@ func (p *CursorPaginator) DecodeCursor(cursor string) (*CursorInfo, error) {
 }
 
 // Paginate 执行游标分页
-func (p *CursorPaginator) Paginate(cursor string, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (p *CursorPaginator) Paginate(cursor string, pageSize int, dest any) (*PaginationResult, error) {
 	// 验证参数
 	if pageSize < 1 {
 		pageSize = p.config.DefaultPageSize
@@ -252,7 +252,7 @@ func (p *CursorPaginator) Paginate(cursor string, pageSize int, dest interface{}
 
 	// 这里需要根据实际的数据类型来处理
 	// 简化处理，假设dest是slice类型
-	if slice, ok := results.([]interface{}); ok {
+	if slice, ok := results.([]any); ok {
 		if len(slice) > pageSize {
 			hasNext = true
 			// 移除多余的记录
@@ -311,7 +311,7 @@ func NewHybridPaginator(db *gorm.DB, config *PaginationConfig) *HybridPaginator 
 }
 
 // Paginate 执行混合分页
-func (p *HybridPaginator) Paginate(pageOrCursor interface{}, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (p *HybridPaginator) Paginate(pageOrCursor any, pageSize int, dest any) (*PaginationResult, error) {
 	switch v := pageOrCursor.(type) {
 	case int:
 		// 使用偏移分页
@@ -326,7 +326,7 @@ func (p *HybridPaginator) Paginate(pageOrCursor interface{}, pageSize int, dest 
 
 // Paginator 分页器接口
 type Paginator interface {
-	Paginate(pageOrCursor interface{}, pageSize int, dest interface{}) (*PaginationResult, error)
+	Paginate(pageOrCursor any, pageSize int, dest any) (*PaginationResult, error)
 }
 
 // OffsetPaginatorWrapper 偏移分页器包装器
@@ -335,7 +335,7 @@ type OffsetPaginatorWrapper struct {
 }
 
 // Paginate 实现Paginator接口
-func (opw *OffsetPaginatorWrapper) Paginate(pageOrCursor interface{}, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (opw *OffsetPaginatorWrapper) Paginate(pageOrCursor any, pageSize int, dest any) (*PaginationResult, error) {
 	page, ok := pageOrCursor.(int)
 	if !ok {
 		return nil, fmt.Errorf("偏移分页器需要整数页码")
@@ -349,7 +349,7 @@ type CursorPaginatorWrapper struct {
 }
 
 // Paginate 实现Paginator接口
-func (cpw *CursorPaginatorWrapper) Paginate(pageOrCursor interface{}, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (cpw *CursorPaginatorWrapper) Paginate(pageOrCursor any, pageSize int, dest any) (*PaginationResult, error) {
 	cursor, ok := pageOrCursor.(string)
 	if !ok {
 		return nil, fmt.Errorf("游标分页器需要字符串游标")
@@ -389,19 +389,19 @@ func (pm *PaginatorManager) GetPaginator() Paginator {
 }
 
 // OffsetPaginate 偏移分页
-func (pm *PaginatorManager) OffsetPaginate(page, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (pm *PaginatorManager) OffsetPaginate(page, pageSize int, dest any) (*PaginationResult, error) {
 	paginator := NewOffsetPaginator(pm.db, pm.config)
 	return paginator.Paginate(page, pageSize, dest)
 }
 
 // CursorPaginate 游标分页
-func (pm *PaginatorManager) CursorPaginate(cursor string, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (pm *PaginatorManager) CursorPaginate(cursor string, pageSize int, dest any) (*PaginationResult, error) {
 	paginator := NewCursorPaginator(pm.db, pm.config)
 	return paginator.Paginate(cursor, pageSize, dest)
 }
 
 // AutoPaginate 自动分页
-func (pm *PaginatorManager) AutoPaginate(pageOrCursor interface{}, pageSize int, dest interface{}) (*PaginationResult, error) {
+func (pm *PaginatorManager) AutoPaginate(pageOrCursor any, pageSize int, dest any) (*PaginationResult, error) {
 	paginator := pm.GetPaginator()
 	return paginator.Paginate(pageOrCursor, pageSize, dest)
 }
@@ -409,13 +409,13 @@ func (pm *PaginatorManager) AutoPaginate(pageOrCursor interface{}, pageSize int,
 // ============= 扩展方法 =============
 
 // PaginateWithDB 使用指定数据库连接进行分页
-func PaginateWithDB(db *gorm.DB, page, pageSize int, dest interface{}) (*PaginationResult, error) {
+func PaginateWithDB(db *gorm.DB, page, pageSize int, dest any) (*PaginationResult, error) {
 	manager := NewPaginatorManager(db, nil)
 	return manager.OffsetPaginate(page, pageSize, dest)
 }
 
 // CursorPaginateWithDB 使用指定数据库连接进行游标分页
-func CursorPaginateWithDB(db *gorm.DB, cursor string, pageSize int, dest interface{}) (*PaginationResult, error) {
+func CursorPaginateWithDB(db *gorm.DB, cursor string, pageSize int, dest any) (*PaginationResult, error) {
 	config := DefaultPaginationConfig()
 	config.Type = PaginationTypeCursor
 	manager := NewPaginatorManager(db, config)
@@ -425,12 +425,12 @@ func CursorPaginateWithDB(db *gorm.DB, cursor string, pageSize int, dest interfa
 // ============= 便捷函数 =============
 
 // Paginate 使用默认ORM进行分页
-func Paginate(page, pageSize int, dest interface{}) (*PaginationResult, error) {
+func Paginate(page, pageSize int, dest any) (*PaginationResult, error) {
 	return PaginateWithDB(GetDefaultORM().DB(), page, pageSize, dest)
 }
 
 // CursorPaginate 使用默认ORM进行游标分页
-func CursorPaginate(cursor string, pageSize int, dest interface{}) (*PaginationResult, error) {
+func CursorPaginate(cursor string, pageSize int, dest any) (*PaginationResult, error) {
 	return CursorPaginateWithDB(GetDefaultORM().DB(), cursor, pageSize, dest)
 }
 

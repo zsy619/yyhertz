@@ -34,8 +34,8 @@ func (rh *RequestHandler) CreateHandler(route *RouteInfo) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
 		// 创建控制器实例
 		var controllerValue reflect.Value
-		var controller interface{}
-		
+		var controller any
+
 		if route.ControllerType.Kind() == reflect.Ptr {
 			// 如果是指针类型，创建元素类型的实例
 			controllerValue = reflect.New(route.ControllerType.Elem())
@@ -49,9 +49,7 @@ func (rh *RequestHandler) CreateHandler(route *RouteInfo) app.HandlerFunc {
 		// 如果实现了IController接口，初始化BaseController
 		if iController, ok := controller.(core.IController); ok {
 			// 创建统一的Context
-			enhancedCtx := &contextenhanced.Context{
-				RequestContext: c,
-			}
+			enhancedCtx := contextenhanced.NewContext(c)
 
 			// 初始化控制器
 			iController.Init(enhancedCtx, route.TypeName, route.MethodName, rh.app)
@@ -215,7 +213,7 @@ func (rh *RequestHandler) handleMethodResults(c *app.RequestContext, results []r
 
 // handleError 处理错误响应（统一错误处理）
 func (rh *RequestHandler) handleError(c *app.RequestContext, statusCode int, err error) {
-	response := map[string]interface{}{
+	response := map[string]any{
 		"error": err.Error(),
 	}
 
@@ -259,7 +257,7 @@ func (cl *ControllerLifecycle) CreateControllerInstance(controllerType reflect.T
 }
 
 // InitializeController 初始化控制器
-func (cl *ControllerLifecycle) InitializeController(controller interface{}, ctx *contextenhanced.Context, typeName, methodName string) {
+func (cl *ControllerLifecycle) InitializeController(controller any, ctx *contextenhanced.Context, typeName, methodName string) {
 	if iController, ok := controller.(core.IController); ok {
 		iController.Init(ctx, typeName, methodName, cl.handler.app)
 		iController.Prepare()
@@ -267,7 +265,7 @@ func (cl *ControllerLifecycle) InitializeController(controller interface{}, ctx 
 }
 
 // FinalizeController 完成控制器处理
-func (cl *ControllerLifecycle) FinalizeController(controller interface{}) {
+func (cl *ControllerLifecycle) FinalizeController(controller any) {
 	if iController, ok := controller.(core.IController); ok {
 		iController.Finish()
 	}
@@ -302,9 +300,7 @@ func (rp *RequestProcessor) ProcessRequest(route *RouteInfo, c *app.RequestConte
 	controller := controllerValue.Interface()
 
 	// 创建增强的上下文
-	enhancedCtx := &contextenhanced.Context{
-		RequestContext: c,
-	}
+	enhancedCtx := contextenhanced.NewContext(c)
 
 	// 初始化控制器
 	rp.lifecycle.InitializeController(controller, enhancedCtx, route.TypeName, route.MethodName)

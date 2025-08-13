@@ -91,7 +91,7 @@ func (l *EnhancedLogger) LogMode(level logger.LogLevel) logger.Interface {
 }
 
 // Info 记录信息日志
-func (l *EnhancedLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+func (l *EnhancedLogger) Info(ctx context.Context, msg string, data ...any) {
 	if l.LogLevel == LogLevelSilent {
 		return
 	}
@@ -102,7 +102,7 @@ func (l *EnhancedLogger) Info(ctx context.Context, msg string, data ...interface
 }
 
 // Warn 记录警告日志
-func (l *EnhancedLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+func (l *EnhancedLogger) Warn(ctx context.Context, msg string, data ...any) {
 	if l.LogLevel == LogLevelSilent {
 		return
 	}
@@ -113,7 +113,7 @@ func (l *EnhancedLogger) Warn(ctx context.Context, msg string, data ...interface
 }
 
 // Error 记录错误日志
-func (l *EnhancedLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+func (l *EnhancedLogger) Error(ctx context.Context, msg string, data ...any) {
 	if l.LogLevel == LogLevelSilent {
 		return
 	}
@@ -174,7 +174,7 @@ func (l *EnhancedLogger) Trace(ctx context.Context, begin time.Time, fc func() (
 }
 
 // Debug 记录调试日志
-func (l *EnhancedLogger) Debug(ctx context.Context, msg string, data ...interface{}) {
+func (l *EnhancedLogger) Debug(ctx context.Context, msg string, data ...any) {
 	if l.LogLevel == LogLevelSilent || l.LogLevel == LogLevelError || l.LogLevel == LogLevelWarn || l.LogLevel == LogLevelInfo {
 		return
 	}
@@ -308,7 +308,7 @@ type enhancedLogWriter struct {
 }
 
 // Printf 实现logger.Writer接口
-func (w *enhancedLogWriter) Printf(format string, args ...interface{}) {
+func (w *enhancedLogWriter) Printf(format string, args ...any) {
 	config.Infof(format, args...)
 }
 

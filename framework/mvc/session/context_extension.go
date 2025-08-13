@@ -7,12 +7,12 @@ import (
 // ContextExtension Context的session/cookie扩展
 // 为各种Context类型提供统一的session和cookie操作接口
 type ContextExtension struct {
-	Cookie        *BaseCookie     // 基础cookie操作
-	SecureCookie  *SecureCookie   // 安全cookie操作  
-	OutputCookie  *OutputCookie   // 输出cookie操作
-	SessionMgr    *SessionManager // session管理器
-	context       interface{}     // 关联的上下文
-	currentSession *Adapter       // 当前session适配器
+	Cookie         *BaseCookie     // 基础cookie操作
+	SecureCookie   *SecureCookie   // 安全cookie操作
+	OutputCookie   *OutputCookie   // 输出cookie操作
+	SessionMgr     *SessionManager // session管理器
+	context        any             // 关联的上下文
+	currentSession *Adapter        // 当前session适配器
 }
 
 // NewExtensionForHertzContext 为Hertz RequestContext创建扩展
@@ -27,28 +27,28 @@ func NewExtensionForHertzContext(ctx *app.RequestContext) *ContextExtension {
 }
 
 // NewExtensionForYYHertzContext 为YYHertz Context创建扩展
-// 注意：这里使用interface{}来避免循环导入，实际使用时需要类型断言
-func NewExtensionForYYHertzContext(ctx interface{}) *ContextExtension {
+// 注意：这里使用any来避免循环导入，实际使用时需要类型断言
+func NewExtensionForYYHertzContext(ctx any) *ContextExtension {
 	// 尝试从YYHertz Context获取Hertz RequestContext
 	var hertzCtx *app.RequestContext
-	
+
 	// 这里需要根据实际的YYHertz Context结构进行适配
-	// 暂时使用interface{}避免循环导入问题
+	// 暂时使用any避免循环导入问题
 	if yyCtx, ok := ctx.(interface{ GetRequestContext() *app.RequestContext }); ok {
 		hertzCtx = yyCtx.GetRequestContext()
 	}
-	
+
 	extension := &ContextExtension{
 		SessionMgr: NewSessionManager(nil), // 使用默认配置
 		context:    ctx,
 	}
-	
+
 	if hertzCtx != nil {
 		extension.Cookie = NewBaseCookie(hertzCtx)
 		extension.SecureCookie = NewSecureCookie(hertzCtx)
 		extension.OutputCookie = NewOutputCookie(hertzCtx)
 	}
-	
+
 	return extension
 }
 
@@ -71,15 +71,15 @@ func (ce *ContextExtension) StartSession() *Adapter {
 	// 创建新的session
 	adapter := ce.SessionMgr.CreateSession(ce.context)
 	ce.currentSession = adapter
-	
+
 	// 设置session cookie
 	if ce.Cookie != nil && adapter.SessionID() != "" {
 		config := ce.SessionMgr.GetConfig()
-		ce.Cookie.Set(config.CookieName, adapter.SessionID(), 
-			config.MaxAge, config.CookiePath, config.CookieDomain, 
+		ce.Cookie.Set(config.CookieName, adapter.SessionID(),
+			config.MaxAge, config.CookiePath, config.CookieDomain,
 			config.Secure, config.HttpOnly)
 	}
-	
+
 	return adapter
 }
 
@@ -120,13 +120,13 @@ func (ce *ContextExtension) DestroySession() {
 		ce.currentSession.Destroy()
 		ce.currentSession = nil
 	}
-	
+
 	// 删除session cookie
 	if ce.Cookie != nil {
 		config := ce.SessionMgr.GetConfig()
 		ce.Cookie.Delete(config.CookieName)
 	}
-	
+
 	// 清除上下文中的session引用
 	ce.clearSessionFromContext()
 }
@@ -154,10 +154,10 @@ func (ce *ContextExtension) SessionRegenerateID() {
 		// 销毁旧session
 		oldSessionID := ce.currentSession.SessionID()
 		ce.currentSession.Destroy()
-		
+
 		// 创建新session
 		ce.currentSession = ce.SessionMgr.CreateSession(ce.context)
-		
+
 		// 更新cookie
 		if ce.Cookie != nil && ce.currentSession.SessionID() != "" {
 			config := ce.SessionMgr.GetConfig()
@@ -165,7 +165,7 @@ func (ce *ContextExtension) SessionRegenerateID() {
 				config.MaxAge, config.CookiePath, config.CookieDomain,
 				config.Secure, config.HttpOnly)
 		}
-		
+
 		// 可选：记录日志
 		_ = oldSessionID // 避免未使用变量警告
 	}
@@ -264,19 +264,19 @@ func (ce *ContextExtension) clearSessionFromContext() {
 // ============= 全局便利函数 =============
 
 // NewContextExtension 创建上下文扩展（自动检测类型）
-func NewContextExtension(ctx interface{}) *ContextExtension {
+func NewContextExtension(ctx any) *ContextExtension {
 	// 尝试类型断言
 	if hertzCtx, ok := ctx.(*app.RequestContext); ok {
 		return NewExtensionForHertzContext(hertzCtx)
 	}
-	
+
 	// 默认使用YYHertz Context扩展
 	return NewExtensionForYYHertzContext(ctx)
 }
 
 // GetExtension 从上下文获取或创建扩展
 // 这是一个便利函数，可以在中间件中使用
-func GetExtension(ctx interface{}) *ContextExtension {
+func GetExtension(ctx any) *ContextExtension {
 	// 这里可以实现缓存逻辑，避免重复创建扩展
 	// 当前简化实现，每次都创建新的扩展
 	return NewContextExtension(ctx)

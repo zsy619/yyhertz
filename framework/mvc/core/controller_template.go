@@ -127,7 +127,7 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 
 	// 优先使用增强的模板引擎来支持template include功能
 	c.initializeEnhancedTemplateEngine()
-	
+
 	// 如果有include引擎，使用它来支持{{template}}函数
 	if c.includeEngine != nil {
 		content, err := c.includeEngine.RenderTemplate(viewName, c.Data)
@@ -136,12 +136,12 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 			c.renderHTMLFallback(viewName)
 			return
 		}
-		
-		c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
-		c.Ctx.RequestContext.Write([]byte(content))
+
+		c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
+		c.Ctx.Request().Write([]byte(content))
 		return
 	}
-	
+
 	// 降级到原始方法
 	c.renderHTMLFallback(viewName)
 }
@@ -261,16 +261,16 @@ func (c *BaseController) renderTemplate() error {
 			if content, err := c.templateEngine.RenderWithLayout(tplName, c.Layout, c.Data); err != nil {
 				return err
 			} else {
-				c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
-				c.Ctx.RequestContext.Write([]byte(content))
+				c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
+				c.Ctx.Request().Write([]byte(content))
 			}
 		} else {
 			// 直接渲染模板
 			if content, err := c.templateEngine.Render(tplName, c.Data); err != nil {
 				return err
 			} else {
-				c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
-				c.Ctx.RequestContext.Write([]byte(content))
+				c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
+				c.Ctx.Request().Write([]byte(content))
 			}
 		}
 		return nil
@@ -307,25 +307,25 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 				return fmt.Errorf("failed to parse template with layout: %v", err)
 			}
 
-			c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
-			return tmpl.ExecuteTemplate(c.Ctx.RequestContext, "layout", c.Data)
+			c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
+			return tmpl.ExecuteTemplate(c.Ctx.Request(), "layout", c.Data)
 		}
 	}
 
 	// 解析视图文件和相关子模板
 	templateFiles := []string{viewPath}
-	
+
 	// 尝试找到同目录下的子模板文件
 	dir := filepath.Dir(viewPath)
 	if files, err := filepath.Glob(filepath.Join(dir, "_*.html")); err == nil {
 		templateFiles = append(templateFiles, files...)
 	}
-	
+
 	tmpl, err = tmpl.ParseFiles(templateFiles...)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %v", err)
 	}
 
-	c.Ctx.RequestContext.Header("Content-Type", "text/html; charset=utf-8")
-	return tmpl.Execute(c.Ctx.RequestContext, c.Data)
+	c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
+	return tmpl.Execute(c.Ctx.Request(), c.Data)
 }
