@@ -54,11 +54,8 @@ func Gethostbyaddr(ipAddress string) string {
 		return ipAddress
 	}
 
-	// Remove trailing dot if present
-	hostname := names[0]
-	if strings.HasSuffix(hostname, ".") {
-		hostname = hostname[:len(hostname)-1]
-	}
+	// Remove trailing dot unconditionally
+	hostname := strings.TrimSuffix(names[0], ".")
 
 	return hostname
 }
@@ -130,10 +127,7 @@ func Getmxrr(hostname string) ([]string, []int, bool) {
 	var priorities []int
 
 	for _, mx := range mxRecords {
-		host := mx.Host
-		if strings.HasSuffix(host, ".") {
-			host = host[:len(host)-1]
-		}
+		host := strings.TrimSuffix(mx.Host, ".")
 		hosts = append(hosts, host)
 		priorities = append(priorities, int(mx.Pref))
 	}
@@ -204,9 +198,7 @@ func DnsGetRecord(hostname string, recordType ...int) []map[string]any {
 		if err == nil {
 			for _, mx := range mxRecords {
 				target := mx.Host
-				if strings.HasSuffix(target, ".") {
-					target = target[:len(target)-1]
-				}
+				target = strings.TrimSuffix(target, ".")
 				record := map[string]any{
 					"host":   hostname,
 					"class":  "IN",
@@ -226,9 +218,7 @@ func DnsGetRecord(hostname string, recordType ...int) []map[string]any {
 		if err == nil {
 			for _, ns := range nsRecords {
 				target := ns.Host
-				if strings.HasSuffix(target, ".") {
-					target = target[:len(target)-1]
-				}
+				target = strings.TrimSuffix(target, ".")
 				record := map[string]any{
 					"host":   hostname,
 					"class":  "IN",
@@ -262,9 +252,7 @@ func DnsGetRecord(hostname string, recordType ...int) []map[string]any {
 	if rType&DNS_CNAME != 0 {
 		cname, err := net.LookupCNAME(hostname)
 		if err == nil && cname != hostname+"." {
-			if strings.HasSuffix(cname, ".") {
-				cname = cname[:len(cname)-1]
-			}
+			cname = strings.TrimSuffix(cname, ".")
 			record := map[string]any{
 				"host":   hostname,
 				"class":  "IN",

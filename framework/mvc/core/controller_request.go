@@ -53,6 +53,44 @@ func (c *BaseController) GetInt(key string, def ...int) int {
 	return 0
 }
 
+// GetInt32 获取整数参数
+func (c *BaseController) GetInt32(key string, def ...int32) int32 {
+	if c.Ctx == nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return 0
+	}
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			return int32(i)
+		}
+	}
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
+}
+
+// GetInt64 获取整数参数
+func (c *BaseController) GetInt64(key string, def ...int64) int64 {
+	if c.Ctx == nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return 0
+	}
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseInt(string(val), 10, 64); err == nil {
+			return i
+		}
+	}
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
+}
+
 // GetParam 获取路径参数
 func (c *BaseController) GetParam(key string) string {
 	if c.Ctx == nil {
@@ -197,7 +235,7 @@ func (c *BaseController) IsMethod(method string) bool {
 	if c.Ctx == nil {
 		return false
 	}
-	return strings.ToUpper(string(c.Ctx.Request().Method())) == strings.ToUpper(method)
+	return strings.EqualFold(string(c.Ctx.Request().Method()), method)
 }
 
 // IsPost 判断是否为POST请求

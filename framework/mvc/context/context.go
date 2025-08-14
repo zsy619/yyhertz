@@ -397,7 +397,7 @@ func (ctx *Context) Request() *app.RequestContext {
 	return ctx.request
 }
 
-// RequestContext 获取RequestContext (兼容性方法)  
+// RequestContext 获取RequestContext (兼容性方法)
 func (ctx *Context) RequestContext() *app.RequestContext {
 	return ctx.request
 }
@@ -427,7 +427,7 @@ func (ctx *Context) ParamKeys() []string {
 	if len(ctx.params) == 0 {
 		return nil
 	}
-	
+
 	keys := make([]string, len(ctx.params))
 	for i, param := range ctx.params {
 		keys[i] = param.Key
@@ -440,7 +440,7 @@ func (ctx *Context) ParamMap() map[string]string {
 	if len(ctx.params) == 0 {
 		return make(map[string]string)
 	}
-	
+
 	paramMap := make(map[string]string, len(ctx.params))
 	for _, param := range ctx.params {
 		paramMap[param.Key] = param.Value
@@ -453,7 +453,7 @@ func (ctx *Context) ParamValues() []string {
 	if len(ctx.params) == 0 {
 		return nil
 	}
-	
+
 	values := make([]string, len(ctx.params))
 	for i, param := range ctx.params {
 		values[i] = param.Value
@@ -582,7 +582,7 @@ func (ctx *Context) Copy(reader io.Reader) (int64, error) {
 				break
 			}
 			return totalWritten, &ContextError{
-				Code:    "READ_ERROR", 
+				Code:    "READ_ERROR",
 				Message: "Failed to read from source: " + readErr.Error(),
 				Cause:   readErr,
 			}
@@ -606,7 +606,7 @@ func (ctx *Context) CopyBuffer(reader io.Reader, buf []byte) (int64, error) {
 		}
 	}
 
-	if buf == nil || len(buf) == 0 {
+	if nil == buf || len(buf) == 0 {
 		// 如果没有提供缓冲区，使用默认的Copy方法
 		return ctx.Copy(reader)
 	}
@@ -650,7 +650,7 @@ func (ctx *Context) CopyBuffer(reader io.Reader, buf []byte) (int64, error) {
 func (ctx *Context) CopyWithContentType(reader io.Reader, contentType string) (int64, error) {
 	// 设置Content-Type
 	ctx.SetContentType(contentType)
-	
+
 	// 执行复制
 	return ctx.Copy(reader)
 }
@@ -686,7 +686,7 @@ func (ctx *Context) StreamCopy(reader io.Reader) (int64, error) {
 				}
 			}
 			totalWritten += int64(bytesRead)
-			
+
 			// 流式传输时，每次写入后尝试刷新（如果writer支持）
 			if flusher, ok := ctx.writer.(interface{ Flush() error }); ok {
 				flusher.Flush()
@@ -701,7 +701,7 @@ func (ctx *Context) StreamCopy(reader io.Reader) (int64, error) {
 			}
 			return totalWritten, &ContextError{
 				Code:    "READ_ERROR",
-				Message: "Failed to read from source: " + readErr.Error(), 
+				Message: "Failed to read from source: " + readErr.Error(),
 				Cause:   readErr,
 			}
 		}

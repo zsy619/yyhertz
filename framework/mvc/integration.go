@@ -1,5 +1,21 @@
-// Package mvc MVC框架集成文件
-// 将优化后的中间件管道和错误处理系统与FastEngine整合
+// Package mvc 提供MVC框架的高级集成和优化功能
+//
+// 本文件实现了增强FastEngine，将优化后的中间件管道和智能错误处理系统
+// 与基础的FastEngine进行深度集成，提供了企业级的性能和稳定性。
+//
+// 主要特性：
+// - 智能中间件管理：支持编译时优化和运行时管理
+// - 高级错误处理：包含错误分类、自动恢复和智能分发
+// - 性能监控：实时统计和系统健康监控
+// - 配置驱动：支持灵活的配置管理和热更新
+// - 环境适配：提供开发、测试、生产环境的预设配置
+//
+// 适用场景：
+// - 大型企业级应用
+// - 高可用性系统
+// - 微服务架构
+// - 高性能要求的应用
+// - 复杂的中间件链路
 package mvc
 
 import (
@@ -13,53 +29,120 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
-// EnhancedFastEngine 增强的FastEngine
-// 集成了优化的中间件管道和智能错误处理
+// EnhancedFastEngine 增强型高性能Web引擎
+//
+// EnhancedFastEngine在基础FastEngine的基础上增加了企业级的特性，
+// 包括智能中间件管理、高级错误处理和性能监控等功能。
+// 是为生产环境设计的高性能、高可用性的Web引擎。
+//
+// 组件说明：
+// - FastEngine: 基础高性能路由引擎
+// - MiddlewareManager: 中间件的生命周期管理和优化
+// - ErrorDispatcher: 错误事件的分发和处理
+// - IntelligentClassifier: 基于AI的错误分类和预测
+// - AutoRecovery: 自动错误恢复和系统自愈
+// - MVCConfig: 统一的配置管理系统
+//
+// 性能特性：
+// - 零拷贝中间件链编译
+// - 内存池优化和对象复用
+// - 并发安全的错误处理
+// - 热更新和配置重载
+// - 自适应负载均衡
 type EnhancedFastEngine struct {
-	*engine.FastEngine                               // 嵌入原始引擎
-	middlewareManager  *middleware.MiddlewareManager // 中间件管理器
-	errorDispatcher    *errors.ErrorDispatcher       // 错误分发器
-	errorClassifier    *errors.IntelligentClassifier // 错误分类器
-	autoRecovery       *errors.AutoRecovery          // 自动恢复系统
-	config             *config.MVCConfig             // MVC配置
+	// 嵌入基础引擎，继承所有基础功能
+	*engine.FastEngine
+
+	// 中间件管理器，负责中间件的注册、编译和执行
+	middlewareManager *middleware.MiddlewareManager
+
+	// 错误分发器，将错误路由给适当的处理器
+	errorDispatcher *errors.ErrorDispatcher
+
+	// 智能错误分类器，自动分析和分类错误类型
+	errorClassifier *errors.IntelligentClassifier
+
+	// 自动恢复系统，实现系统的自我修复能力
+	autoRecovery *errors.AutoRecovery
+
+	// 统一配置管理，控制所有组件的行为
+	config *config.MVCConfig
 }
 
-// NewEnhancedFastEngine 创建增强的FastEngine
+// ============= 构造函数 =============
+
+// NewEnhancedFastEngine 创建新的增强型FastEngine实例
+//
+// 该函数创建一个完整配置的增强型引擎，集成了所有高级特性。
+// 如果未提供配置，将自动从配置文件加载或使用默认配置。
+//
+// 参数：
+//   - mvcConfig: ...*config.MVCConfig - 可选的MVC配置，如未提供将自动加载
+//
+// 返回值：
+//   - *EnhancedFastEngine: 完整初始化的增强引擎实例
+//
+// 初始化过程：
+//   1. 加载或使用默认配置
+//   2. 创建基础FastEngine
+//   3. 初始化中间件管理器
+//   4. 设置错误处理系统
+//   5. 启动性能监控和统计
+//
+// 使用示例：
+//
+//	// 使用默认配置
+//	engine := mvc.NewEnhancedFastEngine()
+//
+//	// 使用自定义配置
+//	customConfig := &config.MVCConfig{
+//		Middleware: config.MiddlewareConfig{
+//			EnableOptimization: true,
+//			PrecompileChains: true,
+//		},
+//		ErrorHandling: config.ErrorHandlingConfig{
+//			EnableIntelligent: true,
+//			EnableClassification: true,
+//		},
+//	}
+//	engine := mvc.NewEnhancedFastEngine(customConfig)
 func NewEnhancedFastEngine(mvcConfig ...*config.MVCConfig) *EnhancedFastEngine {
-	// 使用默认配置或提供的配置
+	// 配置加载逻辑：优先级为 参数 > 配置文件 > 默认配置
 	var cfg *config.MVCConfig
 	if len(mvcConfig) > 0 && mvcConfig[0] != nil {
+		// 使用用户提供的配置
 		cfg = mvcConfig[0]
 	} else {
 		// 尝试从配置文件加载
 		if loadedConfig, err := config.GetMVCConfig(); err == nil {
 			cfg = loadedConfig
 		} else {
-			// 使用默认配置
+			// 使用框架默认配置
 			defaultConfig := config.GetDefaultMVCConfig()
 			cfg = &defaultConfig
 		}
 	}
 
-	// 创建基础引擎
+	// 步骤1：创建基础高性能路由引擎
 	baseEngine := engine.NewFastEngine()
 
-	// 创建增强组件
+	// 步骤2：初始化所有增强组件
 	middlewareManager := middleware.NewMiddlewareManager()
 	errorDispatcher := errors.NewErrorDispatcher()
 	errorClassifier := errors.NewIntelligentClassifier()
 	autoRecovery := errors.NewAutoRecovery(errorClassifier)
 
+	// 步骤3：组装增强引擎实例
 	enhanced := &EnhancedFastEngine{
-		FastEngine:        baseEngine,
-		middlewareManager: middlewareManager,
-		errorDispatcher:   errorDispatcher,
-		errorClassifier:   errorClassifier,
-		autoRecovery:      autoRecovery,
-		config:            cfg,
+		FastEngine:        baseEngine,        // 嵌入基础引擎
+		middlewareManager: middlewareManager, // 中间件管理器
+		errorDispatcher:   errorDispatcher,   // 错误分发器
+		errorClassifier:   errorClassifier,   // 智能分类器
+		autoRecovery:      autoRecovery,      // 自动恢复系统
+		config:            cfg,               // 配置管理
 	}
 
-	// 初始化增强功能
+	// 步骤4：初始化所有增强功能和集成
 	enhanced.initialize()
 
 	return enhanced

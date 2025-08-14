@@ -458,7 +458,7 @@ func (c *BaseController) RegenerateSessionID() {
 // SetSecureSessionCookie 设置安全的会话Cookie
 func (c *BaseController) SetSecureSessionCookie(sessionID string) {
 	expiry := time.Now().Add(24 * time.Hour) // 24小时过期
-	maxAge := int(expiry.Sub(time.Now()).Seconds())
+	maxAge := int(time.Until(expiry).Seconds())
 
 	// 设置安全的Cookie选项
 	secure := ""

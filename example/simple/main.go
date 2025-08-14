@@ -16,8 +16,8 @@ func main() {
 	app := mvc.HertzApp
 
 	// 设置开发工具
-	if err := devtools.SetupDevTools(app); err != nil {
-		fmt.Printf("设置开发工具失败: %v\n", err)
+	if err := devtools.SetupDevTools(app, nil); err != nil {
+		mvc.LogErrorf("设置开发工具失败: %v\n", err)
 	}
 
 	app.SetStaticPath("./static")
@@ -50,9 +50,9 @@ func main() {
 	docsController := &controllers.DocsController{}
 
 	// 自动注册路由 (使用新的AutoRouters方法)
-	app.AutoRouters(homeController, userController, adminController, markdownController, docsController)
+	app.RouterAuto(homeController, userController, adminController, markdownController, docsController)
 
-	app.RouterPrefix("/", homeController, "GetIndex", "*:/")
+	app.RouterPrefix("/", homeController, true, "GetIndex", "*:/")
 
 	fmt.Println("🚀 YYHertz Namespace功能演示启动...", homeController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", homeController.GetControllerName())

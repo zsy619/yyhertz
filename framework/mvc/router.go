@@ -29,7 +29,31 @@ func WithContext(ctx context.Context, enhancedCtx *contextenhanced.Context) cont
 	return context.WithValue(ctx, enhancedContextKey, enhancedCtx)
 }
 
-// FromContext 从context.Context中获取增强Context
+// FromContext 从标准context.Context中获取增强Context
+//
+// 该函数安全地从标准context.Context中提取增强Context实例。
+// 如果提取失败或类型不匹配，返回nil。
+//
+// 参数：
+//   - ctx: context.Context - 包含增强Context的标准context
+//
+// 返回值：
+//   - *contextenhanced.Context: 增强Context实例，如果不存在则返回nil
+//
+// 使用示例：
+//
+//	func simpleHandler(ctx context.Context) {
+//		enhancedCtx := mvc.FromContext(ctx)
+//		if enhancedCtx == nil {
+//			// 处理错误情况
+//			return
+//		}
+//		enhancedCtx.JSON(200, map[string]string{"status": "ok"})
+//	}
+//
+// 注意事项：
+//   - 在SimpleHandlerFunc中使用时，需要检查返回值是否为nil
+//   - 只有通过YYHertz路由注册的处理函数才能正确获取增强Context
 func FromContext(ctx context.Context) *contextenhanced.Context {
 	if enhancedCtx, ok := ctx.Value(enhancedContextKey).(*contextenhanced.Context); ok {
 		return enhancedCtx
@@ -37,7 +61,32 @@ func FromContext(ctx context.Context) *contextenhanced.Context {
 	return nil
 }
 
-// MustFromContext 从context.Context中获取增强Context，如果不存在则panic
+// MustFromContext 强制从标准context.Context中获取增强Context
+//
+// 该函数与FromContext类似，但在无法获取增强Context时会触发panic。
+// 适用于确保增强Context必须存在的场景。
+//
+// 参数：
+//   - ctx: context.Context - 包含增强Context的标准context
+//
+// 返回值：
+//   - *contextenhanced.Context: 增强Context实例
+//
+// Panic情况：
+//   - 当context中不存在增强Context时会触发panic
+//
+// 使用示例：
+//
+//	func criticalHandler(ctx context.Context) {
+//		// 确保增强Context存在，否则程序崩溃
+//		enhancedCtx := mvc.MustFromContext(ctx)
+//		enhancedCtx.JSON(200, map[string]string{"status": "ok"})
+//	}
+//
+// 注意事项：
+//   - 仅在确保增强Context必须存在的情况下使用
+//   - 建议在大多数情况下使用FromContext并检查返回值
+//   - panic会中断请求处理，需要有适当的恢复机制
 func MustFromContext(ctx context.Context) *contextenhanced.Context {
 	enhancedCtx := FromContext(ctx)
 	if enhancedCtx == nil {

@@ -43,7 +43,7 @@ var ReservedMethods = map[string]bool{
 	"SetSecureCookie": true, "GetSecureCookie": true,
 
 	// ============= Session操作方法 =============
-	"SetSession": true, "GetSession": true, "DeleteSession": true,
+	"SetSession": true, "GetSession": true, "DeleteSession": true, "DestroySession": true,
 	"HasSession": true, "GetSessionID": true, "RegenerateSessionID": true,
 
 	// ============= 请求参数获取方法 =============
@@ -83,7 +83,7 @@ var ReservedMethods = map[string]bool{
 	"AddMethodMapping": true, "GetMethodMapping": true, "SetMethodMapping": true, "GetMappedMethod": true,
 	"SetRoutePattern": true, "GetRoutePattern": true, "SetRouteParam": true, "GetRouteParam": true,
 	"GetRouteParams": true, "SetRouteParams": true,
-	"URLFor": true, "BuildURL": true, "URLMapping": true, "HandlerFunc": true, 
+	"URLFor": true, "BuildURL": true, "URLMapping": true, "HandlerFunc": true,
 	"AddURLMapping": true, "GetURLMappings": true,
 
 	// ============= 文件处理方法 =============
@@ -177,6 +177,7 @@ var ReservedMethods = map[string]bool{
 
 var ControllerNameSuffixReserved = map[string]bool{
 	"Controller": true,
+	"Control":    true,
 	"Ctrl":       true,
 	"Handler":    true,
 }

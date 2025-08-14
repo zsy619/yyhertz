@@ -692,11 +692,13 @@ func (c *BaseController) detectControllerNameFromReflection() string {
 		// 获取类型名称
 		typeName := actualType.Name()
 
-		// 移除Controller后缀，保持原始大小写
-		if strings.HasSuffix(typeName, "Controller") {
-			typeName = typeName[:len(typeName)-10]
+		// 移除后缀，保持原始大小写
+		for suffix := range ControllerNameSuffixReserved {
+			if strings.HasSuffix(typeName, suffix) {
+				typeName = strings.TrimSuffix(typeName, suffix)
+				break
+			}
 		}
-
 		return typeName
 	}
 
@@ -753,9 +755,7 @@ func (c *BaseController) detectControllerNameFromReflection() string {
 	typeName := actualType.Name()
 
 	// 移除Controller后缀，保持原始大小写
-	if strings.HasSuffix(typeName, "Controller") {
-		typeName = typeName[:len(typeName)-10]
-	}
+	typeName = strings.TrimSuffix(typeName, "Controller")
 
 	return typeName
 }

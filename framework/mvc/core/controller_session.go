@@ -57,3 +57,10 @@ func (c *BaseController) GetSessionID() string {
 	}
 	return ""
 }
+
+// DestroySession 删除全部Session数据
+func (c *BaseController) DestroySession() {
+	if store := c.getSession(); store != nil {
+		store.Clear()
+	}
+}

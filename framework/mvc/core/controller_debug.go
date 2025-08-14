@@ -199,7 +199,7 @@ func (c *BaseController) DumpRequest() string {
 		return "Context is nil"
 	}
 
-	dump := fmt.Sprintf("=== REQUEST DUMP ===\n")
+	dump := "=== REQUEST DUMP ===\n"
 	dump += fmt.Sprintf("Method: %s\n", c.Ctx.Method())
 	dump += fmt.Sprintf("Path: %s\n", c.Ctx.Path())
 	dump += fmt.Sprintf("Query: %s\n", c.Ctx.Request().URI().QueryString())

@@ -359,46 +359,55 @@ func (app *App) LogPanicf(format string, args ...any) {
 
 // ============= 路由注册方法 =============
 
-// AutoRouters 自动注册多个控制器路由（根据控制器方法名自动推导路由）
-func (app *App) AutoRouters(controllers ...IController) *App {
-	return app.AutoRoutersPrefix("", controllers...)
+// RouterAuto 自动注册多个控制器路由（根据控制器方法名自动推导路由）
+func (app *App) RouterAuto(controllers ...IController) *App {
+	if len(controllers) == 0 {
+		return app
+	}
+	return app.RouterAutoPrefix("", controllers...)
 }
 
-// Include 向后兼容的别名方法，自动注册多个控制器路由
-func (app *App) Include(controllers ...IController) *App {
-	return app.AutoRouters(controllers...)
-}
-
-// AutoRoutersPrefix 自动注册多个控制器路由，使用指定的路径前缀
-func (app *App) AutoRoutersPrefix(prefix string, ctrls ...IController) *App {
+// RouterAutoPrefix 自动注册多个控制器路由，使用指定的路径前缀
+func (app *App) RouterAutoPrefix(prefix string, ctrls ...IController) *App {
+	if len(ctrls) == 0 {
+		return app
+	}
 	for _, ctrl := range ctrls {
 		app.registerAutoRoutes(prefix, ctrl)
 	}
 	return app
 }
 
-// AutoRouter 自动注册单个控制器
-func (app *App) AutoRouter(ctrl IController) *App {
-	return app.AutoRouterPrefix("", ctrl)
-}
-
-// 注册单个控制器（无routes时自动注册，有routes时手动注册）
-func (app *App) AutoRouterPrefix(prefix string, ctrl IController) *App {
-	app.registerManualRoutes(prefix, ctrl)
-	return app
+// Include 向后兼容的别名方法，自动注册多个控制器路由
+func (app *App) Include(controllers ...IController) *App {
+	return app.RouterAutoPrefix("", controllers...)
 }
 
 // Router 手动注册控制器路由
-func (app *App) Router(ctrl IController, routes ...string) *App {
-	return app.RouterPrefix("", ctrl, routes...)
+func (app *App) Router(ctrl IController, routePair bool, routes ...string) *App {
+	return app.RouterPrefix("", ctrl, routePair, routes...)
+}
+
+// RouterMap 手动注册控制器路由（使用map格式）
+func (app *App) RouterMap(ctrl IController, routes map[string]string) *App {
+	return app.RouterPrefixMap("", ctrl, routes)
 }
 
 // RouterPrefix 手动注册控制器路由
-func (app *App) RouterPrefix(prefix string, ctrl IController, routes ...string) *App {
+func (app *App) RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...string) *App {
 	if len(routes) == 0 {
 		return app
 	}
-	app.registerManualRoutes(prefix, ctrl, routes...)
+	app.registerManualRoutes(prefix, ctrl, routePair, routes...)
+	return app
+}
+
+// RouterPrefixMap 手动注册控制器路由（使用map格式）
+func (app *App) RouterPrefixMap(prefix string, ctrl IController, routes map[string]string) *App {
+	if len(routes) == 0 {
+		return app
+	}
+	app.registerManualRoutesMap(prefix, ctrl, routes)
 	return app
 }
 
@@ -452,25 +461,60 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 		switch {
 		case strings.HasPrefix(methodName, "Get"):
 			httpMethod = "GET"
-			actionName = strings.TrimPrefix(methodName, "Get")
+			if methodName == "Get" || methodName == "Index" {
+				actionName = "" // 特殊处理Get和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Get")
+			}
 		case strings.HasPrefix(methodName, "Post"):
 			httpMethod = "POST"
-			actionName = strings.TrimPrefix(methodName, "Post")
+			if methodName == "Post" || methodName == "Index" {
+				actionName = "" // 特殊处理Post和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Get")
+			}
+		case strings.HasPrefix(methodName, "Post"):
+			httpMethod = "POST"
+			if methodName == "Post" || methodName == "Index" {
+				actionName = "" // 特殊处理Post和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Post")
+			}
 		case strings.HasPrefix(methodName, "Put"):
 			httpMethod = "PUT"
-			actionName = strings.TrimPrefix(methodName, "Put")
+			if methodName == "Put" || methodName == "Index" {
+				actionName = "" // 特殊处理Put和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Put")
+			}
 		case strings.HasPrefix(methodName, "Delete"):
 			httpMethod = "DELETE"
-			actionName = strings.TrimPrefix(methodName, "Delete")
+			if methodName == "Delete" || methodName == "Index" {
+				actionName = "" // 特殊处理Delete和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Delete")
+			}
 		case strings.HasPrefix(methodName, "Patch"):
 			httpMethod = "PATCH"
-			actionName = strings.TrimPrefix(methodName, "Patch")
+			if methodName == "Patch" || methodName == "Index" {
+				actionName = "" // 特殊处理Patch和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Patch")
+			}
 		case strings.HasPrefix(methodName, "Head"):
 			httpMethod = "HEAD"
-			actionName = strings.TrimPrefix(methodName, "Head")
+			if methodName == "Head" || methodName == "Index" {
+				actionName = "" // 特殊处理Head和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Head")
+			}
 		case strings.HasPrefix(methodName, "Options"):
 			httpMethod = "OPTIONS"
-			actionName = strings.TrimPrefix(methodName, "Options")
+			if methodName == "Options" || methodName == "Index" {
+				actionName = "" // 特殊处理Options和Index方法
+			} else {
+				actionName = strings.TrimPrefix(methodName, "Options")
+			}
 		}
 
 		// 构建路由路径
@@ -496,20 +540,120 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 }
 
 // registerManualRoutes 手动注册路由
-func (app *App) registerManualRoutes(basePath string, controller IController, routes ...string) {
+func (app *App) registerManualRoutes(basePath string, controller IController, routePair bool, routes ...string) {
 	t := reflect.TypeOf(controller)                       // 返回 *controllers.UserController
 	controllerName := strings.TrimPrefix(t.String(), "*") // 得到 "controllers.UserController"
-	controllerName = strings.TrimSuffix(controllerName, "Controller")
-	fmt.Printf("Registering routes for controller: %s\n", controllerName)
-
-	for i := 0; i < len(routes); i += 2 {
-		if i+1 >= len(routes) {
+	// controllerName = strings.TrimSuffix(controllerName, "Controller")
+	for suffix := range ControllerNameSuffixReserved {
+		if strings.HasSuffix(controllerName, suffix) {
+			controllerName = strings.TrimSuffix(controllerName, suffix)
 			break
 		}
+	}
+	fmt.Printf("Registering routes for controller: %s\n", controllerName)
+	if routePair == false {
+		for i := range routes {
+			routeSpec := routes[i]
+			// 解析路由规格: "GET:/path|method" 或 "/path" 或 "*:/path"
+			httpMethod := "ANY"
+			routePath := routeSpec
+			methodName := ""
 
-		methodName := routes[i]
-		routeSpec := routes[i+1]
+			if colonIndex := strings.Index(routeSpec, ":"); colonIndex != -1 {
+				httpMethod = routeSpec[:colonIndex]
+				if httpMethod == "*" { // 兼容旧格式的路由语法: *:path
+					httpMethod = "ANY"
+				}
+				routePath = routeSpec[colonIndex+1:]
+				if pipeIndex := strings.Index(routePath, "|"); pipeIndex != -1 {
+					routePath = routePath[:pipeIndex]
+					methodName = routeSpec[pipeIndex+1:]
+				} else {
+					methodName = strings.TrimPrefix(routePath, "/")
+				}
+			}
 
+			routePath = strings.ToLower(routePath) // 确保路由路径小写
+
+			// 确保路由路径以基础路径开头
+			if !strings.HasPrefix(routePath, basePath) {
+				routePath = basePath + routePath
+			}
+
+			// 获取控制器方法
+			reflectVal := reflect.ValueOf(controller)
+			method := reflectVal.MethodByName(methodName)
+
+			if !method.IsValid() {
+				app.LogErrorf("Method %s not found in controller", methodName)
+				return
+			}
+
+			// 创建处理函数
+			handler := app.createMethodHandler(controller, methodName)
+
+			// 注册路由
+			app.registerRoute(httpMethod, routePath, handler)
+		}
+	} else {
+		for i := 0; i < len(routes); i += 2 {
+			if i+1 >= len(routes) {
+				break
+			}
+
+			methodName := routes[i]
+			routeSpec := routes[i+1]
+
+			// 解析路由规格: "GET:/path" 或 "/path" 或 "*:/path"
+			httpMethod := "ANY"
+			routePath := routeSpec
+
+			if colonIndex := strings.Index(routeSpec, ":"); colonIndex != -1 {
+				httpMethod = routeSpec[:colonIndex]
+				if httpMethod == "*" { // 兼容旧格式的路由语法: *:path
+					httpMethod = "ANY"
+				}
+				routePath = routeSpec[colonIndex+1:]
+			}
+
+			routePath = strings.ToLower(routePath) // 确保路由路径小写
+
+			// 确保路由路径以基础路径开头
+			if !strings.HasPrefix(routePath, basePath) {
+				routePath = basePath + routePath
+			}
+
+			// 获取控制器方法
+			reflectVal := reflect.ValueOf(controller)
+			method := reflectVal.MethodByName(methodName)
+
+			if !method.IsValid() {
+				app.LogErrorf("Method %s not found in controller", methodName)
+				continue
+			}
+
+			// 创建处理函数
+			handler := app.createMethodHandler(controller, methodName)
+
+			// 注册路由
+			app.registerRoute(httpMethod, routePath, handler)
+		}
+	}
+}
+
+func (app *App) registerManualRoutesMap(basePath string, controller IController, routes map[string]string) {
+	t := reflect.TypeOf(controller)                       // 返回 *controllers.UserController
+	controllerName := strings.TrimPrefix(t.String(), "*") // 得到 "controllers.UserController"
+	// controllerName = strings.TrimSuffix(controllerName, "Controller")
+	for suffix := range ControllerNameSuffixReserved {
+		if strings.HasSuffix(controllerName, suffix) {
+			controllerName = strings.TrimSuffix(controllerName, suffix)
+			break
+		}
+	}
+	fmt.Printf("Registering routes for controller: %s\n", controllerName)
+
+	for methodName, routeSpec := range routes {
 		// 解析路由规格: "GET:/path" 或 "/path" 或 "*:/path"
 		httpMethod := "ANY"
 		routePath := routeSpec

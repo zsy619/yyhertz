@@ -175,7 +175,7 @@ func (c *BaseController) GetRawData() ([]byte, error) {
 
 // GetBodySize 获取请求体大小
 func (c *BaseController) GetBodySize() int64 {
-	if c.Ctx == nil || c.Ctx.Request == nil {
+	if c.Ctx == nil || c.Ctx.Request() == nil {
 		return 0
 	}
 

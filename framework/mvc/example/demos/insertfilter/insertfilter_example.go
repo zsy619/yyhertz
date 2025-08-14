@@ -59,7 +59,7 @@ func main() {
 
 	// 创建应用并注册控制器
 	app := mvc.HertzApp
-	app.AutoRouters(&ExampleController{})
+	app.RouterAuto(&ExampleController{})
 
 	fmt.Println("\n🚀 服务器启动在端口 8080")
 	fmt.Println("📝 测试URL:")

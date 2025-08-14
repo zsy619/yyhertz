@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"runtime"
 	"sync"
@@ -13,6 +12,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/route"
+
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // DebugInfo 调试信息
@@ -375,9 +376,9 @@ func (dp *DebugPanel) RegisterRoutes(engine any) {
 
 	// 尝试不同的类型断言
 	if h, ok := engine.(*route.Engine); ok {
-		debugGroup = h.Group("/debug")
+		debugGroup = h.Group("/yyhertz/debug")
 	} else {
-		log.Println("无法注册调试路由，未知引擎类型")
+		config.Error("无法注册调试路由，未知引擎类型")
 		return // 如果类型不匹配，直接返回
 	}
 
@@ -399,7 +400,7 @@ func (dp *DebugPanel) RegisterRoutes(engine any) {
 		case "OPTIONS":
 			debugGroup.OPTIONS(path, handler)
 		default:
-			log.Printf("不支持的HTTP方法: %s", method)
+			config.Warnf("不支持的HTTP方法: %s", method)
 		}
 	}
 
@@ -509,7 +510,7 @@ func (dp *DebugPanel) debugPanel(ctx context.Context, c *app.RequestContext) {
 
     <script>
         function loadRequests() {
-            fetch('/debug/requests')
+            fetch('/yyhertz/debug/requests')
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('requests');
@@ -571,7 +572,7 @@ func (dp *DebugPanel) debugPanel(ctx context.Context, c *app.RequestContext) {
         
         function clearRequests() {
             if (confirm('确定要清空所有调试信息吗？')) {
-                fetch('/debug/requests', { method: 'DELETE' })
+                fetch('/yyhertz/debug/requests', { method: 'DELETE' })
                     .then(response => response.json())
                     .then(data => {
                         alert('调试信息已清空');
@@ -585,7 +586,7 @@ func (dp *DebugPanel) debugPanel(ctx context.Context, c *app.RequestContext) {
         }
         
         function toggleDebug() {
-            fetch('/debug/toggle', { method: 'POST' })
+            fetch('/yyhertz/debug/toggle', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     alert('调试状态已切换');

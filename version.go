@@ -467,9 +467,9 @@ func main() {
 	homeController := &HomeController{}
 	systemController := &SystemController{}
 
-	app.AutoRouterPrefix("/user", userController)
-	app.AutoRouterPrefix("/home", homeController)
-	app.AutoRouterPrefix("/system", systemController)
+	app.RouterAutoPrefix("/user", userController)
+	app.RouterAutoPrefix("/home", homeController)
+	app.RouterAutoPrefix("/system", systemController)
 
 	// 首页路由
 	app.GET("/", mvc.HandlerFunc(func(ctx context.Context, c *mvc.RequestContext) {

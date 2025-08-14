@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
+
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
@@ -81,7 +82,7 @@ func (aa *AnnotationApp) AutoRouters(controllers ...core.IController) *core.App 
 
 	// 使用原有方式注册其他控制器
 	if len(regularControllers) > 0 {
-		aa.App.AutoRouters(regularControllers...)
+		aa.App.RouterAuto(regularControllers...)
 	}
 
 	return aa.App

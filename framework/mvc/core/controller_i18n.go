@@ -465,10 +465,10 @@ func (c *BaseController) SwitchLanguage(lang string, redirectURL ...string) {
 func (c *BaseController) SetLanguageCookie(lang string) {
 	// 设置1年有效期的语言Cookie
 	expiry := time.Now().AddDate(1, 0, 0)
-	maxAge := int(expiry.Sub(time.Now()).Seconds())
+	maxAge := int(time.Until(expiry).Seconds())
 
 	// 使用临时方法，避免导入cookie包
-	if c.Ctx != nil && c.Ctx.Request != nil {
+	if c.Ctx != nil && c.Ctx.Request() != nil {
 		cookieStr := fmt.Sprintf("language=%s; Max-Age=%d; Path=/; HttpOnly", lang, maxAge)
 		c.SetHeader("Set-Cookie", cookieStr)
 	}

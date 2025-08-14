@@ -18,7 +18,7 @@ func (c *BaseController) ValidateRequired(value any, fieldName string) error {
 	if value == nil {
 		return fmt.Errorf("%s is required", fieldName)
 	}
-	
+
 	switch v := value.(type) {
 	case string:
 		if strings.TrimSpace(v) == "" {
@@ -35,22 +35,22 @@ func (c *BaseController) ValidateRequired(value any, fieldName string) error {
 			return fmt.Errorf("%s is required", fieldName)
 		}
 	}
-	
+
 	return nil
 }
 
 // ValidateLength 验证字符串长度
 func (c *BaseController) ValidateLength(value string, min, max int, fieldName string) error {
 	length := len(value)
-	
+
 	if min > 0 && length < min {
 		return fmt.Errorf("%s must be at least %d characters long", fieldName, min)
 	}
-	
+
 	if max > 0 && length > max {
 		return fmt.Errorf("%s must not exceed %d characters", fieldName, max)
 	}
-	
+
 	return nil
 }
 
@@ -58,7 +58,7 @@ func (c *BaseController) ValidateLength(value string, min, max int, fieldName st
 func (c *BaseController) ValidateRange(value any, min, max float64, fieldName string) error {
 	var numValue float64
 	var err error
-	
+
 	switch v := value.(type) {
 	case int:
 		numValue = float64(v)
@@ -82,15 +82,15 @@ func (c *BaseController) ValidateRange(value any, min, max float64, fieldName st
 	default:
 		return fmt.Errorf("%s must be a number", fieldName)
 	}
-	
+
 	if numValue < min {
 		return fmt.Errorf("%s must be at least %.2f", fieldName, min)
 	}
-	
+
 	if numValue > max {
 		return fmt.Errorf("%s must not exceed %.2f", fieldName, max)
 	}
-	
+
 	return nil
 }
 
@@ -100,11 +100,11 @@ func (c *BaseController) ValidatePattern(value, pattern, fieldName string) error
 	if err != nil {
 		return fmt.Errorf("invalid pattern for %s", fieldName)
 	}
-	
+
 	if !matched {
 		return fmt.Errorf("%s format is invalid", fieldName)
 	}
-	
+
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (c *BaseController) ValidateIn(value any, allowed []any, fieldName string) 
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("%s is not a valid value", fieldName)
 }
 
@@ -156,7 +156,7 @@ func (c *BaseController) ValidatePasswordStrength(password, fieldName string) er
 	if len(password) < 8 {
 		return fmt.Errorf("%s must be at least 8 characters long", fieldName)
 	}
-	
+
 	// 检查是否包含数字
 	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
 	// 检查是否包含小写字母
@@ -165,7 +165,7 @@ func (c *BaseController) ValidatePasswordStrength(password, fieldName string) er
 	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
 	// 检查是否包含特殊字符
 	hasSpecial := regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]`).MatchString(password)
-	
+
 	strengthCount := 0
 	if hasNumber {
 		strengthCount++
@@ -179,11 +179,11 @@ func (c *BaseController) ValidatePasswordStrength(password, fieldName string) er
 	if hasSpecial {
 		strengthCount++
 	}
-	
+
 	if strengthCount < 3 {
 		return fmt.Errorf("%s must contain at least 3 of: numbers, lowercase letters, uppercase letters, special characters", fieldName)
 	}
-	
+
 	return nil
 }
 
@@ -191,23 +191,23 @@ func (c *BaseController) ValidatePasswordStrength(password, fieldName string) er
 
 // ValidationRule 验证规则结构
 type ValidationRule struct {
-	Field     string                 // 字段名
-	Value     any            // 字段值
-	Rules     []string              // 验证规则列表
-	Message   string                // 自定义错误消息
-	Params    map[string]any // 规则参数
+	Field   string         // 字段名
+	Value   any            // 字段值
+	Rules   []string       // 验证规则列表
+	Message string         // 自定义错误消息
+	Params  map[string]any // 规则参数
 }
 
 // ValidateBatch 批量验证
 func (c *BaseController) ValidateBatch(rules []ValidationRule) []error {
 	var errors []error
-	
+
 	for _, rule := range rules {
 		for _, ruleName := range rule.Rules {
 			if err := c.applyRule(rule, ruleName); err != nil {
 				// 使用自定义消息或默认错误消息
 				if rule.Message != "" {
-					errors = append(errors, fmt.Errorf(rule.Message))
+					errors = append(errors, fmt.Errorf("%s", rule.Message))
 				} else {
 					errors = append(errors, err)
 				}
@@ -215,7 +215,7 @@ func (c *BaseController) ValidateBatch(rules []ValidationRule) []error {
 			}
 		}
 	}
-	
+
 	return errors
 }
 
@@ -224,37 +224,37 @@ func (c *BaseController) applyRule(rule ValidationRule, ruleName string) error {
 	switch ruleName {
 	case "required":
 		return c.ValidateRequired(rule.Value, rule.Field)
-	
+
 	case "email":
 		if str, ok := rule.Value.(string); ok {
 			return c.ValidateEmailFormat(str, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for email validation", rule.Field)
-	
+
 	case "phone":
 		if str, ok := rule.Value.(string); ok {
 			return c.ValidatePhoneFormat(str, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for phone validation", rule.Field)
-	
+
 	case "url":
 		if str, ok := rule.Value.(string); ok {
 			return c.ValidateURLFormat(str, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for URL validation", rule.Field)
-	
+
 	case "ip":
 		if str, ok := rule.Value.(string); ok {
 			return c.ValidateIPFormat(str, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for IP validation", rule.Field)
-	
+
 	case "password":
 		if str, ok := rule.Value.(string); ok {
 			return c.ValidatePasswordStrength(str, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for password validation", rule.Field)
-	
+
 	case "length":
 		if str, ok := rule.Value.(string); ok {
 			min := c.getIntParam(rule.Params, "min", 0)
@@ -262,12 +262,12 @@ func (c *BaseController) applyRule(rule ValidationRule, ruleName string) error {
 			return c.ValidateLength(str, min, max, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for length validation", rule.Field)
-	
+
 	case "range":
 		min := c.getFloatParam(rule.Params, "min", 0)
 		max := c.getFloatParam(rule.Params, "max", 0)
 		return c.ValidateRange(rule.Value, min, max, rule.Field)
-	
+
 	case "pattern":
 		if str, ok := rule.Value.(string); ok {
 			pattern := c.getStringParam(rule.Params, "pattern", "")
@@ -277,7 +277,7 @@ func (c *BaseController) applyRule(rule ValidationRule, ruleName string) error {
 			return c.ValidatePattern(str, pattern, rule.Field)
 		}
 		return fmt.Errorf("%s must be a string for pattern validation", rule.Field)
-	
+
 	default:
 		return fmt.Errorf("unknown validation rule: %s", ruleName)
 	}
@@ -290,7 +290,7 @@ func (c *BaseController) getIntParam(params map[string]any, key string, defaultV
 	if params == nil {
 		return defaultValue
 	}
-	
+
 	if value, exists := params[key]; exists {
 		if intValue, ok := value.(int); ok {
 			return intValue
@@ -301,7 +301,7 @@ func (c *BaseController) getIntParam(params map[string]any, key string, defaultV
 			}
 		}
 	}
-	
+
 	return defaultValue
 }
 
@@ -310,7 +310,7 @@ func (c *BaseController) getFloatParam(params map[string]any, key string, defaul
 	if params == nil {
 		return defaultValue
 	}
-	
+
 	if value, exists := params[key]; exists {
 		if floatValue, ok := value.(float64); ok {
 			return floatValue
@@ -324,7 +324,7 @@ func (c *BaseController) getFloatParam(params map[string]any, key string, defaul
 			}
 		}
 	}
-	
+
 	return defaultValue
 }
 
@@ -333,13 +333,13 @@ func (c *BaseController) getStringParam(params map[string]any, key string, defau
 	if params == nil {
 		return defaultValue
 	}
-	
+
 	if value, exists := params[key]; exists {
 		if strValue, ok := value.(string); ok {
 			return strValue
 		}
 	}
-	
+
 	return defaultValue
 }
 
@@ -348,17 +348,17 @@ func (c *BaseController) getStringParam(params map[string]any, key string, defau
 // ValidateForm 验证表单数据
 func (c *BaseController) ValidateForm(validationMap map[string][]string) map[string]string {
 	errors := make(map[string]string)
-	
+
 	for field, rules := range validationMap {
 		value := c.GetForm(field)
-		
+
 		for _, rule := range rules {
 			var err error
-			
+
 			// 解析规则和参数
 			parts := strings.Split(rule, ":")
 			ruleName := parts[0]
-			
+
 			switch ruleName {
 			case "required":
 				err = c.ValidateRequired(value, field)
@@ -387,14 +387,14 @@ func (c *BaseController) ValidateForm(validationMap map[string][]string) map[str
 					}
 				}
 			}
-			
+
 			if err != nil {
 				errors[field] = err.Error()
 				break // 一个字段遇到错误就停止验证该字段的其他规则
 			}
 		}
 	}
-	
+
 	return errors
 }
 
@@ -482,13 +482,13 @@ func (c *BaseController) ValidateInteger(value, fieldName string) error {
 func (c *BaseController) ValidateBoolean(value, fieldName string) error {
 	value = strings.ToLower(strings.TrimSpace(value))
 	validBooleans := []string{"true", "false", "1", "0", "yes", "no", "on", "off"}
-	
+
 	for _, valid := range validBooleans {
 		if value == valid {
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("%s must be a valid boolean value", fieldName)
 }
 
@@ -498,7 +498,7 @@ func (c *BaseController) ValidateBoolean(value, fieldName string) error {
 type ValidationResult struct {
 	IsValid bool              `json:"is_valid"`
 	Errors  map[string]string `json:"errors"`
-	Data    map[string]any `json:"data"`
+	Data    map[string]any    `json:"data"`
 }
 
 // CreateValidationResult 创建验证结果
