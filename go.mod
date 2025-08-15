@@ -7,6 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/hertz-contrib/logger/logrus v1.0.1
+	github.com/mattn/go-sqlite3 v1.14.27
 	github.com/mojocn/base64Captcha v1.3.8
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.20.1
@@ -51,7 +52,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.27 // indirect
 	github.com/microsoft/go-mssqldb v1.8.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -80,7 +80,5 @@ require (
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/zsy619/yyhertz => .
 
 replace haedu.gov.cn/tools => ../河南省大中专学生智慧就业平台/教育部API对接/tools

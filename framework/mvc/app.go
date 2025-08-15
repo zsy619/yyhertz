@@ -30,6 +30,8 @@ package mvc
 // ============= 模块导入 =============
 
 import (
+	"context"
+	"fmt"
 	"sync"
 
 	"github.com/zsy619/yyhertz/framework/constant"
@@ -38,6 +40,7 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/comment"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+	errorPkg "github.com/zsy619/yyhertz/framework/mvc/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/router"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
@@ -233,6 +236,16 @@ func init() {
 		// 创建全局Hertz应用实例
 		HertzApp = GetAppInstance()
 
+		errorPkg.QuickSetup("development")
+
+		// 启用Beego风格的自动错误处理
+		HertzApp.EnableAutoErrorHandling()
+
+		// 添加测试路由（演示手动错误触发）
+		HertzApp.GET("/test-error", func(ctx context.Context, c *RequestContext) {
+			HertzApp.TriggerError(c, 404, fmt.Errorf("测试错误"))
+		})
+
 		// 创建注解应用
 		AnnotationApp = annotation.NewAnnotationWithApp(HertzApp)
 
@@ -263,10 +276,12 @@ func SetStaticPath(localDir string, urlPath ...string) {
 // AddFuncMap 添加全局模板函数的静态方法
 // 参数：name - 函数名字符串，fn - 函数实现
 // 示例：AddFuncMap("containString", tool.ContainString)
-func AddFuncMap(name string, fn any) {
+func AddFuncMap(name string, fn any) error {
 	if HertzApp != nil {
 		HertzApp.AddFuncMap(name, fn)
+		return nil
 	}
+	return fmt.Errorf("hertz app instance is not initialized")
 }
 
 // GetGlobalFuncMap 获取全局模板函数映射的静态方法
@@ -330,4 +345,35 @@ func GetAllFilters() map[int][]*FilterPattern {
 		return HertzApp.GetAllFilters()
 	}
 	return make(map[int][]*FilterPattern)
+}
+
+// ============= Beego风格的错误处理静态方法 =============
+
+// EnableAutoErrorHandling 启用自动错误处理的静态方法
+func EnableAutoErrorHandling() {
+	if HertzApp != nil {
+		HertzApp.EnableAutoErrorHandling()
+	}
+}
+
+// TriggerError 触发错误处理的静态方法
+func TriggerError(ctx *RequestContext, statusCode int, err error) error {
+	if HertzApp != nil {
+		return HertzApp.TriggerError(ctx, statusCode, err)
+	}
+	return err
+}
+
+// Abort 中止请求并触发错误处理的静态方法（类似Beego的Abort）
+func Abort(ctx *RequestContext, statusCode int, message ...string) {
+	if HertzApp != nil {
+		HertzApp.Abort(ctx, statusCode, message...)
+	}
+}
+
+// AbortWithError 中止请求并使用指定错误的静态方法
+func AbortWithError(ctx *RequestContext, statusCode int, err error) {
+	if HertzApp != nil {
+		HertzApp.AbortWithError(ctx, statusCode, err)
+	}
 }

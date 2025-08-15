@@ -15,11 +15,11 @@ import (
 // EnhancedTemplateEngine 增强的模板引擎，支持Beego风格的template include
 type EnhancedTemplateEngine struct {
 	*TemplateEngine
-	
+
 	// 模板定义缓存
 	templateDefs    map[string]*template.Template // 已定义的模板
 	templateDefsMux sync.RWMutex
-	
+
 	// 全局模板实例（包含所有定义）
 	globalTemplate *template.Template
 	globalMux      sync.RWMutex
@@ -31,20 +31,20 @@ func NewEnhancedTemplateEngine(cfg *TemplateConfig) (*EnhancedTemplateEngine, er
 	if err != nil {
 		return nil, err
 	}
-	
+
 	enhanced := &EnhancedTemplateEngine{
 		TemplateEngine: baseEngine,
 		templateDefs:   make(map[string]*template.Template),
 	}
-	
+
 	// 注册增强的模板函数
 	enhanced.registerEnhancedFunctions()
-	
+
 	// 重新加载所有模板以支持include
 	if err := enhanced.loadAllTemplatesWithIncludes(); err != nil {
 		return nil, fmt.Errorf("failed to load templates with includes: %w", err)
 	}
-	
+
 	return enhanced, nil
 }
 
@@ -54,14 +54,14 @@ func (e *EnhancedTemplateEngine) registerEnhancedFunctions() {
 	for name, fn := range e.funcMap {
 		BeegoTemplateFuncs[name] = fn
 	}
-	
+
 	// 添加模板include相关函数
 	BeegoTemplateFuncs["include"] = e.includeTemplateFunc
 	BeegoTemplateFuncs["template"] = e.templateFunc
 	BeegoTemplateFuncs["partial"] = e.partialFunc
 	BeegoTemplateFuncs["component"] = e.componentFunc
 	BeegoTemplateFuncs["render"] = e.renderFunc
-	
+
 	// 更新函数映射
 	e.funcMap = BeegoTemplateFuncs
 }
@@ -70,36 +70,36 @@ func (e *EnhancedTemplateEngine) registerEnhancedFunctions() {
 func (e *EnhancedTemplateEngine) loadAllTemplatesWithIncludes() error {
 	e.globalMux.Lock()
 	defer e.globalMux.Unlock()
-	
+
 	// 创建全局模板实例
 	e.globalTemplate = template.New("global").
 		Delims(e.delimLeft, e.delimRight).
 		Funcs(e.funcMap)
-	
+
 	// 第一步：扫描并收集所有模板文件
 	templateFiles := make(map[string]string) // name -> path
-	
+
 	// 扫描所有视图路径
 	for _, viewPath := range e.viewPaths {
 		if err := e.scanTemplateFiles(viewPath, templateFiles); err != nil {
 			config.Warnf("Error scanning view path %s: %v", viewPath, err)
 		}
 	}
-	
+
 	// 扫描布局目录
 	if e.layoutPath != "" {
 		if err := e.scanTemplateFiles(e.layoutPath, templateFiles); err != nil {
 			config.Warnf("Error scanning layout path %s: %v", e.layoutPath, err)
 		}
 	}
-	
+
 	// 扫描组件目录
 	if e.componentPath != "" {
 		if err := e.scanTemplateFiles(e.componentPath, templateFiles); err != nil {
 			config.Warnf("Error scanning component path %s: %v", e.componentPath, err)
 		}
 	}
-	
+
 	// 第二步：解析所有模板文件到全局模板
 	for _, filePath := range templateFiles {
 		if _, err := e.globalTemplate.ParseFiles(filePath); err != nil {
@@ -107,13 +107,13 @@ func (e *EnhancedTemplateEngine) loadAllTemplatesWithIncludes() error {
 			continue
 		}
 	}
-	
+
 	// 第三步：为每个模板创建单独的实例
 	e.templateDefsMux.Lock()
 	defer e.templateDefsMux.Unlock()
-	
+
 	e.templateDefs = make(map[string]*template.Template)
-	
+
 	for name := range templateFiles {
 		// 克隆全局模板为每个模板创建实例
 		if tmpl := e.globalTemplate.Lookup(name); tmpl != nil {
@@ -125,7 +125,7 @@ func (e *EnhancedTemplateEngine) loadAllTemplatesWithIncludes() error {
 			e.templateDefs[name] = cloned
 		}
 	}
-	
+
 	config.Infof("Loaded %d template files with include support", len(templateFiles))
 	return nil
 }
@@ -136,19 +136,19 @@ func (e *EnhancedTemplateEngine) scanTemplateFiles(dir string, files map[string]
 		if err != nil {
 			return nil // 忽略错误，继续
 		}
-		
+
 		if !d.IsDir() && strings.HasSuffix(path, e.extension) {
 			// 计算模板名称
 			name := e.getTemplateName(path)
 			files[name] = path
-			
+
 			// 同时使用文件名（不含扩展名）作为key
 			baseName := strings.TrimSuffix(filepath.Base(path), e.extension)
 			if baseName != name {
 				files[baseName] = path
 			}
 		}
-		
+
 		return nil
 	})
 }
@@ -157,19 +157,19 @@ func (e *EnhancedTemplateEngine) scanTemplateFiles(dir string, files map[string]
 func (e *EnhancedTemplateEngine) RenderWithIncludes(templateName string, data any) (string, error) {
 	e.templateDefsMux.RLock()
 	defer e.templateDefsMux.RUnlock()
-	
+
 	// 确保模板名有正确的格式
 	templateKey := e.normalizeTemplateName(templateName)
-	
+
 	// 查找模板
 	tmpl := e.findTemplate(templateKey)
 	if tmpl == nil {
 		return "", fmt.Errorf("template '%s' not found", templateName)
 	}
-	
+
 	// 准备渲染数据
 	renderData := e.prepareRenderData(data)
-	
+
 	// 渲染模板
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, templateKey, renderData); err != nil {
@@ -178,7 +178,7 @@ func (e *EnhancedTemplateEngine) RenderWithIncludes(templateName string, data an
 			return "", fmt.Errorf("template execution error: %w", err)
 		}
 	}
-	
+
 	return buf.String(), nil
 }
 
@@ -188,11 +188,11 @@ func (e *EnhancedTemplateEngine) findTemplate(templateName string) *template.Tem
 	if tmpl, exists := e.templateDefs[templateName]; exists {
 		return tmpl
 	}
-	
+
 	// 尝试从全局模板查找
 	e.globalMux.RLock()
 	defer e.globalMux.RUnlock()
-	
+
 	if e.globalTemplate != nil {
 		if tmpl := e.globalTemplate.Lookup(templateName); tmpl != nil {
 			// 克隆一份用于独立渲染
@@ -201,20 +201,18 @@ func (e *EnhancedTemplateEngine) findTemplate(templateName string) *template.Tem
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 // normalizeTemplateName 标准化模板名称
 func (e *EnhancedTemplateEngine) normalizeTemplateName(name string) string {
-	// 移除扩展名
-	if strings.HasSuffix(name, e.extension) {
-		name = strings.TrimSuffix(name, e.extension)
-	}
-	
+	// 移除扩展名（直接去掉后缀，即使不匹配也安全）
+	name = strings.TrimSuffix(name, e.extension)
+
 	// 标准化路径分隔符
 	name = strings.ReplaceAll(name, "\\", "/")
-	
+
 	return name
 }
 
@@ -226,13 +224,13 @@ func (e *EnhancedTemplateEngine) includeTemplateFunc(templateName string, data .
 	if len(data) > 0 {
 		templateData = data[0]
 	}
-	
+
 	content, err := e.RenderWithIncludes(templateName, templateData)
 	if err != nil {
 		config.Errorf("Include template error: %v", err)
 		return template.HTML(fmt.Sprintf("<!-- Include error: %s -->", err.Error()))
 	}
-	
+
 	return template.HTML(content)
 }
 
@@ -248,7 +246,7 @@ func (e *EnhancedTemplateEngine) partialFunc(templateName string, data ...any) t
 	if !strings.Contains(templateName, "/") {
 		partialName = "partials/" + templateName
 	}
-	
+
 	return e.includeTemplateFunc(partialName, data...)
 }
 
@@ -258,7 +256,7 @@ func (e *EnhancedTemplateEngine) componentFunc(componentName string, data ...any
 	if !strings.Contains(componentName, "/") {
 		componentName = "components/" + componentName
 	}
-	
+
 	return e.includeTemplateFunc(componentName, data...)
 }
 
@@ -273,25 +271,25 @@ func (e *EnhancedTemplateEngine) renderFunc(templateName string, data ...any) te
 func (e *EnhancedTemplateEngine) CreateTemplate(name, content string) error {
 	e.globalMux.Lock()
 	defer e.globalMux.Unlock()
-	
+
 	if e.globalTemplate == nil {
 		e.globalTemplate = template.New("global").
 			Delims(e.delimLeft, e.delimRight).
 			Funcs(e.funcMap)
 	}
-	
+
 	// 解析模板内容
 	tmpl, err := e.globalTemplate.New(name).Parse(content)
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", name, err)
 	}
-	
+
 	// 添加到定义缓存
 	e.templateDefsMux.Lock()
 	defer e.templateDefsMux.Unlock()
-	
+
 	e.templateDefs[name] = tmpl
-	
+
 	config.Debugf("Created template definition: %s", name)
 	return nil
 }
@@ -300,7 +298,7 @@ func (e *EnhancedTemplateEngine) CreateTemplate(name, content string) error {
 func (e *EnhancedTemplateEngine) GetTemplateDefinition(name string) *template.Template {
 	e.templateDefsMux.RLock()
 	defer e.templateDefsMux.RUnlock()
-	
+
 	return e.templateDefs[name]
 }
 
@@ -308,12 +306,12 @@ func (e *EnhancedTemplateEngine) GetTemplateDefinition(name string) *template.Te
 func (e *EnhancedTemplateEngine) ListTemplateDefinitions() []string {
 	e.templateDefsMux.RLock()
 	defer e.templateDefsMux.RUnlock()
-	
+
 	names := make([]string, 0, len(e.templateDefs))
 	for name := range e.templateDefs {
 		names = append(names, name)
 	}
-	
+
 	return names
 }
 
@@ -334,7 +332,7 @@ func GetEnhancedEngine() *EnhancedTemplateEngine {
 		config.Errorf("Failed to create enhanced template engine: %v", err)
 		return nil
 	}
-	
+
 	return enhanced
 }
 
@@ -344,7 +342,7 @@ func RenderWithIncludes(templateName string, data any) (string, error) {
 	if engine == nil {
 		return "", fmt.Errorf("enhanced template engine not available")
 	}
-	
+
 	return engine.RenderWithIncludes(templateName, data)
 }
 
@@ -354,6 +352,6 @@ func CreateGlobalTemplate(name, content string) error {
 	if engine == nil {
 		return fmt.Errorf("enhanced template engine not available")
 	}
-	
+
 	return engine.CreateTemplate(name, content)
 }

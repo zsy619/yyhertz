@@ -290,9 +290,9 @@ func (c *IntelligentClassifier) getDefaultClassification(err error) *ErrorClassi
 	// 基于错误类型进行简单推断
 	errMsg := strings.ToLower(err.Error())
 
-	var category ErrorCategory = CategoryUnknown
-	var severity ErrorSeverity = SeverityMedium
-	var retryable bool = false
+	var category ErrorCategory
+	var severity ErrorSeverity
+	var retryable bool
 
 	switch {
 	case strings.Contains(errMsg, "timeout"):

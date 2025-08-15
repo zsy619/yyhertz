@@ -234,7 +234,7 @@ func (e *EnhancedFastEngine) createIntelligentErrorHandler() middleware.Middlewa
 			}
 
 			// 使用错误分发器处理错误
-			err := e.errorDispatcher.Dispatch(ctx, lastError)
+			err := e.errorDispatcher.Dispatch(ctx, 500, lastError)
 			if err != nil {
 				// 如果分发器也无法处理，使用默认处理
 				ctx.JSON(500, map[string]any{

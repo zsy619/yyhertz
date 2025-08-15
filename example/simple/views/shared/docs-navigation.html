@@ -96,6 +96,55 @@
                             </div>
                         </div>
                         
+                        <!-- 错误处理（支持三级导航） -->
+                        <div class="list-group-item border-0 p-0">
+                            <div class="accordion" id="errorHandlingAccordion">
+                                <div class="accordion-item border-0">
+                                    <h6 class="accordion-header" id="headingErrorHandling">
+                                        <button class="accordion-button collapsed list-group-item-action border-0 py-2 ps-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseErrorHandling" aria-expanded="false" data-error-handling-section="true">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>错误处理
+                                        </button>
+                                    </h6>
+                                    <div id="collapseErrorHandling" class="accordion-collapse collapse" data-bs-parent="#errorHandlingAccordion" data-error-handling-section="true">
+                                        <div class="accordion-body p-0">
+                                            <div class="list-group list-group-flush">
+                                                <a href="/docs/mvc-core/error-handling/overview" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-info-circle me-2"></i>错误处理概览
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/quick-start" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-rocket me-2"></i>快速开始
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/default-handlers" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-cogs me-2"></i>默认处理器详解
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/custom-handlers" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-tools me-2"></i>自定义处理器
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/error-pages" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-file-code me-2"></i>错误页面定制
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/monitoring" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-chart-line me-2"></i>错误监控
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/business-errors" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-briefcase me-2"></i>业务错误码
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/recovery" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-undo me-2"></i>自动恢复机制
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/best-practices" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-star me-2"></i>最佳实践
+                                                </a>
+                                                <a href="/docs/mvc-core/error-handling/troubleshooting" class="list-group-item list-group-item-action border-0 ps-5">
+                                                    <i class="fas fa-question-circle me-2"></i>故障排除
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <a href="/docs/mvc-core/routing" class="list-group-item list-group-item-action border-0">
                             <i class="fas fa-route me-2"></i>路由系统
                         </a>
@@ -355,9 +404,10 @@
                 '/docs/deployment/': 'collapseDeployment',
                 '/docs/dev-tools/': 'collapseDevTools'
             },
-            // 二级导航映射（特殊处理控制器子路由）
+            // 二级导航映射（特殊处理控制器子路由和错误处理子路由）
             subSections: {
-                '/docs/mvc-core/controller/': 'collapseController'
+                '/docs/mvc-core/controller/': 'collapseController',
+                '/docs/mvc-core/error-handling/': 'collapseErrorHandling'
             }
         };
 
@@ -400,11 +450,19 @@
                     expandSection(subSectionId);
                     console.log('Expanded sub-section:', subSectionId, 'for path:', pathPrefix);
                     
-                    // 控制器子路由需要特殊处理按钮高亮
-                    const controllerButton = document.querySelector('[data-bs-target="#collapseController"]');
-                    if (controllerButton) {
-                        controllerButton.classList.add('text-primary');
-                        console.log('Added highlight to controller button');
+                    // 子路由需要特殊处理按钮高亮
+                    if (subSectionId === 'collapseController') {
+                        const controllerButton = document.querySelector('[data-bs-target="#collapseController"]');
+                        if (controllerButton) {
+                            controllerButton.classList.add('text-primary');
+                            console.log('Added highlight to controller button');
+                        }
+                    } else if (subSectionId === 'collapseErrorHandling') {
+                        const errorHandlingButton = document.querySelector('[data-bs-target="#collapseErrorHandling"]');
+                        if (errorHandlingButton) {
+                            errorHandlingButton.classList.add('text-primary');
+                            console.log('Added highlight to error handling button');
+                        }
                     }
                     break;
                 }

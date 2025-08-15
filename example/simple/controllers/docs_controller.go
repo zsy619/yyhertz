@@ -260,6 +260,47 @@ func (c *DocsController) GetMvcCoreComment() {
 	c.renderDoc("mvc-core", "comment", "注释路由系统")
 }
 
+// ============= MVC核心 - 错误处理子路由 =============
+func (c *DocsController) GetMvcCoreErrorHandlingOverview() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "overview", "overview", "错误处理概览")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingQuickStart() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "quick-start", "quick-start", "快速开始")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingDefaultHandlers() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "default-handlers", "default-handlers", "默认处理器详解")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingCustomHandlers() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "custom-handlers", "custom-handlers", "自定义处理器")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingErrorPages() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "error-pages", "error-pages", "错误页面定制")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingMonitoring() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "monitoring", "monitoring", "错误监控")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingBusinessErrors() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "business-errors", "business-errors", "业务错误码")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingRecovery() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "recovery", "recovery", "自动恢复机制")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingBestPractices() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "best-practices", "best-practices", "最佳实践")
+}
+
+func (c *DocsController) GetMvcCoreErrorHandlingTroubleshooting() {
+	c.renderDocWithCurrentDoc("mvc-core/error-handling", "troubleshooting", "troubleshooting", "故障排除")
+}
+
 // ============= 中间件 =============
 func (c *DocsController) GetMiddlewareOverview() {
 	c.renderDoc("middleware", "middleware-overview", "中间件概览", true)

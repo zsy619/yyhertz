@@ -9,6 +9,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	IgnorePackages = []string{
+		"github.com/sirupsen/logrus",
+		"github.com/zsy619/yyhertz/framework/config",
+		"runtime",
+		"strings",
+	}
+)
+
+const (
+	// 根据您的封装层数调整（通常 4-6）
+	defaultSkip = 7
+)
+
 // BeegoFormatter Beego风格的日志格式化器
 type BeegoFormatter struct {
 	TimestampFormat string
@@ -31,8 +45,18 @@ func (f *BeegoFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	// 添加调用位置信息
 	if f.ShowCaller && entry.HasCaller() {
-		filename := f.getShortFilename(entry.Caller.File)
-		logLine += fmt.Sprintf(" [%s:%d]", filename, entry.Caller.Line)
+		// // 获取正确的调用栈
+		// pc := make([]uintptr, 1)
+		// num := runtime.Callers(defaultSkip, pc)
+		// if num > 0 {
+		// 	frames := runtime.CallersFrames(pc)
+		// 	frame, _ := frames.Next()
+
+		// 	// 更新调用者信息
+		// 	entry.Caller = &frame
+		// 	filename := f.getShortFilename(entry.Caller.File)
+		// 	logLine += fmt.Sprintf(" [%s:%d]", filename, entry.Caller.Line)
+		// }
 	}
 
 	// 添加日志消息

@@ -37,7 +37,7 @@ func InitGlobalLogger(config *LogConfig) *LoggerManager {
 // ResetGlobalLogger 重置全局日志实例（主要用于测试）
 func ResetGlobalLogger(config *LogConfig) *LoggerManager {
 	loggerMutex.Lock()
-	
+
 	// 关闭旧的全局日志器（在持有锁的情况下直接操作，避免调用Close()方法再次获取锁）
 	if globalLogger != nil && globalLogger.writers != nil {
 		for _, writer := range globalLogger.writers {
@@ -47,13 +47,13 @@ func ResetGlobalLogger(config *LogConfig) *LoggerManager {
 		}
 		globalLogger.writers = nil
 	}
-	
+
 	// 重置 sync.Once
 	loggerOnce = sync.Once{}
 	globalLogger = nil
-	
+
 	loggerMutex.Unlock()
-	
+
 	// 重新初始化
 	return InitGlobalLogger(config)
 }
@@ -80,7 +80,7 @@ func (lm *LoggerManager) updateLogger(config *LogConfig) {
 	if lm.writers != nil {
 		for _, writer := range lm.writers {
 			if writer != nil {
-				writer.Close()
+				_ = writer.Close()
 			}
 		}
 	}
@@ -114,6 +114,7 @@ func (lm *LoggerManager) updateLogger(config *LogConfig) {
 
 	// 设置调用位置显示
 	lm.rawLogger.SetReportCaller(config.ShowCaller)
+	lm.rawLogger.SetReportCaller(true)
 
 	// 创建输出写入器
 	writers, err := CreateOutputWriters(config)
@@ -198,7 +199,7 @@ func (lm *LoggerManager) UpdateFormat(format LogFormat) {
 func (lm *LoggerManager) GetLevel() LogLevel {
 	loggerMutex.RLock()
 	defer loggerMutex.RUnlock()
-	
+
 	if lm.config != nil {
 		return lm.config.Level
 	}
@@ -209,7 +210,7 @@ func (lm *LoggerManager) GetLevel() LogLevel {
 func (lm *LoggerManager) GetFormat() LogFormat {
 	loggerMutex.RLock()
 	defer loggerMutex.RUnlock()
-	
+
 	if lm.config != nil {
 		return lm.config.Format
 	}

@@ -6,9 +6,8 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/context"
-	mvcerrros "github.com/zsy619/yyhertz/framework/mvc/errors"
+	"github.com/zsy619/yyhertz/framework/mvc/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
@@ -84,17 +83,17 @@ func testErrorHandling(t *testing.T, engine *EnhancedFastEngine) {
 	// 注册自定义错误处理器
 	engine.RegisterErrorHandlerFunc("test-handler", 50, func(err error) bool {
 		return err.Error() == "test error"
-	}, func(ctx *context.Context, err error) error {
+	}, func(ctx *context.Context, statusCode int, err error) error {
 		fmt.Printf("✓ Custom error handler processed: %v\n", err)
 		return nil
 	})
 	
 	// 测试错误分类
 	testErrors := []error{
-		errors.TimeoutError,
-		errors.NetworkError,
-		errors.UserNotExist,
-		errors.PermissionDenied,
+		fmt.Errorf("timeout error"),
+		fmt.Errorf("network error"),
+		fmt.Errorf("user not exist"),
+		fmt.Errorf("permission denied"),
 		fmt.Errorf("unknown error"),
 	}
 	
@@ -102,16 +101,16 @@ func testErrorHandling(t *testing.T, engine *EnhancedFastEngine) {
 		classification := engine.GetErrorClassifier().Classify(err, nil)
 		fmt.Printf("✓ Error '%v' classified as: Category=%s, Severity=%s, Retryable=%v\n",
 			err,
-			mvcerrros.GetCategoryName(classification.Category),
-			mvcerrros.GetSeverityName(classification.Severity),
+			errors.GetCategoryName(classification.Category),
+			errors.GetSeverityName(classification.Severity),
 			classification.Retryable)
 	}
 	
 	// 测试自动恢复
-	timeoutErr := errors.TimeoutError
+	timeoutErr := fmt.Errorf("timeout error")
 	result := engine.GetAutoRecovery().Recover(nil, timeoutErr)
 	fmt.Printf("✓ Recovery result for timeout error: Strategy=%s, Action=%s, Success=%v\n",
-		result.Strategy, mvcerrros.GetActionName(result.Action), result.Success)
+		result.Strategy, errors.GetActionName(result.Action), result.Success)
 }
 
 // testStatistics 测试统计信息
@@ -198,18 +197,17 @@ func Example_basicUsage() {
 	
 	// 注册错误处理器
 	engine.RegisterErrorHandlerFunc("business-error", 100, func(err error) bool {
-		_, ok := err.(*errors.ErrNo)
-		return ok
-	}, func(ctx *context.Context, err error) error {
+		return true // 处理所有错误作为示例
+	}, func(ctx *context.Context, statusCode int, err error) error {
 		fmt.Println("Business error handled")
 		return nil
 	})
 	
 	// 添加恢复策略
-	engine.AddRecoveryStrategy(mvcerrros.RecoveryStrategy{
+	engine.AddRecoveryStrategy(errors.RecoveryStrategy{
 		Name:          "custom-retry",
-		Condition:     &mvcerrros.CategoryCondition{Category: mvcerrros.CategoryNetwork},
-		Action:        mvcerrros.ActionRetry,
+		Condition:     &errors.CategoryCondition{Category: errors.CategoryNetwork},
+		Action:        errors.ActionRetry,
 		MaxRetries:    3,
 		RetryInterval: time.Second,
 	})
@@ -224,15 +222,15 @@ func Example_errorHandling() {
 	engine := NewForDevelopment()
 	
 	// 模拟错误处理
-	testErr := errors.NetworkError
+	testErr := fmt.Errorf("network error")
 	
 	// 分类错误
 	classification := engine.GetErrorClassifier().Classify(testErr, nil)
-	fmt.Printf("Error category: %s\n", mvcerrros.GetCategoryName(classification.Category))
+	fmt.Printf("Error category: %s\n", errors.GetCategoryName(classification.Category))
 	
 	// 尝试恢复
 	result := engine.GetAutoRecovery().Recover(nil, testErr)
-	fmt.Printf("Recovery action: %s\n", mvcerrros.GetActionName(result.Action))
+	fmt.Printf("Recovery action: %s\n", errors.GetActionName(result.Action))
 	
 	// Output: Error category: Network
 	// Recovery action: Retry

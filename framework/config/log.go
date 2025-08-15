@@ -22,14 +22,14 @@ const (
 type LogFormat string
 
 const (
-	LogFormatJSON            LogFormat = "json"
-	LogFormatText            LogFormat = "text"
-	LogFormatBeego           LogFormat = "beego"
-	LogFormatLog4Go          LogFormat = "log4go"
-	LogFormatLogstash        LogFormat = "logstash"
-	LogFormatSyslog          LogFormat = "syslog"
-	LogFormatFluentd         LogFormat = "fluentd"
-	LogFormatCloudWatch      LogFormat = "cloudwatch"
+	LogFormatJSON                LogFormat = "json"
+	LogFormatText                LogFormat = "text"
+	LogFormatBeego               LogFormat = "beego"
+	LogFormatLog4Go              LogFormat = "log4go"
+	LogFormatLogstash            LogFormat = "logstash"
+	LogFormatSyslog              LogFormat = "syslog"
+	LogFormatFluentd             LogFormat = "fluentd"
+	LogFormatCloudWatch          LogFormat = "cloudwatch"
 	LogFormatApplicationInsights LogFormat = "azure_insights"
 )
 
@@ -37,20 +37,20 @@ const (
 type LogOutput string
 
 const (
-	LogOutputConsole      LogOutput = "console"
-	LogOutputFile         LogOutput = "file"
-	LogOutputSyslog       LogOutput = "syslog"
-	LogOutputFluentd      LogOutput = "fluentd"
-	LogOutputCloudWatch   LogOutput = "cloudwatch"
+	LogOutputConsole       LogOutput = "console"
+	LogOutputFile          LogOutput = "file"
+	LogOutputSyslog        LogOutput = "syslog"
+	LogOutputFluentd       LogOutput = "fluentd"
+	LogOutputCloudWatch    LogOutput = "cloudwatch"
 	LogOutputAzureInsights LogOutput = "azure_insights"
 	LogOutputElasticsearch LogOutput = "elasticsearch"
-	LogOutputKafka        LogOutput = "kafka"
+	LogOutputKafka         LogOutput = "kafka"
 )
 
 // LogConfig 日志配置结构
 type LogConfig struct {
 	// 基础配置
-	Level  LogLevel  `mapstructure:"level" yaml:"level" json:"level"`     // 日志级别
+	Level  LogLevel  `mapstructure:"level" yaml:"level" json:"level"`    // 日志级别
 	Format LogFormat `mapstructure:"format" yaml:"format" json:"format"` // 日志格式
 
 	// 输出配置
@@ -64,14 +64,14 @@ type LogConfig struct {
 
 	// 高级配置
 	ShowCaller      bool   `mapstructure:"show_caller" yaml:"show_caller" json:"show_caller"`                // 是否显示调用位置
-	ShowTimestamp   bool   `mapstructure:"show_timestamp" yaml:"show_timestamp" json:"show_timestamp"`    // 是否显示时间戳
+	ShowTimestamp   bool   `mapstructure:"show_timestamp" yaml:"show_timestamp" json:"show_timestamp"`       // 是否显示时间戳
 	TimestampFormat string `mapstructure:"timestamp_format" yaml:"timestamp_format" json:"timestamp_format"` // 时间戳格式
 
 	// 字段配置
 	Fields map[string]any `mapstructure:"fields" yaml:"fields" json:"fields"` // 全局字段
 
 	// 扩展输出配置
-	Outputs      []string                 `mapstructure:"outputs" yaml:"outputs" json:"outputs"`                   // 启用的输出类型
+	Outputs      []string                `mapstructure:"outputs" yaml:"outputs" json:"outputs"`                   // 启用的输出类型
 	OutputConfig map[string]OutputConfig `mapstructure:"output_config" yaml:"output_config" json:"output_config"` // 各输出的配置
 }
 
@@ -82,10 +82,10 @@ type OutputConfig interface {
 
 // SyslogConfig Syslog输出配置
 type SyslogConfig struct {
-	Network  string `mapstructure:"network" yaml:"network" json:"network"`   // 网络类型：tcp, udp, unix
-	Address  string `mapstructure:"address" yaml:"address" json:"address"`   // 地址
+	Network  string `mapstructure:"network" yaml:"network" json:"network"`    // 网络类型：tcp, udp, unix
+	Address  string `mapstructure:"address" yaml:"address" json:"address"`    // 地址
 	Priority int    `mapstructure:"priority" yaml:"priority" json:"priority"` // 优先级
-	Tag      string `mapstructure:"tag" yaml:"tag" json:"tag"`               // 标签
+	Tag      string `mapstructure:"tag" yaml:"tag" json:"tag"`                // 标签
 }
 
 func (c SyslogConfig) Validate() error {
@@ -94,11 +94,11 @@ func (c SyslogConfig) Validate() error {
 
 // FluentdConfig Fluentd输出配置
 type FluentdConfig struct {
-	Host    string            `mapstructure:"host" yaml:"host" json:"host"`       // Fluentd主机
-	Port    int               `mapstructure:"port" yaml:"port" json:"port"`       // Fluentd端口
-	Tag     string            `mapstructure:"tag" yaml:"tag" json:"tag"`          // 标签
+	Host    string            `mapstructure:"host" yaml:"host" json:"host"`          // Fluentd主机
+	Port    int               `mapstructure:"port" yaml:"port" json:"port"`          // Fluentd端口
+	Tag     string            `mapstructure:"tag" yaml:"tag" json:"tag"`             // 标签
 	Timeout time.Duration     `mapstructure:"timeout" yaml:"timeout" json:"timeout"` // 超时时间
-	Extra   map[string]string `mapstructure:"extra" yaml:"extra" json:"extra"`    // 额外字段
+	Extra   map[string]string `mapstructure:"extra" yaml:"extra" json:"extra"`       // 额外字段
 }
 
 func (c FluentdConfig) Validate() error {
@@ -107,10 +107,10 @@ func (c FluentdConfig) Validate() error {
 
 // CloudWatchConfig AWS CloudWatch输出配置
 type CloudWatchConfig struct {
-	Region          string `mapstructure:"region" yaml:"region" json:"region"`                         // AWS区域
-	LogGroupName    string `mapstructure:"log_group_name" yaml:"log_group_name" json:"log_group_name"` // 日志组名
-	LogStreamName   string `mapstructure:"log_stream_name" yaml:"log_stream_name" json:"log_stream_name"` // 日志流名
-	AccessKeyID     string `mapstructure:"access_key_id" yaml:"access_key_id" json:"access_key_id"`    // 访问密钥ID
+	Region          string `mapstructure:"region" yaml:"region" json:"region"`                                  // AWS区域
+	LogGroupName    string `mapstructure:"log_group_name" yaml:"log_group_name" json:"log_group_name"`          // 日志组名
+	LogStreamName   string `mapstructure:"log_stream_name" yaml:"log_stream_name" json:"log_stream_name"`       // 日志流名
+	AccessKeyID     string `mapstructure:"access_key_id" yaml:"access_key_id" json:"access_key_id"`             // 访问密钥ID
 	SecretAccessKey string `mapstructure:"secret_access_key" yaml:"secret_access_key" json:"secret_access_key"` // 秘密访问密钥
 }
 
@@ -121,8 +121,8 @@ func (c CloudWatchConfig) Validate() error {
 // AzureInsightsConfig Azure Application Insights输出配置
 type AzureInsightsConfig struct {
 	InstrumentationKey string            `mapstructure:"instrumentation_key" yaml:"instrumentation_key" json:"instrumentation_key"` // 仪器密钥
-	Endpoint           string            `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`                                     // 端点
-	Properties         map[string]string `mapstructure:"properties" yaml:"properties" json:"properties"`                              // 自定义属性
+	Endpoint           string            `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`                                  // 端点
+	Properties         map[string]string `mapstructure:"properties" yaml:"properties" json:"properties"`                            // 自定义属性
 }
 
 func (c AzureInsightsConfig) Validate() error {
@@ -131,8 +131,8 @@ func (c AzureInsightsConfig) Validate() error {
 
 // ElasticsearchConfig Elasticsearch输出配置
 type ElasticsearchConfig struct {
-	URLs     []string `mapstructure:"urls" yaml:"urls" json:"urls"`          // Elasticsearch URLs
-	Index    string   `mapstructure:"index" yaml:"index" json:"index"`       // 索引名
+	URLs     []string `mapstructure:"urls" yaml:"urls" json:"urls"`             // Elasticsearch URLs
+	Index    string   `mapstructure:"index" yaml:"index" json:"index"`          // 索引名
 	Username string   `mapstructure:"username" yaml:"username" json:"username"` // 用户名
 	Password string   `mapstructure:"password" yaml:"password" json:"password"` // 密码
 }
@@ -143,9 +143,9 @@ func (c ElasticsearchConfig) Validate() error {
 
 // KafkaConfig Kafka输出配置
 type KafkaConfig struct {
-	Brokers []string `mapstructure:"brokers" yaml:"brokers" json:"brokers"` // Kafka brokers
-	Topic   string   `mapstructure:"topic" yaml:"topic" json:"topic"`       // 主题
-	ClientID string  `mapstructure:"client_id" yaml:"client_id" json:"client_id"` // 客户端ID
+	Brokers  []string `mapstructure:"brokers" yaml:"brokers" json:"brokers"`       // Kafka brokers
+	Topic    string   `mapstructure:"topic" yaml:"topic" json:"topic"`             // 主题
+	ClientID string   `mapstructure:"client_id" yaml:"client_id" json:"client_id"` // 客户端ID
 }
 
 func (c KafkaConfig) Validate() error {

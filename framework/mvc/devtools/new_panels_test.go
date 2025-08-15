@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/mvc"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
 // TestNewPanelsConfiguration 测试新面板配置
 func TestNewPanelsConfiguration(t *testing.T) {
 	app := mvc.NewApp()
-	
+
 	// 创建临时SQLite数据库用于测试
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
@@ -148,9 +149,9 @@ func TestSecurityMetricsCollector(t *testing.T) {
 
 	// 测试威胁检测
 	detected, threatLevel, description := collector.detectThreats(
-		"POST", 
-		"/api/login", 
-		"username=admin' OR '1'='1", 
+		"POST",
+		"/api/login",
+		"username=admin' OR '1'='1",
 		"Mozilla/5.0",
 	)
 
@@ -159,15 +160,15 @@ func TestSecurityMetricsCollector(t *testing.T) {
 	} else {
 		t.Log("No threat detected in test payload")
 	}
-	
+
 	// 测试更明显的SQL注入攻击
 	detected2, threatLevel2, description2 := collector.detectThreats(
-		"POST", 
-		"/api/login", 
-		"username=admin'; DROP TABLE users; --", 
+		"POST",
+		"/api/login",
+		"username=admin'; DROP TABLE users; --",
 		"Mozilla/5.0",
 	)
-	
+
 	if detected2 {
 		t.Logf("Detected SQL injection: level=%s, description=%s", threatLevel2, description2)
 	}

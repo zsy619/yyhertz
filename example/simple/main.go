@@ -49,7 +49,7 @@ func main() {
 	markdownController := &controllers.MarkdownController{}
 	docsController := &controllers.DocsController{}
 
-	// 自动注册路由 (使用新的AutoRouters方法)
+	// 自动注册路由
 	app.RouterAuto(homeController, userController, adminController, markdownController, docsController)
 
 	app.RouterPrefix("/", homeController, true, "GetIndex", "*:/")
@@ -85,6 +85,19 @@ func main() {
 				mvc.NSRouter("/utility-methods", docsController, "*:GetMvcCoreControllerUtilityMethods"),
 				mvc.NSRouter("/real-world-examples", docsController, "*:GetMvcCoreControllerRealWorldExamples"),
 				mvc.NSRouter("/faq-best-practices", docsController, "*:GetMvcCoreControllerFaqBestPractices"),
+			),
+			// ============= 错误处理子路由 =============
+			mvc.NSNamespace("/error-handling",
+				mvc.NSRouter("/overview", docsController, "*:GetMvcCoreErrorHandlingOverview"),
+				mvc.NSRouter("/quick-start", docsController, "*:GetMvcCoreErrorHandlingQuickStart"),
+				mvc.NSRouter("/default-handlers", docsController, "*:GetMvcCoreErrorHandlingDefaultHandlers"),
+				mvc.NSRouter("/custom-handlers", docsController, "*:GetMvcCoreErrorHandlingCustomHandlers"),
+				mvc.NSRouter("/error-pages", docsController, "*:GetMvcCoreErrorHandlingErrorPages"),
+				mvc.NSRouter("/monitoring", docsController, "*:GetMvcCoreErrorHandlingMonitoring"),
+				mvc.NSRouter("/business-errors", docsController, "*:GetMvcCoreErrorHandlingBusinessErrors"),
+				mvc.NSRouter("/recovery", docsController, "*:GetMvcCoreErrorHandlingRecovery"),
+				mvc.NSRouter("/best-practices", docsController, "*:GetMvcCoreErrorHandlingBestPractices"),
+				mvc.NSRouter("/troubleshooting", docsController, "*:GetMvcCoreErrorHandlingTroubleshooting"),
 			),
 			mvc.NSRouter("/routing", docsController, "*:GetMvcCoreRouting"),
 			mvc.NSRouter("/static-path-configuration", docsController, "*:GetMvcCoreStaticPathConfiguration"),
