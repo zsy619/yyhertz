@@ -344,14 +344,15 @@ func (m *ErrorMonitor) ImportStatistics(data []byte) error {
 	}
 
 	// 更新统计数据
-	m.controller.ErrorStatistics.mu.Lock()
-	defer m.controller.ErrorStatistics.mu.Unlock()
+	errorStats := m.controller.ErrorStatistics
+	errorStats.mu.Lock()
+	defer errorStats.mu.Unlock()
 
-	m.controller.ErrorStatistics.TotalErrors = stats.TotalErrors
-	m.controller.ErrorStatistics.ErrorsByStatus = stats.ErrorsByStatus
-	m.controller.ErrorStatistics.ErrorsByPath = stats.ErrorsByPath
-	m.controller.ErrorStatistics.LastErrors = stats.LastErrors
-	m.controller.ErrorStatistics.StartTime = stats.StartTime
+	errorStats.TotalErrors = stats.TotalErrors
+	errorStats.ErrorsByStatus = stats.ErrorsByStatus
+	errorStats.ErrorsByPath = stats.ErrorsByPath
+	errorStats.LastErrors = stats.LastErrors
+	errorStats.StartTime = stats.StartTime
 
 	return nil
 }
