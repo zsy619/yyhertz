@@ -12,7 +12,7 @@ import (
 	hertzApp "github.com/cloudwego/hertz/pkg/app"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
@@ -59,7 +59,7 @@ type Condition struct {
 }
 
 // ErrorHandler 错误处理器
-type ErrorHandler func(*contextenhanced.Context, error)
+type ErrorHandler func(*mvcContext.Context, error)
 
 // ControllerRegistrationOptions 控制器注册选项
 type ControllerRegistrationOptions struct {
@@ -242,7 +242,7 @@ func (app *AppWithControllerRegister) integrateControllerRegister() {
 	// 将ControllerRegister作为通用处理器注册到Hertz（使用适配器）
 	app.Any("/*path", func(ctx context.Context, c *hertzApp.RequestContext) {
 		// 创建增强的Context
-		enhancedCtx := contextenhanced.NewContext(c)
+		enhancedCtx := mvcContext.NewContext(c)
 		app.ControllerRegister.ServeHTTP(enhancedCtx)
 	})
 
@@ -416,7 +416,7 @@ func (app *AppWithControllerRegister) addDefaultFilters() {
 // setDefaultErrorHandlers 设置默认错误处理器
 func (app *AppWithControllerRegister) setDefaultErrorHandlers() {
 	// 404错误处理器
-	app.SetErrorHandler(404, func(ctx *contextenhanced.Context, err error) {
+	app.SetErrorHandler(404, func(ctx *mvcContext.Context, err error) {
 		ctx.Output.SetStatus(404)
 		ctx.Output.JSON(map[string]any{
 			"error": "Not Found",
@@ -426,7 +426,7 @@ func (app *AppWithControllerRegister) setDefaultErrorHandlers() {
 	})
 
 	// 500错误处理器
-	app.SetErrorHandler(500, func(ctx *contextenhanced.Context, err error) {
+	app.SetErrorHandler(500, func(ctx *mvcContext.Context, err error) {
 		ctx.Output.SetStatus(500)
 		ctx.Output.JSON(map[string]any{
 			"error": "Internal Server Error",

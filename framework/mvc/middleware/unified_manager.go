@@ -72,7 +72,7 @@ func NewUnifiedMiddlewareManager() *UnifiedMiddlewareManager {
 	}
 
 	manager := &UnifiedMiddlewareManager{
-		basicEngine: NewEngine(),
+		basicEngine: mvccontext.NewEngine(),
 		mvcManager:  NewMiddlewareManager(),
 		currentMode: cfg.GetMode(),
 		config:      cfg,

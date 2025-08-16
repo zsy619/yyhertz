@@ -40,6 +40,7 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/comment"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 	errorPkg "github.com/zsy619/yyhertz/framework/mvc/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/router"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
@@ -53,16 +54,16 @@ type (
 	App = core.App
 
 	// RequestContext 请求上下文类型，封装HTTP请求和响应
-	RequestContext = core.RequestContext
+	RequestContext = define.RequestContext
 
 	// HandlerFunc HTTP处理函数类型，用于处理请求
-	HandlerFunc = core.HandlerFunc
+	HandlerFunc = define.HandlerFunc
 
 	// IController 控制器接口，定义控制器的基本约定
 	IController = core.IController
 
 	// FilterFunc 过滤器函数类型，用于请求拦截和处理
-	FilterFunc = core.FilterFunc
+	FilterFunc = define.FilterFunc
 
 	// FilterPattern 过滤器模式，定义过滤器的匹配规则
 	FilterPattern = core.FilterPattern
@@ -376,4 +377,19 @@ func AbortWithError(ctx *RequestContext, statusCode int, err error) {
 	if HertzApp != nil {
 		HertzApp.AbortWithError(ctx, statusCode, err)
 	}
+}
+
+// ============= 全局路由组方法 =============
+
+// CreateGroup 创建支持多处理器的路由组（全局方法）
+func CreateGroup(relativePath string) *RouterGroup {
+	if HertzApp == nil {
+		panic("HertzApp is not initialized")
+	}
+
+	// 创建新的路由器实例
+	router := NewRouter(HertzApp)
+	
+	// 创建支持多处理器的路由组
+	return NewGroup(router, relativePath)
 }

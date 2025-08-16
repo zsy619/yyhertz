@@ -19,7 +19,7 @@ func TestSimpleRouter(t *testing.T) {
 	// ============= 新的简化API测试 =============
 
 	// 1. 测试简化GET路由
-	mvc.SimpleGET("/simple/users", func(ctx context.Context) {
+	mvc.GETSimple("/simple/users", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		c.JSON(200, map[string]any{
 			"message": "简化GET API正常工作",
@@ -32,7 +32,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 2. 测试简化POST路由
-	mvc.SimplePOST("/simple/users", func(ctx context.Context) {
+	mvc.POSTSimple("/simple/users", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		c.JSON(201, map[string]any{
 			"message": "简化POST API正常工作",
@@ -45,7 +45,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 3. 测试参数获取
-	mvc.SimpleGET("/simple/users/:id", func(ctx context.Context) {
+	mvc.GETSimple("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
 		c.JSON(200, map[string]any{
@@ -60,7 +60,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 4. 测试查询参数
-	mvc.SimpleGET("/simple/search", func(ctx context.Context) {
+	mvc.GETSimple("/simple/search", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		keyword := c.Query("q")
 		limit := c.Query("limit")
@@ -74,7 +74,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 5. 测试错误处理和中断
-	mvc.SimpleGET("/simple/error", func(ctx context.Context) {
+	mvc.GETSimple("/simple/error", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 
 		// 模拟权限检查
@@ -94,7 +94,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 6. 测试PUT路由
-	mvc.SimplePUT("/simple/users/:id", func(ctx context.Context) {
+	mvc.PUTSimple("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
 		c.JSON(200, map[string]any{
@@ -108,7 +108,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 7. 测试DELETE路由
-	mvc.SimpleDELETE("/simple/users/:id", func(ctx context.Context) {
+	mvc.DELETESimple("/simple/users/:id", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		id := c.Param("id")
 		c.JSON(200, map[string]any{
@@ -119,7 +119,7 @@ func TestSimpleRouter(t *testing.T) {
 	})
 
 	// 8. 测试ANY路由
-	mvc.SimpleAny("/simple/health", func(ctx context.Context) {
+	mvc.AnySimple("/simple/health", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		method := string(c.Request().Method())
 		c.JSON(200, map[string]any{
@@ -143,7 +143,7 @@ func TestSimpleRouter(t *testing.T) {
 	// ============= 复杂场景测试 =============
 
 	// 10. 测试复杂业务逻辑
-	mvc.SimpleGET("/simple/complex", func(ctx context.Context) {
+	mvc.GETSimple("/simple/complex", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 
 		// 获取各种参数

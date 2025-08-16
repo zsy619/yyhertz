@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // Params 路由参数类型
@@ -35,14 +35,14 @@ type RouterTree struct {
 
 // RouterNode 路由节点
 type RouterNode struct {
-	path       string                      // 路径段
-	isParam    bool                        // 是否为参数节点(:id)
-	isCatchAll bool                        // 是否为捕获所有节点(*path)
-	paramName  string                      // 参数名称
-	handlers   map[string]core.HandlerFunc // HTTP方法对应的处理器
-	children   map[string]*RouterNode      // 子节点映射
-	paramChild *RouterNode                 // 参数子节点
-	catchChild *RouterNode                 // 捕获所有子节点
+	path       string                        // 路径段
+	isParam    bool                          // 是否为参数节点(:id)
+	isCatchAll bool                          // 是否为捕获所有节点(*path)
+	paramName  string                        // 参数名称
+	handlers   map[string]define.HandlerFunc // HTTP方法对应的处理器
+	children   map[string]*RouterNode        // 子节点映射
+	paramChild *RouterNode                   // 参数子节点
+	catchChild *RouterNode                   // 捕获所有子节点
 }
 
 // RouterCache 路由缓存
@@ -54,7 +54,7 @@ type RouterCache struct {
 
 // CacheEntry 缓存条目
 type CacheEntry struct {
-	handler core.HandlerFunc
+	handler define.HandlerFunc
 	params  Params
 }
 
@@ -62,7 +62,7 @@ type CacheEntry struct {
 func NewRouterTree() *RouterTree {
 	return &RouterTree{
 		root: &RouterNode{
-			handlers: make(map[string]core.HandlerFunc),
+			handlers: make(map[string]define.HandlerFunc),
 			children: make(map[string]*RouterNode),
 		},
 		cache: NewRouterCache(1000),
@@ -78,7 +78,7 @@ func NewRouterCache(maxSize int) *RouterCache {
 }
 
 // AddRoute 添加路由
-func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) {
+func (tree *RouterTree) AddRoute(method, path string, handler define.HandlerFunc) {
 	if path == "" || path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
@@ -104,7 +104,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 					path:      segment,
 					isParam:   true,
 					paramName: paramName,
-					handlers:  make(map[string]core.HandlerFunc),
+					handlers:  make(map[string]define.HandlerFunc),
 					children:  make(map[string]*RouterNode),
 				}
 			}
@@ -117,7 +117,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 					path:       segment,
 					isCatchAll: true,
 					paramName:  paramName,
-					handlers:   make(map[string]core.HandlerFunc),
+					handlers:   make(map[string]define.HandlerFunc),
 					children:   make(map[string]*RouterNode),
 				}
 			}
@@ -128,7 +128,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 			if !exists {
 				child = &RouterNode{
 					path:     segment,
-					handlers: make(map[string]core.HandlerFunc),
+					handlers: make(map[string]define.HandlerFunc),
 					children: make(map[string]*RouterNode),
 				}
 				current.children[segment] = child
@@ -145,7 +145,7 @@ func (tree *RouterTree) AddRoute(method, path string, handler core.HandlerFunc) 
 }
 
 // GetRoute 获取路由处理器
-func (tree *RouterTree) GetRoute(method, path string) (core.HandlerFunc, Params) {
+func (tree *RouterTree) GetRoute(method, path string) (define.HandlerFunc, Params) {
 	// 检查缓存
 	cacheKey := method + ":" + path
 	if entry := tree.cache.Get(cacheKey); entry != nil {
@@ -168,7 +168,7 @@ func (tree *RouterTree) GetRoute(method, path string) (core.HandlerFunc, Params)
 }
 
 // search 搜索路由
-func (tree *RouterTree) search(method, path string) (core.HandlerFunc, Params) {
+func (tree *RouterTree) search(method, path string) (define.HandlerFunc, Params) {
 	segments := splitPath(path)
 	current := tree.root
 	var params Params

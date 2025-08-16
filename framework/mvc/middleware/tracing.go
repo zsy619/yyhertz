@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/util"
@@ -13,7 +14,7 @@ import (
 
 func generateOpenTelemetryTraceID() string {
 	ctx := context.Background()
-	tracer := trace.NewNoopTracerProvider().Tracer("")
+	tracer := noop.NewTracerProvider().Tracer("default")
 	ctx, _ = tracer.Start(ctx, "dummy-span")
 	span := trace.SpanFromContext(ctx)
 	return span.SpanContext().TraceID().String()

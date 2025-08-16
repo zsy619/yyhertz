@@ -249,3 +249,5 @@ example/gobatis/example.db
 example/gobatis/gobatis_example
 !example/simple/static/vendor
 framework/mvc/example/demos/conf
+example/multi_handlers/conf
+framework/mvc/router/conf

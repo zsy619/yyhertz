@@ -40,7 +40,7 @@ func (ctx *Context) AbortWithStatusJSON(code int, jsonObj any) {
 	ctx.JSON(code, jsonObj)
 }
 
-// AbortWithError 终止并设置错误
+// AbortWithError 终止执行并记录错误
 func (ctx *Context) AbortWithError(code int, err error) error {
 	ctx.AbortWithStatus(code)
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // ExampleUsage 展示新引擎的使用方法
@@ -117,7 +117,7 @@ func AuthMiddleware() mvccontext.HandlerFunc {
 }
 
 // 处理器示例
-func HomeHandler(ctx context.Context, c *core.RequestContext) {
+func HomeHandler(ctx context.Context, c *define.RequestContext) {
 	c.JSON(200, map[string]string{
 		"message": "Welcome to YYHertz MVC Framework",
 		"version": "2.0.0",
@@ -125,7 +125,7 @@ func HomeHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func HealthHandler(ctx context.Context, c *core.RequestContext) {
+func HealthHandler(ctx context.Context, c *define.RequestContext) {
 	c.JSON(200, map[string]any{
 		"status":    "healthy",
 		"timestamp": time.Now().Unix(),
@@ -133,7 +133,7 @@ func HealthHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func ListUsersHandler(ctx context.Context, c *core.RequestContext) {
+func ListUsersHandler(ctx context.Context, c *define.RequestContext) {
 	// 模拟从数据库获取用户列表
 	users := []map[string]any{
 		{"id": 1, "name": "Alice", "email": "alice@example.com"},
@@ -147,7 +147,7 @@ func ListUsersHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func GetUserHandler(ctx context.Context, c *core.RequestContext) {
+func GetUserHandler(ctx context.Context, c *define.RequestContext) {
 	// 从URL参数获取用户ID
 	userID := string(c.Param("id"))
 
@@ -161,7 +161,7 @@ func GetUserHandler(ctx context.Context, c *core.RequestContext) {
 	c.JSON(200, user)
 }
 
-func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
+func CreateUserHandler(ctx context.Context, c *define.RequestContext) {
 	// 解析请求体
 	var user struct {
 		Name  string `json:"name"`
@@ -182,7 +182,7 @@ func CreateUserHandler(ctx context.Context, c *core.RequestContext) {
 	c.JSON(201, result)
 }
 
-func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
+func UpdateUserHandler(ctx context.Context, c *define.RequestContext) {
 	userID := string(c.Param("id"))
 
 	c.JSON(200, map[string]any{
@@ -191,7 +191,7 @@ func UpdateUserHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func DeleteUserHandler(ctx context.Context, c *core.RequestContext) {
+func DeleteUserHandler(ctx context.Context, c *define.RequestContext) {
 	userID := string(c.Param("id"))
 
 	c.JSON(200, map[string]any{
@@ -200,7 +200,7 @@ func DeleteUserHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func GetProfileHandler(ctx context.Context, c *core.RequestContext) {
+func GetProfileHandler(ctx context.Context, c *define.RequestContext) {
 	// 从中间件设置的用户ID获取用户信息
 	// userID := ctx.MustGet("user_id").(string)
 
@@ -211,7 +211,7 @@ func GetProfileHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func UploadFileHandler(ctx context.Context, c *core.RequestContext) {
+func UploadFileHandler(ctx context.Context, c *define.RequestContext) {
 	c.JSON(200, map[string]any{
 		"message":  "File uploaded successfully",
 		"filename": "example.jpg",
@@ -219,7 +219,7 @@ func UploadFileHandler(ctx context.Context, c *core.RequestContext) {
 	})
 }
 
-func StaticFileHandler(ctx context.Context, c *core.RequestContext) {
+func StaticFileHandler(ctx context.Context, c *define.RequestContext) {
 	filepath := string(c.Param("filepath"))
 
 	c.JSON(200, map[string]any{
@@ -310,7 +310,7 @@ func testNewEngine() {
 	// 添加1000个路由
 	for i := 0; i < 1000; i++ {
 		path := fmt.Sprintf("/test/%d", i)
-		engine.GET(path, func(ctx context.Context, c *core.RequestContext) {
+		engine.GET(path, func(ctx context.Context, c *define.RequestContext) {
 			c.String(200, "OK")
 		})
 	}

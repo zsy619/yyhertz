@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
 // ============= 路由匹配和查找 =============
 
 // serveHTTP 处理HTTP请求的核心方法（简化版）
-func (cr *ControllerRegister) serveHTTP(ctx *contextenhanced.Context) {
+func (cr *ControllerRegister) serveHTTP(ctx *mvcContext.Context) {
 	// 增加请求计数
 	cr.mu.Lock()
 	cr.requestCount++
@@ -46,7 +46,7 @@ func (cr *ControllerRegister) serveHTTP(ctx *contextenhanced.Context) {
 }
 
 // findRouter 查找匹配的路由
-func (cr *ControllerRegister) findRouter(ctx *contextenhanced.Context) (*ControllerInfo, bool) {
+func (cr *ControllerRegister) findRouter(ctx *mvcContext.Context) (*ControllerInfo, bool) {
 	if ctx == nil || ctx.Request() == nil {
 		return nil, false
 	}
@@ -75,7 +75,7 @@ func (cr *ControllerRegister) findRouter(ctx *contextenhanced.Context) (*Control
 }
 
 // matchRoute 在路由树中匹配路由
-func (cr *ControllerRegister) matchRoute(tree *ControllerTree, requestPath string, ctx *contextenhanced.Context) *ControllerInfo {
+func (cr *ControllerRegister) matchRoute(tree *ControllerTree, requestPath string, ctx *mvcContext.Context) *ControllerInfo {
 	// 1. 首先尝试固定路由
 	if info := tree.fixedRoutes[requestPath]; info != nil {
 		return info
@@ -99,17 +99,17 @@ func (cr *ControllerRegister) matchRoute(tree *ControllerTree, requestPath strin
 }
 
 // setRouteParams 设置路由参数
-func (cr *ControllerRegister) setRouteParams(ctx *contextenhanced.Context, info *ControllerInfo, matches []string) {
+func (cr *ControllerRegister) setRouteParams(ctx *mvcContext.Context, info *ControllerInfo, matches []string) {
 	if len(info.params) == 0 || len(matches) == 0 {
 		return
 	}
 
 	// 创建参数映射
-	params := make([]contextenhanced.Param, 0, len(info.params))
+	params := make([]mvcContext.Param, 0, len(info.params))
 
 	for i, paramName := range info.params {
 		if i < len(matches) {
-			params = append(params, contextenhanced.Param{
+			params = append(params, mvcContext.Param{
 				Key:   paramName,
 				Value: matches[i],
 			})
@@ -144,7 +144,7 @@ func (cr *ControllerRegister) cleanPath(p string) string {
 // ============= 控制器执行 =============
 
 // executeController 执行控制器
-func (cr *ControllerRegister) executeController(ctx *contextenhanced.Context, info *ControllerInfo) {
+func (cr *ControllerRegister) executeController(ctx *mvcContext.Context, info *ControllerInfo) {
 	defer func() {
 		if err := recover(); err != nil {
 			cr.handlePanic(ctx, err)
@@ -176,7 +176,7 @@ func (cr *ControllerRegister) executeController(ctx *contextenhanced.Context, in
 }
 
 // executeControllerMethod 执行控制器方法
-func (cr *ControllerRegister) executeControllerMethod(ctx *contextenhanced.Context, info *ControllerInfo, methodInfo *MethodInfo) {
+func (cr *ControllerRegister) executeControllerMethod(ctx *mvcContext.Context, info *ControllerInfo, methodInfo *MethodInfo) {
 	// 创建控制器实例
 	controller := cr.createControllerInstance(info.controllerType)
 	if controller == nil {
@@ -229,7 +229,7 @@ func (cr *ControllerRegister) getControllerName(controller core.IController) str
 }
 
 // executeControllerLifecycle 执行控制器生命周期
-func (cr *ControllerRegister) executeControllerLifecycle(ctx *contextenhanced.Context, controller core.IController, methodInfo *MethodInfo) {
+func (cr *ControllerRegister) executeControllerLifecycle(ctx *mvcContext.Context, controller core.IController, methodInfo *MethodInfo) {
 	// 1. 初始化控制器（使用Beego兼容的参数名ct）
 	controllerName := cr.getControllerName(controller)
 	// 检查是否有Controller后缀
@@ -274,7 +274,7 @@ func (cr *ControllerRegister) invokeMethod(controller core.IController, methodIn
 }
 
 // executeFunctionHandler 执行函数处理器
-func (cr *ControllerRegister) executeFunctionHandler(ctx *contextenhanced.Context, methodInfo *MethodInfo) {
+func (cr *ControllerRegister) executeFunctionHandler(ctx *mvcContext.Context, methodInfo *MethodInfo) {
 	defer func() {
 		if err := recover(); err != nil {
 			cr.handlePanic(ctx, err)
@@ -301,7 +301,7 @@ func (cr *ControllerRegister) executeFunctionHandler(ctx *contextenhanced.Contex
 }
 
 // prepareFunctionArgs 准备函数参数（简化版）
-func (cr *ControllerRegister) prepareFunctionArgs(ctx *contextenhanced.Context, funcType reflect.Type) []reflect.Value {
+func (cr *ControllerRegister) prepareFunctionArgs(ctx *mvcContext.Context, funcType reflect.Type) []reflect.Value {
 	numIn := funcType.NumIn()
 	args := make([]reflect.Value, numIn)
 
@@ -309,7 +309,7 @@ func (cr *ControllerRegister) prepareFunctionArgs(ctx *contextenhanced.Context, 
 		paramType := funcType.In(i)
 
 		switch paramType {
-		case reflect.TypeOf((*contextenhanced.Context)(nil)):
+		case reflect.TypeOf((*mvcContext.Context)(nil)):
 			// *Context 参数
 			args[i] = reflect.ValueOf(ctx)
 		default:
@@ -322,7 +322,7 @@ func (cr *ControllerRegister) prepareFunctionArgs(ctx *contextenhanced.Context, 
 }
 
 // handleFunctionResults 处理函数返回值
-func (cr *ControllerRegister) handleFunctionResults(ctx *contextenhanced.Context, results []reflect.Value) {
+func (cr *ControllerRegister) handleFunctionResults(ctx *mvcContext.Context, results []reflect.Value) {
 	if len(results) == 0 {
 		return
 	}
@@ -351,7 +351,7 @@ func (cr *ControllerRegister) handleFunctionResults(ctx *contextenhanced.Context
 // ============= 错误处理 =============
 
 // handleNotFound 处理404错误
-func (cr *ControllerRegister) handleNotFound(ctx *contextenhanced.Context) {
+func (cr *ControllerRegister) handleNotFound(ctx *mvcContext.Context) {
 	ctx.Output.SetStatus(404)
 	ctx.Output.JSON(map[string]any{
 		"error": "Not Found",
@@ -361,7 +361,7 @@ func (cr *ControllerRegister) handleNotFound(ctx *contextenhanced.Context) {
 }
 
 // handleMethodNotAllowed 处理405错误
-func (cr *ControllerRegister) handleMethodNotAllowed(ctx *contextenhanced.Context, info *ControllerInfo) {
+func (cr *ControllerRegister) handleMethodNotAllowed(ctx *mvcContext.Context, info *ControllerInfo) {
 	// 获取支持的方法列表
 	allowedMethods := make([]string, 0, len(info.methods))
 	for method := range info.methods {
@@ -380,7 +380,7 @@ func (cr *ControllerRegister) handleMethodNotAllowed(ctx *contextenhanced.Contex
 }
 
 // handlePanic 处理panic
-func (cr *ControllerRegister) handlePanic(ctx *contextenhanced.Context, err any) {
+func (cr *ControllerRegister) handlePanic(ctx *mvcContext.Context, err any) {
 	config.Errorf("Request panic: %v", err)
 
 	ctx.Output.SetStatus(500)
@@ -391,7 +391,7 @@ func (cr *ControllerRegister) handlePanic(ctx *contextenhanced.Context, err any)
 }
 
 // handleError 处理一般错误
-func (cr *ControllerRegister) handleError(ctx *contextenhanced.Context, err error) {
+func (cr *ControllerRegister) handleError(ctx *mvcContext.Context, err error) {
 	config.Errorf("Request error: %v", err)
 
 	ctx.Output.SetStatus(500)
@@ -404,7 +404,7 @@ func (cr *ControllerRegister) handleError(ctx *contextenhanced.Context, err erro
 // ============= 过滤器执行 =============
 
 // executeFilters 执行过滤器
-func (cr *ControllerRegister) executeFilters(ctx *contextenhanced.Context, pos int) bool {
+func (cr *ControllerRegister) executeFilters(ctx *mvcContext.Context, pos int) bool {
 	cr.mu.RLock()
 	filters := cr.filters
 	cr.mu.RUnlock()
@@ -451,7 +451,7 @@ func (cr *ControllerRegister) matchFilterPattern(pattern, path string) bool {
 }
 
 // Next 执行过滤器链中的下一个过滤器（简化版）
-func (chain *FilterChain) Next(ctx *contextenhanced.Context) {
+func (chain *FilterChain) Next(ctx *mvcContext.Context) {
 	chain.index++
 	if chain.index < len(chain.filters) {
 		chain.filters[chain.index](ctx, chain)

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 )
 
@@ -240,7 +240,7 @@ func (acr *AdvancedControllerRegister) AddDynamicRoute(route *DynamicRoute) erro
 	acr.dynamicRoutes = append(acr.dynamicRoutes, route)
 
 	// 如果是函数处理器，直接注册
-	if handler, ok := route.Handler.(func(*contextenhanced.Context)); ok {
+	if handler, ok := route.Handler.(func(*mvcContext.Context)); ok {
 		acr.ControllerRegister.Any(route.Pattern, handler)
 	}
 
@@ -343,13 +343,13 @@ type AdvancedRegistrationOptions struct {
 type RateLimit struct {
 	RequestsPerSecond int
 	BurstSize         int
-	KeyFunc           func(*contextenhanced.Context) string
+	KeyFunc           func(*mvcContext.Context) string
 }
 
 // CacheConfig 缓存配置
 type CacheConfig struct {
 	TTL        time.Duration
-	KeyFunc    func(*contextenhanced.Context) string
+	KeyFunc    func(*mvcContext.Context) string
 	Conditions []CacheCondition
 }
 

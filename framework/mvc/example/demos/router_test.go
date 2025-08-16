@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/mvc"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 func TestRouter(t *testing.T) {
@@ -18,21 +18,21 @@ func TestRouter(t *testing.T) {
 	// 使用新的路由注册API测试
 
 	// 1. 测试基本的路由注册
-	mvc.GET("/test", func(ctx context.Context, c *core.RequestContext) {
+	mvc.GET("/test", func(ctx context.Context, c *define.RequestContext) {
 		c.JSON(200, map[string]any{
 			"message": "GET route working",
 			"time":    time.Now(),
 		})
 	})
 
-	mvc.POST("/test", func(ctx context.Context, c *core.RequestContext) {
+	mvc.POST("/test", func(ctx context.Context, c *define.RequestContext) {
 		c.JSON(200, map[string]any{
 			"message": "POST route working",
 			"time":    time.Now(),
 		})
 	})
 
-	mvc.Any("/any-test", func(ctx context.Context, c *core.RequestContext) {
+	mvc.Any("/any-test", func(ctx context.Context, c *define.RequestContext) {
 		method := string(c.Method())
 		c.JSON(200, map[string]any{
 			"message": "ANY route working",
@@ -42,7 +42,7 @@ func TestRouter(t *testing.T) {
 	})
 
 	// 2. 测试中间件功能
-	mvc.Use(func(ctx context.Context, c *core.RequestContext) {
+	mvc.Use(func(ctx context.Context, c *define.RequestContext) {
 		fmt.Printf("[Middleware] %s %s\n", string(c.Method()), string(c.Path()))
 	})
 

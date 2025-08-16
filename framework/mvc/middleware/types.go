@@ -1,16 +1,15 @@
 package middleware
 
 import (
-	"context"
 	"io"
 	"os"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // Middleware 中间件函数类型定义
-type Middleware func(c context.Context, ctx *app.RequestContext)
+type Middleware = define.Middleware
 
 // LoggerConfig Logger中间件配置
 type LoggerConfig struct {

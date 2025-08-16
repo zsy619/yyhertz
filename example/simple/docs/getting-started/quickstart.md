@@ -1,6 +1,6 @@
 # 🚀 快速开始
 
-通过这个10分钟教程，您将掌握YYHertz框架的核心概念，并创建一个完整的Web应用。
+通过这个15分钟教程，您将掌握YYHertz框架的核心概念，包括最新的多Handler类型系统，并创建一个完整的现代Web应用。
 
 ## 🛠️ 环境准备
 
@@ -49,91 +49,154 @@ go mod init my-app
 go mod tidy
 ```
 
-## 🎯 第一个应用 - Hello World
+## 🎯 第一个应用 - 多Handler类型示例
 
 ### 1. 创建主文件
 
-创建 `main.go` 文件：
+创建 `main.go` 文件，展示YYHertz最新的多Handler类型系统：
 
 ```go
 package main
 
 import (
+    "context"
+    "fmt"
+    "log"
+    "time"
+
     "github.com/zsy619/yyhertz/framework/mvc"
-    "github.com/zsy619/yyhertz/example/simple/controllers"
+    "github.com/zsy619/yyhertz/framework/mvc/router"
+    mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 func main() {
     // 创建应用实例
     app := mvc.HertzApp
     
-    // 创建控制器
-    homeController := &controllers.HomeController{}
+    // 创建API路由组
+    apiGroup := mvc.CreateGroup("/api/v1")
     
-    // 注册路由
-    app.RouterPrefix("/", homeController, "GetIndex", "GET:/")
+    // 设置各种Handler类型示例
+    setupHandlers(apiGroup)
+    
+    log.Println("🚀 多Handler类型应用启动成功!")
+    log.Println("📍 访问: http://localhost:8080")
     
     // 启动服务器
     app.Run(":8080")
 }
-```
 
-### 2. 创建控制器
-
-创建 `controllers/home_controller.go`：
-
-```go
-package controllers
-
-import (
-    "github.com/zsy619/yyhertz/framework/mvc"
-)
-
-type HomeController struct {
-    mvc.BaseController
-}
-
-func (c *HomeController) GetIndex() {
-    c.SetData("Title", "欢迎使用 Hertz MVC")
-    c.SetData("Message", "Hello, World!")
-    c.RenderHTML("home/index.html")
-}
-```
-
-### 3. 创建视图模板
-
-创建 `views/home/index.html`：
-
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 40px; 
-            text-align: center; 
+func setupHandlers(group *router.Group) {
+    // 1. 轻量级处理器 - 健康检查
+    group.GETLight("/health", func() {
+        log.Println("🟢 Health check performed")
+    })
+    
+    // 2. 简单处理器 - Ping响应
+    group.GETSimple("/ping", func(ctx context.Context) {
+        log.Println("📡 Ping received")
+    })
+    
+    // 3. 直接处理器 - 系统信息
+    group.GETDirect("/info", func(c *mvcContext.Context) {
+        c.Set("handler_type", "DirectHandler")
+        reqCtx := c.RequestContext()
+        reqCtx.SetContentType("application/json")
+        
+        info := fmt.Sprintf(`{
+            "message": "YYHertz 框架",
+            "handler": "DirectHandler (增强Context)",
+            "timestamp": "%s",
+            "keys_count": %d
+        }`, time.Now().Format(time.RFC3339), c.KeysCount())
+        
+        reqCtx.WriteString(info)
+    })
+    
+    // 4. 响应处理器 - 用户数据
+    group.GETResponse("/users", func(c *mvcContext.Context) any {
+        c.Set("handler_type", "ResponseHandler")
+        return map[string]any{
+            "success": true,
+            "users": []map[string]any{
+                {"id": 1, "name": "Alice", "role": "admin"},
+                {"id": 2, "name": "Bob", "role": "user"},
+            },
+            "total": 2,
+            "enhanced_context": true,
         }
-        h1 { color: #667eea; }
-    </style>
-</head>
-<body>
-    <h1>{{.Title}}</h1>
-    <p>{{.Message}}</p>
-</body>
-</html>
+    })
+    
+    // 5. 异步处理器 - 模拟数据处理
+    group.POSTAsync("/process", func(c *mvcContext.Context) <-chan any {
+        c.Set("handler_type", "AsyncHandler")
+        resultChan := make(chan any, 1)
+        
+        go func() {
+            defer close(resultChan)
+            time.Sleep(1 * time.Second) // 模拟处理时间
+            resultChan <- map[string]any{
+                "success": true,
+                "message": "异步处理完成",
+                "processed_at": time.Now().Format(time.RFC3339),
+                "context_enhanced": true,
+            }
+        }()
+        
+        return resultChan
+    })
+}
 ```
 
-### 4. 运行应用
+### 2. 运行应用
 
 ```bash
+# 安装依赖
+go mod tidy
+
+# 启动应用
 go run main.go
 ```
 
-访问 http://localhost:8080 查看结果！
+### 3. 测试Handler类型
+
+应用启动后，可以测试各种Handler类型：
+
+```bash
+# 1. 轻量级处理器 - 健康检查
+curl http://localhost:8080/api/v1/health
+# 返回: HTTP 200 (无响应体，最小开销)
+
+# 2. 简单处理器 - Ping
+curl http://localhost:8080/api/v1/ping
+# 返回: HTTP 200 (自动响应)
+
+# 3. 直接处理器 - 系统信息
+curl http://localhost:8080/api/v1/info
+# 返回: {"message":"YYHertz 框架","handler":"DirectHandler (增强Context)","timestamp":"...","keys_count":1}
+
+# 4. 响应处理器 - 用户数据
+curl http://localhost:8080/api/v1/users
+# 返回: {"success":true,"users":[{"id":1,"name":"Alice","role":"admin"},{"id":2,"name":"Bob","role":"user"}],"total":2,"enhanced_context":true}
+
+# 5. 异步处理器 - 数据处理
+curl -X POST http://localhost:8080/api/v1/process
+# 返回: {"success":true,"message":"异步处理完成","processed_at":"...","context_enhanced":true}
+```
+
+### 4. 理解Handler类型
+
+YYHertz框架提供7种Handler类型，每种都有特定的用途：
+
+| Handler类型 | 签名 | 适用场景 | 特点 |
+|------------|------|----------|------|
+| **LightHandler** | `func()` | 健康检查、静态响应 | 零参数，最小开销 |
+| **SimpleHandler** | `func(context.Context)` | 简单业务逻辑 | 支持上下文取消 |
+| **DirectHandler** | `func(*mvcContext.Context)` | 直接控制响应 | 增强Context，高性能 |
+| **ResponseHandler** | `func(*mvcContext.Context) any` | REST API | 自动JSON序列化 |
+| **AsyncHandler** | `func(*mvcContext.Context) <-chan any` | 异步处理 | 支持超时控制 |
+| **StreamHandler** | `func(*mvcContext.Context, chan<- []byte) error` | 流式传输 | 实时数据流 |
+| **HandlerFunc** | `func(context.Context, *RequestContext)` | 传统方式 | 向后兼容 |
 
 ## 项目结构
 
@@ -187,15 +250,28 @@ export HERTZ_DEBUG=false
 go run main.go
 ```
 
-## 下一步
+## 🚀 下一步
 
-现在你已经有了一个基本的Hertz MVC应用，可以继续学习：
+现在你已经掌握了YYHertz的多Handler类型系统，可以继续深入学习：
 
-- [控制器详解](/docs/mvc-core/controller) - 了解控制器的高级用法
-- [路由系统](/docs/mvc-core/routing) - 学习路由配置和参数处理
-- [模板引擎](/docs/view-template/overview) - 掌握模板语法和布局
-- [中间件](/docs/middleware/overview) - 添加认证、日志等功能
-- [数据库集成](/docs/data-access/orm-unified) - 连接和操作数据库
+### 📚 核心概念
+- [**多Handler类型详解**](/docs/mvc-core/routing) - 深入了解7种Handler类型的应用场景
+- [**增强Context系统**](/docs/mvc-core/controller) - 掌握高性能并发Context的使用
+- [**路由系统升级**](/docs/mvc-core/routing) - 学习新的路由注册方式和参数处理
+
+### 🛠️ 高级功能  
+- [**统一ORM解决方案**](/docs/data-access/orm-unified) - GORM + MyBatis双引擎架构
+- [**中间件系统**](/docs/middleware/overview) - 4层架构的中间件设计
+- [**模板引擎**](/docs/view-template/overview) - 灵活的视图渲染系统
+
+### ⚡ 性能优化
+- [**对象池化**](/docs/dev-tools/performance) - 了解Context池化机制
+- [**并发优化**](/docs/advanced/scheduler) - 掌握高并发编程技巧
+- [**监控告警**](/docs/data-access/monitoring-alerting) - 性能监控和优化建议
+
+### 🔧 实战项目
+- [**完整示例**](https://github.com/zsy619/yyhertz-examples) - 查看真实项目案例
+- [**最佳实践**](/docs/mvc-core/controller/faq-best-practices) - 学习开发规范和技巧
 
 ## 常见问题
 

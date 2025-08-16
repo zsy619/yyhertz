@@ -73,7 +73,220 @@ database:
     max_open_conns: 100
 ```
 
-### 2. 控制器使用
+### 2. 多Handler类型 + 统一ORM使用
+
+```go
+import (
+    "github.com/zsy619/yyhertz/framework/mvc"
+    "github.com/zsy619/yyhertz/framework/mvc/router"
+    mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+)
+
+func setupDatabaseRoutes(group *router.Group) {
+    // ResponseHandler - 最适合数据库查询API
+    group.GETResponse("/users", getUsersWithORM)
+    group.POSTResponse("/users", createUserWithORM)
+    group.PUTResponse("/users/:id", updateUserWithORM)
+    
+    // AsyncHandler - 适合复杂报表和批处理
+    group.GETAsync("/reports/users", generateUserReportAsync)
+    group.POSTAsync("/batch/import", batchImportUsersAsync)
+    
+    // DirectHandler - 适合自定义响应格式
+    group.GETDirect("/users/:id/export", exportUserDirect)
+}
+
+// ResponseHandler + GORM - 简单高效查询
+func getUsersWithORM(c *mvcContext.Context) any {
+    c.SetTypedString("operation", "list_users")
+    c.SetTypedString("engine", "gorm_auto")
+    
+    // 获取查询参数
+    reqCtx := c.RequestContext()
+    page := getIntParam(reqCtx, "page", 1)
+    size := getIntParam(reqCtx, "size", 10)
+    status := string(reqCtx.Query("status"))
+    
+    // 使用统一ORM - 智能选择GORM引擎
+    orm := orm.GetDefault()
+    
+    var users []User
+    var total int64
+    
+    query := orm.Model(&User{})
+    if status != "" {
+        query = query.Where("status = ?", status)
+        c.SetTypedString("filter_status", status)
+    }
+    
+    // GORM处理分页查询 - 16,278 ops/sec
+    if err := query.Count(&total).Error; err != nil {
+        c.AddError(err)
+        return map[string]any{
+            "success": false,
+            "error": "Failed to count users",
+        }
+    }
+    
+    if err := query.Offset((page-1)*size).Limit(size).Find(&users).Error; err != nil {
+        c.AddError(err)
+        return map[string]any{
+            "success": false,
+            "error": "Failed to query users",
+        }
+    }
+    
+    c.SetTypedInt("users_count", len(users))
+    c.SetTypedInt("total_count", int(total))
+    
+    return map[string]any{
+        "success": true,
+        "data": users,
+        "pagination": map[string]any{
+            "page": page,
+            "size": size,
+            "total": total,
+        },
+        "performance": map[string]any{
+            "engine": "gorm",
+            "operation_type": c.GetTypedString("operation"),
+        },
+    }
+}
+
+// ResponseHandler + GORM - 创建操作
+func createUserWithORM(c *mvcContext.Context) any {
+    c.SetTypedString("operation", "create_user")
+    
+    reqCtx := c.RequestContext()
+    var user User
+    if err := reqCtx.BindJSON(&user); err != nil {
+        c.AddError(err)
+        reqCtx.SetStatusCode(400)
+        return map[string]any{
+            "success": false,
+            "error": "Invalid JSON data",
+        }
+    }
+    
+    // 使用GORM创建 - 16,278 ops/sec
+    orm := orm.GetDefault()
+    if err := orm.Create(&user).Error; err != nil {
+        c.AddError(err)
+        reqCtx.SetStatusCode(500)
+        return map[string]any{
+            "success": false,
+            "error": "Failed to create user",
+        }
+    }
+    
+    c.SetTypedString("created_user_id", user.ID)
+    
+    return map[string]any{
+        "success": true,
+        "data": user,
+        "message": "User created successfully",
+    }
+}
+
+// AsyncHandler + MyBatis - 复杂报表查询
+func generateUserReportAsync(c *mvcContext.Context) <-chan any {
+    c.SetTypedString("operation", "user_report")
+    c.SetTypedString("engine", "mybatis_complex")
+    
+    resultChan := make(chan any, 1)
+    
+    go func() {
+        defer close(resultChan)
+        
+        // 复杂统计查询 - 智能选择MyBatis引擎 - 990 ops/sec
+        orm := orm.GetDefault()
+        
+        // MyBatis处理复杂SQL
+        var reportData []UserReportData
+        err := orm.SelectList("user.getUserReport", map[string]any{
+            "start_date": c.RequestContext().Query("start_date"),
+            "end_date":   c.RequestContext().Query("end_date"),
+            "group_by":   c.RequestContext().Query("group_by"),
+        }, &reportData)
+        
+        if err != nil {
+            c.AddError(err)
+            resultChan <- map[string]any{
+                "success": false,
+                "error": "Failed to generate report",
+            }
+            return
+        }
+        
+        c.SetTypedInt("report_rows", len(reportData))
+        
+        resultChan <- map[string]any{
+            "success": true,
+            "data": reportData,
+            "performance": map[string]any{
+                "engine": "mybatis",
+                "operation_type": "complex_report",
+                "rows_processed": len(reportData),
+            },
+        }
+    }()
+    
+    return resultChan
+}
+
+// DirectHandler + 混合引擎 - 自定义导出
+func exportUserDirect(c *mvcContext.Context) {
+    c.SetTypedString("operation", "export_user")
+    
+    reqCtx := c.RequestContext()
+    userID := string(reqCtx.Param("id"))
+    format := string(reqCtx.Query("format")) // json, xml, csv
+    
+    c.SetTypedString("user_id", userID)
+    c.SetTypedString("export_format", format)
+    
+    orm := orm.GetDefault()
+    
+    // GORM获取基础数据
+    var user User
+    if err := orm.First(&user, userID).Error; err != nil {
+        reqCtx.SetStatusCode(404)
+        reqCtx.JSON(404, map[string]any{"error": "User not found"})
+        return
+    }
+    
+    // MyBatis获取关联数据
+    var userDetails UserDetails
+    orm.SelectOne("user.getUserDetails", map[string]any{
+        "user_id": userID,
+    }, &userDetails)
+    
+    // 根据格式自定义响应
+    switch format {
+    case "xml":
+        reqCtx.SetContentType("application/xml")
+        reqCtx.WriteString(generateXML(user, userDetails))
+    case "csv":
+        reqCtx.SetContentType("text/csv")
+        reqCtx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=user_%s.csv", userID))
+        reqCtx.WriteString(generateCSV(user, userDetails))
+    default:
+        reqCtx.JSON(200, map[string]any{
+            "user": user,
+            "details": userDetails,
+            "export_info": map[string]any{
+                "format": format,
+                "exported_at": time.Now(),
+            },
+        })
+    }
+    
+    c.SetTypedString("export_completed", "true")
+}
+```
+
+### 3. 传统控制器使用 (兼容模式)
 
 ```go
 type UserController struct {

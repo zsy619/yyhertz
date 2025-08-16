@@ -1,6 +1,6 @@
 # 🔌 中间件概览
 
-YYHertz v2.0 引入了革命性的**统一中间件系统**，将原有的分散式中间件架构整合为**4层智能架构**，实现了60%的性能提升和100%的向后兼容性。
+YYHertz v2.0 引入了革命性的**统一中间件系统**，结合**多Handler类型系统**和**增强Context**，将原有的分散式中间件架构整合为**4层智能架构**，实现了60%的性能提升和100%的向后兼容性。
 
 ## 🌟 统一架构优势
 
@@ -133,7 +133,98 @@ func main() {
 }
 ```
 
-### 分组中间件
+### 🎯 多Handler类型 + 中间件集成
+
+```go
+import (
+    "context"
+    "github.com/zsy619/yyhertz/framework/mvc"
+    "github.com/zsy619/yyhertz/framework/mvc/middleware"
+    "github.com/zsy619/yyhertz/framework/mvc/router"
+    mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+)
+
+func setupMultiHandlerMiddleware() {
+    app := mvc.HertzApp
+    
+    // 全局中间件 - 对所有Handler类型生效
+    app.Use(
+        middleware.Recovery(),        // 支持所有Handler类型的异常恢复
+        middleware.EnhancedLogger(), // 增强Context日志记录
+        middleware.ContextPooling(), // Context对象池管理
+    )
+    
+    // 创建API路由组 - 支持多Handler类型
+    apiGroup := mvc.CreateGroup("/api/v1")
+    
+    // 路由组级中间件 - 智能适配不同Handler类型
+    apiGroup.Use(
+        middleware.AuthJWT(),            // 认证中间件
+        middleware.RateLimit(1000, time.Hour), // 限流中间件  
+        middleware.HandlerMetrics(),     // Handler类型性能监控
+        middleware.ContextEnhancer(),    // 增强Context预处理
+    )
+    
+    // 不同Handler类型的中间件使用示例
+    setupHandlerSpecificRoutes(apiGroup)
+}
+
+func setupHandlerSpecificRoutes(group *router.Group) {
+    // LightHandler - 最小中间件开销
+    group.GETLight("/health", func() {
+        // 自动跳过不必要的中间件处理
+    })
+    
+    // ResponseHandler - 完整中间件链
+    group.GETResponse("/users", func(c *mvcContext.Context) any {
+        // 中间件已设置增强Context数据
+        userID, _ := c.GetTypedString("auth_user_id")  // 来自认证中间件
+        requestID, _ := c.GetTypedString("request_id")  // 来自日志中间件
+        
+        c.SetTypedString("operation", "list_users")
+        return getUsersWithAuth(userID, requestID)
+    })
+    
+    // AsyncHandler - 异步中间件处理
+    group.POSTAsync("/reports", func(c *mvcContext.Context) <-chan any {
+        // 中间件在主线程中执行，异步handler继承Context状态
+        reportType, _ := c.GetTypedString("report_type")
+        
+        resultChan := make(chan any, 1)
+        go func() {
+            defer close(resultChan)
+            // 使用中间件设置的Context数据
+            result := generateAsyncReport(reportType)
+            resultChan <- result
+        }()
+        return resultChan
+    })
+    
+    // DirectHandler - 完全控制中间件输出
+    group.GETDirect("/metrics", func(c *mvcContext.Context) {
+        // 访问所有中间件设置的Context数据
+        metrics := c.GetMultiple([]string{
+            "request_start_time", "auth_user_id", "rate_limit_remaining",
+        })
+        
+        reqCtx := c.RequestContext()
+        reqCtx.SetContentType("text/plain")
+        reqCtx.WriteString(formatPrometheusMetrics(metrics))
+    })
+    
+    // StreamHandler - 流式中间件支持
+    group.GETStream("/events", func(c *mvcContext.Context, dataChan chan<- []byte) error {
+        // 中间件验证了用户权限
+        userRole, _ := c.GetTypedString("auth_user_role")
+        
+        // 根据用户角色流式发送不同级别的事件
+        return streamEventsForRole(userRole, dataChan)
+    })
+}
+```
+
+### 🔧 分组中间件 (传统方式兼容)
+
 ```go
 func main() {
     app := mvc.HertzApp

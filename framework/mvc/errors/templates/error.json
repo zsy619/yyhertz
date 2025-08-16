@@ -1,0 +1,40 @@
+{
+    "code": {{.StatusCode}},
+    "message": "{{.ErrorMessage}}",
+    "success": false,
+    "data": {
+        "status_text": "{{.StatusText}}",
+        "path": "{{.RequestPath}}",
+        "method": "{{.RequestMethod}}",
+        "timestamp": {{formatTimeUnix .Timestamp}},
+        {{if .RequestID}}
+        "request_id": "{{.RequestID}}",
+        {{end}}
+        {{if .UserAgent}}
+        "user_agent": "{{.UserAgent}}",
+        {{end}}
+        "server_info": {
+            "framework": "{{.FrameworkName | default \"YYHertz Framework\"}}",
+            "language": "{{.Language | default \"zh-CN\"}}"
+        }
+    },
+    {{if .Suggestions}}
+    "suggestions": [
+        {{range $i, $s := .Suggestions}}
+        {{if $i}}, {{end}}"{{$s}}"
+        {{end}}
+    ],
+    {{end}}
+    {{if .Details}}
+    "details": {{.Details}},
+    {{end}}
+    "meta": {
+        "show_debug": {{.ShowDebug}},
+        {{if .EnableRetry}}
+        "retryable": true,
+        "retry_interval": {{.RetryInterval}},
+        {{end}}
+        "content_type": "application/json",
+        "api_version": "v1"
+    }
+}

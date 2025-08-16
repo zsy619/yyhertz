@@ -9,15 +9,15 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // FastEngine 高性能MVC引擎
 type FastEngine struct {
 	router      *RouterTree              // 路由树
-	contextPool *mvccontext.ContextPool  // Context池
-	middleware  []mvccontext.HandlerFunc // 全局中间件
+	contextPool *mvcContext.ContextPool  // Context池
+	middleware  []mvcContext.HandlerFunc // 全局中间件
 
 	// 配置
 	config EngineConfig
@@ -57,14 +57,14 @@ func NewFastEngine() *FastEngine {
 
 	engine := &FastEngine{
 		router:      NewRouterTree(),
-		contextPool: mvccontext.NewContextPool(),
-		middleware:  make([]mvccontext.HandlerFunc, 0),
+		contextPool: mvcContext.NewContextPool(),
+		middleware:  make([]mvcContext.HandlerFunc, 0),
 		config:      config,
 		startTime:   time.Now(),
 	}
 
 	// 设置Context池大小
-	mvccontext.SetMaxPoolSize(config.MaxContextPool)
+	mvcContext.SetMaxPoolSize(config.MaxContextPool)
 
 	return engine
 }
@@ -88,11 +88,11 @@ func (e *FastEngine) SetConfig(config EngineConfig) {
 	defer e.mu.Unlock()
 
 	e.config = config
-	mvccontext.SetMaxPoolSize(config.MaxContextPool)
+	mvcContext.SetMaxPoolSize(config.MaxContextPool)
 }
 
 // Use 添加全局中间件
-func (e *FastEngine) Use(middleware ...mvccontext.HandlerFunc) {
+func (e *FastEngine) Use(middleware ...mvcContext.HandlerFunc) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -100,17 +100,17 @@ func (e *FastEngine) Use(middleware ...mvccontext.HandlerFunc) {
 }
 
 // AddRoute 添加路由
-func (e *FastEngine) AddRoute(method, path string, handler core.HandlerFunc) {
+func (e *FastEngine) AddRoute(method, path string, handler define.HandlerFunc) {
 	// 包装处理器以支持新的Context
 	wrappedHandler := e.wrapHandler(handler)
 	e.router.AddRoute(method, path, wrappedHandler)
 }
 
 // wrapHandler 包装处理器以支持Context池化
-func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
-	return func(ctx context.Context, c *core.RequestContext) {
+func (e *FastEngine) wrapHandler(handler define.HandlerFunc) define.HandlerFunc {
+	return func(ctx context.Context, c *define.RequestContext) {
 		// 从池中获取增强Context
-		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
+		enhancedCtx := mvcContext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
 
 		// 记录请求开始
@@ -123,9 +123,9 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 		start := time.Now()
 
 		// 设置处理器链（全局中间件 + 路由处理器）
-		handlers := make([]mvccontext.HandlerFunc, len(e.middleware)+1)
+		handlers := make([]mvcContext.HandlerFunc, len(e.middleware)+1)
 		copy(handlers, e.middleware)
-		handlers[len(handlers)-1] = func(ectx *mvccontext.Context) {
+		handlers[len(handlers)-1] = func(ectx *mvcContext.Context) {
 			// 调用原始处理器
 			handler(ctx, c)
 		}
@@ -142,19 +142,19 @@ func (e *FastEngine) wrapHandler(handler core.HandlerFunc) core.HandlerFunc {
 }
 
 // HandleRequest 处理HTTP请求
-func (e *FastEngine) HandleRequest(method, path string, c *core.RequestContext) {
+func (e *FastEngine) HandleRequest(method, path string, c *define.RequestContext) {
 	// 查找路由
 	handler, params := e.router.GetRoute(method, path)
 
 	if handler != nil {
 		// 创建增强Context
-		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
+		enhancedCtx := mvcContext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
 
 		// 设置路由参数
-		convertedParams := make(mvccontext.Params, len(params))
+		convertedParams := make(mvcContext.Params, len(params))
 		for i, p := range params {
-			convertedParams[i] = mvccontext.Param{Key: p.Key, Value: p.Value}
+			convertedParams[i] = mvcContext.Param{Key: p.Key, Value: p.Value}
 		}
 		enhancedCtx.SetParams(convertedParams)
 		enhancedCtx.SetFullPath(path)
@@ -169,7 +169,7 @@ func (e *FastEngine) HandleRequest(method, path string, c *core.RequestContext) 
 }
 
 // handle404 处理404错误
-func (e *FastEngine) handle404(method, path string, c *core.RequestContext) {
+func (e *FastEngine) handle404(method, path string, c *define.RequestContext) {
 	if e.config.RedirectSlash {
 		// 尝试重定向
 		if method != "CONNECT" && path != "/" {
@@ -184,7 +184,7 @@ func (e *FastEngine) handle404(method, path string, c *core.RequestContext) {
 }
 
 // tryRedirect 尝试重定向
-func (e *FastEngine) tryRedirect(method, path string, c *core.RequestContext) bool {
+func (e *FastEngine) tryRedirect(method, path string, c *define.RequestContext) bool {
 	var redirectPath string
 
 	if len(path) > 1 && path[len(path)-1] == '/' {
@@ -219,7 +219,7 @@ func (e *FastEngine) GetStats() EngineStats {
 		return EngineStats{}
 	}
 
-	poolMetrics := mvccontext.GetPoolMetrics()
+	poolMetrics := mvcContext.GetPoolMetrics()
 
 	return EngineStats{
 		TotalRequests:  atomic.LoadInt64(&e.stats.TotalRequests),
@@ -238,7 +238,7 @@ func (e *FastEngine) calculateRouteHitRate() float64 {
 }
 
 // calculateContextHitRate 计算Context池命中率
-func (e *FastEngine) calculateContextHitRate(metrics mvccontext.PoolMetrics) float64 {
+func (e *FastEngine) calculateContextHitRate(metrics mvcContext.PoolMetrics) float64 {
 	if metrics.Gets == 0 {
 		return 0
 	}
@@ -256,7 +256,7 @@ func (e *FastEngine) updateAverageLatency(latency int64) {
 // PrintStats 打印统计信息
 func (e *FastEngine) PrintStats() {
 	stats := e.GetStats()
-	poolMetrics := mvccontext.GetPoolMetrics()
+	poolMetrics := mvcContext.GetPoolMetrics()
 
 	fmt.Printf("=== FastEngine Statistics ===\n")
 	fmt.Printf("Total Requests: %d\n", stats.TotalRequests)
@@ -272,42 +272,42 @@ func (e *FastEngine) PrintStats() {
 // ============= 路由注册便捷方法 =============
 
 // GET 注册GET路由
-func (e *FastEngine) GET(path string, handler core.HandlerFunc) {
+func (e *FastEngine) GET(path string, handler define.HandlerFunc) {
 	e.AddRoute("GET", path, handler)
 }
 
 // POST 注册POST路由
-func (e *FastEngine) POST(path string, handler core.HandlerFunc) {
+func (e *FastEngine) POST(path string, handler define.HandlerFunc) {
 	e.AddRoute("POST", path, handler)
 }
 
 // PUT 注册PUT路由
-func (e *FastEngine) PUT(path string, handler core.HandlerFunc) {
+func (e *FastEngine) PUT(path string, handler define.HandlerFunc) {
 	e.AddRoute("PUT", path, handler)
 }
 
 // DELETE 注册DELETE路由
-func (e *FastEngine) DELETE(path string, handler core.HandlerFunc) {
+func (e *FastEngine) DELETE(path string, handler define.HandlerFunc) {
 	e.AddRoute("DELETE", path, handler)
 }
 
 // PATCH 注册PATCH路由
-func (e *FastEngine) PATCH(path string, handler core.HandlerFunc) {
+func (e *FastEngine) PATCH(path string, handler define.HandlerFunc) {
 	e.AddRoute("PATCH", path, handler)
 }
 
 // HEAD 注册HEAD路由
-func (e *FastEngine) HEAD(path string, handler core.HandlerFunc) {
+func (e *FastEngine) HEAD(path string, handler define.HandlerFunc) {
 	e.AddRoute("HEAD", path, handler)
 }
 
 // OPTIONS 注册OPTIONS路由
-func (e *FastEngine) OPTIONS(path string, handler core.HandlerFunc) {
+func (e *FastEngine) OPTIONS(path string, handler define.HandlerFunc) {
 	e.AddRoute("OPTIONS", path, handler)
 }
 
 // Any 注册任意方法路由
-func (e *FastEngine) Any(path string, handler core.HandlerFunc) {
+func (e *FastEngine) Any(path string, handler define.HandlerFunc) {
 	methods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 	for _, method := range methods {
 		e.AddRoute(method, path, handler)
@@ -320,7 +320,7 @@ func (e *FastEngine) Any(path string, handler core.HandlerFunc) {
 type Group struct {
 	engine     *FastEngine
 	prefix     string
-	middleware []mvccontext.HandlerFunc
+	middleware []mvcContext.HandlerFunc
 }
 
 // Group 创建路由组
@@ -332,34 +332,34 @@ func (e *FastEngine) Group(prefix string) *Group {
 }
 
 // Use 为路由组添加中间件
-func (g *Group) Use(middleware ...mvccontext.HandlerFunc) {
+func (g *Group) Use(middleware ...mvcContext.HandlerFunc) {
 	g.middleware = append(g.middleware, middleware...)
 }
 
 // GET 为路由组注册GET路由
-func (g *Group) GET(path string, handler core.HandlerFunc) {
+func (g *Group) GET(path string, handler define.HandlerFunc) {
 	g.engine.AddRoute("GET", g.prefix+path, g.wrapGroupHandler(handler))
 }
 
 // POST 为路由组注册POST路由
-func (g *Group) POST(path string, handler core.HandlerFunc) {
+func (g *Group) POST(path string, handler define.HandlerFunc) {
 	g.engine.AddRoute("POST", g.prefix+path, g.wrapGroupHandler(handler))
 }
 
 // wrapGroupHandler 为路由组包装处理器
-func (g *Group) wrapGroupHandler(handler core.HandlerFunc) core.HandlerFunc {
+func (g *Group) wrapGroupHandler(handler define.HandlerFunc) define.HandlerFunc {
 	if len(g.middleware) == 0 {
 		return handler
 	}
 
-	return func(ctx context.Context, c *core.RequestContext) {
-		enhancedCtx := mvccontext.NewContext((*app.RequestContext)(c))
+	return func(ctx context.Context, c *define.RequestContext) {
+		enhancedCtx := mvcContext.NewContext((*app.RequestContext)(c))
 		defer enhancedCtx.Release()
 
 		// 设置组中间件 + 处理器
-		handlers := make([]mvccontext.HandlerFunc, len(g.middleware)+1)
+		handlers := make([]mvcContext.HandlerFunc, len(g.middleware)+1)
 		copy(handlers, g.middleware)
-		handlers[len(handlers)-1] = func(ectx *mvccontext.Context) {
+		handlers[len(handlers)-1] = func(ectx *mvcContext.Context) {
 			handler(ctx, c)
 		}
 

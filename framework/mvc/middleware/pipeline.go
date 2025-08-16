@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/constant"
-	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // MiddlewareFunc 统一的中间件函数类型
-type MiddlewareFunc func(*mvccontext.Context)
+type MiddlewareFunc = define.MiddlewareFunc
 
 // MiddlewareLayer 中间件层级枚举 - 使用统一常量
 type MiddlewareLayer = constant.ExecutionLayer
@@ -226,7 +227,7 @@ func (p *MiddlewarePipeline) BuildChain(layers ...MiddlewareLayer) []MiddlewareF
 
 // wrapWithStats 用统计信息包装中间件
 func (p *MiddlewarePipeline) wrapWithStats(info *MiddlewareInfo) MiddlewareFunc {
-	return func(ctx *mvccontext.Context) {
+	return func(ctx *mvcContext.Context) {
 		start := time.Now()
 
 		// 执行原始中间件
@@ -310,7 +311,7 @@ func (p *MiddlewarePipeline) GetCompiledChain(chainID string, layers ...Middlewa
 }
 
 // ExecuteChain 执行中间件链
-func (p *MiddlewarePipeline) ExecuteChain(ctx *mvccontext.Context, chain CompiledChain) {
+func (p *MiddlewarePipeline) ExecuteChain(ctx *mvcContext.Context, chain CompiledChain) {
 	start := time.Now()
 
 	defer func() {
@@ -334,10 +335,10 @@ func (p *MiddlewarePipeline) ExecuteChain(ctx *mvccontext.Context, chain Compile
 }
 
 // convertMiddlewaresToHandlers 将 MiddlewareFunc 转换为 HandlerFunc
-func convertMiddlewaresToHandlers(middlewares []MiddlewareFunc) []mvccontext.HandlerFunc {
-	handlers := make([]mvccontext.HandlerFunc, len(middlewares))
+func convertMiddlewaresToHandlers(middlewares []MiddlewareFunc) []mvcContext.HandlerFunc {
+	handlers := make([]mvcContext.HandlerFunc, len(middlewares))
 	for i, middleware := range middlewares {
-		handlers[i] = mvccontext.HandlerFunc(middleware)
+		handlers[i] = mvcContext.HandlerFunc(middleware)
 	}
 	return handlers
 }

@@ -2,7 +2,9 @@ package core
 
 import (
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
+
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // ============================================================================
@@ -278,7 +280,7 @@ func (app *App) LogDebug(args ...any) {
 //   logger := app.GetLoggerWithContext(ctx)
 //   logger.Info("User action completed")
 //   // 输出会自动包含请求相关的上下文信息
-func (app *App) GetLoggerWithContext(ctx *RequestContext) *hertzlogrus.Logger {
+func (app *App) GetLoggerWithContext(ctx *define.RequestContext) *hertzlogrus.Logger {
 	return config.GetGlobalLogger().GetLogger()
 }
 

@@ -7,12 +7,12 @@ import (
 	"time"
 
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
-	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // BenchmarkRouterTree_AddRoute 测试路由添加性能
 func BenchmarkRouterTree_AddRoute(b *testing.B) {
-	handler := func(ctx context.Context, c *core.RequestContext) {}
+	handler := func(ctx context.Context, c *define.RequestContext) {}
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -29,7 +29,7 @@ func BenchmarkRouterTree_AddRoute(b *testing.B) {
 // BenchmarkRouterTree_GetRoute 测试路由查找性能
 func BenchmarkRouterTree_GetRoute(b *testing.B) {
 	tree := NewRouterTree()
-	handler := func(ctx context.Context, c *core.RequestContext) {}
+	handler := func(ctx context.Context, c *define.RequestContext) {}
 
 	// 预先添加路由
 	paths := generateTestPaths(1000)
@@ -52,7 +52,7 @@ func BenchmarkRouterTree_GetRoute(b *testing.B) {
 // BenchmarkRouterCache 测试路由缓存性能
 func BenchmarkRouterCache(b *testing.B) {
 	tree := NewRouterTree()
-	handler := func(ctx context.Context, c *core.RequestContext) {}
+	handler := func(ctx context.Context, c *define.RequestContext) {}
 
 	// 添加一些路由
 	paths := []string{
@@ -114,13 +114,13 @@ func BenchmarkFastEngine(b *testing.B) {
 	engine := NewFastEngine()
 
 	// 添加测试路由
-	engine.GET("/", func(ctx context.Context, c *core.RequestContext) {
+	engine.GET("/", func(ctx context.Context, c *define.RequestContext) {
 		// 简化测试，不调用c的方法
 	})
-	engine.GET("/users/:id", func(ctx context.Context, c *core.RequestContext) {
+	engine.GET("/users/:id", func(ctx context.Context, c *define.RequestContext) {
 		// 简化测试
 	})
-	engine.POST("/users", func(ctx context.Context, c *core.RequestContext) {
+	engine.POST("/users", func(ctx context.Context, c *define.RequestContext) {
 		// 简化测试
 	})
 
@@ -163,7 +163,7 @@ func generateTestPaths(count int) []string {
 // TestRouterTree_BasicFunctionality 测试路由树基本功能
 func TestRouterTree_BasicFunctionality(t *testing.T) {
 	tree := NewRouterTree()
-	handler := func(ctx context.Context, c *core.RequestContext) {}
+	handler := func(ctx context.Context, c *define.RequestContext) {}
 
 	// 测试添加路由
 	tree.AddRoute("GET", "/users", handler)
@@ -194,7 +194,7 @@ func TestRouterTree_BasicFunctionality(t *testing.T) {
 func TestRouterCache_Functionality(t *testing.T) {
 	cache := NewRouterCache(2)
 
-	handler := func(ctx context.Context, c *core.RequestContext) {}
+	handler := func(ctx context.Context, c *define.RequestContext) {}
 	params := Params{{Key: "id", Value: "123"}}
 
 	entry := &CacheEntry{
@@ -245,7 +245,7 @@ func TestFastEngine_LoadTest(t *testing.T) {
 	// 添加大量路由
 	for i := 0; i < 1000; i++ {
 		path := fmt.Sprintf("/test/%d", i)
-		engine.GET(path, func(ctx context.Context, c *core.RequestContext) {
+		engine.GET(path, func(ctx context.Context, c *define.RequestContext) {
 			// 简化测试，不调用c的方法
 		})
 	}
@@ -293,7 +293,7 @@ func TestFastEngine_LoadTest(t *testing.T) {
 func TestMemoryLeak(t *testing.T) {
 	engine := NewFastEngine()
 
-	engine.GET("/test", func(ctx context.Context, c *core.RequestContext) {
+	engine.GET("/test", func(ctx context.Context, c *define.RequestContext) {
 		// 简化测试
 	})
 

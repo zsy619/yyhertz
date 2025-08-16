@@ -31,7 +31,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 	return func(c *Context) {
 		// 检查是否跳过
-		path := c.URI().Path()
+		path := c.Request().URI().Path()
 		for _, skip := range notlogged {
 			if strings.Contains(string(path), skip) {
 				c.Next()
@@ -49,12 +49,13 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		latency := time.Since(start)
 
 		// 获取状态码
-		statusCode := c.Response.StatusCode()
+		statusCode := c.Request().Response.StatusCode()
 
 		// 获取错误信息
 		errorMessage := ""
-		if len(c.Errors) > 0 {
-			errorMessage = c.Errors[len(c.Errors)-1].Error()
+		errs := c.GetErrors()
+		if len(errs) > 0 {
+			errorMessage = errs[len(errs)-1].Error()
 		}
 
 		// 格式化日志
@@ -105,25 +106,25 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 // NoRoute 处理404路由
 func NoRoute() HandlerFunc {
 	return func(c *Context) {
-		c.SetStatusCode(http.StatusNotFound)
+		c.Request().SetStatusCode(http.StatusNotFound)
 		c.SetContentType("application/json")
-		c.SetBodyString(`{"error":"route not found","path":"` + string(c.URI().Path()) + `"}`)
+		c.Request().SetBodyString(`{"error":"route not found","path":"` + string(c.Request().URI().Path()) + `"}`)
 	}
 }
 
 // NoMethod 处理405方法不允许
 func NoMethod() HandlerFunc {
 	return func(c *Context) {
-		c.SetStatusCode(http.StatusMethodNotAllowed)
+		c.Request().SetStatusCode(http.StatusMethodNotAllowed)
 		c.SetContentType("application/json")
-		c.SetBodyString(`{"error":"method not allowed","method":"` + string(c.Method()) + `"}`)
+		c.Request().SetBodyString(`{"error":"method not allowed","method":"` + string(c.Method()) + `"}`)
 	}
 }
 
 // BasicAuth 基础认证中间件
 func BasicAuth(accounts map[string]string) HandlerFunc {
 	return func(c *Context) {
-		user, password, hasAuth := c.Request.BasicAuth()
+		user, password, hasAuth := c.Request().Request.BasicAuth()
 		if hasAuth {
 			if expectedPassword, ok := accounts[user]; ok && expectedPassword == password {
 				c.Set("user", user)
@@ -132,7 +133,7 @@ func BasicAuth(accounts map[string]string) HandlerFunc {
 			}
 		}
 
-		c.Header("WWW-Authenticate", "Basic realm=Authorization Required")
+		c.SetHeader("WWW-Authenticate", "Basic realm=Authorization Required")
 		c.AbortWithStatus(http.StatusUnauthorized)
 	}
 }
@@ -142,7 +143,7 @@ func RequestID() HandlerFunc {
 	return func(c *Context) {
 		requestID := generateRequestID()
 		c.Set("RequestID", requestID)
-		c.Header("X-Request-ID", requestID)
+		c.SetHeader("X-Request-ID", requestID)
 		c.Next()
 	}
 }
@@ -178,11 +179,11 @@ func Timeout(timeout time.Duration) HandlerFunc {
 // Secure 安全头中间件
 func Secure() HandlerFunc {
 	return func(c *Context) {
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("Content-Security-Policy", "default-src 'self'")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("Strict-Transport-Security", "max-age=31536000")
+		c.SetHeader("X-Frame-Options", "DENY")
+		c.SetHeader("Content-Security-Policy", "default-src 'self'")
+		c.SetHeader("X-Content-Type-Options", "nosniff")
+		c.SetHeader("X-XSS-Protection", "1; mode=block")
+		c.SetHeader("Strict-Transport-Security", "max-age=31536000")
 		c.Next()
 	}
 }
@@ -191,9 +192,9 @@ func Secure() HandlerFunc {
 func GZip() HandlerFunc {
 	return func(c *Context) {
 		// 检查客户端是否支持gzip
-		acceptEncoding := string(c.Request.Header.Peek("Accept-Encoding"))
+		acceptEncoding := string(c.Request().Request.Header.Peek("Accept-Encoding"))
 		if strings.Contains(acceptEncoding, "gzip") {
-			c.Header("Content-Encoding", "gzip")
+			c.SetHeader("Content-Encoding", "gzip")
 		}
 		c.Next()
 	}

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // ============= 类型定义 =============
@@ -49,7 +50,7 @@ type Namespace struct {
 	namespaces []*Namespace
 
 	// middlewares 应用于该命名空间的中间件列表
-	middlewares []core.HandlerFunc
+	middlewares []define.HandlerFunc
 }
 
 // controllerInfo 控制器注册信息
@@ -126,7 +127,7 @@ func NewNamespace(prefix string, funcs ...NamespaceFunc) *Namespace {
 		controllers: make([]controllerInfo, 0),
 		routers:     make([]routerInfo, 0),
 		namespaces:  make([]*Namespace, 0),
-		middlewares: make([]core.HandlerFunc, 0),
+		middlewares: make([]define.HandlerFunc, 0),
 	}
 
 	// 按顺序执行所有配置函数
@@ -310,7 +311,7 @@ func NSNamespace(prefix string, funcs ...NamespaceFunc) NamespaceFunc {
 // 中间件按添加顺序执行，支持中间件链式调用。
 //
 // 参数：
-//   - middlewares: ...core.HandlerFunc - 要添加的中间件函数列表
+//   - middlewares: ...define.HandlerFunc - 要添加的中间件函数列表
 //
 // 返回值：
 //   - NamespaceFunc: 命名空间配置函数
@@ -349,7 +350,7 @@ func NSNamespace(prefix string, funcs ...NamespaceFunc) NamespaceFunc {
 //   - 日志中间件：请求日志记录
 //   - 限流中间件：请求频率限制
 //   - 缓存中间件：响应缓存处理
-func NSMiddleware(middlewares ...core.HandlerFunc) NamespaceFunc {
+func NSMiddleware(middlewares ...define.HandlerFunc) NamespaceFunc {
 	return func(ns *Namespace) {
 		ns.middlewares = append(ns.middlewares, middlewares...)
 	}

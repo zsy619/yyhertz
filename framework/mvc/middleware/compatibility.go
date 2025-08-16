@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/hertz/pkg/app"
+
 	"github.com/zsy619/yyhertz/framework/config"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // CompatibilityLayer 兼容性层 - 提供向下兼容的API接口
@@ -30,7 +32,7 @@ type BasicMiddlewareWrapper struct {
 // NewBasicEngine 创建兼容的基础引擎（保持原API）
 func NewBasicEngine() *BasicMiddlewareWrapper {
 	return &BasicMiddlewareWrapper{
-		engine: NewEngine(),
+		engine: mvcContext.NewEngine(),
 		compat: NewCompatibilityLayer(),
 	}
 }
@@ -40,7 +42,7 @@ func (w *BasicMiddlewareWrapper) Use(middleware ...HandlerFunc) {
 	for i, handler := range middleware {
 		// 通过统一管理器注册中间件
 		name := fmt.Sprintf("basic-middleware-%d", i)
-		w.compat.unifiedManager.Use(name, handler, WithLayer(LayerGlobal), WithPriority(i*10))
+		_ = w.compat.unifiedManager.Use(name, handler, WithLayer(LayerGlobal), WithPriority(i*10))
 	}
 
 	// 同时在原引擎中注册（保持兼容性）

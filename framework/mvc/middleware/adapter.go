@@ -5,14 +5,14 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // 函数签名适配器 - 实现两套中间件系统之间的转换
 
 // BasicToMVC 将基础中间件转换为MVC中间件
 func BasicToMVC(basicHandler Middleware) MiddlewareFunc {
-	return func(ctx *mvccontext.Context) {
+	return func(ctx *mvcContext.Context) {
 		// 创建基础上下文
 		c := context.Background()
 
@@ -26,7 +26,7 @@ func BasicToMVC(basicHandler Middleware) MiddlewareFunc {
 
 // HandlerFuncToMVC 将基础HandlerFunc转换为MVC中间件
 func HandlerFuncToMVC(basicHandler HandlerFunc) MiddlewareFunc {
-	return func(ctx *mvccontext.Context) {
+	return func(ctx *mvcContext.Context) {
 		// 创建基础中间件Context
 		basicCtx := CreateBasicContext(ctx)
 
@@ -42,7 +42,7 @@ func HandlerFuncToMVC(basicHandler HandlerFunc) MiddlewareFunc {
 func MVCToBasic(mvcHandler MiddlewareFunc) Middleware {
 	return func(c context.Context, hertzCtx *app.RequestContext) {
 		// 创建MVC增强上下文
-		enhancedCtx := mvccontext.NewContext(hertzCtx)
+		enhancedCtx := mvcContext.NewContext(hertzCtx)
 
 		// 调用MVC处理器
 		mvcHandler(enhancedCtx)
@@ -50,11 +50,11 @@ func MVCToBasic(mvcHandler MiddlewareFunc) Middleware {
 }
 
 // CreateBasicContext 从MVC Context创建基础Context
-func CreateBasicContext(mvcCtx *mvccontext.Context) *Context {
+func CreateBasicContext(mvcCtx *mvcContext.Context) *Context {
 	hertzCtx := mvcCtx.Request()
 
 	// 创建基础中间件引擎的Context
-	engine := NewEngine()
+	engine := mvcContext.NewEngine()
 	basicCtx := engine.NewContext(hertzCtx)
 
 	// 同步现有数据
@@ -72,14 +72,19 @@ func CreateBasicContext(mvcCtx *mvccontext.Context) *Context {
 }
 
 // SyncContextState 同步基础Context状态到MVC Context
-func SyncContextState(basicCtx *Context, mvcCtx *mvccontext.Context) {
+func SyncContextState(basicCtx *Context, mvcCtx *mvcContext.Context) {
 	// 同步Keys
-	for key, value := range basicCtx.Keys {
-		mvcCtx.Set(key, value)
-	}
+	keys := basicCtx.GetKeys()
+	keys.Range(func(k, v any) bool {
+		if ks, ok := k.(string); ok {
+			mvcCtx.Set(ks, v)
+		}
+		return true
+	})
 
 	// 同步错误
-	for _, err := range basicCtx.Errors {
+	errs := basicCtx.GetErrors()
+	for _, err := range errs {
 		mvcCtx.AddError(err)
 	}
 
@@ -100,7 +105,7 @@ type MiddlewareAdapter struct {
 func NewMiddlewareAdapter(name string) *MiddlewareAdapter {
 	return &MiddlewareAdapter{
 		name:        name,
-		basicEngine: NewEngine(),
+		basicEngine: mvcContext.NewEngine(),
 		mvcManager:  NewMiddlewareManager(),
 	}
 }

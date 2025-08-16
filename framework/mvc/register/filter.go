@@ -13,7 +13,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
 
 // ============= 过滤器实现 =============
@@ -70,7 +70,7 @@ func (cr *ControllerRegister) createFilterTree(pattern string) *FilterTree {
 // ============= 内置过滤器 =============
 
 // LoggingFilter 日志记录过滤器
-func LoggingFilter(ctx *contextenhanced.Context, chain *FilterChain) {
+func LoggingFilter(ctx *mvcContext.Context, chain *FilterChain) {
 	start := time.Now()
 	method := string(ctx.Request().Method())
 	path := string(ctx.Request().URI().Path())
@@ -91,7 +91,7 @@ func LoggingFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 }
 
 // CORSFilter CORS过滤器
-func CORSFilter(ctx *contextenhanced.Context, chain *FilterChain) {
+func CORSFilter(ctx *mvcContext.Context, chain *FilterChain) {
 	origin := ctx.Input.Header("Origin")
 
 	// 设置CORS头
@@ -111,7 +111,7 @@ func CORSFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 }
 
 // AuthFilter 认证过滤器
-func AuthFilter(ctx *contextenhanced.Context, chain *FilterChain) {
+func AuthFilter(ctx *mvcContext.Context, chain *FilterChain) {
 	// 检查认证token
 	token := ctx.Input.Header("Authorization")
 	if token == "" {
@@ -148,7 +148,7 @@ func AuthFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 func RateLimitFilter(limit int, window time.Duration) FilterFunc {
 	limiter := newRateLimiter(limit, window)
 
-	return func(ctx *contextenhanced.Context, chain *FilterChain) {
+	return func(ctx *mvcContext.Context, chain *FilterChain) {
 		clientIP := ctx.Input.IP()
 
 		if !limiter.Allow(clientIP) {
@@ -166,7 +166,7 @@ func RateLimitFilter(limit int, window time.Duration) FilterFunc {
 }
 
 // SecurityFilter 安全过滤器
-func SecurityFilter(ctx *contextenhanced.Context, chain *FilterChain) {
+func SecurityFilter(ctx *mvcContext.Context, chain *FilterChain) {
 	// 设置安全头
 	ctx.Output.Header("X-Content-Type-Options", "nosniff")
 	ctx.Output.Header("X-Frame-Options", "DENY")
@@ -199,7 +199,7 @@ func SecurityFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 }
 
 // CompressFilter 压缩过滤器
-func CompressFilter(ctx *contextenhanced.Context, chain *FilterChain) {
+func CompressFilter(ctx *mvcContext.Context, chain *FilterChain) {
 	acceptEncoding := ctx.Input.Header("Accept-Encoding")
 
 	// 检查是否支持gzip
@@ -214,11 +214,11 @@ func CompressFilter(ctx *contextenhanced.Context, chain *FilterChain) {
 // ============= 中间件适配 =============
 
 // MiddlewareFunc 中间件函数类型
-type MiddlewareFunc func(*contextenhanced.Context) error
+type MiddlewareFunc func(*mvcContext.Context) error
 
 // WrapMiddleware 将中间件包装为过滤器
 func WrapMiddleware(middleware MiddlewareFunc) FilterFunc {
-	return func(ctx *contextenhanced.Context, chain *FilterChain) {
+	return func(ctx *mvcContext.Context, chain *FilterChain) {
 		if err := middleware(ctx); err != nil {
 			ctx.Output.SetStatus(500)
 			ctx.Output.JSON(map[string]any{
@@ -234,7 +234,7 @@ func WrapMiddleware(middleware MiddlewareFunc) FilterFunc {
 
 // WrapHertzMiddleware 将Hertz中间件适配为过滤器
 func WrapHertzMiddleware(hertzMiddleware app.HandlerFunc) FilterFunc {
-	return func(ctx *contextenhanced.Context, chain *FilterChain) {
+	return func(ctx *mvcContext.Context, chain *FilterChain) {
 		// 执行Hertz中间件
 		hertzMiddleware(context.Background(), ctx.Request())
 

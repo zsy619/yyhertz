@@ -5,10 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/cloudwego/hertz/pkg/app"
-
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // Router 路由器
@@ -89,8 +88,8 @@ func (r *Router) RegisterController(basePath string, ctrl core.IController) {
 }
 
 // createHandler 创建处理函数
-func (r *Router) createHandler(ctrl core.IController, method reflect.Method) core.HandlerFunc {
-	return func(ctx context.Context, c *app.RequestContext) {
+func (r *Router) createHandler(ctrl core.IController, method reflect.Method) define.HandlerFunc {
+	return func(ctx context.Context, c *define.RequestContext) {
 		// 创建增强的Context
 		enhancedCtx := contextenhanced.NewContext(c)
 
@@ -133,7 +132,7 @@ func (r *Router) createHandler(ctrl core.IController, method reflect.Method) cor
 }
 
 // registerRoute 注册路由到应用
-func (r *Router) registerRoute(method, path string, handler core.HandlerFunc) {
+func (r *Router) registerRoute(method, path string, handler define.HandlerFunc) {
 	// 这里需要根据实际的app类型来调用相应的方法
 	// 使用反射或类型断言来调用app的路由注册方法
 	appValue := reflect.ValueOf(r.app)

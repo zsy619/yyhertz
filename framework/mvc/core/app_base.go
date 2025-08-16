@@ -14,7 +14,7 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/constant"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 	"github.com/zsy619/yyhertz/framework/mvc/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
@@ -25,14 +25,7 @@ var (
 	appMutex    sync.Mutex
 )
 
-// 类型别名定义
-type RequestContext = app.RequestContext
-
-// HandlerFunc 定义处理函数类型
-type HandlerFunc = func(context.Context, *RequestContext)
-
-// FilterFunc 过滤器函数类型
-type FilterFunc = func(*contextenhanced.Context)
+// ===== 多种处理器函数类型定义 =====
 
 // 过滤器位置常量 - 使用统一常量
 const (
@@ -45,11 +38,11 @@ const (
 
 // FilterPattern 过滤器模式匹配结构
 type FilterPattern struct {
-	Pattern  string     // 路径模式 (支持通配符)
-	Position int        // 过滤器位置
-	Filter   FilterFunc // 过滤器函数
-	Enabled  bool       // 是否启用
-	Priority int        // 优先级
+	Pattern  string            // 路径模式 (支持通配符)
+	Position int               // 过滤器位置
+	Filter   define.FilterFunc // 过滤器函数
+	Enabled  bool              // 是否启用
+	Priority int               // 优先级
 }
 
 // ============= 错误处理相关类型别名 =============
@@ -67,9 +60,9 @@ func DefaultErrorConfig() ErrorConfig {
 }
 
 // AdaptHandler 将HandlerFunc适配为app.HandlerFunc
-func AdaptHandler(handler HandlerFunc) app.HandlerFunc {
+func AdaptHandler(handler define.HandlerFunc) app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
-		handler(ctx, (*RequestContext)(c))
+		handler(ctx, (*define.RequestContext)(c))
 	}
 }
 
@@ -182,7 +175,7 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 // setupBasicRoutes 设置基础路由
 func (app *App) setupBasicRoutes() {
 	// 健康检查路由
-	app.GET("/health", func(c context.Context, ctx *RequestContext) {
+	app.GET("/health", func(c context.Context, ctx *define.RequestContext) {
 		ctx.JSON(consts.StatusOK, map[string]string{
 			"status":    "ok",
 			"timestamp": time.Now().Format(time.RFC3339),
@@ -190,7 +183,7 @@ func (app *App) setupBasicRoutes() {
 	})
 
 	// ping路由
-	app.GET("/ping", func(c context.Context, ctx *RequestContext) {
+	app.GET("/ping", func(c context.Context, ctx *define.RequestContext) {
 		ctx.JSON(consts.StatusOK, map[string]string{"message": "pong"})
 	})
 }
@@ -206,7 +199,7 @@ func (app *App) GetViewPath() string {
 }
 
 // Use 添加中间件
-func (app *App) Use(middleware ...HandlerFunc) {
+func (app *App) Use(middleware ...define.HandlerFunc) {
 	for _, m := range middleware {
 		app.Hertz.Use(m)
 	}

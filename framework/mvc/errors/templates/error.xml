@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<error>
+    <code>{{.StatusCode}}</code>
+    <title>{{.StatusText}}</title>
+    <message>{{.ErrorMessage}}</message>
+    <request>
+        <path>{{.RequestPath}}</path>
+        <method>{{.RequestMethod}}</method>
+        <timestamp>{{formatTime .Timestamp}}</timestamp>
+        {{if .RequestID}}
+        <request_id>{{.RequestID}}</request_id>
+        {{end}}
+        {{if .UserAgent}}
+        <user_agent>{{.UserAgent}}</user_agent>
+        {{end}}
+    </request>
+    <server>
+        <framework>{{.FrameworkName | default "YYHertz Framework"}}</framework>
+        <language>{{.Language | default "zh-CN"}}</language>
+    </server>
+    {{if .Suggestions}}
+    <suggestions>
+        {{range .Suggestions}}
+        <suggestion>{{.}}</suggestion>
+        {{end}}
+    </suggestions>
+    {{end}}
+    {{if .Details}}
+    <details>
+        {{range $key, $value := .Details}}
+        <{{$key}}>{{$value}}</{{$key}}>
+        {{end}}
+    </details>
+    {{end}}
+    <meta>
+        <show_debug>{{.ShowDebug}}</show_debug>
+        {{if .EnableRetry}}
+        <retryable>true</retryable>
+        <retry_interval>{{.RetryInterval}}</retry_interval>
+        {{end}}
+        <content_type>application/xml</content_type>
+    </meta>
+</error>

@@ -2,8 +2,10 @@ package core
 
 import (
 	"strings"
+
 	"github.com/zsy619/yyhertz/framework/constant"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // ============= 过滤器管理方法 =============
@@ -14,7 +16,7 @@ import (
 //	position - 过滤器位置 (BeforeStatic, BeforeRouter, BeforeExec, AfterExec, FinishRouter)
 //	filter - 过滤器函数
 //	params - 可选参数 (第一个bool值表示是否启用，默认true)
-func (app *App) InsertFilter(pattern string, position int, filter FilterFunc, params ...bool) {
+func (app *App) InsertFilter(pattern string, position int, filter define.FilterFunc, params ...bool) {
 	// 验证位置参数
 	if !constant.IsValidFilterPosition(position) {
 		app.LogErrorf("Invalid filter position: %d", position)
@@ -126,7 +128,7 @@ func (app *App) matchPattern(pattern, path string) bool {
 }
 
 // ExecuteFilters 执行指定位置的过滤器
-func (app *App) ExecuteFilters(ctx *contextenhanced.Context, position int) {
+func (app *App) ExecuteFilters(ctx *mvcContext.Context, position int) {
 	app.filtersMutex.RLock()
 	filters := app.filters[position]
 	app.filtersMutex.RUnlock()

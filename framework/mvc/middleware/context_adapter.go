@@ -210,23 +210,28 @@ func (w *BasicContextWrapper) Get(key string) (any, bool) {
 }
 
 func (w *BasicContextWrapper) GetString(key string) string {
-	return w.ctx.GetString(key)
+	ot, _ := w.ctx.GetString(key)
+	return ot
 }
 
 func (w *BasicContextWrapper) GetBool(key string) bool {
-	return w.ctx.GetBool(key)
+	ot, _ := w.ctx.GetBool(key)
+	return ot
 }
 
 func (w *BasicContextWrapper) GetInt(key string) int {
-	return w.ctx.GetInt(key)
+	ot, _ := w.ctx.GetInt(key)
+	return ot
 }
 
 func (w *BasicContextWrapper) GetInt64(key string) int64 {
-	return w.ctx.GetInt64(key)
+	ot, _ := w.ctx.GetInt64(key)
+	return ot
 }
 
 func (w *BasicContextWrapper) GetFloat64(key string) float64 {
-	return w.ctx.GetFloat64(key)
+	ot, _ := w.ctx.GetFloat64(key)
+	return ot
 }
 
 func (w *BasicContextWrapper) AddError(err error) error {
@@ -246,7 +251,7 @@ func (w *BasicContextWrapper) LastError() error {
 }
 
 func (w *BasicContextWrapper) Header(key, value string) {
-	w.ctx.Header(key, value)
+	w.ctx.SetHeader(key, value)
 }
 
 func (w *BasicContextWrapper) JSON(code int, obj any) {
@@ -254,7 +259,7 @@ func (w *BasicContextWrapper) JSON(code int, obj any) {
 }
 
 func (w *BasicContextWrapper) SetStatusCode(code int) {
-	w.ctx.SetStatusCode(code)
+	w.ctx.Request().SetStatusCode(code)
 }
 
 func (w *BasicContextWrapper) ClientIP() string {
@@ -262,11 +267,11 @@ func (w *BasicContextWrapper) ClientIP() string {
 }
 
 func (w *BasicContextWrapper) Method() []byte {
-	return w.ctx.Method()
+	return []byte(w.ctx.Method())
 }
 
 func (w *BasicContextWrapper) Path() []byte {
-	return w.ctx.URI().Path()
+	return []byte(w.ctx.Path())
 }
 
 func (w *BasicContextWrapper) AbortWithStatus(code int) {
@@ -293,10 +298,10 @@ func NewContextConverter() *ContextConverter {
 // ToUnified 转换为统一Context接口
 func (c *ContextConverter) ToUnified(ctx any) UnifiedContext {
 	switch v := ctx.(type) {
-	case *mvccontext.Context:
-		return NewMVCContextWrapper(v)
 	case *Context:
-		return NewBasicContextWrapper(v)
+		return NewMVCContextWrapper(v)
+	// case *Context:
+	// 	return NewBasicContextWrapper(v)
 	default:
 		return nil
 	}
@@ -310,18 +315,23 @@ func (c *ContextConverter) MVCToBasicContext(mvcCtx *mvccontext.Context) *Contex
 // BasicToMVCContext 基础Context转换为MVC Context
 func (c *ContextConverter) BasicToMVCContext(basicCtx *Context) *mvccontext.Context {
 	// 获取底层的Hertz RequestContext
-	hertzCtx := basicCtx.RequestContext
+	hertzCtx := basicCtx.Request()
 
 	// 创建MVC增强上下文
 	mvcCtx := mvccontext.NewContext(hertzCtx)
 
 	// 同步数据
-	for key, value := range basicCtx.Keys {
-		mvcCtx.Set(key, value)
-	}
+	keys := basicCtx.GetKeys()
+	keys.Range(func(k, v any) bool {
+		if keyStr, ok := k.(string); ok {
+			mvcCtx.Set(keyStr, v)
+		}
+		return true
+	})
 
 	// 同步错误
-	for _, err := range basicCtx.Errors {
+	errs := basicCtx.GetErrors()
+	for _, err := range errs {
 		mvcCtx.AddError(err)
 	}
 

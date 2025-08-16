@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/mvc"
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // DirectAPI演示 - 最简洁的API使用方式
@@ -22,7 +23,7 @@ func TestDirectRouter(t *testing.T) {
 	// 直接传递增强Context，无需额外调用 FromContext()
 
 	// 1. DirectGET - 用户列表
-	mvc.DirectGET("/direct/users", func(c *contextenhanced.Context) {
+	mvc.GETDirect("/direct/users", func(c *mvcContext.Context) {
 		c.JSON(200, map[string]any{
 			"message": "Direct GET API - 用户列表",
 			"users": []map[string]any{
@@ -33,7 +34,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 2. DirectPOST - 创建用户
-	mvc.DirectPOST("/direct/users", func(c *contextenhanced.Context) {
+	mvc.POSTDirect("/direct/users", func(c *mvcContext.Context) {
 		// 直接使用增强Context的所有方法
 		name := c.PostForm("name")
 		age := c.PostForm("age")
@@ -49,7 +50,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 3. DirectPUT - 更新用户
-	mvc.DirectPUT("/direct/users/:id", func(c *contextenhanced.Context) {
+	mvc.PUTDirect("/direct/users/:id", func(c *mvcContext.Context) {
 		userID := c.Param("id")
 		name := c.PostForm("name")
 		age := c.PostForm("age")
@@ -65,7 +66,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 4. DirectDELETE - 删除用户
-	mvc.DirectDELETE("/direct/users/:id", func(c *contextenhanced.Context) {
+	mvc.DELETEDirect("/direct/users/:id", func(c *mvcContext.Context) {
 		userID := c.Param("id")
 
 		c.JSON(200, map[string]any{
@@ -75,7 +76,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 5. DirectPATCH - 部分更新用户
-	mvc.DirectPATCH("/direct/users/:id/status", func(c *contextenhanced.Context) {
+	mvc.PATCHDirect("/direct/users/:id/status", func(c *mvcContext.Context) {
 		userID := c.Param("id")
 		status := c.PostForm("status")
 
@@ -87,7 +88,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 6. DirectHEAD - 检查用户是否存在
-	mvc.DirectHEAD("/direct/users/:id", func(c *contextenhanced.Context) {
+	mvc.HEADDirect("/direct/users/:id", func(c *mvcContext.Context) {
 		userID := c.Param("id")
 
 		// HEAD请求只返回头信息，不返回body
@@ -100,7 +101,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 7. DirectOPTIONS - CORS预检请求
-	mvc.DirectOPTIONS("/direct/users", func(c *contextenhanced.Context) {
+	mvc.OPTIONSDirect("/direct/users", func(c *mvcContext.Context) {
 		c.SetHeader("Access-Control-Allow-Origin", "*")
 		c.SetHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS")
 		c.SetHeader("Access-Control-Allow-Headers", "Content-Type,Authorization")
@@ -108,7 +109,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// 8. DirectAny - 处理任意HTTP方法
-	mvc.DirectAny("/direct/webhook", func(c *contextenhanced.Context) {
+	mvc.AnyDirect("/direct/webhook", func(c *mvcContext.Context) {
 		c.JSON(200, map[string]any{
 			"message": "Direct Any API - Webhook处理",
 			"status":  "received",
@@ -118,8 +119,8 @@ func TestDirectRouter(t *testing.T) {
 	// ============= 中间件链式调用演示 =============
 
 	// 认证中间件
-	authMiddleware := func(c *contextenhanced.Context) {
-		token := c.GetHeader("Authorization")
+	authMiddleware := func(c *mvcContext.Context) {
+		token := string(c.GetHeader("Authorization"))
 		if token == "" {
 			c.JSON(401, map[string]any{
 				"error": "缺少Authorization头",
@@ -134,7 +135,7 @@ func TestDirectRouter(t *testing.T) {
 	}
 
 	// 主处理函数
-	protectedHandler := func(c *contextenhanced.Context) {
+	protectedHandler := func(c *mvcContext.Context) {
 		userID, _ := c.Get("user_id")
 		username, _ := c.Get("username")
 
@@ -146,11 +147,11 @@ func TestDirectRouter(t *testing.T) {
 	}
 
 	// 使用中间件的受保护路由
-	mvc.DirectGET("/direct/protected", authMiddleware, protectedHandler)
+	mvc.GETDirect("/direct/protected", authMiddleware, protectedHandler)
 
 	// ============= Context功能演示 =============
 
-	mvc.DirectPOST("/direct/demo/context", func(c *contextenhanced.Context) {
+	mvc.POSTDirect("/direct/demo/context", func(c *mvcContext.Context) {
 		// Query参数
 		page := c.Query("page")
 		if page == "" {
@@ -181,7 +182,7 @@ func TestDirectRouter(t *testing.T) {
 
 	// ============= 错误处理演示 =============
 
-	mvc.DirectGET("/direct/demo/error", func(c *contextenhanced.Context) {
+	mvc.GETDirect("/direct/demo/error", func(c *mvcContext.Context) {
 		errorType := c.Query("type")
 		if errorType == "" {
 			errorType = "none"
@@ -214,14 +215,14 @@ func TestDirectRouter(t *testing.T) {
 	// ============= 与其他API的对比演示 =============
 
 	// 原始API (复杂)
-	mvc.GET("/compare/original", func(ctx context.Context, rc *core.RequestContext) {
+	mvc.GET("/compare/original", func(ctx context.Context, rc *define.RequestContext) {
 		// 原始API需要手动处理Context
 		fmt.Println("原始API调用")
 		// 这里就简化了，不做复杂转换
 	})
 
 	// 简化API (需要FromContext)
-	mvc.SimpleGET("/compare/simple", func(ctx context.Context) {
+	mvc.GETSimple("/compare/simple", func(ctx context.Context) {
 		c := mvc.FromContext(ctx)
 		if c != nil {
 			c.JSON(200, map[string]any{
@@ -232,7 +233,7 @@ func TestDirectRouter(t *testing.T) {
 	})
 
 	// Direct API (最简洁)
-	mvc.DirectGET("/compare/direct", func(c *contextenhanced.Context) {
+	mvc.GETDirect("/compare/direct", func(c *mvcContext.Context) {
 		c.JSON(200, map[string]any{
 			"message":  "Direct API - 直接使用增强Context，最简洁",
 			"api_type": "direct",
@@ -257,7 +258,7 @@ func TestDirectRouter(t *testing.T) {
 	fmt.Println("  GET    /compare/simple        - 简化API演示")
 	fmt.Println("  GET    /compare/direct        - Direct API演示")
 	fmt.Println("\n✨ Direct API 的优势:")
-	fmt.Println("  - 直接传递 contextenhanced.Context，无需额外调用")
+	fmt.Println("  - 直接传递 mvcContext.Context，无需额外调用")
 	fmt.Println("  - 与 Gin、Echo 风格类似，开发体验最佳")
 	fmt.Println("  - 零性能开销，无 context.Value 查找成本")
 	fmt.Println("  - 保留 YYHertz 所有高级特性")

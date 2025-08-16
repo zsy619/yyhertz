@@ -97,8 +97,8 @@
                             <pre><code class="language-go">package main
 
 import (
-    "https://github.com/zsy619/yyhertz/framework/mvc"
-    "https://github.com/zsy619/yyhertz/framework/mvc/middleware"
+    "github.com/zsy619/yyhertz/framework/mvc"
+    "github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
 type HomeController struct {
@@ -115,9 +115,9 @@ func main() {
     app.Use(middleware.LoggerMiddleware())
     
     homeController := &HomeController{}
-    app.AutoRouters(homeController)
+    app.RouterAuto(homeController)
     
-    app.Run(":8888")
+    app.Run()
 }</code></pre>
                         </div>
                     </div>

@@ -24,7 +24,7 @@ func TestParamValidation(t *testing.T) {
 
 	// ✅ 1. DirectPUT 路由注册
 	fmt.Println("1. ✅ DirectPUT 路由注册功能")
-	mvc.DirectPUT("/direct/users/:id", func(c *contextenhanced.Context) {
+	mvc.PUTDirect("/direct/users/:id", func(c *contextenhanced.Context) {
 		userID := c.Param("id")
 		name := c.PostForm("name")
 		age := c.PostForm("age")
@@ -65,7 +65,7 @@ func TestParamValidation(t *testing.T) {
 
 	// ✅ 3. 多参数路由支持
 	fmt.Println("3. ✅ 多参数路由支持")
-	mvc.DirectGET("/direct/users/:id/posts/:postId", func(c *contextenhanced.Context) {
+	mvc.GETDirect("/direct/users/:id/posts/:postId", func(c *contextenhanced.Context) {
 		userID := c.Param("id")
 		postID := c.Param("postId")
 

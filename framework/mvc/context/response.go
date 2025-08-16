@@ -31,7 +31,7 @@ func (ctx *Context) IndentedJSON(code int, obj any) {
 
 // WriteString writes a string to response body.
 func (ctx *Context) WriteString(content string) {
-	_, _ = ctx.RequestContext().WriteString(content)
+	_, _ = ctx.Request().WriteString(content)
 }
 
 // String 返回字符串响应

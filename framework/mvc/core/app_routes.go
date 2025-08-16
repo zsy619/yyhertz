@@ -9,7 +9,9 @@ import (
 	"sync"
 
 	hertzapp "github.com/cloudwego/hertz/pkg/app"
+
 	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
 
 // ============= 路由冲突检测 =============
@@ -420,8 +422,8 @@ func (app *App) getControllerName(controller IController) string {
 }
 
 // createControllerHandler 创建控制器处理函数
-func (app *App) createControllerHandler(controller IController, method reflect.Method) HandlerFunc {
-	return func(ctx context.Context, c *RequestContext) {
+func (app *App) createControllerHandler(controller IController, method reflect.Method) define.HandlerFunc {
+	return func(ctx context.Context, c *define.RequestContext) {
 		// 确保控制器实例正确设置（关键修复）
 		if method := reflect.ValueOf(controller).MethodByName("SetControllerInstance"); method.IsValid() {
 			method.Call([]reflect.Value{reflect.ValueOf(controller)})
@@ -465,7 +467,7 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 			// 根据方法签名调用
 			methodType := methodValue.Type()
 			if methodType.NumIn() == 2 {
-				// 方法签名: func(context.Context, *RequestContext)
+				// 方法签名: func(context.Context, *define.RequestContext)
 				methodValue.Call([]reflect.Value{
 					reflect.ValueOf(ctx),
 					reflect.ValueOf(c),
@@ -488,8 +490,8 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 }
 
 // createMethodHandler 创建方法处理函数
-func (app *App) createMethodHandler(controller IController, methodName string) HandlerFunc {
-	return func(ctx context.Context, c *RequestContext) {
+func (app *App) createMethodHandler(controller IController, methodName string) define.HandlerFunc {
+	return func(ctx context.Context, c *define.RequestContext) {
 		// 初始化增强上下文
 		enhancedCtx := contextenhanced.NewContext(c)
 
@@ -547,7 +549,7 @@ func (app *App) createMethodHandler(controller IController, methodName string) H
 }
 
 // setControllerContext 设置控制器上下文（重构后版本）
-func (app *App) setControllerContext(controller IController, ctx *RequestContext) {
+func (app *App) setControllerContext(controller IController, ctx *define.RequestContext) {
 	// 创建增强的Context
 	enhancedCtx := contextenhanced.NewContext(ctx)
 
@@ -579,12 +581,12 @@ func (app *App) setControllerContext(controller IController, ctx *RequestContext
 }
 
 // registerRoute 注册路由到应用（带冲突检测）
-func (app *App) registerRoute(method, path string, handler HandlerFunc) {
+func (app *App) registerRoute(method, path string, handler define.HandlerFunc) {
 	app.registerRouteWithInfo(method, path, handler, "unknown")
 }
 
 // registerRouteWithInfo 注册路由到应用（带控制器信息和冲突检测）
-func (app *App) registerRouteWithInfo(method, path string, handler HandlerFunc, controllerInfo string) {
+func (app *App) registerRouteWithInfo(method, path string, handler define.HandlerFunc, controllerInfo string) {
 	// 检查参数有效性
 	if app == nil {
 		panic("app instance is nil")
@@ -643,33 +645,33 @@ func (app *App) registerRouteWithInfo(method, path string, handler HandlerFunc, 
 // ============= 特殊路由处理器（类似Beego） =============
 
 // NoRoute 设置处理未找到路由的处理器（类似Beego风格）
-func (app *App) NoRoute(handlers ...func(*contextenhanced.Context, *RequestContext)) {
+func (app *App) NoRoute(handlers ...func(*contextenhanced.Context, *define.RequestContext)) {
 	// 将我们的处理器转换为Hertz的HandlerFunc类型
 	hertzHandlers := make([]hertzapp.HandlerFunc, len(handlers))
 	for i, handler := range handlers {
 		hertzHandlers[i] = hertzapp.HandlerFunc(func(ctx context.Context, c *hertzapp.RequestContext) {
 			// 创建增强上下文并调用处理器
-			enhancedCtx := contextenhanced.NewContext((*RequestContext)(c))
-			handler(enhancedCtx, (*RequestContext)(c))
+			enhancedCtx := contextenhanced.NewContext((*define.RequestContext)(c))
+			handler(enhancedCtx, (*define.RequestContext)(c))
 		})
 	}
-	
+
 	// 设置Hertz的NoRoute处理器
 	app.Hertz.NoRoute(hertzHandlers...)
 }
 
 // NoMethod 设置处理方法不允许的处理器（类似Beego风格）
-func (app *App) NoMethod(handlers ...func(*contextenhanced.Context, *RequestContext)) {
+func (app *App) NoMethod(handlers ...func(*contextenhanced.Context, *define.RequestContext)) {
 	// 将我们的处理器转换为Hertz的HandlerFunc类型
 	hertzHandlers := make([]hertzapp.HandlerFunc, len(handlers))
 	for i, handler := range handlers {
 		hertzHandlers[i] = hertzapp.HandlerFunc(func(ctx context.Context, c *hertzapp.RequestContext) {
 			// 创建增强上下文并调用处理器
-			enhancedCtx := contextenhanced.NewContext((*RequestContext)(c))
-			handler(enhancedCtx, (*RequestContext)(c))
+			enhancedCtx := contextenhanced.NewContext((*define.RequestContext)(c))
+			handler(enhancedCtx, (*define.RequestContext)(c))
 		})
 	}
-	
+
 	// 设置Hertz的NoMethod处理器
 	app.Hertz.NoMethod(hertzHandlers...)
 }
