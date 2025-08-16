@@ -20,7 +20,7 @@ mvc.GET("/users", func(ctx context.Context, c *core.RequestContext) {
 
 ### 第二代：简化API 
 ```go
-mvc.SimpleGET("/users", func(ctx context.Context) {
+mvc.GETSimple("/users", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     c.JSON(200, map[string]interface{}{"users": []string{}})
 })
@@ -28,7 +28,7 @@ mvc.SimpleGET("/users", func(ctx context.Context) {
 
 ### 第三代：直接API ✨（推荐）
 ```go
-mvc.DirectGET("/users", func(c *contextenhanced.Context) {
+mvc.GETDirect("/users", func(c *contextenhanced.Context) {
     c.JSON(200, map[string]interface{}{"users": []string{}})
 })
 ```
@@ -57,24 +57,24 @@ mvc.DirectGET("/users", func(c *contextenhanced.Context) {
 
 ```go
 // 第三代: 直接API (推荐) ⭐
-mvc.DirectGET(path, handlers...)     // GET请求
-mvc.DirectPOST(path, handlers...)    // POST请求
-mvc.DirectPUT(path, handlers...)     // PUT请求
-mvc.DirectDELETE(path, handlers...)  // DELETE请求
-mvc.DirectPATCH(path, handlers...)   // PATCH请求
-mvc.DirectHEAD(path, handlers...)    // HEAD请求
-mvc.DirectOPTIONS(path, handlers...) // OPTIONS请求
+mvc.GETDirect(path, handlers...)     // GET请求
+mvc.POSTDirect(path, handlers...)    // POST请求
+mvc.PUTDirect(path, handlers...)     // PUT请求
+mvc.DELETEDirect(path, handlers...)  // DELETE请求
+mvc.PATCHDirect(path, handlers...)   // PATCH请求
+mvc.HEADDirect(path, handlers...)    // HEAD请求
+mvc.OPTIONSDirect(path, handlers...) // OPTIONS请求
 mvc.DirectAny(path, handlers...)     // 任意HTTP方法
 
 // 第二代: 简化API
-mvc.SimpleGET(path, handlers...)     // GET请求
-mvc.SimplePOST(path, handlers...)    // POST请求
-mvc.SimplePUT(path, handlers...)     // PUT请求
-mvc.SimpleDELETE(path, handlers...)  // DELETE请求
-mvc.SimplePATCH(path, handlers...)   // PATCH请求
-mvc.SimpleHEAD(path, handlers...)    // HEAD请求
-mvc.SimpleOPTIONS(path, handlers...) // OPTIONS请求
-mvc.SimpleAny(path, handlers...)     // 任意HTTP方法
+mvc.GETSimple(path, handlers...)     // GET请求
+mvc.POSTSimple(path, handlers...)    // POST请求
+mvc.PUTSimple(path, handlers...)     // PUT请求
+mvc.DELETESimple(path, handlers...)  // DELETE请求
+mvc.PATCHSimple(path, handlers...)   // PATCH请求
+mvc.HEADSimple(path, handlers...)    // HEAD请求
+mvc.OPTIONSSimple(path, handlers...) // OPTIONS请求
+mvc.AnySimple(path, handlers...)     // 任意HTTP方法
 
 // 第一代: 原有API (向后兼容)
 mvc.GET(path, handlers...)           // 传统方式
@@ -102,7 +102,7 @@ func main() {
     mvc.HertzApp = app
 
     // 用户列表 - 最简洁的写法
-    mvc.DirectGET("/api/users", func(c *contextenhanced.Context) {
+    mvc.GETDirect("/api/users", func(c *contextenhanced.Context) {
         c.JSON(200, map[string]interface{}{
             "users": []map[string]interface{}{
                 {"id": 1, "name": "张三"},
@@ -112,7 +112,7 @@ func main() {
     })
 
     // 创建用户
-    mvc.DirectPOST("/api/users", func(c *contextenhanced.Context) {
+    mvc.POSTDirect("/api/users", func(c *contextenhanced.Context) {
         c.JSON(201, map[string]interface{}{
             "message": "用户创建成功",
             "id":      123,
@@ -127,7 +127,7 @@ func main() {
 
 ```go
 // 获取路由参数
-mvc.DirectGET("/api/users/:id", func(c *contextenhanced.Context) {
+mvc.GETDirect("/api/users/:id", func(c *contextenhanced.Context) {
     id := c.Param("id")
     
     c.JSON(200, map[string]interface{}{
@@ -139,7 +139,7 @@ mvc.DirectGET("/api/users/:id", func(c *contextenhanced.Context) {
 })
 
 // 获取查询参数
-mvc.DirectGET("/api/search", func(c *contextenhanced.Context) {
+mvc.GETDirect("/api/search", func(c *contextenhanced.Context) {
     keyword := c.Query("q")
     limit := c.Query("limit", "10") // 带默认值
     
@@ -154,7 +154,7 @@ mvc.DirectGET("/api/search", func(c *contextenhanced.Context) {
 #### 3. 请求体和表单处理
 
 ```go
-mvc.DirectPOST("/api/login", func(c *contextenhanced.Context) {
+mvc.POSTDirect("/api/login", func(c *contextenhanced.Context) {
     // 获取表单数据
     username := c.PostForm("username")
     password := c.PostForm("password")
@@ -202,7 +202,7 @@ logMiddleware := func(c *contextenhanced.Context) {
 }
 
 // 受保护的路由
-mvc.DirectGET("/api/profile", logMiddleware, authMiddleware, 
+mvc.GETDirect("/api/profile", logMiddleware, authMiddleware, 
     func(c *contextenhanced.Context) {
         userID := c.GetString("user_id")
         c.JSON(200, map[string]interface{}{
@@ -222,7 +222,7 @@ func main() {
     mvc.HertzApp = app
 
     // 用户列表
-    mvc.SimpleGET("/api/users", func(ctx context.Context) {
+    mvc.GETSimple("/api/users", func(ctx context.Context) {
         c := mvc.FromContext(ctx)
         c.JSON(200, map[string]interface{}{
             "users": []map[string]interface{}{
@@ -233,7 +233,7 @@ func main() {
     })
 
     // 创建用户
-    mvc.SimplePOST("/api/users", func(ctx context.Context) {
+    mvc.POSTSimple("/api/users", func(ctx context.Context) {
         c := mvc.FromContext(ctx)
         c.JSON(201, map[string]interface{}{
             "message": "用户创建成功",
@@ -249,7 +249,7 @@ func main() {
 
 ```go
 // 获取路由参数
-mvc.SimpleGET("/api/users/:id", func(ctx context.Context) {
+mvc.GETSimple("/api/users/:id", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     id := c.Param("id")
     
@@ -262,7 +262,7 @@ mvc.SimpleGET("/api/users/:id", func(ctx context.Context) {
 })
 
 // 获取查询参数
-mvc.SimpleGET("/api/search", func(ctx context.Context) {
+mvc.GETSimple("/api/search", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     keyword := c.Query("q")
     limit := c.Query("limit")
@@ -278,7 +278,7 @@ mvc.SimpleGET("/api/search", func(ctx context.Context) {
 ### 3. 请求头和表单处理
 
 ```go
-mvc.SimplePOST("/api/login", func(ctx context.Context) {
+mvc.POSTSimple("/api/login", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     
     // 获取请求头
@@ -306,7 +306,7 @@ mvc.SimplePOST("/api/login", func(ctx context.Context) {
 ### 4. 错误处理和中断
 
 ```go
-mvc.SimpleGET("/api/protected", func(ctx context.Context) {
+mvc.GETSimple("/api/protected", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     
     // 权限检查
@@ -331,7 +331,7 @@ mvc.SimpleGET("/api/protected", func(ctx context.Context) {
 ### 5. 上下文值存储
 
 ```go
-mvc.SimpleGET("/api/context", func(ctx context.Context) {
+mvc.GETSimple("/api/context", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     
     // 设置值
@@ -389,7 +389,7 @@ func logMiddleware(ctx context.Context) {
 }
 
 // 注册带中间件的路由
-mvc.SimpleGET("/api/admin/users", logMiddleware, authMiddleware, func(ctx context.Context) {
+mvc.GETSimple("/api/admin/users", logMiddleware, authMiddleware, func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     userID := c.MustGet("user_id")
     
@@ -404,7 +404,7 @@ mvc.SimpleGET("/api/admin/users", logMiddleware, authMiddleware, func(ctx contex
 ### 7. 响应类型处理
 
 ```go
-mvc.SimpleGET("/api/response-types", func(ctx context.Context) {
+mvc.GETSimple("/api/response-types", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     
     responseType := c.Query("type")
@@ -479,19 +479,19 @@ func AdaptSimpleHandlerToHertz(handler SimpleHandlerFunc) app.HandlerFunc {
 
 ```go
 // 新项目: 直接使用Direct API (推荐)
-mvc.DirectGET("/api/users", func(c *contextenhanced.Context) {
+mvc.GETDirect("/api/users", func(c *contextenhanced.Context) {
     c.JSON(200, userData)
 })
 
 // 现有项目: 可选择渐进式迁移
 // 第一步: 迁移到Simple API
-mvc.SimpleGET("/api/users", func(ctx context.Context) {
+mvc.GETSimple("/api/users", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     c.JSON(200, userData)
 })
 
 // 第二步: 进一步迁移到Direct API
-mvc.DirectGET("/api/users", func(c *contextenhanced.Context) {
+mvc.GETDirect("/api/users", func(c *contextenhanced.Context) {
     c.JSON(200, userData)
 })
 ```
@@ -515,7 +515,7 @@ func simpleHandler(ctx context.Context) {
 
 // 步骤2: 更新路由注册
 // 从: mvc.GET("/path", oldHandler)
-// 改为: mvc.SimpleGET("/path", simpleHandler)
+// 改为: mvc.GETSimple("/path", simpleHandler)
 ```
 
 #### 从Simple API → Direct API
@@ -533,8 +533,8 @@ func directHandler(c *contextenhanced.Context) {
 }
 
 // 步骤2: 更新路由注册
-// 从: mvc.SimpleGET("/path", simpleHandler)
-// 改为: mvc.DirectGET("/path", directHandler)
+// 从: mvc.GETSimple("/path", simpleHandler)
+// 改为: mvc.GETDirect("/path", directHandler)
 ```
 
 ### 渐进式迁移策略
@@ -576,12 +576,12 @@ app.Get("/users", func(c *fiber.Ctx) error {
 })
 
 // YYHertz Direct风格 ⭐ (推荐)
-mvc.DirectGET("/users", func(c *contextenhanced.Context) {
+mvc.GETDirect("/users", func(c *contextenhanced.Context) {
     c.JSON(200, map[string]interface{}{"users": []string{}})
 })
 
 // YYHertz Simple风格
-mvc.SimpleGET("/users", func(ctx context.Context) {
+mvc.GETSimple("/users", func(ctx context.Context) {
     c := mvc.FromContext(ctx)
     c.JSON(200, map[string]interface{}{"users": []string{}})
 })

@@ -285,6 +285,17 @@ func AddFuncMap(name string, fn any) error {
 	return fmt.Errorf("hertz app instance is not initialized")
 }
 
+// AddFuncMaps 批量添加全局模板函数的静态方法
+func AddFuncMaps(funcs map[string]any) error {
+	if HertzApp != nil {
+		for name, fn := range funcs {
+			HertzApp.AddFuncMap(name, fn)
+		}
+		return nil
+	}
+	return fmt.Errorf("hertz app instance is not initialized")
+}
+
 // GetGlobalFuncMap 获取全局模板函数映射的静态方法
 func GetGlobalFuncMap() map[string]any {
 	if HertzApp != nil {
@@ -389,7 +400,7 @@ func CreateGroup(relativePath string) *RouterGroup {
 
 	// 创建新的路由器实例
 	router := NewRouter(HertzApp)
-	
+
 	// 创建支持多处理器的路由组
 	return NewGroup(router, relativePath)
 }
