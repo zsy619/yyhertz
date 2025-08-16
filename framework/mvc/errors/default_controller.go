@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,9 @@ import (
 
 	mvccontext "github.com/zsy619/yyhertz/framework/mvc/context"
 )
+
+//go:embed templates/*
+var tplFS embed.FS
 
 // ============= 默认错误控制器 =============
 
@@ -807,16 +811,15 @@ func (c *DefaultErrorController) renderJSONError(ctx *mvccontext.Context, errorC
 
 // renderXMLError 渲染XML格式错误响应
 func (c *DefaultErrorController) renderXMLError(ctx *mvccontext.Context, errorCtx *ErrorContext) error {
-	xmlResponse := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<error>
-    <code>%d</code>
-    <title>%s</title>
-    <message>%s</message>
-    <path>%s</path>
-    <method>%s</method>
-    <timestamp>%s</timestamp>
-    <request_id>%s</request_id>
-</error>`,
+	xmlData, xmlErr := tplFS.ReadFile("templates/error.xml")
+	if xmlErr != nil {
+		c.logError("Failed to read error template", xmlErr)
+		fmt.Println("Error reading error template:", xmlErr.Error())
+		// 处理错误
+		return xmlErr
+	}
+	xmlTemplate := string(xmlData)
+	xmlResponse := fmt.Sprintf(xmlTemplate,
 		errorCtx.StatusCode,
 		errorCtx.StatusText,
 		errorCtx.ErrorMessage,
@@ -859,8 +862,17 @@ func (c *DefaultErrorController) generateErrorHTML(errorCtx *ErrorContext) strin
 	// 构建建议列表HTML
 	suggestionsHTML := c.buildSuggestionsHTML(errorCtx.Suggestions)
 
+	htmlData, htmlErr := tplFS.ReadFile("templates/error.html")
+	if htmlErr != nil {
+		c.logError("Failed to read error template", htmlErr)
+		fmt.Println("Error reading error template:", htmlErr.Error())
+		// 处理错误
+		return ""
+	}
+
 	// 构建调试信息HTML
 	debugInfoHTML := c.buildDebugInfoHTML(errorCtx)
+	errorPageTemplate := string(htmlData)
 
 	// 正确的参数传递顺序
 	return fmt.Sprintf(errorPageTemplate,
@@ -1053,527 +1065,6 @@ func (c *DefaultErrorController) getSupportInfo() string {
 	html += "</div></div>"
 	return html
 }
-
-// ============= HTML页面模板 =============
-
-// errorPageTemplate HTML页面模板 - 简化版用于调试
-const errorPageTemplateDebug = `<!DOCTYPE html>
-<html>
-<head><title>DEBUG: %s</title></head>
-<body>
-<h1>Header: %s</h1>
-<div class="error-card %s">
-<div class="status-icon">%s</div>
-<h2>%d %s</h2>
-<p>%s</p>
-<p>Main message: %s</p>
-<div>Request Path: %s</div>
-<div>Request Method: %s</div>
-<div>Timestamp: %s</div>
-<div>%s</div>
-<div>%s</div>
-<div>%s</div>
-JS: %d %d %s %s %d
-</body>
-</html>`
-
-// errorPageTemplate HTML页面模板
-const errorPageTemplate = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>%s - 错误页面</title>
-	<style>
-		body { 
-			font-family: Arial, sans-serif; 
-			margin: 0; 
-			padding: 20px; 
-			background: #f5f5f5; 
-			line-height: 1.6; 
-		}
-		
-		.container { 
-			max-width: 800px; 
-			margin: 0 auto; 
-		}
-		
-		.header { 
-			background: white; 
-			padding: 30px; 
-			border-radius: 8px; 
-			margin-bottom: 20px; 
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-			text-align: center; 
-		}
-		
-		.error-card { 
-			background: white; 
-			padding: 30px; 
-			border-radius: 8px; 
-			margin-bottom: 20px; 
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-		}
-		
-		/* 状态码特定样式 */
-		.status-400 { border-left: 5px solid #ffc107; }  /* Bad Request */
-		.status-401 { border-left: 5px solid #fd7e14; }  /* Unauthorized */
-		.status-402 { border-left: 5px solid #20c997; }  /* Payment Required */
-		.status-403 { border-left: 5px solid #dc3545; }  /* Forbidden */
-		.status-404 { border-left: 5px solid #007bff; }  /* Not Found */
-		.status-405 { border-left: 5px solid #e83e8c; }  /* Method Not Allowed */
-		.status-406 { border-left: 5px solid #6610f2; }  /* Not Acceptable */
-		.status-408 { border-left: 5px solid #fd7e14; }  /* Request Timeout */
-		.status-409 { border-left: 5px solid #dc3545; }  /* Conflict */
-		.status-410 { border-left: 5px solid #6c757d; }  /* Gone */
-		.status-413 { border-left: 5px solid #ffc107; }  /* Payload Too Large */
-		.status-415 { border-left: 5px solid #e83e8c; }  /* Unsupported Media */
-		.status-418 { border-left: 5px solid #17a2b8; }  /* I'm a teapot */
-		.status-422 { border-left: 5px solid #ffc107; }  /* Unprocessable Entity */
-		.status-429 { border-left: 5px solid #fd7e14; }  /* Too Many Requests */
-		.status-500 { border-left: 5px solid #6f42c1; }  /* Internal Server Error */
-		.status-501 { border-left: 5px solid #6c757d; }  /* Not Implemented */
-		.status-502 { border-left: 5px solid #dc3545; }  /* Bad Gateway */
-		.status-503 { border-left: 5px solid #ffc107; }  /* Service Unavailable */
-		.status-504 { border-left: 5px solid #fd7e14; }  /* Gateway Timeout */
-		.status-505 { border-left: 5px solid #6c757d; }  /* HTTP Version Not Supported */
-		.status-4xx { border-left: 5px solid #ffc107; }  /* Generic 4xx */
-		.status-5xx { border-left: 5px solid #dc3545; }  /* Generic 5xx */
-		.status-error { border-left: 5px solid #6c757d; } /* Generic Error */
-		
-		.error-header { 
-			display: flex; 
-			align-items: center; 
-			margin-bottom: 20px; 
-			flex-wrap: wrap; 
-		}
-		
-		.status-icon { 
-			font-size: 48px; 
-			margin-right: 20px; 
-		}
-		
-		.status-info h1 { 
-			margin: 0; 
-			color: #333; 
-			font-size: 2.5em; 
-		}
-		
-		.status-info p { 
-			margin: 5px 0 0 0; 
-			color: #666; 
-			font-size: 1.2em; 
-		}
-		
-		.error-details { 
-			background: #f8f9fa; 
-			padding: 20px; 
-			border-radius: 6px; 
-			margin: 20px 0; 
-		}
-		
-		.error-details h3 { 
-			margin-top: 0; 
-			color: #333; 
-		}
-		
-		.detail-item { 
-			display: flex; 
-			margin-bottom: 10px; 
-		}
-		
-		.detail-label { 
-			font-weight: bold; 
-			width: 100px; 
-			color: #555; 
-		}
-		
-		.detail-value { 
-			flex: 1; 
-			color: #333; 
-		}
-		
-		.suggestions { 
-			list-style: none; 
-			padding: 0; 
-		}
-		
-		.suggestions li { 
-			background: #e3f2fd; 
-			padding: 12px 16px; 
-			margin: 8px 0; 
-			border-radius: 4px; 
-			border-left: 4px solid #2196f3; 
-		}
-		
-		.actions { 
-			text-align: center; 
-			margin: 30px 0; 
-		}
-		
-		.btn { 
-			padding: 12px 24px; 
-			margin: 0 8px; 
-			border: none; 
-			border-radius: 4px; 
-			cursor: pointer; 
-			font-size: 16px; 
-			text-decoration: none; 
-			display: inline-block; 
-			transition: background-color 0.3s; 
-		}
-		
-		.btn-primary { 
-			background: #007bff; 
-			color: white; 
-		}
-		
-		.btn-primary:hover { 
-			background: #0056b3; 
-		}
-		
-		.btn-secondary { 
-			background: #6c757d; 
-			color: white; 
-		}
-		
-		.btn-secondary:hover { 
-			background: #545b62; 
-		}
-		
-		.btn-retry { 
-			background: #17a2b8; 
-			color: white; 
-			position: relative;
-			overflow: hidden;
-		}
-		
-		.btn-retry:hover { 
-			background: #138496; 
-		}
-		
-		.btn-retry:disabled { 
-			background: #6c757d; 
-			cursor: not-allowed; 
-		}
-		
-		.btn-warning { 
-			background: #ffc107; 
-			color: #212529; 
-		}
-		
-		.btn-warning:hover { 
-			background: #e0a800; 
-		}
-		
-		.retry-progress {
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			height: 3px;
-			background: rgba(255,255,255,0.3);
-			transition: width 1s linear;
-		}
-		
-		.notification {
-			position: fixed;
-			top: 20px;
-			right: 20px;
-			padding: 15px 20px;
-			border-radius: 4px;
-			color: white;
-			font-weight: bold;
-			z-index: 1000;
-			opacity: 0;
-			transform: translateX(100%%);
-			transition: all 0.3s ease;
-		}
-		
-		.notification.show {
-			opacity: 1;
-			transform: translateX(0);
-		}
-		
-		.notification.success {
-			background: #28a745;
-		}
-		
-		.notification.error {
-			background: #dc3545;
-		}
-		
-		.notification.info {
-			background: #17a2b8;
-		}
-		
-		.debug-info { 
-			background: #fff3cd; 
-			border: 1px solid #ffeaa7; 
-			border-radius: 6px; 
-			padding: 20px; 
-			margin: 20px 0; 
-		}
-		
-		.debug-label { 
-			background: #fd7e14; 
-			color: white; 
-			padding: 2px 8px; 
-			border-radius: 12px; 
-			font-size: 12px; 
-			font-weight: normal; 
-		}
-		
-		.debug-grid { 
-			display: grid; 
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-			gap: 15px; 
-			margin-top: 15px; 
-		}
-		
-		.debug-item { 
-			background: white; 
-			padding: 12px; 
-			border-radius: 4px; 
-		}
-		
-		.debug-key { 
-			font-weight: bold; 
-			color: #495057; 
-			font-size: 12px; 
-			text-transform: uppercase; 
-			margin-bottom: 4px; 
-		}
-		
-		.debug-value { 
-			color: #007bff; 
-			font-weight: bold; 
-		}
-		
-		.support-info { 
-			background: #d4edda; 
-			border: 1px solid #c3e6cb; 
-			border-radius: 6px; 
-			padding: 20px; 
-			margin: 20px 0; 
-		}
-		
-		.contact-info { 
-			display: flex; 
-			flex-wrap: wrap; 
-			gap: 20px; 
-			margin-top: 15px; 
-		}
-		
-		.contact-item { 
-			display: flex; 
-			align-items: center; 
-		}
-		
-		.contact-icon { 
-			margin-right: 8px; 
-			font-size: 16px; 
-		}
-		
-		.contact-item a { 
-			color: #28a745; 
-			text-decoration: none; 
-			font-weight: bold; 
-		}
-		
-		.contact-item a:hover { 
-			text-decoration: underline; 
-		}
-		
-		.footer { 
-			text-align: center; 
-			color: #6c757d; 
-			padding: 20px; 
-			font-size: 14px; 
-		}
-		
-		/* 响应式设计 */
-		@media (max-width: 768px) {
-			body { padding: 10px; }
-			.header, .error-card { padding: 20px; }
-			.error-header { flex-direction: column; text-align: center; }
-			.status-icon { margin-right: 0; margin-bottom: 10px; }
-			.status-info h1 { font-size: 2em; }
-			.detail-item { flex-direction: column; }
-			.detail-label { width: auto; margin-bottom: 4px; }
-			.actions { margin: 20px 0; }
-			.btn { margin: 4px; padding: 10px 20px; }
-			.debug-grid { grid-template-columns: 1fr; }
-			.contact-info { flex-direction: column; gap: 10px; }
-		}
-	</style>
-</head>
-<body>
-	<div class="container">
-		<div class="header">
-			<h1>%s</h1>
-			<p>应用遇到了一个问题，请查看下面的详细信息</p>
-		</div>
-		
-		<div class="error-card %s">
-			<div class="error-header">
-				<div class="status-icon">%s</div>
-				<div class="status-info">
-					<h1>%d %s</h1>
-					<p>%s</p>
-				</div>
-			</div>
-			
-			<div class="error-message">
-				<p style="font-size: 1.1em; color: #333; margin-bottom: 20px;">%s</p>
-			</div>
-			
-			<div class="error-details">
-				<h3>🔍 请求详情</h3>
-				<div class="detail-item">
-					<div class="detail-label">请求路径:</div>
-					<div class="detail-value">%s</div>
-				</div>
-				<div class="detail-item">
-					<div class="detail-label">请求方法:</div>
-					<div class="detail-value">%s</div>
-				</div>
-				<div class="detail-item">
-					<div class="detail-label">时间:</div>
-					<div class="detail-value">%s</div>
-				</div>
-			</div>
-			
-			%s
-			
-			<div class="actions">
-				<a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
-				<a href="/" class="btn btn-primary">返回首页</a>
-				<button onclick="retryRequest()" class="btn btn-retry" id="retryBtn">
-					重试
-					<div class="retry-progress" id="retryProgress"></div>
-				</button>
-			</div>
-			
-			%s
-			
-			%s
-		</div>
-		
-		<div class="footer">
-			<p>&copy; YYHertz Framework. 技术支持团队随时为您服务。</p>
-		</div>
-	</div>
-	
-	<div id="notification" class="notification"></div>
-	
-	<script>
-		// 基本页面信息
-		const pageInfo = {
-			statusCode: %d,
-			path: '%s',
-			method: '%s',
-			timestamp: new Date().toISOString(),
-			userAgent: navigator.userAgent,
-			referrer: document.referrer || 'None'
-		};
-		
-		// 页面加载完成后的初始化
-		document.addEventListener('DOMContentLoaded', function() {
-			// 添加页面加载动画
-			document.body.style.opacity = '0';
-			document.body.style.transition = 'opacity 0.5s ease-in-out';
-			setTimeout(() => {
-				document.body.style.opacity = '1';
-			}, 100);
-			
-			// 显示页面信息（开发模式）
-			console.group('🔧 页面错误信息');
-			console.log('状态码:', pageInfo.statusCode);
-			console.log('请求路径:', pageInfo.path);
-			console.log('请求方法:', pageInfo.method);
-			console.log('时间戳:', pageInfo.timestamp);
-			console.log('用户代理:', pageInfo.userAgent);
-			console.log('来源页面:', pageInfo.referrer);
-			console.groupEnd();
-		});
-		
-		// 重试请求功能
-		function retryRequest() {
-			const retryBtn = document.getElementById('retryBtn');
-			const progressBar = document.getElementById('retryProgress');
-			
-			if (retryBtn.disabled) return;
-			
-			retryBtn.disabled = true;
-			retryBtn.textContent = '重试中...';
-			progressBar.style.width = '0%%';
-			
-			// 模拟进度
-			let progress = 0;
-			const progressInterval = setInterval(() => {
-				progress += 10;
-				progressBar.style.width = progress + '%%';
-				
-				if (progress >= 100) {
-					clearInterval(progressInterval);
-					// 重新加载当前页面
-					window.location.reload();
-				}
-			}, 100);
-		}
-		
-		// 显示通知
-		function showNotification(message, type = 'info') {
-			const notification = document.getElementById('notification');
-			notification.textContent = message;
-			notification.className = 'notification ' + type + ' show';
-			
-			setTimeout(() => {
-				notification.classList.remove('show');
-			}, 3000);
-		}
-		
-		// 键盘快捷键支持
-		document.addEventListener('keydown', function(e) {
-			if (e.ctrlKey || e.metaKey) {
-				switch(e.key) {
-					case 'r':
-						e.preventDefault();
-						retryRequest();
-						break;
-					case 'h':
-						e.preventDefault();
-						window.location.href = '/';
-						break;
-				}
-			}
-			
-			if (e.key === 'Escape') {
-				history.back();
-			}
-		});
-		
-		// 监控状态码用于分析
-		if (window.gtag) {
-			gtag('event', 'error_page_view', {
-				'error_code': %d,
-				'error_path': pageInfo.path,
-				'error_method': pageInfo.method
-			});
-		}
-		
-		// 开发环境调试信息
-		if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-			const statusCode = %d;
-			if (statusCode >= 500) {
-				console.warn('🚨 服务器错误 - 请检查服务器日志');
-			} else if (statusCode >= 400) {
-				console.info('ℹ️ 客户端错误 - 请检查请求参数');
-			}
-		}
-	</script>
-</body>
-</html>`
 
 // ============= 配置结构 =============
 
