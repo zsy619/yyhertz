@@ -252,3 +252,5 @@ framework/mvc/example/demos/conf
 example/multi_handlers/conf
 framework/mvc/router/conf
 example/example/demos/conf
+framework/gin/conf
+framework/gin/gintest/conf

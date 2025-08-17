@@ -3,11 +3,13 @@
 package render
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html/template"
 	"net/http"
+	"unicode"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"gopkg.in/yaml.v2"
@@ -17,6 +19,13 @@ import (
 type Render interface {
 	Render(c *app.RequestContext) error
 	WriteContentType(c *app.RequestContext)
+}
+
+// HTMLRender HTML渲染器接口
+// 用于支持不同的HTML模板渲染模式（调试模式和生产模式）
+type HTMLRender interface {
+	// Instance 创建一个渲染实例
+	Instance(name string, data any) Render
 }
 
 // JSON JSON渲染器
@@ -66,11 +75,19 @@ type HTML struct {
 
 // HTMLDebug HTML调试渲染器
 type HTMLDebug struct {
-	Files  []string
-	Glob   string
-	Delims Delims
-	Name   string
-	Data   any
+	Files    []string
+	Glob     string
+	Delims   Delims
+	FuncMap  template.FuncMap
+	Name     string
+	Data     any
+}
+
+// HTMLProduction HTML生产模式渲染器
+type HTMLProduction struct {
+	Template *template.Template
+	Delims   Delims
+	FuncMap  template.FuncMap
 }
 
 // Delims 模板分隔符
@@ -236,20 +253,30 @@ func (r HTMLDebug) Render(c *app.RequestContext) error {
 	var tmpl *template.Template
 	var err error
 
+	// 创建基础模板
+	tmpl = template.New("")
+	
+	// 设置分隔符
+	if r.Delims.Left != "" || r.Delims.Right != "" {
+		tmpl.Delims(r.Delims.Left, r.Delims.Right)
+	}
+	
+	// 设置函数映射
+	if r.FuncMap != nil {
+		tmpl.Funcs(r.FuncMap)
+	}
+
+	// 解析模板文件
 	if len(r.Files) > 0 {
-		tmpl, err = template.ParseFiles(r.Files...)
+		tmpl, err = tmpl.ParseFiles(r.Files...)
 	} else if r.Glob != "" {
-		tmpl, err = template.ParseGlob(r.Glob)
+		tmpl, err = tmpl.ParseGlob(r.Glob)
 	} else {
 		return fmt.Errorf("no template files or glob pattern specified")
 	}
 
 	if err != nil {
 		return err
-	}
-
-	if r.Delims.Left != "" || r.Delims.Right != "" {
-		tmpl.Delims(r.Delims.Left, r.Delims.Right)
 	}
 
 	if r.Name == "" {
@@ -260,6 +287,41 @@ func (r HTMLDebug) Render(c *app.RequestContext) error {
 
 func (r HTMLDebug) WriteContentType(c *app.RequestContext) {
 	writeContentType(c, []string{"text/html; charset=utf-8"})
+}
+
+// Instance 实现 HTMLRender 接口
+func (r HTMLDebug) Instance(name string, data any) Render {
+	return HTMLDebug{
+		Files:   r.Files,
+		Glob:    r.Glob,
+		Delims:  r.Delims,
+		FuncMap: r.FuncMap,
+		Name:    name,
+		Data:    data,
+	}
+}
+
+// HTMLProduction 渲染实现
+func (r HTMLProduction) Render(c *app.RequestContext) error {
+	r.WriteContentType(c)
+	if r.Template == nil {
+		return fmt.Errorf("template is nil")
+	}
+	// HTMLProduction 不直接渲染，它通过 Instance 方法创建 HTML 渲染器来渲染
+	return fmt.Errorf("HTMLProduction should not be used for direct rendering, use Instance method")
+}
+
+func (r HTMLProduction) WriteContentType(c *app.RequestContext) {
+	writeContentType(c, []string{"text/html; charset=utf-8"})
+}
+
+// Instance 实现 HTMLRender 接口
+func (r HTMLProduction) Instance(name string, data any) Render {
+	return HTML{
+		Template: r.Template,
+		Name:     name,
+		Data:     data,
+	}
 }
 
 // Redirect渲染实现
@@ -317,6 +379,11 @@ func writeContentType(c *app.RequestContext, value []string) {
 	header := c.Response.Header.Peek("Content-Type")
 	if len(header) == 0 {
 		c.Header("Content-Type", value[0])
+	} else {
+		// 调试：如果已经有Content-Type，强制覆盖为HTML
+		if len(value) > 0 && value[0] == "text/html; charset=utf-8" {
+			c.Response.Header.Set("Content-Type", value[0])
+		}
 	}
 }
 
@@ -355,4 +422,45 @@ func WriteHTML(c *app.RequestContext, tmpl *template.Template, name string, data
 
 func WriteData(c *app.RequestContext, contentType string, data []byte) error {
 	return Data{ContentType: contentType, Data: data}.Render(c)
+}
+
+// AsciiJSON ASCII JSON渲染器
+// 
+// 将非ASCII字符转换为Unicode转义序列的JSON渲染器。
+// 这确保了输出只包含ASCII字符，适用于需要纯ASCII输出的场景。
+type AsciiJSON struct {
+	Data any
+}
+
+// AsciiJSON渲染实现
+func (r AsciiJSON) Render(c *app.RequestContext) error {
+	r.WriteContentType(c)
+	ret, err := json.Marshal(r.Data)
+	if err != nil {
+		return err
+	}
+
+	var buffer bytes.Buffer
+	escapeBuf := make([]byte, 0, 6)
+
+	for _, runeValue := range string(ret) {
+		if runeValue > unicode.MaxASCII {
+			escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", runeValue)
+			buffer.Write(escapeBuf)
+		} else {
+			buffer.WriteByte(byte(runeValue))
+		}
+	}
+
+	c.Write(buffer.Bytes())
+	return nil
+}
+
+func (r AsciiJSON) WriteContentType(c *app.RequestContext) {
+	writeContentType(c, []string{"application/json; charset=utf-8"})
+}
+
+// WriteAsciiJSON 便捷函数
+func WriteAsciiJSON(c *app.RequestContext, obj any) error {
+	return AsciiJSON{Data: obj}.Render(c)
 }

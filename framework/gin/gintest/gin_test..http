@@ -1,0 +1,47 @@
+@host = http://localhost:8888
+
+###
+GET {{host}}/getd?field_x=field_x&field_d=world
+Content-Type: application/json
+
+{"d":"world","x":{"FieldX":"hello"}}
+
+
+### Test_PersonURI
+
+GET {{host}}/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
+
+### Test_FormData
+
+POST {{host}}/formdata?name=appleboy&address=xyz&birthday=1992-03-15
+
+
+### Test_FormData
+
+GET {{host}}/formdata?name=appleboy&address=xyz&birthday=1992-03-15
+
+### Test_FormData
+
+POST {{host}}/formdata?name=urlappleboy&address=urlxyz&birthday=1992-03-15
+Content-Type: application/json
+
+{"name":"appleboy","address":"xyz","birthday":"1992-03-15"}
+
+
+### Test_CustomLogger
+
+GET {{host}}/ping
+
+
+
+### Test_QueryMap
+
+POST {{host}}/post?ids[a]=1234&ids[b]=hello HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+names[first]=thinkerou&names[second]=tianou
+
+
+### Test_HTMLRender HTML 渲染
+
+GET {{host}}/index

@@ -20,17 +20,17 @@
 package framework
 
 import (
-	_ "github.com/zsy619/yyhertz/framework/binding"        // 参数绑定系统
 	_ "github.com/zsy619/yyhertz/framework/cache"          // 缓存管理
 	_ "github.com/zsy619/yyhertz/framework/config"         // 配置管理
 	_ "github.com/zsy619/yyhertz/framework/constant"       // 常量定义
 	_ "github.com/zsy619/yyhertz/framework/gin"            // Gin风格API
+	_ "github.com/zsy619/yyhertz/framework/gin/binding"    // 参数绑定系统
+	_ "github.com/zsy619/yyhertz/framework/gin/render"     // 渲染系统
 	_ "github.com/zsy619/yyhertz/framework/i18n"           // 国际化支持
 	_ "github.com/zsy619/yyhertz/framework/mvc"            // MVC控制器（包含路由和处理器）
 	_ "github.com/zsy619/yyhertz/framework/mvc/context"    // 增强上下文系统
 	_ "github.com/zsy619/yyhertz/framework/mvc/middleware" // 增强中间件系统
 	_ "github.com/zsy619/yyhertz/framework/orm"            // ORM数据库集成
-	_ "github.com/zsy619/yyhertz/framework/render"         // 渲染系统
 	_ "github.com/zsy619/yyhertz/framework/response"       // 响应管理
 	_ "github.com/zsy619/yyhertz/framework/scheduler"      // 任务调度系统
 	_ "github.com/zsy619/yyhertz/framework/session"        // 会话管理
