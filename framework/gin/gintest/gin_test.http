@@ -77,4 +77,19 @@ POST {{host}}/v2/submit
 POST {{host}}/v2/read
 
 
+### Test_Render
+GET {{host}}/someJSON
+
+### Test_Render
+GET {{host}}/moreJSON
+
+### Test_Render
+GET {{host}}/someXML
+
+### Test_Render
+GET {{host}}/someYAML
+
+### Test_Render
+GET {{host}}/someProtoBuf
+
 

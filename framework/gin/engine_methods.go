@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -18,6 +19,47 @@ import (
 )
 
 var defaultPlatform string
+
+// =============================================================================
+// 全局实例管理
+// =============================================================================
+
+var (
+	// defaultEngine 全局默认Engine实例
+	defaultEngine *Engine
+	// defaultOnce 确保defaultEngine只初始化一次
+	defaultOnce sync.Once
+)
+
+// DefaultGlobal 返回全局单例Engine实例
+//
+// 此函数总是返回同一个Engine实例，适用于大部分场景，特别是：
+//   - 单元测试
+//   - 简单应用
+//   - 微服务
+//   - 性能敏感的场景
+//
+// 优势：
+//   - 内存使用更少
+//   - 初始化开销更小
+//   - 线程安全
+//
+// 返回：
+//   - *Engine: 全局单例引擎实例
+//
+// 示例：
+//
+//	r := gin.DefaultGlobal()
+//	r.GET("/ping", func(c *gin.Context) {
+//		c.String(200, "pong")
+//	})
+func DefaultGlobal() *Engine {
+	defaultOnce.Do(func() {
+		defaultEngine = New()
+		defaultEngine.Use(Logger(), Recovery())
+	})
+	return defaultEngine
+}
 
 // =============================================================================
 // Engine 工厂函数
@@ -75,28 +117,50 @@ func New(opts ...OptionFunc) *Engine {
 	return engine
 }
 
-// Default 创建带有默认中间件的Gin引擎
+// Default 创建带有默认中间件的Gin引擎（支持单例优化）
 //
 // 创建一个包含Logger和Recovery中间件的引擎实例。
 // 这是最常用的创建方式，适合大多数应用场景。
 //
+// 🚀 性能优化：
+//   - 无参数调用时返回全局单例实例，减少内存分配和初始化开销
+//   - 有参数时创建新实例，保持完全向后兼容性
+//   - 线程安全的延迟初始化
+//
 // 默认包含的中间件：
 //   - Logger: 请求日志记录
 //   - Recovery: panic恢复处理
+//
+// 参数：
+//   - opts: 可选的配置函数，存在时会创建新实例
 //
 // 返回：
 //   - *Engine: 配置了默认中间件的引擎实例
 //
 // 示例：
 //
+//	// 使用全局单例（推荐，性能最佳）
 //	r := gin.Default()
+//	
+//	// 使用自定义配置（创建新实例）
+//	r := gin.Default(WithSomeOption())
+//
 //	r.GET("/ping", func(c *gin.Context) {
 //		c.String(200, "pong")
 //	})
 func Default(opts ...OptionFunc) *Engine {
-	// 创建基础引擎
+	if len(opts) == 0 {
+		// 无自定义配置时返回全局单例实例
+		// 使用sync.Once确保线程安全的单例初始化
+		defaultOnce.Do(func() {
+			defaultEngine = New()
+			defaultEngine.Use(Logger(), Recovery())
+		})
+		return defaultEngine
+	}
+	
+	// 有自定义配置时创建新实例（保持原有行为）
 	engine := New()
-	// 添加默认中间件
 	engine.Use(Logger(), Recovery())
 	return engine.With(opts...)
 }

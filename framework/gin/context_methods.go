@@ -6,9 +6,21 @@ package gin
 import (
 	"fmt"
 	"strings"
+
 	"github.com/zsy619/yyhertz/framework/gin/binding"
 	"github.com/zsy619/yyhertz/framework/gin/render"
 )
+
+// SetEngine 设置当前上下文的引擎实例。
+// 参数：
+//   - engine: 指向 Engine 结构体的指针，表示要设置的引擎。
+//
+// 说明：
+//
+//	该方法用于将指定的引擎实例与当前上下文关联，后续操作将基于此引擎执行。
+func (c *Context) SetEngine(engine *Engine) {
+	c.engine = engine
+}
 
 // =============================================================================
 // 中间件控制方法
@@ -454,18 +466,18 @@ func (c *Context) ShouldBindUri(obj any) error {
 	for _, param := range c.Params {
 		m[param.Key] = []string{param.Value}
 	}
-	
+
 	// 调试日志：记录参数提取状态
 	if IsDebugging() {
 		DebugPrintRoute("ShouldBindUri", "参数映射", map[string]interface{}{
 			"c.Params": c.Params,
-			"映射表":     m,
-			"目标类型":    fmt.Sprintf("%T", obj),
+			"映射表":      m,
+			"目标类型":     fmt.Sprintf("%T", obj),
 		})
 	}
-	
+
 	err := binding.Uri.BindUri(m, obj)
-	
+
 	// 调试日志：记录绑定结果
 	if IsDebugging() {
 		if err != nil {
@@ -479,7 +491,7 @@ func (c *Context) ShouldBindUri(obj any) error {
 			})
 		}
 	}
-	
+
 	return err
 }
 
@@ -517,17 +529,17 @@ func (c *Context) CheckUriParams(expectedParams []string) ParamCheckResult {
 		ValidationInfo: make(map[string]string),
 		Suggestions:    make([]string, 0),
 	}
-	
+
 	// 基本信息
 	result.HasParams = len(c.Params) > 0
 	result.ParamsCount = len(c.Params)
-	
+
 	// 创建参数映射便于查找
 	paramMap := make(map[string]string)
 	for _, param := range c.Params {
 		paramMap[param.Key] = param.Value
 	}
-	
+
 	// 检查期望的参数
 	for _, expectedParam := range expectedParams {
 		if value, exists := paramMap[expectedParam]; exists {
@@ -542,18 +554,18 @@ func (c *Context) CheckUriParams(expectedParams []string) ParamCheckResult {
 			result.ValidationInfo[expectedParam] = "参数缺失"
 		}
 	}
-	
+
 	// 生成建议
 	if len(result.MissingParams) > 0 {
-		result.Suggestions = append(result.Suggestions, 
+		result.Suggestions = append(result.Suggestions,
 			fmt.Sprintf("缺少参数: %v，请检查路由定义和URL格式", result.MissingParams))
 	}
-	
+
 	if len(result.EmptyParams) > 0 {
 		result.Suggestions = append(result.Suggestions,
 			fmt.Sprintf("参数值为空: %v，请确保URL中包含实际值", result.EmptyParams))
 	}
-	
+
 	if len(c.Params) == 0 {
 		result.Suggestions = append(result.Suggestions,
 			"没有提取到任何参数，请检查:",
@@ -561,7 +573,7 @@ func (c *Context) CheckUriParams(expectedParams []string) ParamCheckResult {
 			"2. 请求URL是否匹配路由模式",
 			"3. 参数名称是否一致")
 	}
-	
+
 	return result
 }
 
@@ -591,6 +603,125 @@ func (c *Context) MustBindWithHertz(obj any, b binding.Binding) error {
 		return err
 	}
 	return nil
+}
+
+// =============================================================================
+// YAML 绑定方法
+// =============================================================================
+
+// BindYAML 绑定YAML数据到结构体（会验证并自动返回错误）
+//
+// 将请求体中的YAML数据绑定到结构体，验证失败时会自动返回400错误。
+// 这是MustBindWith的快捷方式，使用YAML绑定器。
+//
+// 参数：
+//   - obj: 要绑定到的结构体指针
+//
+// 返回值：
+//   - error: 绑定或验证错误（发生错误时已自动设置响应）
+//
+// 示例：
+//
+//	type User struct {
+//		Name string `yaml:"name" binding:"required"`
+//		Age  int    `yaml:"age" binding:"min=1"`
+//	}
+//
+//	var user User
+//	if err := c.BindYAML(&user); err != nil {
+//		// 错误已自动处理
+//		return
+//	}
+func (c *Context) BindYAML(obj any) error {
+	return c.MustBindWithHertz(obj, binding.YAML)
+}
+
+// ShouldBindYAML 绑定YAML数据（不会自动返回错误）
+//
+// 将请求体中的YAML数据绑定到结构体，不会自动返回错误响应。
+// 这是ShouldBindWith的快捷方式，使用YAML绑定器。
+//
+// 参数：
+//   - obj: 要绑定到的结构体指针
+//
+// 返回值：
+//   - error: 绑定或验证错误
+//
+// 示例：
+//
+//	type Config struct {
+//		Host string `yaml:"host" binding:"required"`
+//		Port int    `yaml:"port" binding:"min=1,max=65535"`
+//	}
+//
+//	var config Config
+//	if err := c.ShouldBindYAML(&config); err != nil {
+//		c.YAML(400, gin.H{"error": err.Error()})
+//		return
+//	}
+func (c *Context) ShouldBindYAML(obj any) error {
+	return c.ShouldBindWithHertz(obj, binding.YAML)
+}
+
+// ShouldBindBodyWithYAML 从请求体绑定YAML数据
+//
+// 直接从请求体的字节数据中绑定YAML，不会自动返回错误响应。
+// 适用于需要重复读取请求体或自定义错误处理的场景。
+//
+// 参数：
+//   - obj: 要绑定到的结构体指针
+//
+// 返回值：
+//   - error: 绑定或验证错误
+//
+// 示例：
+//
+//	type Settings struct {
+//		Theme    string            `yaml:"theme"`
+//		Features map[string]bool   `yaml:"features"`
+//	}
+//
+//	var settings Settings
+//	if err := c.ShouldBindBodyWithYAML(&settings); err != nil {
+//		c.YAML(422, gin.H{
+//			"error": "Invalid YAML format",
+//			"details": err.Error(),
+//		})
+//		return
+//	}
+func (c *Context) ShouldBindBodyWithYAML(obj any) error {
+	body := c.RequestContext.Request.Body()
+	return binding.YAML.BindBody(body, obj)
+}
+
+// =============================================================================
+// XML 绑定方法
+// =============================================================================
+
+// BindXML 绑定XML数据到结构体（会验证并自动返回错误）
+//
+// 将请求体中的XML数据绑定到结构体，验证失败时会自动返回400错误。
+//
+// 参数：
+//   - obj: 要绑定到的结构体指针
+//
+// 返回值：
+//   - error: 绑定或验证错误（发生错误时已自动设置响应）
+func (c *Context) BindXML(obj any) error {
+	return c.MustBindWithHertz(obj, binding.XML)
+}
+
+// ShouldBindXML 绑定XML数据（不会自动返回错误）
+//
+// 将请求体中的XML数据绑定到结构体，不会自动返回错误响应。
+//
+// 参数：
+//   - obj: 要绑定到的结构体指针
+//
+// 返回值：
+//   - error: 绑定或验证错误
+func (c *Context) ShouldBindXML(obj any) error {
+	return c.ShouldBindWithHertz(obj, binding.XML)
 }
 
 // =============================================================================
@@ -646,6 +777,39 @@ func (c *Context) AsciiJSON(code int, obj any) {
 	c.Render(code, render.AsciiJSON{Data: obj})
 }
 
+// XML 返回XML响应
+//
+// 将对象序列化为XML格式并返回给客户端。
+//
+// 参数：
+//   - code: HTTP状态码
+//   - obj: 要序列化的对象
+//
+// 示例：
+//
+//	c.XML(200, gin.H{"message": "success", "data": user})
+//	c.XML(400, gin.H{"error": "validation failed"})
+func (c *Context) XML(code int, obj any) {
+	c.Render(code, render.XML{Data: obj})
+}
+
+// YAML 返回YAML响应
+//
+// 将对象序列化为YAML格式并返回给客户端。
+// YAML格式具有良好的可读性，适合配置文件和人类阅读。
+//
+// 参数：
+//   - code: HTTP状态码
+//   - obj: 要序列化的对象
+//
+// 示例：
+//
+//	c.YAML(200, gin.H{"message": "success", "data": user})
+//	c.YAML(400, gin.H{"error": "validation failed"})
+func (c *Context) YAML(code int, obj any) {
+	c.Render(code, render.YAML{Data: obj})
+}
+
 // String 返回字符串响应
 //
 // 返回格式化的字符串响应。
@@ -681,7 +845,7 @@ func (c *Context) HTML(code int, name string, obj any) {
 		c.String(code, "HTML template rendering not configured. Use LoadHTMLGlob() or LoadHTMLFiles() first.")
 		return
 	}
-	
+
 	// 使用渲染器创建实例并渲染
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
@@ -822,7 +986,7 @@ func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	if queryArgs == nil {
 		return make(map[string]string), false
 	}
-	
+
 	// 将查询参数转换为标准格式
 	formData := make(map[string][]string)
 	queryArgs.VisitAll(func(k, v []byte) {
@@ -834,7 +998,7 @@ func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 			formData[key] = []string{value}
 		}
 	})
-	
+
 	return getMapFromFormData(formData, key)
 }
 
@@ -880,12 +1044,12 @@ func (c *Context) PostFormMap(key string) map[string]string {
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	// 从 Hertz 请求中获取表单数据
 	var formData map[string][]string
-	
+
 	// 检查是否为 multipart 表单
 	if c.RequestContext.Request.Header.IsPost() {
 		// 获取 Content-Type
 		contentType := string(c.RequestContext.Request.Header.ContentType())
-		
+
 		if strings.Contains(contentType, "multipart/form-data") {
 			// 处理 multipart 表单
 			multipartForm, err := c.RequestContext.MultipartForm()
@@ -909,11 +1073,11 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 			}
 		}
 	}
-	
+
 	if formData == nil {
 		return make(map[string]string), false
 	}
-	
+
 	return getMapFromFormData(formData, key)
 }
 
@@ -942,7 +1106,7 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 func getMapFromFormData(data map[string][]string, key string) (map[string]string, bool) {
 	result := make(map[string]string)
 	found := false
-	
+
 	// 精确匹配基础键
 	if values, exists := data[key]; exists {
 		// 直接键匹配，使用第一个值
@@ -951,10 +1115,10 @@ func getMapFromFormData(data map[string][]string, key string) (map[string]string
 			found = true
 		}
 	}
-	
+
 	// 查找形如 "key[subkey]" 的模式
 	keyPrefix := key + "["
-	
+
 	// 特殊处理：先检查空括号情况 "key[]"
 	emptyBracketKey := key + "[]"
 	if values, exists := data[emptyBracketKey]; exists {
@@ -964,7 +1128,7 @@ func getMapFromFormData(data map[string][]string, key string) (map[string]string
 			found = true
 		}
 	}
-	
+
 	// 处理命名子键
 	for formKey, values := range data {
 		if strings.HasPrefix(formKey, keyPrefix) && strings.HasSuffix(formKey, "]") && formKey != emptyBracketKey {
@@ -973,7 +1137,7 @@ func getMapFromFormData(data map[string][]string, key string) (map[string]string
 			end := len(formKey) - 1
 			if start < end {
 				subKey := formKey[start:end]
-				
+
 				// 使用第一个值（兼容 Gin 行为）
 				if len(values) > 0 {
 					result[subKey] = values[0]
@@ -982,7 +1146,7 @@ func getMapFromFormData(data map[string][]string, key string) (map[string]string
 			}
 		}
 	}
-	
+
 	return result, found
 }
 
