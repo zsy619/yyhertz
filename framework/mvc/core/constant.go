@@ -284,3 +284,5 @@ var ControllerNameSuffixReserved = map[string]bool{
 	"Controller": true,
 	"Ctrl":       true,
 }
+
+const AdminIdKey = "adminId"

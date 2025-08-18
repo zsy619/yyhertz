@@ -91,6 +91,44 @@ func (c *BaseController) GetInt64(key string, def ...int64) int64 {
 	return 0
 }
 
+// GetFloat32 获取浮点数参数
+func (c *BaseController) GetFloat32(key string, def ...float32) float32 {
+	if c.Ctx == nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return 0
+	}
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseFloat(string(val), 32); err == nil {
+			return float32(i)
+		}
+	}
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
+}
+
+// GetFloat64 获取浮点数参数
+func (c *BaseController) GetFloat64(key string, def ...float64) float64 {
+	if c.Ctx == nil {
+		if len(def) > 0 {
+			return def[0]
+		}
+		return 0
+	}
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseFloat(string(val), 64); err == nil {
+			return i
+		}
+	}
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
+}
+
 // GetParam 获取路径参数
 func (c *BaseController) GetParam(key string) string {
 	if c.Ctx == nil {
