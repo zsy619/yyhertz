@@ -273,8 +273,8 @@ func (c *UserController) GetInfo() {
 }
 
 func (c *UserController) PostCreate() {
-	name := c.GetForm("name")
-	email := c.GetForm("email")
+	name := c.GetFormValue("name")
+	email := c.GetFormValue("email")
 
 	config.WithFields(map[string]any{
 		"name":  name,

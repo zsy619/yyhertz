@@ -10,12 +10,17 @@ import (
 // ============= 文件上传处理方法 =============
 
 // FormFile 获取上传的文件
-func (ctx *Context) FormFile(name string) (*multipart.FileHeader, error) {
+func (ctx *Context) FormFile(name string) (multipart.File, *multipart.FileHeader, error) {
 	if !ctx.ensureRequest() {
-		return nil, ErrRequestNotFound
+		return nil, nil, ErrRequestNotFound
 	}
 
-	return ctx.request.FormFile(name)
+	hd, err := ctx.request.FormFile(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	fl, err := hd.Open()
+	return fl, hd, err
 }
 
 // SaveUploadedFile 保存上传文件到指定路径
@@ -96,13 +101,13 @@ func (ctx *Context) ServeFile(filepath string) {
 
 // HasFile 检查是否有文件上传
 func (ctx *Context) HasFile(name string) bool {
-	file, err := ctx.FormFile(name)
+	_, file, err := ctx.FormFile(name)
 	return err == nil && file != nil
 }
 
 // GetFileSize 获取上传文件大小
 func (ctx *Context) GetFileSize(name string) int64 {
-	file, err := ctx.FormFile(name)
+	_, file, err := ctx.FormFile(name)
 	if err != nil || file == nil {
 		return 0
 	}
@@ -111,7 +116,7 @@ func (ctx *Context) GetFileSize(name string) int64 {
 
 // GetFileName 获取上传文件名
 func (ctx *Context) GetFileName(name string) string {
-	file, err := ctx.FormFile(name)
+	_, file, err := ctx.FormFile(name)
 	if err != nil || file == nil {
 		return ""
 	}
@@ -120,7 +125,7 @@ func (ctx *Context) GetFileName(name string) string {
 
 // GetFileHeader 获取文件头信息
 func (ctx *Context) GetFileHeader(name string) *multipart.FileHeader {
-	file, _ := ctx.FormFile(name)
+	_, file, _ := ctx.FormFile(name)
 	return file
 }
 
@@ -156,7 +161,7 @@ func (ctx *Context) SaveMultipleFiles(name, destDir string) error {
 		if filename == "" {
 			filename = "upload_" + string(rune('0'+i))
 		}
-		
+
 		destPath := filepath.Join(destDir, filename)
 		if err := ctx.SaveUploadedFile(file, destPath); err != nil {
 			return err
@@ -199,7 +204,7 @@ func (ctx *Context) ValidateFileExtension(name string, allowedExt []string) erro
 
 // ValidateFileType 验证文件MIME类型
 func (ctx *Context) ValidateFileType(name string, allowedTypes []string) error {
-	file, err := ctx.FormFile(name)
+	_, file, err := ctx.FormFile(name)
 	if err != nil {
 		return ErrNoFileUploaded
 	}
@@ -261,9 +266,9 @@ func (ctx *Context) StreamReader(reader io.Reader, contentType string) error {
 // ============= 错误定义 =============
 
 var (
-	ErrNoFileUploaded        = &ContextError{Code: "NO_FILE_UPLOADED", Message: "No file uploaded"}
-	ErrNoFilesUploaded       = &ContextError{Code: "NO_FILES_UPLOADED", Message: "No files uploaded"}
-	ErrFileTooLarge          = &ContextError{Code: "FILE_TOO_LARGE", Message: "File size exceeds limit"}
-	ErrInvalidFileExtension  = &ContextError{Code: "INVALID_FILE_EXTENSION", Message: "Invalid file extension"}
-	ErrInvalidFileType       = &ContextError{Code: "INVALID_FILE_TYPE", Message: "Invalid file type"}
+	ErrNoFileUploaded       = &ContextError{Code: "NO_FILE_UPLOADED", Message: "No file uploaded"}
+	ErrNoFilesUploaded      = &ContextError{Code: "NO_FILES_UPLOADED", Message: "No files uploaded"}
+	ErrFileTooLarge         = &ContextError{Code: "FILE_TOO_LARGE", Message: "File size exceeds limit"}
+	ErrInvalidFileExtension = &ContextError{Code: "INVALID_FILE_EXTENSION", Message: "Invalid file extension"}
+	ErrInvalidFileType      = &ContextError{Code: "INVALID_FILE_TYPE", Message: "Invalid file type"}
 )

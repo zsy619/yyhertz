@@ -32,7 +32,8 @@ package mvc
 import (
 	"context"
 	"fmt"
-	"sync"
+
+	"github.com/cloudwego/hertz/pkg/common/utils"
 
 	"github.com/zsy619/yyhertz/framework/constant"
 	"github.com/zsy619/yyhertz/framework/mvc/annotation"
@@ -46,26 +47,30 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
 
+type (
+	H = utils.H // utils.H 用于简化map操作
+)
+
 // ============= 核心类型别名 =============
 
-// 核心类型别名，保持向后兼容性并简化导入
+// 保留必要的类型别名，删除过度包装的类型
 type (
-	// App MVC应用核心类型，管理路由、中间件和生命周期
+	// App MVC应用核心类型
 	App = core.App
 
-	// RequestContext 请求上下文类型，封装HTTP请求和响应
+	// RequestContext 请求上下文类型
 	RequestContext = define.RequestContext
 
-	// HandlerFunc HTTP处理函数类型，用于处理请求
+	// HandlerFunc HTTP处理函数类型
 	HandlerFunc = define.HandlerFunc
 
-	// IController 控制器接口，定义控制器的基本约定
+	// IController 控制器接口
 	IController = core.IController
 
-	// FilterFunc 过滤器函数类型，用于请求拦截和处理
+	// FilterFunc 过滤器函数类型
 	FilterFunc = define.FilterFunc
 
-	// FilterPattern 过滤器模式，定义过滤器的匹配规则
+	// FilterPattern 过滤器模式
 	FilterPattern = core.FilterPattern
 )
 
@@ -100,10 +105,6 @@ const (
 
 // 全局状态管理和函数重导出
 var (
-	// 线程安全控制
-	once  sync.Once    // 确保全局初始化只执行一次
-	mutex sync.RWMutex // 保护全局状态的读写锁
-
 	// 核心函数重导出，保持API简洁性
 	GetAppInstance      = core.GetAppInstance      // 获取单例应用实例
 	NewApp              = core.NewApp              // 创建新的应用实例
@@ -119,143 +120,67 @@ var (
 
 // ============= Session会话管理组件 =============
 
-// Session相关类型别名，提供统一的会话管理功能
-type (
-	// SessionConfig 会话配置，定义会话的存储、过期等参数
-	SessionConfig = session.Config
-
-	// SessionManager 会话管理器，负责会话的创建、存取和销毁
-	SessionManager = session.Manager
-
-	// SessionStore 会话存储接口，定义会话数据的存储方式
-	SessionStore = session.Store
-)
-
-// Session组件的快捷创建函数
+// Session组件的快捷创建函数 - 保留常用的函数别名
 var (
-	// DefaultSessionConfig 获取默认会话配置
 	DefaultSessionConfig = session.DefaultConfig
-
-	// NewSessionManager 创建新的会话管理器
-	NewSessionManager = session.NewManager
+	NewSessionManager    = session.NewManager
 )
 
 // ============= Cookie管理组件 =============
 
-// Cookie相关类型别名，提供安全的Cookie操作功能
-type (
-	// CookieConfig Cookie全局配置，设置默认的安全参数
-	CookieConfig = cookie.Config
-
-	// CookieOptions 单个Cookie的配置选项
-	CookieOptions = cookie.Options
-
-	// CookieHelper Cookie操作辅助工具，提供高级的Cookie管理功能
-	CookieHelper = cookie.Helper
-)
-
-// Cookie组件的快捷创建函数
+// Cookie组件的快捷创建函数 - 保留常用的函数别名
 var (
-	// DefaultCookieConfig 获取默认Cookie配置
-	DefaultCookieConfig = cookie.DefaultConfig
-
-	// DefaultCookieOptions 获取默认Cookie选项
+	DefaultCookieConfig  = cookie.DefaultConfig
 	DefaultCookieOptions = cookie.DefaultOptions
-
-	// NewCookieHelper 创建新的Cookie辅助工具
-	NewCookieHelper = cookie.NewHelper
+	NewCookieHelper      = cookie.NewHelper
 )
 
 // ============= 路由管理组件 =============
 
-// Router相关类型别名，提供灵活的路由管理功能
-type (
-	// RouterAlias 路由器类型，管理URL到处理函数的映射
-	RouterAlias = router.Router
-
-	// RouterGroup 路由组，用于将相关路由分组管理
-	RouterGroup = router.Group
-)
+// 保留必要的路由类型别名
+type RouterGroup = router.Group
 
 // Router组件的快捷创建函数
 var (
-	// NewRouter 创建新的路由器实例
 	NewRouter = router.NewRouter
-
-	// NewGroup 创建新的路由组
-	NewGroup = router.NewGroup
+	NewGroup  = router.NewGroup
 )
 
 // ============= 验证码组件 =============
 
-// Captcha相关类型别名，提供完整的验证码解决方案
-type (
-	// CaptchaConfig 验证码配置，定义验证码的生成参数
-	CaptchaConfig = captcha.Config
-
-	// CaptchaGenerator 验证码生成器，负责生成图片验证码
-	CaptchaGenerator = captcha.Generator
-
-	// CaptchaStore 验证码存储接口，管理验证码的存储和验证
-	CaptchaStore = captcha.Store
-
-	// CaptchaMiddleware 验证码中间件，自动处理验证码验证
-	CaptchaMiddleware = captcha.Middleware
-
-	// CaptchaMiddlewareConfig 验证码中间件配置
-	CaptchaMiddlewareConfig = captcha.MiddlewareConfig
-
-	M = map[string]any
-)
-
-// Captcha组件的快捷创建函数和处理器
+// Captcha组件的快捷创建函数和处理器 - 只保留常用的函数别名
 var (
-	// DefaultCaptchaConfig 获取默认验证码配置
-	DefaultCaptchaConfig = captcha.DefaultConfig
-
-	// NewCaptchaGenerator 创建新的验证码生成器
-	NewCaptchaGenerator = captcha.NewGenerator
-
-	// NewMemoryStore 创建内存型验证码存储
-	NewMemoryStore = captcha.NewMemoryStore
-
-	// NewCaptchaMiddleware 创建验证码中间件
-	NewCaptchaMiddleware = captcha.NewMiddleware
-
-	// 验证码HTTP处理器函数
-	CaptchaGenerateHandler = captcha.GenerateHandler // 生成验证码接口
-	CaptchaImageHandler    = captcha.ImageHandler    // 验证码图片接口
-	CaptchaVerifyHandler   = captcha.VerifyHandler   // 验证码验证接口
+	DefaultCaptchaConfig   = captcha.DefaultConfig
+	NewCaptchaGenerator    = captcha.NewGenerator
+	NewMemoryStore         = captcha.NewMemoryStore
+	NewCaptchaMiddleware   = captcha.NewMiddleware
+	CaptchaGenerateHandler = captcha.GenerateHandler
+	CaptchaImageHandler    = captcha.ImageHandler
+	CaptchaVerifyHandler   = captcha.VerifyHandler
 )
 
 func init() {
-	// 初始化全局Hertz应用实例
-	once.Do(func() {
-		mutex.Lock()
-		defer mutex.Unlock()
+	// 创建全局Hertz应用实例
+	HertzApp = GetAppInstance()
 
-		// 创建全局Hertz应用实例
-		HertzApp = GetAppInstance()
+	errorPkg.QuickSetup("development")
 
-		errorPkg.QuickSetup("development")
+	// 启用Beego风格的自动错误处理
+	HertzApp.EnableAutoErrorHandling()
 
-		// 启用Beego风格的自动错误处理
-		HertzApp.EnableAutoErrorHandling()
-
-		// 添加测试路由（演示手动错误触发）
-		HertzApp.GET("/test-error", func(ctx context.Context, c *RequestContext) {
-			HertzApp.TriggerError(c, 404, fmt.Errorf("测试错误"))
-		})
-
-		// 创建注解应用
-		AnnotationApp = annotation.NewAnnotationWithApp(HertzApp)
-
-		// 创建注释注解应用
-		CommentApp = comment.NewCommentWithApp(HertzApp)
-
-		// 完成初始化
-		IsInitComplete = true
+	// 添加测试路由（演示手动错误触发）
+	HertzApp.GET("/test-error", func(ctx context.Context, c *RequestContext) {
+		HertzApp.TriggerError(c, 404, fmt.Errorf("测试错误"))
 	})
+
+	// 创建注解应用
+	AnnotationApp = annotation.NewAnnotationWithApp(HertzApp)
+
+	// 创建注释注解应用
+	CommentApp = comment.NewCommentWithApp(HertzApp)
+
+	// 完成初始化
+	IsInitComplete = true
 }
 
 // ============= HertzApp 静态方法 =============

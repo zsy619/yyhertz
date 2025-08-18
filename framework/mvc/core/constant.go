@@ -33,15 +33,27 @@ package core
 //
 // ===========================================================================
 
-// ReservedMethods 定义需要跳过的BaseController和生命周期方法（导出为公共变量）
-// 基于实际扫描的432个BaseController方法重建，确保完整性和准确性
-// 这些方法应该被排除在自动路由注册之外，避免框架内部方法被暴露为路由端点
+// ReservedMethods 定义BaseController中需要跳过自动路由注册的所有公共方法
+//
+// 这些方法应该被排除在自动路由注册之外，因为它们是框架内部功能方法，
+// 不应该作为HTTP路由端点暴露给外部访问。
+//
+// 基于实际扫描BaseController的所有公共方法重新构建，确保完整性和准确性。
+// 总计包含 300+ 个方法，按功能模块进行清晰分组管理。
+//
+// 维护说明：
+// - 当BaseController添加新的公共方法时，必须同步更新此列表
+// - 所有框架内部功能方法都应添加到对应的分类中
+// - 保持分类清晰，便于维护和理解
+//
 var ReservedMethods = map[string]bool{
-	// ============= 控制器生命周期方法 =============
+	// ========== 1. 控制器生命周期方法 ==========
+	// 框架自动调用的生命周期管理方法
 	"Init": true, "Prepare": true, "Finish": true, "Destroy": true,
 	"Reset": true, "InitWithContext": true, "AutoInit": true,
 
-	// ============= 控制器管理和元信息方法 =============
+	// ========== 2. 控制器管理和元信息方法 ==========
+	// 控制器实例管理和元信息访问方法
 	"SetControllerName": true, "GetControllerName": true,
 	"SetActionName": true, "GetActionName": true,
 	"SetAppController": true, "GetAppController": true,
@@ -49,66 +61,86 @@ var ReservedMethods = map[string]bool{
 	"SetControllerAndAction": true, "IsValidAction": true,
 	"GetAvailableActions": true,
 
-	// ============= 基础响应输出方法 =============
+	// ========== 3. 基础响应输出方法 ==========
+	// 基础HTTP响应和数据输出方法
 	"JSON": true, "JSONWithStatus": true, "JSONOK": true, "JSONError": true,
 	"JSONSuccess": true, "JSONPage": true, "JSONStatus": true,
 	"String": true, "StringWithStatus": true, "Write": true,
-	"Abort": true, "CustomAbort": true, "StopRun": true, "Error": true,
+	"Abort": true, "CustomAbort": true, "StopRun": true, "Error": true, "Errorf": true,
 
-	// ============= 高级响应格式方法 =============
+	// ========== 4. 高级响应格式方法 ==========
+	// 多种数据格式的响应输出方法
 	"XML": true, "XMLWithStatus": true, "YAML": true, "YAMLWithStatus": true,
 	"IndentedJSON": true, "IndentedJSONWithStatus": true,
 	"JSONP": true, "JSONPWithStatus": true,
 	"DataWithStatus": true, "Status": true, "NoContent": true,
-	"EmptyResponse": true, "RawResponse": true,
+	"EmptyResponse": true, "RawResponse": true, "ServeFormatted": true,
+	"ServeJSON": true, "ServeJSONP": true, "ServeXML": true, "ServeYAML": true,
 
-	// ============= 流式响应和文件服务方法 =============
+	// ========== 5. 流式响应和文件服务方法 ==========
+	// 文件下载、流式输出和静态资源服务方法
 	"Stream": true, "StreamFile": true, "StreamReader": true,
 	"File": true, "FileAttachment": true, "Inline": true,
 	"ServeFile": true, "Download": true,
 
-	// ============= 重定向方法 =============
+	// ========== 6. 重定向方法 ==========
+	// HTTP重定向相关方法
 	"Redirect": true, "RedirectPermanent": true, "RedirectTemporary": true,
 	"RedirectSeeOther": true,
 
-	// ============= 响应状态判断方法 =============
+	// ========== 7. 响应状态判断方法 ==========
+	// HTTP响应状态码判断和检查方法
 	"IsOk": true, "IsSuccessful": true, "IsRedirect": true,
 	"IsClientError": true, "IsServerError": true, "IsForbidden": true,
 
-	// ============= HTTP头部操作方法 =============
+	// ========== 8. HTTP头部操作方法 ==========
+	// HTTP请求头和响应头操作方法
 	"AddHeader": true, "SetHeader": true, "GetResponseHeader": true,
-	"SetResponseHeader": true, "SetContentType": true,
+	"SetResponseHeader": true, "SetContentType": true, "GetHeader": true,
 
-	// ============= 模板渲染方法 =============
+	// ========== 9. 模板渲染方法 ==========
+	// 模板引擎和视图渲染相关方法
 	"Render": true, "RenderHTML": true, "RenderWithLayout": true,
 	"RenderBytes": true, "RenderString": true, "RenderWithViewName": true,
 	"RenderTemplate": true, "RenderTemplateComponent": true,
-	"RenderTemplateWithLayout": true, "RenderHTMLWithIncludes": true,
+	"RenderTemplateWithLayout": true,
 
-	// ============= 模板配置和管理方法 =============
+	// ========== 10. 模板配置和管理方法 ==========
+	// 模板配置、主题管理和模板函数管理方法
 	"SetTplName": true, "GetTplName": true, "SetLayout": true, "GetLayout": true,
 	"AddTplFunc": true, "GetTemplateManager": true, "SetTemplatePath": true,
 	"SetTemplateTheme": true, "GetTemplateTheme": true, "AddTemplateFunction": true,
-	"AddBeegoTemplateFunctions": true, "CreateTemplateDefinition": true,
-	"ListAvailableTemplates": true, "SetTemplateIncludeEngine": true,
-	"GetTemplateIncludeEngine": true,
 
-	// ============= Cookie操作方法 =============
+	// ========== 11. Cookie操作方法 ==========
+	// Cookie读写和管理方法
 	"SetCookie": true, "GetCookie": true, "DeleteCookie": true,
 	"HasCookie": true, "SetSecureCookie": true, "GetSecureCookie": true,
 
-	// ============= Session管理方法 =============
+	// ========== 12. Session管理方法 ==========
+	// 会话管理和状态维护方法
 	"SetSession": true, "GetSession": true, "DeleteSession": true,
 	"DestroySession": true, "HasSession": true, "GetSessionID": true,
 	"RegenerateSessionID": true,
 
-	// ============= 基础请求参数获取方法 =============
+	// ========== 13. 基础请求参数获取方法 ==========
+	// 基础HTTP参数解析和获取方法
 	"GetString": true, "GetInt": true, "GetInt32": true, "GetInt64": true,
-	"GetBool": true, "GetFloat": true, "GetForm": true, "GetQuery": true,
-	"GetParam": true, "GetHeader": true, "GetUserAgent": true, "GetClientIP": true,
-	"GetStringTrim": true, "GetSafeString": true,
+	"GetInt8": true, "GetInt16": true, "GetUint8": true, "GetUint16": true,
+	"GetUint32": true, "GetUint64": true,
+	"GetBool": true, "GetFloat": true, "GetFloat32": true, "GetFloat64": true,
+	"GetForm": true, "GetQuery": true, "GetParam": true, "GetUserAgent": true,
+	"GetClientIP": true, "GetStringTrim": true, "GetSafeString": true,
+	"GetMap": true, "GetMapNoPathParams": true,
+	"SaveToFile": true, "SaveToFileWithBuffer": true,
+	"GetRequestBody": true, "GetRequestBodyString": true,
 
-	// ============= 扩展请求参数获取方法 =============
+	// ========== 14. 表单解析和多值参数方法 ==========
+	// 表单数据解析和多值参数处理方法
+	"ParseForm": true, "GetStrings": true, "GetFormStrings": true, "GetQueryStrings": true,
+	"ParseFormToMap": true, "GetFormValues": true, "HasFormValue": true,
+
+	// ========== 15. 扩展请求参数获取方法 ==========
+	// 高级参数获取和类型转换方法
 	"GetFormValue": true, "GetFormValueDefault": true, "GetPostFormInt": true,
 	"GetPostFormFloat64": true, "GetPostFormBool": true, "GetParamNames": true,
 	"GetParamValues": true, "GetAllParams": true, "GetParamInt": true,
@@ -117,7 +149,8 @@ var ReservedMethods = map[string]bool{
 	"GetQueryDefault": true, "GetQueryInt64": true, "GetQueryFloat64": true,
 	"GetQueryBool": true,
 
-	// ============= Tuple参数获取方法 =============
+	// ========== 16. Tuple参数获取方法 ==========
+	// 批量参数获取的Tuple方法
 	// Integer Tuples
 	"GetIntTuple2": true, "GetIntTuple3": true, "GetIntTuple4": true,
 	"GetIntTuple5": true, "GetIntTuple6": true, "GetIntTuple7": true,
@@ -130,31 +163,41 @@ var ReservedMethods = map[string]bool{
 	"GetInt64Tuple2": true, "GetInt64Tuple3": true, "GetInt64Tuple4": true,
 	"GetInt64Tuple5": true, "GetInt64Tuple6": true, "GetInt64Tuple7": true,
 	"GetInt64Tuple8": true, "GetInt64Tuple9": true,
+	// Float Tuples
+	"GetFloat32Tuple2": true, "GetFloat32Tuple3": true, "GetFloat32Tuple4": true,
+	"GetFloat32Tuple5": true, "GetFloat32Tuple6": true, "GetFloat32Tuple7": true,
 	// String Tuples
 	"GetSafeStringTuple2": true, "GetSafeStringTuple3": true, "GetSafeStringTuple4": true,
 	"GetSafeStringTuple5": true, "GetSafeStringTuple6": true, "GetSafeStringTuple7": true,
 	"GetSafeStringTuple8": true, "GetSafeStringTuple9": true,
 
-	// ============= HTTP请求类型判断方法 =============
+	// ========== 17. HTTP请求类型判断方法 ==========
+	// HTTP方法和AJAX请求判断方法
 	"IsAjax": true, "IsMethod": true, "IsGet": true, "IsPost": true,
 	"IsPut": true, "IsDelete": true, "IsPatch": true, "IsHead": true,
 	"IsOptions": true,
 
-	// ============= 请求内容类型判断方法 =============
+	// ========== 18. 请求内容类型判断方法 ==========
+	// Content-Type和MIME类型判断方法
 	"IsJSON": true, "IsXML": true, "IsForm": true, "IsMultipart": true,
 	"IsUpload": true,
 
-	// ============= 数据绑定和解析方法 =============
+	// ========== 19. 数据绑定和解析方法 ==========
+	// 请求数据自动绑定到结构体的方法
 	"Bind": true, "ShouldBind": true, "BindJSON": true, "ShouldBindJSON": true,
-	"BindXML": true, "BindQuery": true, "ShouldBindQuery": true,
+	"BindXML": true, "BindYAML": true,
+	"BindForm": true, "BindProtobuf": true,
+	"BindQuery": true, "ShouldBindQuery": true,
 	"BindAndValidate": true, "ShouldBindAndValidate": true,
 
-	// ============= 高级请求处理方法 =============
+	// ========== 20. 高级请求处理方法 ==========
+	// 原始请求体处理和多部分表单处理方法
 	"GetRawBody": true, "GetRawData": true, "GetBodySize": true,
 	"HasBody": true, "GetBodyString": true, "GetMultipartForm": true,
 	"ParseMultipartForm": true, "SetMaxMemory": true,
 
-	// ============= 文件上传和处理方法 =============
+	// ========== 21. 文件上传和处理方法 ==========
+	// 文件上传、验证和处理相关方法
 	"SaveUploadedFile": true, "GetFile": true, "HasFile": true,
 	"GetFileSize": true, "GetFileName": true, "GetFileHeader": true,
 	"GetFiles": true, "SaveMultipleFiles": true, "ValidateFileSize": true,
@@ -162,10 +205,12 @@ var ReservedMethods = map[string]bool{
 	"ValidateFileUpload": true, "SetFileResponseHeaders": true,
 	"GetContentTypeByExtension": true, "AddFileAttachment": true,
 
-	// ============= 数据操作方法 =============
+	// ========== 22. 数据存储和操作方法 ==========
+	// 控制器内部数据存储和管理方法
 	"SetData": true, "GetData": true, "DelData": true,
 
-	// ============= 路由和URL构建方法 =============
+	// ========== 23. 路由和URL构建方法 ==========
+	// 路由映射和URL生成相关方法
 	"AddMethodMapping": true, "GetMethodMapping": true, "SetMethodMapping": true,
 	"GetMappedMethod": true, "SetRoutePattern": true, "GetRoutePattern": true,
 	"SetRouteParam": true, "GetRouteParam": true, "GetRouteParams": true,
@@ -173,7 +218,8 @@ var ReservedMethods = map[string]bool{
 	"URLMapping": true, "HandlerFunc": true, "AddURLMapping": true,
 	"GetURLMappings": true, "BuildLocalizedURL": true,
 
-	// ============= 缓存控制方法 =============
+	// ========== 24. HTTP缓存控制方法 ==========
+	// HTTP缓存策略和缓存控制方法
 	"SetETag": true, "SetLastModified": true, "SetCacheControl": true,
 	"SetMaxAge": true, "SetNoCache": true, "SetPrivateCache": true,
 	"SetPublicCache": true, "NotModified": true, "CheckIfNoneMatch": true,
@@ -184,7 +230,8 @@ var ReservedMethods = map[string]bool{
 	"IsCacheableMethod": true, "ShouldCache": true, "GetClientCachePreference": true,
 	"IsClientNoCacheRequest": true,
 
-	// ============= 压缩和性能优化方法 =============
+	// ========== 25. 压缩和性能优化方法 ==========
+	// HTTP压缩、性能监控和优化相关方法
 	"SetGzipResponse": true, "EnableGzipCompression": true,
 	"GenerateContentHash": true, "GenerateVersionETag": true,
 	"SetContentHashETag": true, "StartPerformanceTimer": true,
@@ -192,7 +239,8 @@ var ReservedMethods = map[string]bool{
 	"AddPreloadLink": true, "AddPrefetchLink": true, "AddPreconnectLink": true,
 	"ServerPush": true,
 
-	// ============= 国际化和本地化方法 =============
+	// ========== 26. 国际化和本地化方法 ==========
+	// 多语言支持和本地化处理方法
 	"SetLanguage": true, "GetLanguage": true, "GetDefaultLanguage": true,
 	"DetectLanguageFromHeader": true, "T": true, "Translate": true,
 	"SetLocale": true, "GetLocale": true, "FormatNumber": true,
@@ -202,7 +250,8 @@ var ReservedMethods = map[string]bool{
 	"GetLanguageFromCookie": true, "GetCurrentURL": true,
 	"GetLanguageDirection": true, "GetTranslationFile": true,
 
-	// ============= 安全防护方法 =============
+	// ========== 27. 安全防护方法 ==========
+	// Web安全防护和HTTP安全头设置方法
 	"SetSecurityHeaders": true, "SetContentSecurityPolicy": true,
 	"SetXFrameOptions": true, "SetXContentTypeOptions": true,
 	"SetXXSSProtection": true, "SetReferrerPolicy": true,
@@ -210,16 +259,19 @@ var ReservedMethods = map[string]bool{
 	"RequireHTTPS": true, "IsHTTPS": true, "CheckIPWhitelist": true,
 	"CheckIPBlacklist": true, "RateLimitCheck": true,
 
-	// ============= CSRF/XSRF防护方法 =============
+	// ========== 28. CSRF/XSRF防护方法 ==========
+	// 跨站请求伪造防护相关方法
 	"GenerateCSRFToken": true, "GetCSRFToken": true, "ValidateCSRFToken": true,
 	"RequireCSRFToken": true, "CSRFError": true, "XSRFToken": true,
 	"CheckXSRFCookie": true, "EnableXSRF": true, "DisableXSRF": true,
 
-	// ============= 密码和加密方法 =============
+	// ========== 29. 密码和加密方法 ==========
+	// 密码哈希、加密解密和安全token生成方法
 	"HashPassword": true, "VerifyPassword": true, "GenerateSalt": true,
 	"GenerateSecureToken": true, "SetSecureSessionCookie": true,
 
-	// ============= 输入验证和清理方法 =============
+	// ========== 30. 输入验证和清理方法 ==========
+	// 数据验证、输入清理和安全过滤方法
 	"Validate": true, "ValidateStruct": true, "ValidateBatch": true,
 	"ValidateRequired": true, "ValidateLength": true, "ValidateRange": true,
 	"ValidatePattern": true, "ValidateIn": true, "ValidateEmailFormat": true,
@@ -235,33 +287,48 @@ var ReservedMethods = map[string]bool{
 	"ValidatePhone": true, "ValidateURL": true, "ValidateIPAddress": true,
 	"ValidateSessionTimeout": true, "SanitizeHTML": true, "SanitizeFilename": true,
 
-	// ============= 日志记录方法 =============
+	// ========== 31. 日志记录方法 ==========
+	// 应用日志记录和错误跟踪方法
 	"LogInfo": true, "LogInfof": true, "LogError": true, "LogErrorf": true,
 	"LogWarn": true, "LogDebug": true, "LogDebugf": true,
 	"LogFetal": true, "LogFetalf": true, "LogPanic": true, "LogPanicsf": true,
 	"LogValidationError": true, "LogSecurityEvent": true,
 	"LogFailedLogin": true, "LogSuspiciousActivity": true,
 
-	// ============= 调试和监控方法 =============
+	// ========== 32. 调试和监控方法 ==========
+	// 调试信息收集和性能监控方法
 	"GetDebugInfo": true, "StartProfiler": true, "EndProfiler": true,
 	"GetProfilerResult": true, "LogPerformance": true, "DumpRequest": true,
 	"DumpStackTrace": true, "LogDebugError": true, "DebugJSON": true,
 	"DebugHeaders": true, "IsDebugMode": true, "GenerateRequestID": true,
 	"PrintDebugInfo": true, "HealthCheck": true,
 
-	// ============= 断言和测试辅助方法 =============
+	// ========== 33. 格式化输出方法（fmt包兼容） ==========
+	// 与标准库fmt包兼容的格式化输出方法
+	"Print": true, "Printf": true, "Println": true,
+	"Sprint": true, "Sprintf": true, "Sprintln": true,
+	"Fprint": true, "Fprintf": true, "Fprintln": true,
+	"Scan": true, "Scanf": true, "Scanln": true,
+	"Sscan": true, "Sscanf": true, "Sscanln": true,
+	"FormatOutput": true,
+
+	// ========== 34. 断言和测试辅助方法 ==========
+	// 单元测试和断言验证辅助方法
 	"Assert": true, "AssertNotNil": true, "AssertEqual": true,
 
-	// ============= 指标收集方法 =============
+	// ========== 35. 指标收集方法 ==========
+	// 性能指标和统计数据收集方法
 	"RecordMetric": true, "IncrementCounter": true, "RecordTiming": true,
 	"RecordGauge": true,
 
-	// ============= 中间件和优化管理方法 =============
+	// ========== 36. 中间件和优化管理方法 ==========
+	// 中间件管理和性能优化控制方法
 	"EnableOptimization": true, "DisableOptimization": true,
 	"IsOptimizationEnabled": true, "GetMiddleware": true,
 	"SetMiddleware": true, "AddMiddleware": true,
 
-	// ============= 邮件发送方法 =============
+	// ========== 37. 邮件发送方法 ==========
+	// SMTP邮件发送和邮件队列管理方法
 	"SendMail": true, "SendSimpleMail": true, "SendHTMLMail": true,
 	"SendMailWithAttachment": true, "SendTemplateMail": true,
 	"SendBulkMail": true, "SendMailToList": true, "QueueMail": true,
@@ -269,7 +336,8 @@ var ReservedMethods = map[string]bool{
 	"TestMailConnection": true, "GetMailStats": true, "GetMailLog": true,
 	"CreateAttachment": true, "FormatEmailAddress": true,
 
-	// ============= 队列和任务调度方法 =============
+	// ========== 38. 队列和任务调度方法 ==========
+	// 异步任务队列和后台作业调度方法
 	"Dispatch": true, "DispatchNow": true, "DispatchLater": true,
 	"DispatchToQueue": true, "DispatchEmail": true, "DispatchNotification": true,
 	"RegisterJobHandler": true, "GetJobHandler": true, "ProcessQueue": true,
@@ -277,6 +345,14 @@ var ReservedMethods = map[string]bool{
 	"PurgeFailedJobs": true, "GetJob": true, "GetJobsByType": true,
 	"GetJobsByStatus": true, "InitDefaultJobHandlers": true,
 	"GetQueueMetrics": true, "ExportQueueData": true, "ImportQueueData": true,
+
+	// ========== 39. 管理员权限方法 ==========
+	// 管理员登录和权限验证方法  
+	"IsAdminLogin": true, "SetAdminId": true,
+
+	// ========== 40. 分页处理方法 ==========
+	// 数据分页和页面信息处理方法
+	"GetPageInfo": true, "GetPageInfoByParam": true, "GetPageInfoDefault": true,
 }
 
 // ControllerNameSuffixReserved 控制器名称后缀保留字（统一在此定义）

@@ -2,7 +2,11 @@ package context
 
 import (
 	"encoding/xml"
+	"reflect"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v3"
 )
 
 // ============= 核心绑定方法 =============
@@ -49,6 +53,48 @@ func (ctx *Context) BindForm(obj any) error {
 	return ctx.request.Bind(obj)
 }
 
+// BindYAML 绑定YAML数据到结构体
+func (ctx *Context) BindYAML(obj any) error {
+	if !ctx.ensureRequest() {
+		return ErrRequestNotFound
+	}
+
+	body, err := ctx.request.Body()
+	if err != nil {
+		return err
+	}
+	if len(body) == 0 {
+		return ErrEmptyBody
+	}
+
+	return yaml.Unmarshal(body, obj)
+}
+
+// BindProtobuf 绑定Protobuf数据到消息对象
+func (ctx *Context) BindProtobuf(obj any) error {
+	if !ctx.ensureRequest() {
+		return ErrRequestNotFound
+	}
+
+	body, err := ctx.request.Body()
+	if err != nil {
+		return err
+	}
+	if len(body) == 0 {
+		return ErrEmptyBody
+	}
+
+	// 检查对象是否实现了proto.Message接口
+	if protoMsg, ok := obj.(proto.Message); ok {
+		return proto.Unmarshal(body, protoMsg)
+	}
+	
+	return &BindingError{
+		Type:    "BIND_ERROR",
+		Message: "BindProtobuf target must implement proto.Message interface",
+	}
+}
+
 // ============= 智能绑定方法 =============
 
 // Bind 智能绑定 (根据Content-Type自动选择)
@@ -65,6 +111,10 @@ func (ctx *Context) Bind(obj any) error {
 		return ctx.BindJSON(obj)
 	case strings.Contains(contentType, "xml"):
 		return ctx.BindXML(obj)
+	case strings.Contains(contentType, "yaml"), strings.Contains(contentType, "yml"):
+		return ctx.BindYAML(obj)
+	case strings.Contains(contentType, "protobuf"), strings.Contains(contentType, "x-protobuf"):
+		return ctx.BindProtobuf(obj)
 	case strings.Contains(contentType, ContentTypeForm):
 		return ctx.BindForm(obj)
 	case strings.Contains(contentType, ContentTypeMultipart):
@@ -102,6 +152,16 @@ func (ctx *Context) ShouldBindForm(obj any) error {
 	return ctx.BindForm(obj)
 }
 
+// ShouldBindYAML 安全YAML绑定
+func (ctx *Context) ShouldBindYAML(obj any) error {
+	return ctx.BindYAML(obj)
+}
+
+// ShouldBindProtobuf 安全Protobuf绑定
+func (ctx *Context) ShouldBindProtobuf(obj any) error {
+	return ctx.BindProtobuf(obj)
+}
+
 // ============= 绑定验证结合方法 =============
 
 // BindAndValidate 绑定数据并验证
@@ -135,16 +195,16 @@ func (ctx *Context) ShouldBindAndValidate(obj any) error {
 
 // ============= 表单解析方法 =============
 
-// ParseForm 解析表单数据
-func (ctx *Context) ParseForm() error {
-	if !ctx.ensureRequest() {
-		return ErrRequestNotFound
-	}
+// // ParseForm 解析表单数据
+// func (ctx *Context) ParseForm() error {
+// 	if !ctx.ensureRequest() {
+// 		return ErrRequestNotFound
+// 	}
 
-	// Hertz的RequestContext会自动解析表单数据
-	// 这里主要是为了兼容性
-	return nil
-}
+// 	// Hertz的RequestContext会自动解析表单数据
+// 	// 这里主要是为了兼容性
+// 	return nil
+// }
 
 // ParseMultipartForm 解析多部分表单
 func (ctx *Context) ParseMultipartForm(maxMemory int64) error {
@@ -184,9 +244,138 @@ func (ctx *Context) BindUri(obj any) error {
 
 // bindHeadersToStruct 将请求头绑定到结构体（简化实现）
 func (ctx *Context) bindHeadersToStruct(obj any) error {
-	// TODO: 实现请求头到结构体的绑定
-	// 这需要使用反射来分析结构体字段的标签
+	if obj == nil {
+		return nil
+	}
+
+	rv := reflect.ValueOf(obj)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return &BindingError{
+			Type:    "BIND_ERROR",
+			Message: "BindHeader target must be a non-nil pointer to struct",
+		}
+	}
+	rv = rv.Elem()
+	if rv.Kind() != reflect.Struct {
+		return &BindingError{
+			Type:    "BIND_ERROR",
+			Message: "BindHeader target must be a struct",
+		}
+	}
+
+	rt := rv.Type()
+
+	for i := 0; i < rt.NumField(); i++ {
+		sf := rt.Field(i)
+		// 仅处理可导出字段
+		if sf.PkgPath != "" {
+			continue
+		}
+
+		// 嵌入匿名结构体，递归处理
+		if sf.Anonymous && sf.Type.Kind() == reflect.Struct {
+			if err := ctx.bindHeadersToStruct(rv.Field(i).Addr().Interface()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// 读取 header tag
+		headerName := sf.Tag.Get("header")
+		if headerName == "-" {
+			continue
+		}
+		if headerName == "" {
+			// 默认使用字段名
+			headerName = sf.Name
+		}
+
+		val := ctx.Header(headerName)
+		if val == "" {
+			// 没有该请求头则跳过
+			continue
+		}
+
+		fv := rv.Field(i)
+		if !fv.CanSet() {
+			continue
+		}
+
+		// 支持指针类型：若为nil则先分配
+		target := fv
+		if fv.Kind() == reflect.Ptr {
+			if fv.IsNil() {
+				elem := reflect.New(fv.Type().Elem())
+				fv.Set(elem)
+			}
+			target = fv.Elem()
+		}
+
+		// 根据字段类型设置值（简化实现）
+		switch target.Kind() {
+		case reflect.String:
+			target.SetString(val)
+		case reflect.Bool:
+			if b, ok := parseBool(val); ok {
+				target.SetBool(b)
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if iv, ok := parseInt64(val); ok {
+				if target.OverflowInt(iv) {
+					// 溢出则跳过
+					continue
+				}
+				target.SetInt(iv)
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			if iv, ok := parseInt64(val); ok && iv >= 0 {
+				u := uint64(iv)
+				if target.OverflowUint(u) {
+					continue
+				}
+				target.SetUint(u)
+			}
+		case reflect.Float32, reflect.Float64:
+			if fv, ok := parseFloat64(val); ok {
+				if target.OverflowFloat(fv) {
+					continue
+				}
+				target.SetFloat(fv)
+			}
+		case reflect.Slice:
+			// 简化：以逗号分隔
+			if target.Type().Elem().Kind() == reflect.String {
+				parts := splitAndTrim(val, ",")
+				s := reflect.MakeSlice(target.Type(), len(parts), len(parts))
+				for i := range parts {
+					s.Index(i).SetString(parts[i])
+				}
+				target.Set(s)
+			}
+		// 其他复杂类型不处理
+		default:
+			// 跳过不支持的类型
+			continue
+		}
+	}
+
 	return nil
+}
+
+// 工具函数：按分隔符切分并去空白
+func splitAndTrim(s, sep string) []string {
+	if s == "" {
+		return nil
+	}
+	raw := strings.Split(s, sep)
+	out := make([]string, 0, len(raw))
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // bindUriToStruct 将URI参数绑定到结构体（简化实现）
@@ -279,7 +468,7 @@ func (ctx *Context) GetContentLength() int64 {
 // IsContentTypeSupported 检查Content-Type是否支持
 func (ctx *Context) IsContentTypeSupported(supportedTypes ...string) bool {
 	contentType := strings.ToLower(ctx.ContentType())
-	
+
 	for _, supported := range supportedTypes {
 		if strings.Contains(contentType, strings.ToLower(supported)) {
 			return true

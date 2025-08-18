@@ -51,8 +51,8 @@ func (ctx *Context) DeleteMultiple(keys []string) {
 
 // ============= 增强Keys操作（获取内部结构） =============
 
-func (ctx *Context) GetKeys() sync.Map {
-	return ctx.keys
+func (ctx *Context) GetKeys() *sync.Map {
+	return &ctx.keys
 }
 
 // ============= 增强Keys操作（条件操作） =============

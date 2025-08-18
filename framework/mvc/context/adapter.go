@@ -23,8 +23,23 @@
 package context
 
 import (
+	"encoding/json"
+	"encoding/xml"
+	"fmt"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol"
+	"gopkg.in/yaml.v3"
+
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
 
@@ -41,7 +56,7 @@ type OutputData struct {
 	extension *session.ContextExtension // session包扩展
 }
 
-// ============= OutputData方法 =============
+// ============= OutputData基础方法 =============
 
 // Cookie 设置Cookie (Output兼容性方法)
 func (o *OutputData) Cookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
@@ -60,7 +75,7 @@ func (o *OutputData) SetStatus(code int) {
 // JSON 输出JSON响应 (Output兼容性方法)
 func (o *OutputData) JSON(data any) error {
 	if o.ctx.request != nil {
-		o.ctx.request.JSON(200, data)
+		o.ctx.request.JSON(http.StatusOK, data)
 	}
 	return nil
 }
@@ -70,6 +85,442 @@ func (o *OutputData) Header(key, value string) {
 	if o.ctx.request != nil {
 		o.ctx.request.Response.Header.Set(key, value)
 	}
+}
+
+// ============= OutputData文件下载和服务方法 =============
+
+// Download 文件下载 (beego兼容方法)
+// 支持自定义文件名、Range请求、断点续传等高级功能
+func (o *OutputData) Download(file string, filename ...string) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	// 检查文件是否存在
+	fileInfo, err := os.Stat(file)
+	if err != nil {
+		o.SetStatus(http.StatusNotFound)
+		return fmt.Errorf("file not found: %s", file)
+	}
+
+	// 检查是否为目录
+	if fileInfo.IsDir() {
+		o.SetStatus(http.StatusForbidden)
+		return fmt.Errorf("cannot download directory: %s", file)
+	}
+
+	// 确定文件名
+	var displayName string
+	if len(filename) > 0 && filename[0] != "" {
+		displayName = filename[0]
+	} else {
+		displayName = filepath.Base(file)
+	}
+
+	// RFC 6266 兼容的 Content-Disposition
+	escaped := url.PathEscape(displayName) // utf-8''<escaped>
+	// 始终加引号，避免特殊字符问题
+	var contentDisposition string
+	if displayName == escaped {
+		// 纯 ASCII
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", escaped)
+	} else {
+		// 同时提供 filename 与 filename*
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", sanitizeToken(displayName), escaped)
+	}
+
+	// 设置下载响应头（不预设 Content-Length，交由底层处理以支持 Range）
+	o.Header("Content-Disposition", contentDisposition)
+	o.Header("Content-Description", "File Transfer")
+	o.Header("Content-Type", "application/octet-stream")
+	o.Header("Content-Transfer-Encoding", "binary")
+	o.Header("Expires", "0")
+	// 兼容 beego 的缓存控制
+	o.Header("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
+	o.Header("Pragma", "public")
+
+	// Last-Modified 可由底层设置，这里显式设置也无妨
+	o.Header("Last-Modified", fileInfo.ModTime().UTC().Format(http.TimeFormat))
+
+	// 交给 hertz 文件服务（内部处理 Range/断点续传/长度）
+	o.ctx.request.File(file)
+	return nil
+}
+
+// ServeFile 静态文件服务 (beego兼容方法)
+func (o *OutputData) ServeFile(file string) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	// 检查文件是否存在
+	_, err := os.Stat(file)
+	if err != nil {
+		o.SetStatus(http.StatusNotFound)
+		return fmt.Errorf("file not found: %s", file)
+	}
+
+	// 自动检测MIME类型
+	mimeType := mime.TypeByExtension(filepath.Ext(file))
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+	o.Header("Content-Type", mimeType)
+
+	// 使用hertz的文件服务
+	o.ctx.request.File(file)
+	return nil
+}
+
+// ServeFileDownload 强制下载文件 (便捷方法)
+func (o *OutputData) ServeFileDownload(file, displayName string) error {
+	return o.Download(file, displayName)
+}
+
+// ============= OutputData格式化输出方法 =============
+
+// XML 输出XML (beego兼容方法)
+func (o *OutputData) XML(data any, hasIndent ...bool) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	o.Header("Content-Type", "application/xml; charset=utf-8")
+
+	var content []byte
+	var err error
+	if len(hasIndent) > 0 && hasIndent[0] {
+		content, err = xml.MarshalIndent(data, "", "  ")
+	} else {
+		content, err = xml.Marshal(data)
+	}
+
+	if err != nil {
+		o.SetStatus(http.StatusInternalServerError)
+		return err
+	}
+
+	return o.Body(content)
+}
+
+// YAML 输出YAML (beego兼容方法)
+func (o *OutputData) YAML(data any) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	o.Header("Content-Type", "application/x-yaml; charset=utf-8")
+
+	content, err := yaml.Marshal(data)
+	if err != nil {
+		o.SetStatus(http.StatusInternalServerError)
+		return err
+	}
+
+	return o.Body(content)
+}
+
+// JSONP 输出JSONP (beego兼容方法)
+func (o *OutputData) JSONP(data any, callback string, hasIndent ...bool) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	// 如果没有提供callback，从query参数获取
+	if callback == "" {
+		callback = string(o.ctx.request.QueryArgs().Peek("callback"))
+		if callback == "" {
+			callback = string(o.ctx.request.QueryArgs().Peek("jsonp"))
+		}
+	}
+
+	// 验证callback函数名（安全性检查）
+	if callback != "" && !isValidJSONPCallback(callback) {
+		o.SetStatus(http.StatusBadRequest)
+		return fmt.Errorf("invalid callback function name")
+	}
+
+	o.Header("Content-Type", "application/javascript; charset=utf-8")
+
+	var jsonContent []byte
+	var err error
+	if len(hasIndent) > 0 && hasIndent[0] {
+		jsonContent, err = json.MarshalIndent(data, "", "  ")
+	} else {
+		jsonContent, err = json.Marshal(data)
+	}
+
+	if err != nil {
+		o.SetStatus(http.StatusInternalServerError)
+		return err
+	}
+
+	var content []byte
+	if callback != "" {
+		content = []byte(fmt.Sprintf("%s(%s);", callback, string(jsonContent)))
+	} else {
+		// 如果没有callback，返回普通JSON
+		o.Header("Content-Type", "application/json; charset=utf-8")
+		content = jsonContent
+	}
+
+	return o.Body(content)
+}
+
+// ServeFormatted 根据Accept头自动选择格式 (beego兼容方法)
+func (o *OutputData) ServeFormatted(data any, hasIndent ...bool) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+
+	acceptHeader := string(o.ctx.request.Request.Header.Peek("Accept"))
+
+	// 根据Accept头选择格式
+	switch {
+	case strings.Contains(acceptHeader, "application/xml"), strings.Contains(acceptHeader, "text/xml"):
+		return o.XML(data, hasIndent...)
+	case strings.Contains(acceptHeader, "application/x-yaml"), strings.Contains(acceptHeader, "text/yaml"):
+		return o.YAML(data)
+	case strings.Contains(acceptHeader, "application/javascript"):
+		return o.JSONP(data, "", hasIndent...)
+	default:
+		// 默认返回JSON
+		if len(hasIndent) > 0 && hasIndent[0] {
+			o.ctx.request.IndentedJSON(http.StatusOK, data)
+		} else {
+			o.ctx.request.JSON(http.StatusOK, data)
+		}
+		return nil
+	}
+}
+
+// ============= OutputData重定向方法 =============
+
+// Redirect HTTP重定向 (beego兼容方法)
+func (o *OutputData) Redirect(localurl string, code ...int) {
+	if o.ctx.request == nil {
+		return
+	}
+
+	statusCode := http.StatusFound // 默认302
+	if len(code) > 0 {
+		statusCode = code[0]
+	}
+
+	// 验证重定向状态码
+	if !isRedirectCode(statusCode) {
+		statusCode = http.StatusFound
+	}
+
+	o.ctx.request.Redirect(statusCode, []byte(localurl))
+}
+
+// RedirectTemp 临时重定向 (便捷方法)
+func (o *OutputData) RedirectTemp(localurl string) {
+	o.Redirect(localurl, http.StatusTemporaryRedirect) // 307
+}
+
+// RedirectPermanent 永久重定向 (便捷方法)
+func (o *OutputData) RedirectPermanent(localurl string) {
+	o.Redirect(localurl, http.StatusMovedPermanently) // 301
+}
+
+// ============= OutputData状态检查方法 =============
+
+// IsRedirect 检查是否为重定向状态 (beego兼容方法)
+func (o *OutputData) IsRedirect() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	code := o.ctx.request.Response.StatusCode()
+	return isRedirectCode(code)
+}
+
+// IsForbidden 检查是否为403状态 (beego兼容方法)
+func (o *OutputData) IsForbidden() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	return o.ctx.request.Response.StatusCode() == http.StatusForbidden
+}
+
+// IsNotFound 检查是否为404状态 (beego兼容方法)
+func (o *OutputData) IsNotFound() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	return o.ctx.request.Response.StatusCode() == http.StatusNotFound
+}
+
+// IsSuccessful 检查是否为2xx状态 (beego兼容方法)
+func (o *OutputData) IsSuccessful() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	code := o.ctx.request.Response.StatusCode()
+	return code >= 200 && code < 300
+}
+
+// IsClientError 检查是否为4xx状态 (便捷方法)
+func (o *OutputData) IsClientError() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	code := o.ctx.request.Response.StatusCode()
+	return code >= 400 && code < 500
+}
+
+// IsServerError 检查是否为5xx状态 (便捷方法)
+func (o *OutputData) IsServerError() bool {
+	if o.ctx.request == nil {
+		return false
+	}
+	code := o.ctx.request.Response.StatusCode()
+	return code >= 500 && code < 600
+}
+
+// ============= OutputData内容处理方法 =============
+
+// Body 输出原始内容 (beego兼容方法)
+func (o *OutputData) Body(content []byte) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+	_, err := o.ctx.request.Write(content)
+	return err
+}
+
+// WriteString 输出字符串 (便捷方法)
+func (o *OutputData) WriteString(s string) error {
+	return o.Body([]byte(s))
+}
+
+// Write 实现io.Writer接口
+func (o *OutputData) Write(p []byte) (n int, err error) {
+	if o.ctx.request == nil {
+		return 0, fmt.Errorf("request context is nil")
+	}
+	return o.ctx.request.Write(p)
+}
+
+// Flush 强制刷新输出缓冲区
+func (o *OutputData) Flush() {
+	if o.ctx.request != nil {
+		o.ctx.request.Flush()
+	}
+}
+
+// ============= OutputData高级功能方法 =============
+
+// SetContentType 设置Content-Type (便捷方法)
+func (o *OutputData) SetContentType(contentType string) {
+	o.Header("Content-Type", contentType)
+}
+
+// EnableCORS 启用CORS (便捷方法)
+func (o *OutputData) EnableCORS(origin ...string) {
+	if len(origin) > 0 {
+		o.Header("Access-Control-Allow-Origin", origin[0])
+	} else {
+		o.Header("Access-Control-Allow-Origin", "*")
+	}
+	o.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	o.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+}
+
+// SetCache 设置缓存控制 (便捷方法)
+func (o *OutputData) SetCache(maxAge int) {
+	if maxAge <= 0 {
+		o.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+		o.Header("Pragma", "no-cache")
+		o.Header("Expires", "0")
+	} else {
+		o.Header("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+		expires := time.Now().Add(time.Duration(maxAge) * time.Second)
+		o.Header("Expires", expires.UTC().Format(http.TimeFormat))
+	}
+}
+
+// SetETag 设置ETag (便捷方法)
+func (o *OutputData) SetETag(etag string) {
+	if etag != "" {
+		o.Header("ETag", fmt.Sprintf(`"%s"`, etag))
+	}
+}
+
+// SetContentSecurityPolicy 设置CSP (安全方法)
+func (o *OutputData) SetContentSecurityPolicy(policy string) {
+	o.Header("Content-Security-Policy", policy)
+}
+
+/*
+Attachment 内存数据下载（便捷方法）
+- content: 需要下载的字节数据
+- name: 下载文件名
+- contentType: 可选，默认 application/octet-stream
+*/
+func (o *OutputData) Attachment(content []byte, name string, contentType ...string) error {
+	if o.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+	ct := "application/octet-stream"
+	if len(contentType) > 0 && strings.TrimSpace(contentType[0]) != "" {
+		ct = contentType[0]
+	}
+	escaped := url.PathEscape(name)
+	var cd string
+	if name == escaped {
+		cd = fmt.Sprintf("attachment; filename=\"%s\"", escaped)
+	} else {
+		cd = fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", sanitizeToken(name), escaped)
+	}
+	o.Header("Content-Type", ct)
+	o.Header("Content-Disposition", cd)
+	o.Header("Content-Description", "File Transfer")
+	o.Header("Content-Transfer-Encoding", "binary")
+	o.Header("Expires", "0")
+	o.Header("Cache-Control", "must-revalidate, post-check=0, pre-check=0")
+	o.Header("Pragma", "public")
+	return o.Body(content)
+}
+
+// ============= OutputData辅助函数 =============
+
+func sanitizeToken(s string) string {
+	// 简单清洗，移除换行与分号，避免注入
+	s = strings.ReplaceAll(s, "\r", "_")
+	s = strings.ReplaceAll(s, "\n", "_")
+	s = strings.ReplaceAll(s, ";", "_")
+	return s
+}
+
+// isValidJSONPCallback 验证JSONP回调函数名
+func isValidJSONPCallback(callback string) bool {
+	if callback == "" {
+		return false
+	}
+	// 简单的JavaScript标识符验证
+	for i, r := range callback {
+		if i == 0 {
+			if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_' || r == '$') {
+				return false
+			}
+		} else {
+			if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '$' || r == '.') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// isRedirectCode 检查是否为重定向状态码
+func isRedirectCode(code int) bool {
+	return code == http.StatusMovedPermanently || // 301
+		code == http.StatusFound || // 302
+		code == http.StatusSeeOther || // 303
+		code == http.StatusTemporaryRedirect || // 307
+		code == http.StatusPermanentRedirect // 308
 }
 
 // ============= OutputData Session方法 =============
@@ -237,6 +688,233 @@ func (i *InputData) GetData(key string) any {
 		}
 	}
 	return nil
+}
+
+// ============= BeegoInput 实用方法（移植） =============
+
+// GetString 返回参数的字符串值，按 Query -> PostForm -> Path Param 顺序查找
+func (i *InputData) GetString(key string, def ...string) string {
+	if s, ok := i.getFirstParam(key); ok {
+		return s
+	}
+	if len(def) > 0 {
+		return def[0]
+	}
+	return ""
+}
+
+// DefaultQuery 获取查询参数，若为空返回默认值
+func (i *InputData) DefaultQuery(key, d string) string {
+	v := i.Query(key)
+	if v == "" {
+		return d
+	}
+	return v
+}
+
+// FormValue 获取表单参数（application/x-www-form-urlencoded 或 multipart/form-data）
+func (i *InputData) FormValue(key string) string {
+	if i.ctx.request != nil {
+		return string(i.ctx.request.PostArgs().Peek(key))
+	}
+	return ""
+}
+
+// GetStrings 获取同名参数的所有值（同时来自 Query 与 PostForm）
+func (i *InputData) GetStrings(key string) []string {
+	var res []string
+	res = append(res, i.getQueryMulti(key)...)
+	res = append(res, i.getPostMulti(key)...)
+	// 如果没有多值，尝试路径参数
+	if len(res) == 0 {
+		if p := i.Param(key); p != "" {
+			res = append(res, p)
+		}
+	}
+	return res
+}
+
+// GetBool 获取布尔值，支持 true/false, 1/0, on/off, yes/no。若为空且提供默认值则返回默认值
+func (i *InputData) GetBool(key string, def ...bool) (bool, error) {
+	s, ok := i.getFirstParam(key)
+	if !ok || strings.TrimSpace(s) == "" {
+		if len(def) > 0 {
+			return def[0], nil
+		}
+		return false, nil
+	}
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "1", "t", "true", "on", "yes", "y":
+		return true, nil
+	case "0", "f", "false", "off", "no", "n":
+		return false, nil
+	default:
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			return false, err
+		}
+		return b, nil
+	}
+}
+
+// GetInt 获取整数值（int64 表示），若为空且提供默认值则返回默认值
+func (i *InputData) GetInt(key string, def ...int) (int64, error) {
+	s, ok := i.getFirstParam(key)
+	if !ok || strings.TrimSpace(s) == "" {
+		if len(def) > 0 {
+			return int64(def[0]), nil
+		}
+		return 0, nil
+	}
+	v, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// GetInt64 获取整数值（int64），若为空且提供默认值则返回默认值
+func (i *InputData) GetInt64(key string, def ...int64) (int64, error) {
+	s, ok := i.getFirstParam(key)
+	if !ok || strings.TrimSpace(s) == "" {
+		if len(def) > 0 {
+			return def[0], nil
+		}
+		return 0, nil
+	}
+	v, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// GetFloat 获取浮点值（float64），若为空且提供默认值则返回默认值
+func (i *InputData) GetFloat(key string, def ...float64) (float64, error) {
+	s, ok := i.getFirstParam(key)
+	if !ok || strings.TrimSpace(s) == "" {
+		if len(def) > 0 {
+			return def[0], nil
+		}
+		return 0, nil
+	}
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// Body 返回原始请求体（与 beego.Input.Body 类似）
+func (i *InputData) Body() []byte {
+	if i.ctx.request == nil {
+		return nil
+	}
+	return i.ctx.request.Request.Body()
+}
+
+// BindJSON 解析 JSON 请求体到目标对象
+func (i *InputData) BindJSON(v any) error {
+	if i.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+	b := i.Body()
+	if len(b) == 0 {
+		return nil
+	}
+	return json.Unmarshal(b, v)
+}
+
+// GetFileHeader 获取上传文件头
+func (i *InputData) GetFileHeader(key string) (*multipart.FileHeader, error) {
+	if i.ctx.request == nil {
+		return nil, fmt.Errorf("request context is nil")
+	}
+	return i.ctx.request.FormFile(key)
+}
+
+	// SaveUploadedFile 保存上传文件到指定路径
+func (i *InputData) SaveUploadedFile(header *multipart.FileHeader, dst string) error {
+	if i.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+	return i.ctx.request.SaveUploadedFile(header, dst)
+}
+
+// GetFile 获取上传文件（beego.Input 兼容方法）
+// 返回 multipart.File（调用方负责 Close）与 *multipart.FileHeader
+func (i *InputData) GetFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	if i.ctx.request == nil {
+		return nil, nil, fmt.Errorf("request context is nil")
+	}
+	fh, err := i.ctx.request.FormFile(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	f, err := fh.Open()
+	if err != nil {
+		return nil, nil, err
+	}
+	return f, fh, nil
+}
+
+// SaveToFile 保存指定表单字段的上传文件到目标路径（beego.Input 兼容方法）
+func (i *InputData) SaveToFile(form, saveTo string) error {
+	if i.ctx.request == nil {
+		return fmt.Errorf("request context is nil")
+	}
+	fh, err := i.ctx.request.FormFile(form)
+	if err != nil {
+		return err
+	}
+	return i.ctx.request.SaveUploadedFile(fh, saveTo)
+}
+
+// -------- 内部辅助 --------
+
+// getFirstParam 获取 key 的首个值，按 Query -> PostForm -> Path Param 顺序
+func (i *InputData) getFirstParam(key string) (string, bool) {
+	if i.ctx.request == nil {
+		return "", false
+	}
+	if v := string(i.ctx.request.QueryArgs().Peek(key)); v != "" {
+		return v, true
+	}
+	if v := string(i.ctx.request.PostArgs().Peek(key)); v != "" {
+		return v, true
+	}
+	if v := i.Param(key); v != "" {
+		return v, true
+	}
+	return "", false
+}
+
+// getQueryMulti 收集 QueryString 中 key 的所有值
+func (i *InputData) getQueryMulti(key string) []string {
+	if i.ctx.request == nil {
+		return nil
+	}
+	var res []string
+	i.ctx.request.QueryArgs().VisitAll(func(k, v []byte) {
+		if string(k) == key {
+			res = append(res, string(v))
+		}
+	})
+	return res
+}
+
+// getPostMulti 收集 PostForm 中 key 的所有值
+func (i *InputData) getPostMulti(key string) []string {
+	if i.ctx.request == nil {
+		return nil
+	}
+	var res []string
+	i.ctx.request.PostArgs().VisitAll(func(k, v []byte) {
+		if string(k) == key {
+			res = append(res, string(v))
+		}
+	})
+	return res
 }
 
 // ============= Cookie方法代理 (代理到session包) =============

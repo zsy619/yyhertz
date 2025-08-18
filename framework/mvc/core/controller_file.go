@@ -92,7 +92,7 @@ func (c *BaseController) SaveUploadedFile(fileKey, dst string) error {
 		return fmt.Errorf("context is nil")
 	}
 
-	file, err := c.Ctx.FormFile(fileKey)
+	_, file, err := c.Ctx.FormFile(fileKey)
 	if err != nil {
 		return fmt.Errorf("failed to get uploaded file: %v", err)
 	}
@@ -101,9 +101,9 @@ func (c *BaseController) SaveUploadedFile(fileKey, dst string) error {
 }
 
 // GetFile 获取上传文件
-func (c *BaseController) GetFile(key string) (*multipart.FileHeader, error) {
+func (c *BaseController) GetFile(key string) (multipart.File, *multipart.FileHeader, error) {
 	if c.Ctx == nil {
-		return nil, fmt.Errorf("context is nil")
+		return nil, nil, fmt.Errorf("context is nil")
 	}
 
 	return c.Ctx.FormFile(key)
@@ -111,13 +111,13 @@ func (c *BaseController) GetFile(key string) (*multipart.FileHeader, error) {
 
 // HasFile 检查是否有上传文件
 func (c *BaseController) HasFile(key string) bool {
-	_, err := c.GetFile(key)
+	_, _, err := c.GetFile(key)
 	return err == nil
 }
 
 // GetFileSize 获取上传文件大小
 func (c *BaseController) GetFileSize(key string) int64 {
-	file, err := c.GetFile(key)
+	_, file, err := c.GetFile(key)
 	if err != nil {
 		return 0
 	}
@@ -126,7 +126,7 @@ func (c *BaseController) GetFileSize(key string) int64 {
 
 // GetFileName 获取上传文件名
 func (c *BaseController) GetFileName(key string) string {
-	file, err := c.GetFile(key)
+	_, file, err := c.GetFile(key)
 	if err != nil {
 		return ""
 	}
@@ -135,7 +135,7 @@ func (c *BaseController) GetFileName(key string) string {
 
 // GetFileHeader 获取上传文件的MIME类型
 func (c *BaseController) GetFileHeader(key string) string {
-	file, err := c.GetFile(key)
+	_, file, err := c.GetFile(key)
 	if err != nil {
 		return ""
 	}

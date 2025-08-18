@@ -14,7 +14,9 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/yuin/goldmark v1.7.13
 	go.opentelemetry.io/otel/trace v1.37.0
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/driver/sqlite v1.6.0
@@ -77,8 +79,6 @@ require (
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace haedu.gov.cn/tools => ../河南省大中专学生智慧就业平台/教育部API对接/tools
