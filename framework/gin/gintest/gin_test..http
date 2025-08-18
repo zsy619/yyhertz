@@ -45,3 +45,36 @@ names[first]=thinkerou&names[second]=tianou
 ### Test_HTMLRender HTML 渲染
 
 GET {{host}}/index
+
+### Test_PureJSON
+GET {{host}}/json
+
+### Test_PureJSON
+GET {{host}}/purejson
+
+
+### Test_MiddlewareGoroutine
+GET {{host}}/long_async
+
+
+
+### Test_RouteGroup
+POST {{host}}/v1/login
+
+### Test_RouteGroup
+POST {{host}}/v1/submit
+
+### Test_RouteGroup
+POST {{host}}/v1/read
+
+### Test_RouteGroup
+POST {{host}}/v2/login
+
+### Test_RouteGroup
+POST {{host}}/v2/submit
+
+### Test_RouteGroup
+POST {{host}}/v2/read
+
+
+

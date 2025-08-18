@@ -91,16 +91,7 @@ func convertHertzHeaderToHTTP(hertzHeader *protocol.RequestHeader) http.Header {
 	return header
 }
 
-// Writer 返回响应Writer（Gin兼容性方法）
-//
-// 返回一个http.ResponseWriter接口实例，用于兼容Gin的API。
-// 这个方法返回一个适配器，将Hertz的Response包装为标准的http.ResponseWriter。
-//
-// 返回值：
-//   - http.ResponseWriter: 响应写入器接口
-func (c *Context) Writer() http.ResponseWriter {
-	return &responseWriterAdapter{ctx: c}
-}
+// Writer方法已移至context_advanced.go中提供更完整的实现
 
 // Request 返回HTTP请求（Gin兼容性方法）
 //
@@ -247,6 +238,9 @@ type Engine struct {
 	middleware    []HandlerFunc // 全局中间件（已废弃，使用RouterGroup.handlers）
 	noRoute       []HandlerFunc // 404错误处理器
 	noMethod      []HandlerFunc // 405错误处理器（方法不允许）
+
+	// 高性能路由引擎集成
+	router *RouterEngine
 
 	RedirectTrailingSlash  bool
 	RedirectFixedPath      bool

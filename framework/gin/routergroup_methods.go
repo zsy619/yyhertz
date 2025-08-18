@@ -90,8 +90,14 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...Ha
 	// 合并组中间件和当前处理函数
 	finalHandlers := group.combineHandlers(handlers)
 
+	// 使用新的高性能路由引擎
+	if group.engine.router != nil {
+		// 添加到高性能路由引擎
+		group.engine.router.addRoute(httpMethod, absolutePath, finalHandlers)
+	}
+
+	// 同时保持与Hertz的兼容性
 	// 转换为Hertz处理函数
-	// 这里是关键的适配层，将Gin风格的处理函数转换为Hertz可以理解的格式
 	hertzHandler := func(ctx context.Context, req *app.RequestContext) {
 		// 创建Gin Context并执行处理函数链
 		ginCtx := group.engine.createContext(req, finalHandlers)

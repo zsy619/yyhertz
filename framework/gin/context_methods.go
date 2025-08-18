@@ -355,7 +355,7 @@ func (c *Context) GetHeader(key string) string {
 //	}
 func (c *Context) Bind(obj any) error {
 	b := binding.Default(string(c.RequestContext.Request.Method()), c.GetHeader("Content-Type"))
-	return c.MustBindWith(obj, b)
+	return c.MustBindWithHertz(obj, b)
 }
 
 // BindJSON 绑定JSON数据到结构体（会验证）
@@ -377,7 +377,7 @@ func (c *Context) Bind(obj any) error {
 //		return
 //	}
 func (c *Context) BindJSON(obj any) error {
-	return c.MustBindWith(obj, binding.JSON)
+	return c.MustBindWithHertz(obj, binding.JSON)
 }
 
 // ShouldBindJSON 绑定JSON数据（不会自动返回错误）
@@ -398,7 +398,7 @@ func (c *Context) BindJSON(obj any) error {
 //		return
 //	}
 func (c *Context) ShouldBindJSON(obj any) error {
-	return c.ShouldBindWith(obj, binding.JSON)
+	return c.ShouldBindWithHertz(obj, binding.JSON)
 }
 
 // ShouldBindQuery 绑定查询参数到结构体
@@ -424,7 +424,7 @@ func (c *Context) ShouldBindJSON(obj any) error {
 //		return
 //	}
 func (c *Context) ShouldBindQuery(obj any) error {
-	return c.ShouldBindWith(obj, binding.Query)
+	return c.ShouldBindWithHertz(obj, binding.Query)
 }
 
 // ShouldBindUri 绑定URI参数到结构体
@@ -576,17 +576,17 @@ func (c *Context) CheckUriParams(expectedParams []string) ParamCheckResult {
 //   - error: 绑定或验证错误
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(string(c.RequestContext.Request.Method()), c.GetHeader("Content-Type"))
-	return c.ShouldBindWith(obj, b)
+	return c.ShouldBindWithHertz(obj, b)
 }
 
-// ShouldBindWith 使用指定的绑定器绑定数据
-func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+// ShouldBindWithHertz 使用Hertz绑定器绑定数据
+func (c *Context) ShouldBindWithHertz(obj any, b binding.Binding) error {
 	return b.Bind(c.RequestContext, obj)
 }
 
-// MustBindWith 使用指定的绑定器绑定数据（会自动返回错误）
-func (c *Context) MustBindWith(obj any, b binding.Binding) error {
-	if err := c.ShouldBindWith(obj, b); err != nil {
+// MustBindWithHertz 使用Hertz绑定器绑定数据（会自动返回错误）
+func (c *Context) MustBindWithHertz(obj any, b binding.Binding) error {
+	if err := c.ShouldBindWithHertz(obj, b); err != nil {
 		c.AbortWithStatusJSON(400, H{"error": err.Error()})
 		return err
 	}
@@ -597,14 +597,14 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 // 错误处理方法
 // =============================================================================
 
-// AbortWithError 终止处理链并记录错误
+// AbortWithErrorMessage 终止处理链并记录错误消息
 //
 // 终止当前请求的处理链，设置状态码，并将错误添加到错误列表中。
 //
 // 参数：
 //   - code: HTTP状态码
 //   - err: 错误对象
-func (c *Context) AbortWithError(code int, err error) {
+func (c *Context) AbortWithErrorMessage(code int, err error) {
 	c.AbortWithStatus(code)
 	c.Errors = append(c.Errors, err)
 }

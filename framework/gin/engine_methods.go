@@ -37,6 +37,9 @@ var defaultPlatform string
 //	r.Use(gin.Logger())
 //	r.Use(gin.Recovery())
 func New(opts ...OptionFunc) *Engine {
+	// 初始化高性能路由引擎
+	routerEngine := NewRouterEngine()
+	
 	// 初始化Engine结构体
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -44,6 +47,8 @@ func New(opts ...OptionFunc) *Engine {
 			basePath: "/",
 			root:     true,
 		},
+		// 集成高性能路由引擎
+		router:                 routerEngine,
 		FuncMap:                template.FuncMap{},
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      false,
@@ -55,11 +60,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
-		// trees:                  make(methodTrees, 0, 9),
-		delims: render.Delims{Left: "{{", Right: "}}"},
-		// secureJSONPrefix:       "while(1);",
-		// trustedProxies:         []string{"0.0.0.0/0", "::/0"},
-		// trustedCIDRs:           defaultTrustedCIDRs,
+		delims:                 render.Delims{Left: "{{", Right: "}}"},
 	}
 	// 设置根路由组的引擎引用
 	engine.RouterGroup.engine = engine

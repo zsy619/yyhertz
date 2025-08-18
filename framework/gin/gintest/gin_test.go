@@ -302,3 +302,92 @@ func Test_HTMLRender(t *testing.T) {
 	})
 	router.Run()
 }
+
+// PureJSON
+// 通常，JSON 会用 Unicode 实体替换特殊的 HTML 字符，例如，< 会变成 \u003c。如果你想按原样对这些字符进行编码，可以使用 PureJSON。此功能在 Go 1.6 及更低版本中不可用。
+func Test_PureJSON(t *testing.T) {
+	router := gin.Default()
+	// Serves unicode entities
+	router.GET("/json", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+
+	// Serves literal characters
+	router.GET("/purejson", func(c *gin.Context) {
+		c.PureJSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+	router.Run()
+}
+
+// 中间件中的 Goroutine
+func Test_MiddlewareGoroutine(t *testing.T) {
+	r := gin.Default()
+
+	r.GET("/long_async", func(c *gin.Context) {
+		// create copy to be used inside the goroutine
+		cCp := c.Copy()
+		go func() {
+			// simulate a long task with time.Sleep(). 5 seconds
+			time.Sleep(5 * time.Second)
+
+			// note that you are using the copied context "cCp", IMPORTANT
+			fmt.Println("Done! in path " + string(cCp.Request.Path()))
+		}()
+	})
+
+	r.GET("/long_sync", func(c *gin.Context) {
+		// simulate a long task with time.Sleep(). 5 seconds
+		time.Sleep(5 * time.Second)
+
+		// since we are NOT using a goroutine, we do not have to copy the context
+		fmt.Println("Done! in path " + c.Request().URL.Path)
+	})
+
+	// Listen and serve on 0.0.0.0:8080
+	r.Run()
+}
+
+// 分组路由
+func Test_RouteGroup(t *testing.T) {
+	router := gin.Default()
+
+	// Simple group: v1
+	v1 := router.Group("/v1")
+	{
+		v1.POST("/login", func(ctx *gin.Context) {
+			fmt.Println("v1 login...")
+			ctx.JSON(http.StatusOK, "v1 login...")
+		})
+		v1.POST("/submit", func(ctx *gin.Context) {
+			fmt.Println("v1 submit...")
+			ctx.JSON(http.StatusOK, "v1 submit...")
+		})
+		v1.POST("/read", func(ctx *gin.Context) {
+			fmt.Println("v1 read...")
+			ctx.JSON(http.StatusOK, "v1 read...")
+		})
+	}
+
+	// Simple group: v2
+	v2 := router.Group("/v2")
+	{
+		v2.POST("/login", func(ctx *gin.Context) {
+			fmt.Println("v2 login...")
+			ctx.JSON(http.StatusOK, "v2 login...")
+		})
+		v2.POST("/submit", func(ctx *gin.Context) {
+			fmt.Println("v2 submit...")
+			ctx.JSON(http.StatusOK, "v2 submit...")
+		})
+		v2.POST("/read", func(ctx *gin.Context) {
+			fmt.Println("v2 read...")
+			ctx.JSON(http.StatusOK, "v2 read...")
+		})
+	}
+
+	router.Run()
+}
