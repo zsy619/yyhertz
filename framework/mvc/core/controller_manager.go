@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -213,8 +212,8 @@ func (c *BaseController) autoInitializeControllerName() {
 
 // autoDetectAndSetControllerName 自动检测并设置Controller名称（终极版）
 func (c *BaseController) autoDetectAndSetControllerName() {
-	if c.initialized && c.ControllerName != "" && c.ControllerName != "UnknownController" {
-		fmt.Println("Controller name already initialized:", c.ControllerName)
+	if c.initialized && c.ControllerName != "" && c.ControllerName != "UnknownController" && c.ControllerName != "Unknown" {
+		c.LogWarn("Controller name already initialized:", c.ControllerName)
 		return // 已经正确初始化了
 	}
 

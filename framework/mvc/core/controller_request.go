@@ -25,6 +25,8 @@ func (c *BaseController) GetString(key string, def ...string) string {
 	// 备用方法
 	if val := c.Ctx.Query(key); val != "" {
 		return val
+	} else if val = c.Ctx.FormValue(key); val != "" {
+		return val
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -41,6 +43,10 @@ func (c *BaseController) GetInt(key string, def ...int) int {
 		return 0
 	}
 	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	} else if val = c.Ctx.FormValue(key); val != "" {
 		if i, err := strconv.Atoi(val); err == nil {
 			return i
 		}
@@ -63,6 +69,10 @@ func (c *BaseController) GetInt32(key string, def ...int32) int32 {
 		if i, err := strconv.Atoi(val); err == nil {
 			return int32(i)
 		}
+	} else if val = c.Ctx.FormValue(key); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			return int32(i)
+		}
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -82,6 +92,10 @@ func (c *BaseController) GetInt64(key string, def ...int64) int64 {
 		if i, err := strconv.ParseInt(string(val), 10, 64); err == nil {
 			return i
 		}
+	} else if val = c.Ctx.FormValue(key); val != "" {
+		if i, err := strconv.ParseInt(string(val), 10, 64); err == nil {
+			return i
+		}
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -90,128 +104,145 @@ func (c *BaseController) GetInt64(key string, def ...int64) int64 {
 }
 
 // GetInt8 获取8位整数参数（Beego兼容）
-func (c *BaseController) GetInt8(key string, def ...int8) (int8, error) {
+func (c *BaseController) GetInt8(key string, def ...int8) int8 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
+	if val := c.Ctx.Query(key); val != "" {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
+	} else if i, err := strconv.ParseInt(val, 10, 8); err == nil {
+		return int8(i)
 	}
 
-	i64, err := strconv.ParseInt(val, 10, 8)
-	return int8(i64), err
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetInt16 获取16位整数参数（Beego兼容）
-func (c *BaseController) GetInt16(key string, def ...int16) (int16, error) {
+func (c *BaseController) GetInt16(key string, def ...int16) int16 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
-		if len(def) > 0 {
-			return def[0], nil
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseInt(val, 10, 16); err == nil {
+			return int16(i)
 		}
-		return 0, nil
+	} else if i, err := strconv.ParseInt(val, 10, 16); err == nil {
+		return int16(i)
 	}
 
-	i64, err := strconv.ParseInt(val, 10, 16)
-	return int16(i64), err
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetUint8 获取8位无符号整数参数（Beego兼容）
-func (c *BaseController) GetUint8(key string, def ...uint8) (uint8, error) {
+func (c *BaseController) GetUint8(key string, def ...uint8) uint8 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
-		if len(def) > 0 {
-			return def[0], nil
+	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseUint(val, 10, 8); err == nil {
+			return uint8(i)
 		}
-		return 0, nil
+	} else if i, err := strconv.ParseUint(val, 10, 8); err == nil {
+		return uint8(i)
 	}
 
-	u64, err := strconv.ParseUint(val, 10, 8)
-	return uint8(u64), err
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetUint16 获取16位无符号整数参数（Beego兼容）
-func (c *BaseController) GetUint16(key string, def ...uint16) (uint16, error) {
+func (c *BaseController) GetUint16(key string, def ...uint16) uint16 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
-		if len(def) > 0 {
-			return def[0], nil
+	if val := c.Ctx.Query(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 16); err == nil {
+			return uint16(u64)
 		}
-		return 0, nil
+	} else if val := c.Ctx.FormValue(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 16); err == nil {
+			return uint16(u64)
+		}
 	}
-
-	u64, err := strconv.ParseUint(val, 10, 16)
-	return uint16(u64), err
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetUint32 获取32位无符号整数参数（Beego兼容）
-func (c *BaseController) GetUint32(key string, def ...uint32) (uint32, error) {
+func (c *BaseController) GetUint32(key string, def ...uint32) uint32 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
-		if len(def) > 0 {
-			return def[0], nil
+	if val := c.Ctx.Query(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 32); err == nil {
+			return uint32(u64)
 		}
-		return 0, nil
+	} else if val := c.Ctx.FormValue(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 32); err == nil {
+			return uint32(u64)
+		}
 	}
-
-	u64, err := strconv.ParseUint(val, 10, 32)
-	return uint32(u64), err
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetUint64 获取64位无符号整数参数（Beego兼容）
-func (c *BaseController) GetUint64(key string, def ...uint64) (uint64, error) {
+func (c *BaseController) GetUint64(key string, def ...uint64) uint64 {
 	if c.Ctx == nil {
 		if len(def) > 0 {
-			return def[0], nil
+			return def[0]
 		}
-		return 0, nil
+		return 0
 	}
 
-	val := c.Ctx.Query(key)
-	if val == "" {
-		if len(def) > 0 {
-			return def[0], nil
+	if val := c.Ctx.Query(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 64); err == nil {
+			return u64
 		}
-		return 0, nil
+	} else if val := c.Ctx.FormValue(key); val != "" {
+		if u64, err := strconv.ParseUint(val, 10, 64); err == nil {
+			return u64
+		}
 	}
-
-	return strconv.ParseUint(val, 10, 64)
+	if len(def) > 0 {
+		return def[0]
+	}
+	return 0
 }
 
 // GetFloat32 获取浮点数参数
@@ -223,6 +254,10 @@ func (c *BaseController) GetFloat32(key string, def ...float32) float32 {
 		return 0
 	}
 	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseFloat(string(val), 32); err == nil {
+			return float32(i)
+		}
+	} else if val := c.Ctx.FormValue(key); val != "" {
 		if i, err := strconv.ParseFloat(string(val), 32); err == nil {
 			return float32(i)
 		}
@@ -242,6 +277,10 @@ func (c *BaseController) GetFloat64(key string, def ...float64) float64 {
 		return 0
 	}
 	if val := c.Ctx.Query(key); val != "" {
+		if i, err := strconv.ParseFloat(string(val), 64); err == nil {
+			return i
+		}
+	} else if val := c.Ctx.FormValue(key); val != "" {
 		if i, err := strconv.ParseFloat(string(val), 64); err == nil {
 			return i
 		}

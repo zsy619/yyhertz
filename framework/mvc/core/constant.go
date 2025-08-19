@@ -360,6 +360,13 @@ var ReservedMethods = map[string]bool{
 var ControllerNameSuffixReserved = map[string]bool{
 	"Controller": true,
 	"Ctrl":       true,
+	"Handler":    true,
+}
+
+var MethodNameSuffixReserved = map[string]bool{
+	"Handler": true,
+	"Handle":  true,
+	"Action":  true,
 }
 
 const AdminIdKey = "adminId"

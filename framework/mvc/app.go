@@ -33,8 +33,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 
+	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/constant"
 	"github.com/zsy619/yyhertz/framework/mvc/annotation"
 	"github.com/zsy619/yyhertz/framework/mvc/captcha"
@@ -160,6 +162,11 @@ var (
 )
 
 func init() {
+	// 使用 config.GinLogConfig() 设置hertz的日志配置
+	logConfig := config.GinLogConfig()
+	l := logConfig.CreateLogger()
+	hlog.SetLogger(l)
+
 	// 创建全局Hertz应用实例
 	HertzApp = GetAppInstance()
 

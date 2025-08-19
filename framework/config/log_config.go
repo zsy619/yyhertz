@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -8,7 +9,7 @@ import (
 func DefaultLogConfig() *LogConfig {
 	return &LogConfig{
 		Level:           LogLevelInfo,
-		Format:          LogFormatBeego,
+		Format:          LogFormatGin,
 		EnableConsole:   true,
 		EnableFile:      true,
 		FilePath:        "./logs/app.log",
@@ -29,7 +30,7 @@ func DefaultLogConfig() *LogConfig {
 func DevelopmentLogConfig() *LogConfig {
 	return &LogConfig{
 		Level:           LogLevelDebug,
-		Format:          LogFormatBeego,
+		Format:          LogFormatGin,
 		EnableConsole:   true,
 		EnableFile:      true,
 		FilePath:        "./logs/dev.log",
@@ -138,9 +139,9 @@ func CloudLogConfig() *LogConfig {
 		ShowTimestamp:   true,
 		TimestampFormat: time.RFC3339,
 		Fields: map[string]any{
-			"service":     "yyhertz",
-			"version":     "1.0.0",
-			"deployment":  "cloud",
+			"service":    "yyhertz",
+			"version":    "1.0.0",
+			"deployment": "cloud",
 		},
 		Outputs: []string{"file", "cloudwatch", "azure_insights"},
 		OutputConfig: map[string]OutputConfig{
@@ -189,7 +190,7 @@ func (cfg *LogConfig) AddConfigFields(fields map[string]any) *LogConfig {
 // AddOutput 添加输出目标
 func (cfg *LogConfig) AddOutput(output string, config OutputConfig) *LogConfig {
 	newConfig := *cfg // 复制配置
-	
+
 	// 添加输出类型
 	found := false
 	for _, o := range newConfig.Outputs {
@@ -201,7 +202,7 @@ func (cfg *LogConfig) AddOutput(output string, config OutputConfig) *LogConfig {
 	if !found {
 		newConfig.Outputs = append(newConfig.Outputs, output)
 	}
-	
+
 	// 添加输出配置
 	if newConfig.OutputConfig == nil {
 		newConfig.OutputConfig = make(map[string]OutputConfig)
@@ -209,14 +210,14 @@ func (cfg *LogConfig) AddOutput(output string, config OutputConfig) *LogConfig {
 	if config != nil {
 		newConfig.OutputConfig[output] = config
 	}
-	
+
 	return &newConfig
 }
 
 // RemoveOutput 移除输出目标
 func (cfg *LogConfig) RemoveOutput(output string) *LogConfig {
 	newConfig := *cfg // 复制配置
-	
+
 	// 移除输出类型
 	newOutputs := make([]string, 0, len(newConfig.Outputs))
 	for _, o := range newConfig.Outputs {
@@ -225,12 +226,12 @@ func (cfg *LogConfig) RemoveOutput(output string) *LogConfig {
 		}
 	}
 	newConfig.Outputs = newOutputs
-	
+
 	// 移除输出配置
 	if newConfig.OutputConfig != nil {
 		delete(newConfig.OutputConfig, output)
 	}
-	
+
 	return &newConfig
 }
 
@@ -265,4 +266,144 @@ func (cfg *LogConfig) ValidateConfig() error {
 		_ = output // 可以添加更多验证逻辑
 	}
 	return nil
+}
+
+// ============= 框架专用日志配置 =============
+
+// GinLogConfig Gin框架专用日志配置
+func GinLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           LogLevelInfo,
+		Format:          LogFormatGin,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        "./logs/gin.log",
+		MaxSize:         100,
+		MaxAge:          7,
+		MaxBackups:      10,
+		Compress:        true,
+		ShowCaller:      false, // Gin通常不需要显示调用位置
+		ShowTimestamp:   true,
+		TimestampFormat: "2006/01/02 - 15:04:05",
+		Fields: map[string]any{
+			"framework": "gin",
+			"service":   "yyhertz",
+		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
+}
+
+// MicroserviceLogConfig 微服务日志配置（适用于go-zero等）
+func MicroserviceLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           LogLevelInfo,
+		Format:          LogFormatGoZero,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        "./logs/microservice.log",
+		MaxSize:         100,
+		MaxAge:          30,
+		MaxBackups:      10,
+		Compress:        true,
+		ShowCaller:      true,
+		ShowTimestamp:   true,
+		TimestampFormat: time.RFC3339,
+		Fields: map[string]any{
+			"service":     "yyhertz",
+			"environment": "production",
+			"version":     "1.0.0",
+		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
+}
+
+// DatabaseLogConfig 数据库ORM日志配置（适用于Ent等）
+func DatabaseLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           LogLevelDebug, // 数据库通常需要调试级别
+		Format:          LogFormatEnt,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        "./logs/database.log",
+		MaxSize:         50,
+		MaxAge:          7,
+		MaxBackups:      5,
+		Compress:        true,
+		ShowCaller:      true,
+		ShowTimestamp:   true,
+		TimestampFormat: "2006/01/02 15:04:05",
+		Fields: map[string]any{
+			"component": "database",
+			"orm":       "ent",
+		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
+}
+
+// HighPerformanceFrameworkLogConfig 高性能框架日志配置（适用于Fiber等）
+func HighPerformanceFrameworkLogConfig() *LogConfig {
+	return &LogConfig{
+		Level:           LogLevelWarn, // 高性能场景减少日志级别
+		Format:          LogFormatFiber,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        "./logs/fiber.log",
+		MaxSize:         100,
+		MaxAge:          3,
+		MaxBackups:      3,
+		Compress:        true,
+		ShowCaller:      false, // 高性能场景不显示调用位置
+		ShowTimestamp:   true,
+		TimestampFormat: "15:04:05",
+		Fields: map[string]any{
+			"framework":   "fiber",
+			"performance": "optimized",
+		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
+}
+
+// WebFrameworkLogConfig 通用Web框架日志配置（适用于Echo、Iris等）
+func WebFrameworkLogConfig(framework string) *LogConfig {
+	format := LogFormatEcho
+	timestampFormat := time.RFC3339
+
+	switch framework {
+	case "iris":
+		format = LogFormatIris
+		timestampFormat = "2006/01/02 15:04:05"
+	case "echo":
+		format = LogFormatEcho
+	case "revel":
+		format = LogFormatRevel
+		timestampFormat = "2006/01/02 15:04:05"
+	case "buffalo":
+		format = LogFormatBuffalo
+		timestampFormat = "2006/01/02 15:04:05"
+	}
+
+	return &LogConfig{
+		Level:           LogLevelInfo,
+		Format:          format,
+		EnableConsole:   true,
+		EnableFile:      true,
+		FilePath:        fmt.Sprintf("./logs/%s.log", framework),
+		MaxSize:         100,
+		MaxAge:          7,
+		MaxBackups:      10,
+		Compress:        true,
+		ShowCaller:      true,
+		ShowTimestamp:   true,
+		TimestampFormat: timestampFormat,
+		Fields: map[string]any{
+			"framework": framework,
+			"service":   "yyhertz",
+		},
+		Outputs:      []string{"console", "file"},
+		OutputConfig: make(map[string]OutputConfig),
+	}
 }

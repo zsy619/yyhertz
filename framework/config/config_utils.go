@@ -161,6 +161,18 @@ func init() {
 	RegisterConfigName[MyBatisConfig](MyBatisConfigName)
 	RegisterConfigName[MVCConfig](MVCConfigName)
 	RegisterConfigName[MiddlewareConfig](MiddlewareConfigName)
+
+	// 数据库初始化
+	dbOnce.Do(func() {
+		if globalDatabase == nil {
+			// 如果未初始化，使用默认配置初始化
+			dbConfig, err := GetDatabaseConfig()
+			if err != nil {
+				dbConfig = DefaultDatabaseConfig()
+			}
+			globalDatabase = dbConfig
+		}
+	})
 }
 
 // 全局便捷函数，用于快速获取不同类型的配置

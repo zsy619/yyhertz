@@ -106,12 +106,12 @@ func (c *BaseController) SetHeader(key, value string) {
 }
 
 // Write 写入原始字节数据
-func (c *BaseController) Write(data []byte) {
+func (c *BaseController) Write(data []byte) (int, error) {
 	if c.Ctx == nil {
 		config.Error("Context is nil when trying to write data")
-		return
+		return 0, fmt.Errorf("context is nil")
 	}
-	c.Ctx.Write(data)
+	return c.Ctx.Write(data)
 }
 
 // ============= Beego兼容的ServeJSON方法 =============
@@ -237,14 +237,18 @@ func (c *BaseController) encodeUTF8ToUnicode(data []byte) []byte {
 
 		if r == utf8.RuneError {
 			// 如果是无效的UTF-8序列，保持原样
-			buf.WriteByte(s[0])
+			if err := buf.WriteByte(s[0]); err != nil {
+				panic(err)
+			}
 			s = s[1:]
 			continue
 		}
 
 		// 处理转义状态
 		if escaped {
-			buf.WriteRune(r)
+			if _, err := buf.WriteRune(r); err != nil {
+				config.Error(err)
+			}
 			escaped = false
 			s = s[size:]
 			continue
@@ -269,7 +273,9 @@ func (c *BaseController) encodeUTF8ToUnicode(data []byte) []byte {
 		if inString && r > 127 {
 			// 非ASCII字符转换为\uXXXX格式
 			if r <= 0xFFFF {
-				buf.WriteString(fmt.Sprintf("\\u%04X", r))
+				if _, err := buf.WriteString(fmt.Sprintf("\\u%04X", r)); err != nil {
+					config.Error(err)
+				}
 			} else {
 				// 对于超过0xFFFF的字符，使用UTF-16代理对
 				r -= 0x10000
@@ -279,7 +285,9 @@ func (c *BaseController) encodeUTF8ToUnicode(data []byte) []byte {
 			}
 		} else {
 			// ASCII字符或非字符串部分保持原样
-			buf.WriteRune(r)
+			if _, err := buf.WriteRune(r); err != nil {
+				config.Error(err)
+			}
 		}
 
 		s = s[size:]
@@ -346,7 +354,10 @@ func (c *BaseController) ServeXML() {
 	c.Ctx.SetContentType("application/xml; charset=utf-8")
 
 	// 写入响应
-	c.Ctx.Write(xmlBytes)
+	_, err = c.Ctx.Write(xmlBytes)
+	if err != nil {
+		config.Error("Failed to write XML response:", err)
+	}
 }
 
 // ServeJSONP 发送JSONP响应，完全兼容beego的ServeJSONP方法
@@ -372,7 +383,7 @@ func (c *BaseController) ServeJSONP() error {
 	// 检查上下文是否有效
 	if c.Ctx == nil {
 		config.Error("Context is nil when trying to serve JSONP")
-		return fmt.Errorf("context is nil")
+		return c.Errorf("context is nil")
 	}
 
 	// 检查是否有JSONP数据
@@ -381,7 +392,7 @@ func (c *BaseController) ServeJSONP() error {
 		config.Error("No JSONP data found in c.Data[\"jsonp\"]")
 		c.Ctx.Status(consts.StatusInternalServerError)
 		c.Ctx.WriteString(`callback({"error": "No JSONP data provided"});`)
-		return fmt.Errorf("no JSONP data provided")
+		return c.Errorf("no JSONP data provided")
 	}
 
 	// 获取回调函数名
@@ -407,7 +418,7 @@ func (c *BaseController) ServeJSONP() error {
 		config.Error("Failed to marshal JSONP data:", err)
 		c.Ctx.Status(consts.StatusInternalServerError)
 		c.Ctx.WriteString(callback + `({"error": "Failed to serialize JSONP data"});`)
-		return fmt.Errorf("failed to serialize JSONP data")
+		return c.Errorf("failed to serialize JSONP data")
 	}
 
 	// 构建JSONP响应
@@ -465,8 +476,8 @@ func (c *BaseController) ServeYAML() error {
 	c.Ctx.SetContentType("application/yaml; charset=utf-8")
 
 	// 写入响应
-	_, errx := c.Ctx.Write(yamlBytes)
-	return errx
+	_, err = c.Ctx.Write(yamlBytes)
+	return err
 }
 
 // ServeFormatted 根据Accept header自动选择格式，完全兼容beego的ServeFormatted方法
@@ -540,7 +551,10 @@ func (c *BaseController) ServeFormatted(encoding ...bool) {
 	default:
 		// 默认JSON格式（包括application/json, text/json, */*等）
 		if _, exists := c.Data["json"]; exists {
-			c.ServeJSON(encoding...)
+			err := c.ServeJSON(encoding...)
+			if err != nil {
+				config.Error("Failed to serve JSON response:", err)
+			}
 		} else {
 			config.Error("No JSON data found in c.Data[\"json\"] for ServeFormatted")
 			c.Ctx.Status(consts.StatusInternalServerError)

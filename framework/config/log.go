@@ -31,6 +31,15 @@ const (
 	LogFormatFluentd             LogFormat = "fluentd"
 	LogFormatCloudWatch          LogFormat = "cloudwatch"
 	LogFormatApplicationInsights LogFormat = "azure_insights"
+	// 流行框架日志格式
+	LogFormatGin                 LogFormat = "gin"
+	LogFormatIris                LogFormat = "iris"
+	LogFormatEnt                 LogFormat = "ent"
+	LogFormatGoZero              LogFormat = "go_zero"
+	LogFormatFiber               LogFormat = "fiber"
+	LogFormatEcho                LogFormat = "echo"
+	LogFormatRevel               LogFormat = "revel"
+	LogFormatBuffalo             LogFormat = "buffalo"
 )
 
 // LogOutput 日志输出类型
@@ -193,7 +202,7 @@ func (c LogConfig) GenerateDefaultContent() string {
 # 支持日志级别: debug, info, warn, error, fatal, panic
 level: "info"
 
-# 日志格式: json, text, beego, log4go, logstash, syslog, fluentd, cloudwatch, azure_insights
+# 日志格式: json, text, beego, log4go, logstash, syslog, fluentd, cloudwatch, azure_insights, gin, iris, ent, go_zero, fiber, echo, revel, buffalo
 # beego: Beego风格格式 [L] yyyy/mm/dd hh:mm:ss.sss [filename:line] message
 # log4go: Log4go风格格式 [yyyy/mm/dd hh:mm:ss] [LEVEL] (filename:line) message
 # logstash: Logstash JSON格式，包含@timestamp, @version, level, message等字段
@@ -201,6 +210,14 @@ level: "info"
 # fluentd: Fluentd JSON格式，适用于日志聚合
 # cloudwatch: AWS CloudWatch格式
 # azure_insights: Azure Application Insights格式
+# gin: Gin框架格式 [GIN] yyyy/mm/dd - hh:mm:ss | status | latency | client_ip | method | path
+# iris: Iris框架格式 [IRIS] yyyy/mm/dd hh:mm:ss | status | latency | client_ip | method path
+# ent: Ent ORM格式 [ENT] yyyy/mm/dd hh:mm:ss [LEVEL] SQL operation (latency)
+# go_zero: go-zero微服务格式 JSON包含服务名、追踪ID等微服务字段
+# fiber: Fiber框架格式 hh:mm:ss | status | latency | client_ip | method | path
+# echo: Echo框架格式 JSON包含时间、级别、前缀、文件、消息
+# revel: Revel MVC格式 LEVEL yyyy/mm/dd hh:mm:ss file:line: message
+# buffalo: Buffalo格式 --> METHOD path (latency) | client_ip | status
 format: "beego"
 
 # 输出配置

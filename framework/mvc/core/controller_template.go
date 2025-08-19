@@ -15,11 +15,17 @@ import (
 
 // Render 渲染模板（Beego ControllerInterface兼容）
 func (c *BaseController) Render() error {
+	// 添加详细调试信息
+	c.LogInfof("=== Render() 开始 ===")
+	c.LogInfof("初始状态 - ControllerName: %s, ActionName: %s, TplName: %s, ViewPath: %s",
+		c.ControllerName, c.ActionName, c.TplName, c.ViewPath)
+
 	// 如果模板名称为空，自动推导
 	if c.TplName == "" {
 		controllerName := strings.ToLower(c.ControllerName)
 		actionName := strings.ToLower(c.ActionName)
 		c.TplName = fmt.Sprintf("%s/%s", controllerName, actionName)
+		c.LogInfof("自动推导模板名称: %s", c.TplName)
 	}
 
 	// 调用现有的renderTemplate方法
@@ -137,8 +143,8 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 			return
 		}
 
-		c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
-		c.Ctx.Request().Write([]byte(content))
+		c.SetHeader("Content-Type", "text/html; charset=utf-8")
+		_, err = c.Write([]byte(content))
 		return
 	}
 
@@ -235,7 +241,11 @@ func (c *BaseController) AddTemplateFunction(name string, fn any) {
 
 // renderTemplate 内部模板渲染方法（使用模板管理器）
 func (c *BaseController) renderTemplate() error {
+	c.LogInfof("=== renderTemplate() 开始 ===")
+	c.LogInfof("EnableRender: %v, templateEngine: %v", c.EnableRender, c.templateEngine != nil)
+
 	if !c.EnableRender {
+		c.LogErrorf("Template rendering is disabled")
 		return c.Errorf("template rendering is disabled")
 	}
 
@@ -261,16 +271,20 @@ func (c *BaseController) renderTemplate() error {
 			if content, err := c.templateEngine.RenderWithLayout(tplName, c.Layout, c.Data); err != nil {
 				return err
 			} else {
-				c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
-				c.Ctx.Request().Write([]byte(content))
+				c.SetHeader("Content-Type", "text/html; charset=utf-8")
+				if _, err := c.Write([]byte(content)); err != nil {
+					return err
+				}
 			}
 		} else {
 			// 直接渲染模板
 			if content, err := c.templateEngine.Render(tplName, c.Data); err != nil {
 				return err
 			} else {
-				c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
-				c.Ctx.Request().Write([]byte(content))
+				c.SetHeader("Content-Type", "text/html; charset=utf-8")
+				if _, err := c.Write([]byte(content)); err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -282,10 +296,17 @@ func (c *BaseController) renderTemplate() error {
 
 // renderBasicTemplate 基础模板渲染（降级方案）
 func (c *BaseController) renderBasicTemplate(tplName string) error {
+	c.LogInfof("=== renderBasicTemplate() 开始 ===")
+	c.LogInfof("模板参数 - tplName: %s, ViewPath: %s", tplName, c.ViewPath)
+
 	viewPath := filepath.Join(c.ViewPath, tplName)
+	c.LogInfof("完整模板路径: %s", viewPath)
 
 	// 检查文件是否存在
 	if _, err := os.Stat(viewPath); os.IsNotExist(err) {
+		// 添加调试信息
+		c.LogErrorf("Template file not found: %s (ControllerName: %s, ActionName: %s, TplName: %s)",
+			viewPath, c.ControllerName, c.ActionName, c.TplName)
 		return c.Errorf("template file not found: %s", viewPath)
 	}
 
@@ -307,8 +328,13 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 				return fmt.Errorf("failed to parse template with layout: %v", err)
 			}
 
-			c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
-			return tmpl.ExecuteTemplate(c.Ctx.Request(), "layout", c.Data)
+			c.SetHeader("Content-Type", "text/html; charset=utf-8")
+			var buf bytes.Buffer
+			if err := tmpl.ExecuteTemplate(&buf, "layout", c.Data); err != nil {
+				return err
+			}
+			_, err := c.Write(buf.Bytes())
+			return err
 		}
 	}
 
@@ -326,6 +352,18 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 		return fmt.Errorf("failed to parse template: %v", err)
 	}
 
-	c.Ctx.Request().Header("Content-Type", "text/html; charset=utf-8")
-	return tmpl.Execute(c.Ctx.Request(), c.Data)
+	c.SetHeader("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, c.Data); err != nil {
+		return err
+	}
+	// 添加调试日志：显示模板内容长度
+	c.LogInfof("Template rendered successfully: %d bytes (ControllerName: %s, ActionName: %s)",
+		len(buf.Bytes()), c.ControllerName, c.ActionName)
+
+	_, err = c.Write(buf.Bytes())
+	if err != nil {
+		c.LogErrorf("Failed to write response: %v", err)
+	}
+	return err
 }

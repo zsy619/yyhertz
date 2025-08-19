@@ -278,13 +278,20 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 				if httpMethod == "*" { // 兼容旧格式的路由语法: *:path
 					httpMethod = "ANY"
 				}
-				routePath = routeSpec[colonIndex+1:]
-				if pipeIndex := strings.Index(routePath, "|"); pipeIndex != -1 {
-					routePath = routePath[:pipeIndex]
-					methodName = routeSpec[pipeIndex+1:]
+				rp := routeSpec[colonIndex+1:]
+				routePath = rp
+				if pipeIndex := strings.Index(rp, "|"); pipeIndex != -1 {
+					routePath = rp[:pipeIndex]
+					methodName = rp[pipeIndex+1:]
+				} else if routePath != "" && !strings.HasPrefix(routePath, "/") {
+					// 如果routePath不是以/开头，可能是方法名
+					methodName = routePath
+					routePath = "" // 使用basePath作为路径
 				} else {
 					methodName = strings.TrimPrefix(routePath, "/")
 				}
+			} else {
+				methodName = strings.TrimPrefix(routePath, "/")
 			}
 
 			routePath = strings.ToLower(routePath) // 确保路由路径小写
@@ -329,6 +336,8 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 					httpMethod = "ANY"
 				}
 				routePath = routeSpec[colonIndex+1:]
+			} else if routePath == "" {
+				routePath = methodName
 			}
 
 			routePath = strings.ToLower(routePath) // 确保路由路径小写
@@ -639,7 +648,7 @@ func (app *App) registerRouteWithInfo(method, path string, handler define.Handle
 		app.Any(path, handler)
 	}
 
-	app.LogInfof("Route registered: %s %s -> %s", method, path, controllerInfo)
+	app.LogDebugf("Route registered: %s %s -> %s", method, path, controllerInfo)
 }
 
 // ============= 特殊路由处理器（类似Beego） =============
