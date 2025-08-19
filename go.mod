@@ -3,7 +3,7 @@ module github.com/zsy619/yyhertz
 go 1.25
 
 require (
-	github.com/cloudwego/hertz v0.10.1
+	github.com/cloudwego/hertz v0.10.2
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/hertz-contrib/logger/logrus v1.0.1

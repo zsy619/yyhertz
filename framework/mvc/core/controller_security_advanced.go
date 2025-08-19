@@ -209,12 +209,22 @@ func (c *BaseController) SanitizeHTML(input string) string {
 
 // ValidateEmail 验证邮箱格式
 func (c *BaseController) ValidateEmail(email string) bool {
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return emailRegex.MatchString(email)
+	if email == "" {
+		return false
+	}
+
+	// 简单的邮箱格式验证正则
+	emailRegex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	matched, err := regexp.MatchString(emailRegex, email)
+	return err == nil && matched
 }
 
 // ValidatePhone 验证手机号格式（中国）
 func (c *BaseController) ValidatePhone(phone string) bool {
+	if phone == "" {
+		return false
+	}
+
 	phoneRegex := regexp.MustCompile(`^1[3-9]\d{9}$`)
 	return phoneRegex.MatchString(phone)
 }

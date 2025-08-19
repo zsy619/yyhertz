@@ -45,7 +45,6 @@ package core
 // - 当BaseController添加新的公共方法时，必须同步更新此列表
 // - 所有框架内部功能方法都应添加到对应的分类中
 // - 保持分类清晰，便于维护和理解
-//
 var ReservedMethods = map[string]bool{
 	// ========== 1. 控制器生命周期方法 ==========
 	// 框架自动调用的生命周期管理方法
@@ -133,6 +132,8 @@ var ReservedMethods = map[string]bool{
 	"GetMap": true, "GetMapNoPathParams": true,
 	"SaveToFile": true, "SaveToFileWithBuffer": true,
 	"GetRequestBody": true, "GetRequestBodyString": true,
+	"GetScheme": true, "GetHost": true, "GetPort": true,
+	"GetReferer": true, "GetRemoteAddr": true, "GetRealIP": true,
 
 	// ========== 14. 表单解析和多值参数方法 ==========
 	// 表单数据解析和多值参数处理方法
@@ -347,7 +348,7 @@ var ReservedMethods = map[string]bool{
 	"GetQueueMetrics": true, "ExportQueueData": true, "ImportQueueData": true,
 
 	// ========== 39. 管理员权限方法 ==========
-	// 管理员登录和权限验证方法  
+	// 管理员登录和权限验证方法
 	"IsAdminLogin": true, "SetAdminId": true,
 
 	// ========== 40. 分页处理方法 ==========

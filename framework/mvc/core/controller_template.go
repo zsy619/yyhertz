@@ -236,13 +236,13 @@ func (c *BaseController) AddTemplateFunction(name string, fn any) {
 // renderTemplate 内部模板渲染方法（使用模板管理器）
 func (c *BaseController) renderTemplate() error {
 	if !c.EnableRender {
-		return fmt.Errorf("template rendering is disabled")
+		return c.Errorf("template rendering is disabled")
 	}
 
 	// 确定模板文件名
 	tplName := c.TplName
 	if tplName == "" {
-		return fmt.Errorf("template name is empty")
+		return c.Errorf("template name is empty")
 	}
 
 	// 构建完整的模板路径
@@ -286,7 +286,7 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 
 	// 检查文件是否存在
 	if _, err := os.Stat(viewPath); os.IsNotExist(err) {
-		return fmt.Errorf("template file not found: %s", viewPath)
+		return c.Errorf("template file not found: %s", viewPath)
 	}
 
 	var tmpl *template.Template

@@ -673,7 +673,7 @@ func (c *BaseController) BindForm(obj any) error {
 // 读取HTTP请求体中的Protobuf二进制数据并将其绑定到指定的Proto消息对象
 func (c *BaseController) BindProtobuf(obj any) error {
 	if c.Ctx == nil {
-		return fmt.Errorf("context is nil")  
+		return fmt.Errorf("context is nil")
 	}
 	return c.Ctx.BindProtobuf(obj)
 }
@@ -685,7 +685,7 @@ func (c *BaseController) BindProtobuf(obj any) error {
 // 兼容 beego 框架的 GetMap 方法
 func (c *BaseController) GetMap(exclude ...string) (data map[string]any) {
 	data = make(map[string]any)
-	
+
 	if c.Ctx == nil || c.Ctx.Request() == nil {
 		return data
 	}
@@ -731,7 +731,7 @@ func (c *BaseController) GetMap(exclude ...string) (data map[string]any) {
 			}
 		}
 	}
-	
+
 	// 4. 转换为 map[string]any，智能处理单值和多值
 	for key, values := range allParams {
 		if len(values) == 0 {
@@ -783,7 +783,7 @@ func (c *BaseController) convertToAny(value string) any {
 // 适用于需要明确区分表单数据和路径参数的场景
 func (c *BaseController) GetMapNoPathParams(exclude ...string) (data map[string]any) {
 	data = make(map[string]any)
-	
+
 	if c.Ctx == nil || c.Ctx.Request() == nil {
 		return data
 	}
@@ -836,6 +836,7 @@ func (c *BaseController) GetMapNoPathParams(exclude ...string) (data map[string]
 
 	return data
 }
+
 // ============= 文件处理和请求体方法 =============
 
 // SaveToFile 将上传的文件保存到指定路径（Beego兼容）
@@ -881,7 +882,7 @@ func (c *BaseController) SaveToFile(fromFile, toFile string) error {
 
 // SaveToFileWithBuffer 使用指定缓冲区将上传的文件保存到指定路径
 // fromFile: 表单中文件字段名
-// toFile: 保存到的文件路径  
+// toFile: 保存到的文件路径
 // buf: 复制时使用的缓冲区
 // 这是 SaveToFile 的高性能版本，允许重用缓冲区
 func (c *BaseController) SaveToFileWithBuffer(fromFile, toFile string, buf []byte) error {
@@ -915,7 +916,7 @@ func (c *BaseController) SaveToFileWithBuffer(fromFile, toFile string, buf []byt
 	} else {
 		_, err = io.Copy(dst, file)
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to copy file contents: %v", err)
 	}
@@ -946,4 +947,156 @@ func (c *BaseController) GetRequestBodyString() (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+// ============= 请求信息增强方法 =============
+
+// GetScheme 获取请求协议（http 或 https）
+func (c *BaseController) GetScheme() string {
+	if c.Ctx == nil || c.Ctx.Request() == nil {
+		return "http"
+	}
+
+	// 检查 X-Forwarded-Proto 头（代理情况）
+	if proto := c.Ctx.GetHeader("X-Forwarded-Proto"); proto != "" {
+		return proto
+	}
+
+	// 检查是否是 HTTPS（通过检查端口或其他方式）
+	if strings.HasPrefix(strings.ToLower(c.Ctx.GetHeader("Host")), "https://") ||
+		c.Ctx.GetHeader("X-Forwarded-Proto") == "https" {
+		return "https"
+	}
+
+	return "http"
+}
+
+// GetHost 获取主机名（不含端口）
+func (c *BaseController) GetHost() string {
+	if c.Ctx == nil || c.Ctx.Request() == nil {
+		return ""
+	}
+
+	// 检查 X-Forwarded-Host 头（代理情况）
+	if host := c.Ctx.GetHeader("X-Forwarded-Host"); host != "" {
+		return host
+	}
+
+	// 获取 Host 头
+	host := c.Ctx.GetHeader("Host")
+	if host == "" {
+		return ""
+	}
+
+	// 分离主机名和端口
+	hostPart, _, err := net.SplitHostPort(host)
+	if err != nil {
+		// 如果分离失败，可能没有端口号
+		return host
+	}
+
+	return hostPart
+}
+
+// GetPort 获取端口号
+func (c *BaseController) GetPort() int {
+	if c.Ctx == nil || c.Ctx.Request() == nil {
+		return 0
+	}
+
+	// 检查 X-Forwarded-Port 头（代理情况）
+	if port := c.Ctx.GetHeader("X-Forwarded-Port"); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			return p
+		}
+	}
+
+	// 获取 Host 头
+	host := c.Ctx.GetHeader("Host")
+	if host == "" {
+		// 根据协议返回默认端口
+		if c.GetScheme() == "https" {
+			return 443
+		}
+		return 80
+	}
+
+	// 分离主机名和端口
+	_, portStr, err := net.SplitHostPort(host)
+	if err != nil {
+		// 如果分离失败，返回默认端口
+		if c.GetScheme() == "https" {
+			return 443
+		}
+		return 80
+	}
+
+	if port, err := strconv.Atoi(portStr); err == nil {
+		return port
+	}
+
+	return 80
+}
+
+// GetReferer 获取引用页面
+func (c *BaseController) GetReferer() string {
+	if c.Ctx == nil {
+		return ""
+	}
+	return c.Ctx.GetHeader("Referer")
+}
+
+// GetRemoteAddr 获取远程地址
+func (c *BaseController) GetRemoteAddr() string {
+	if c.Ctx == nil || c.Ctx.Request() == nil {
+		return ""
+	}
+	return c.Ctx.Request().RemoteAddr().String()
+}
+
+// GetRealIP 获取真实IP地址（考虑代理）
+func (c *BaseController) GetRealIP() string {
+	if c.Ctx == nil {
+		return ""
+	}
+
+	// 按优先级检查各种 IP 头
+	headers := []string{
+		"X-Real-IP",
+		"X-Forwarded-For",
+		"X-Client-IP",
+		"CF-Connecting-IP", // Cloudflare
+		"True-Client-IP",   // Akamai
+	}
+
+	for _, header := range headers {
+		if ip := c.Ctx.GetHeader(header); ip != "" {
+			// X-Forwarded-For 可能包含多个 IP，取第一个
+			if header == "X-Forwarded-For" {
+				ips := strings.Split(ip, ",")
+				if len(ips) > 0 {
+					ip = strings.TrimSpace(ips[0])
+				}
+			}
+
+			// 验证 IP 格式
+			if net.ParseIP(ip) != nil {
+				return ip
+			}
+		}
+	}
+
+	// 如果没有代理头，使用远程地址
+	remoteAddr := c.GetRemoteAddr()
+	if remoteAddr != "" {
+		// 分离 IP 和端口
+		ip, _, err := net.SplitHostPort(remoteAddr)
+		if err != nil {
+			// 可能没有端口
+			return remoteAddr
+		}
+		return ip
+	}
+
+	return ""
 }
