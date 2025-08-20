@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	
+	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 )
 
 // ============= Cookie基础功能测试 =============
@@ -12,7 +14,7 @@ import (
 func TestBaseCookieOperations(t *testing.T) {
 	// 创建测试上下文
 	mockRequest := &app.RequestContext{}
-	cookie := NewBaseCookie(mockRequest)
+	cookie := cookie.NewBaseCookie(mockRequest)
 	
 	t.Log("🍪 测试基础Cookie操作")
 	
@@ -49,7 +51,7 @@ func TestBaseCookieOperations(t *testing.T) {
 func TestOutputCookieOperations(t *testing.T) {
 	// 创建测试上下文
 	mockRequest := &app.RequestContext{}
-	outputCookie := NewOutputCookie(mockRequest)
+	outputCookie := cookie.NewOutputCookie(mockRequest)
 	
 	t.Log("📤 测试输出Cookie操作")
 	
@@ -63,7 +65,7 @@ func TestOutputCookieOperations(t *testing.T) {
 func TestSecureCookieOperations(t *testing.T) {
 	// 创建测试上下文
 	mockRequest := &app.RequestContext{}
-	secureCookie := NewSecureCookie(mockRequest)
+	secureCookie := cookie.NewSecureCookie(mockRequest)
 	
 	t.Log("🔐 测试安全Cookie操作")
 	
@@ -83,12 +85,12 @@ func TestSecureCookieOperations(t *testing.T) {
 func TestAdvancedSecureCookieOptions(t *testing.T) {
 	// 创建测试上下文
 	mockRequest := &app.RequestContext{}
-	secureCookie := NewSecureCookie(mockRequest)
+	secureCookie := cookie.NewSecureCookie(mockRequest)
 	
 	t.Log("⚙️ 测试高级安全Cookie选项")
 	
 	// 配置安全选项
-	options := CookieSecurityOptions{
+	options := cookie.CookieSecurityOptions{
 		Secret:          "advanced_secret_key_hmac",
 		MaxAge:          time.Hour * 24, // 24小时
 		ValidateExpiry:  true,
@@ -118,12 +120,12 @@ func TestAdvancedSecureCookieOptions(t *testing.T) {
 func TestCookieSecurityFeatures(t *testing.T) {
 	// 创建测试上下文
 	mockRequest := &app.RequestContext{}
-	secureCookie := NewSecureCookie(mockRequest)
+	secureCookie := cookie.NewSecureCookie(mockRequest)
 	
 	t.Log("🛡️ 测试Cookie安全特性")
 	
 	// 测试过期验证
-	shortOptions := CookieSecurityOptions{
+	shortOptions := cookie.CookieSecurityOptions{
 		Secret:          "expire_test_secret",
 		MaxAge:          time.Millisecond * 100, // 很短的过期时间
 		ValidateExpiry:  true,
@@ -150,7 +152,7 @@ func TestCookieSecurityFeatures(t *testing.T) {
 	}
 	
 	// 测试HTTPS要求
-	httpsOptions := CookieSecurityOptions{
+	httpsOptions := cookie.CookieSecurityOptions{
 		Secret:       "https_test_secret",
 		RequireHTTPS: true,
 	}
@@ -340,7 +342,7 @@ func TestCookieUtilityFunctions(t *testing.T) {
 	
 	// 测试解析Cookie字符串
 	cookieStr := "name1=value1; name2=value2; name3=value3"
-	cookies := ParseCookieString(cookieStr)
+	cookies := cookie.ParseCookieString(cookieStr)
 	
 	if len(cookies) != 3 {
 		t.Errorf("期望解析出3个cookie，实际为: %d", len(cookies))
@@ -355,7 +357,7 @@ func TestCookieUtilityFunctions(t *testing.T) {
 		"test1": "value1",
 		"test2": "value2",
 	}
-	formatted := FormatCookieString(testCookies)
+	formatted := cookie.FormatCookieString(testCookies)
 	if formatted == "" {
 		t.Error("期望格式化后的字符串不为空")
 	}
@@ -363,16 +365,16 @@ func TestCookieUtilityFunctions(t *testing.T) {
 	t.Logf("格式化后的Cookie字符串: %s", formatted)
 	
 	// 测试Cookie名称验证
-	if !ValidateCookieName("valid_name") {
+	if !cookie.ValidateCookieName("valid_name") {
 		t.Error("期望valid_name是合法的cookie名称")
 	}
 	
-	if ValidateCookieName("invalid;name") {
+	if cookie.ValidateCookieName("invalid;name") {
 		t.Error("期望invalid;name是非法的cookie名称")
 	}
 	
 	// 测试Cookie值验证
-	if !ValidateCookieValue("valid_value") {
+	if !cookie.ValidateCookieValue("valid_value") {
 		t.Error("期望valid_value是合法的cookie值")
 	}
 	
@@ -386,13 +388,13 @@ func TestSecurityUtilityFunctions(t *testing.T) {
 	value := "test_value"
 	
 	// 测试生成安全值
-	secureValue := GenerateSecureValue(secret, value)
+	secureValue := cookie.GenerateSecureValue(secret, value)
 	if secureValue == "" {
 		t.Error("期望生成的安全值不为空")
 	}
 	
 	// 测试解析安全值
-	parsedValue, valid := ParseSecureValue(secret, secureValue)
+	parsedValue, valid := cookie.ParseSecureValue(secret, secureValue)
 	if !valid {
 		t.Error("期望解析安全值成功")
 	}
@@ -402,13 +404,13 @@ func TestSecurityUtilityFunctions(t *testing.T) {
 	}
 	
 	// 测试过期检查
-	if IsSecureCookieExpired(secureValue, time.Millisecond) {
+	if cookie.IsSecureCookieExpired(secureValue, time.Millisecond) {
 		// 这里可能会因为执行速度太快而不过期，这是正常的
 		t.Log("Cookie可能已过期（取决于执行速度）")
 	}
 	
 	// 测试获取时间戳
-	timestamp, err := GetSecureCookieTimestamp(secureValue)
+	timestamp, err := cookie.GetSecureCookieTimestamp(secureValue)
 	if err != nil {
 		t.Errorf("获取时间戳失败: %v", err)
 	}
@@ -424,7 +426,7 @@ func TestSecurityUtilityFunctions(t *testing.T) {
 
 func BenchmarkBaseCookieSet(b *testing.B) {
 	mockRequest := &app.RequestContext{}
-	cookie := NewBaseCookie(mockRequest)
+	cookie := cookie.NewBaseCookie(mockRequest)
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -434,7 +436,7 @@ func BenchmarkBaseCookieSet(b *testing.B) {
 
 func BenchmarkSecureCookieSet(b *testing.B) {
 	mockRequest := &app.RequestContext{}
-	secureCookie := NewSecureCookie(mockRequest)
+	secureCookie := cookie.NewSecureCookie(mockRequest)
 	secret := "benchmark_secret_key"
 	
 	b.ResetTimer()

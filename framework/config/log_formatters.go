@@ -461,7 +461,7 @@ func (f *GinFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		methodColor := f.getMethodColor(method)
 		resetColor := "\033[0m"
 
-		message = fmt.Sprintf("[GIN] %s %s |%s %3s %s| %13s | %15s |%s %-7s %s %s",
+		message = fmt.Sprintf("[YYHertz] %s %s |%s %3s %s| %13s | %15s |%s %-7s %s %s",
 			levelChar,
 			timestamp,
 			statusColor, statusCode, resetColor,
@@ -470,7 +470,7 @@ func (f *GinFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			methodColor, method, resetColor,
 			path)
 	} else {
-		message = fmt.Sprintf("[GIN] %s %s | %3s | %13s | %15s | %-7s %s",
+		message = fmt.Sprintf("[YYHertz] %s %s | %3s | %13s | %15s | %-7s %s",
 			levelChar, timestamp, statusCode, latency, clientIP, method, path)
 	}
 

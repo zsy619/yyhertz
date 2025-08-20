@@ -265,3 +265,5 @@ framework/mvc/core/conf/redis.yaml
 framework/mvc/core/conf/session.yaml
 framework/mvc/core/conf/template.yaml
 framework/mvc/core/conf/tls.yaml
+framework/mvc/session/conf
+framework/view/conf

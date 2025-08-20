@@ -5,21 +5,67 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/config"
 )
 
+// CSRFTokenProvider CSRF token提供者接口
+//
+// 此接口用于解决循环导入问题，允许view包获取CSRF token
+// 而不需要直接依赖mvc包
+type CSRFTokenProvider interface {
+	// GenerateSimpleToken 生成简单的CSRF token
+	GenerateSimpleToken() string
+}
+
+// 全局CSRF token提供者
+var (
+	globalCSRFProvider CSRFTokenProvider
+	csrfProviderMutex  sync.RWMutex
+)
+
+// SetCSRFTokenProvider 设置CSRF token提供者
+//
+// 此方法由mvc包调用，用于注册CSRF token提供者
+func SetCSRFTokenProvider(provider CSRFTokenProvider) {
+	csrfProviderMutex.Lock()
+	defer csrfProviderMutex.Unlock()
+	globalCSRFProvider = provider
+}
+
+// GetCSRFTokenProvider 获取CSRF token提供者
+func GetCSRFTokenProvider() CSRFTokenProvider {
+	csrfProviderMutex.RLock()
+	defer csrfProviderMutex.RUnlock()
+	return globalCSRFProvider
+}
+
 // RenderData 渲染数据结构
 type RenderData struct {
-	Data    any          `json:"data"`
-	Meta    *MetaData    `json:"meta,omitempty"`
-	Flash   *FlashData   `json:"flash,omitempty"`
-	CSRF    string       `json:"csrf,omitempty"`
-	Theme   string       `json:"theme,omitempty"`
-	User    any          `json:"user,omitempty"`
-	Request *RequestData `json:"request,omitempty"`
+	Data      any          `json:"data"`
+	Meta      *MetaData    `json:"meta,omitempty"`
+	Flash     *FlashData   `json:"flash,omitempty"`
+	CSRF      string       `json:"csrf,omitempty"`
+	CsrfToken string       `json:"csrf_token,omitempty"` // 添加驼峰命名字段，用于模板中的{{.CsrfToken}}访问
+	Theme     string       `json:"theme,omitempty"`
+	User      any          `json:"user,omitempty"`
+	Request   *RequestData `json:"request,omitempty"`
+}
+
+// ============= 模板友好的方法 =============
+
+// GetCSRFToken 获取CSRF令牌（别名方法）
+func (r *RenderData) GetCSRFToken() string {
+	return r.CSRF
+}
+
+// Csrf_token 获取CSRF令牌（下划线命名）
+func (r *RenderData) Csrf_token() string {
+	return r.CSRF
 }
 
 // MetaData 页面元数据
@@ -81,8 +127,8 @@ func (e *TemplateEngine) RenderWithLayout(templateName, layoutName string, data 
 
 	// 渲染模板
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, renderData); err != nil {
-		return "", fmt.Errorf("template execution error: %w", err)
+	if err := tmpl.Execute(&buf, renderData.Data); err != nil {
+		return "", fmt.Errorf("template execution error for '%s': %w\nTemplate paths: %v", templateName, err, e.viewPaths)
 	}
 
 	result := buf.String()
@@ -120,19 +166,23 @@ func (e *TemplateEngine) getTemplate(templateName string) (*template.Template, e
 	// 从缓存获取
 	if e.enableCache {
 		if tmpl, exists := e.templates[templateName]; exists {
+			config.Debugf("Template %s loaded from cache", templateName)
 			return tmpl, nil
 		}
 	}
 
 	// 动态加载模板
+	config.Debugf("Template %s not in cache, loading from disk", templateName)
 	tmpl, err := e.loadTemplate(templateName)
 	if err != nil {
+		config.Errorf("Failed to load template %s: %v", templateName, err)
 		return nil, err
 	}
 
-	// 缓存模板
+	// 缓存模板 - 但确保缓存的是正确的模板
 	if e.enableCache {
 		e.templates[templateName] = tmpl
+		config.Debugf("Template %s cached successfully with name: %s", templateName, tmpl.Name())
 	}
 
 	return tmpl, nil
@@ -186,15 +236,38 @@ func (e *TemplateEngine) loadTemplate(templateName string) (*template.Template, 
 		return nil, err
 	}
 
+	// 添加调试日志
+	config.Debugf("Loading template: %s from path: %s", templateName, templatePath)
+
+	// 创建空的主模板
 	tmpl := template.New(templateName).
 		Delims(e.delimLeft, e.delimRight).
 		Funcs(e.funcMap)
 
-	if _, err := tmpl.ParseFiles(templatePath); err != nil {
-		return nil, fmt.Errorf("failed to parse template: %w", err)
+	// 解析文件到模板中
+	parsedTmpl, err := tmpl.ParseFiles(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template %s at %s: %w", templateName, templatePath, err)
 	}
 
-	return tmpl, nil
+	// 查找实际的模板文件名（通常是文件的basename）
+	templates := parsedTmpl.Templates()
+	var actualTemplate *template.Template
+
+	// 查找不为空的模板
+	for _, t := range templates {
+		if t.Tree != nil && t.Tree.Root != nil {
+			actualTemplate = t
+			break
+		}
+	}
+
+	if actualTemplate == nil {
+		return nil, fmt.Errorf("template %s is empty or invalid", templateName)
+	}
+
+	config.Debugf("Found actual template: %s", actualTemplate.Name())
+	return actualTemplate, nil
 }
 
 // findTemplateFile 查找模板文件
@@ -208,9 +281,10 @@ func (e *TemplateEngine) findTemplateFile(templateName string) (string, error) {
 	for _, viewPath := range e.viewPaths {
 		templatePath := fmt.Sprintf("%s/%s", viewPath, templateName)
 
-		// 检查文件是否存在（这里简化处理，实际应该用os.Stat）
-		// 为了避免依赖os包，我们暂时返回第一个路径
-		return templatePath, nil
+		// 检查文件是否存在
+		if _, err := os.Stat(templatePath); err == nil {
+			return templatePath, nil
+		}
 	}
 
 	return "", fmt.Errorf("template file '%s' not found in view paths: %v", templateName, e.viewPaths)
@@ -229,6 +303,17 @@ func (e *TemplateEngine) prepareRenderData(data any) *RenderData {
 		if renderData.Theme == "" {
 			renderData.Theme = e.currentTheme
 		}
+		// 确保CSRF token已设置，如果为空则从模板引擎获取
+		if renderData.CSRF == "" {
+			renderData.CSRF = e.getCSRFToken()
+		}
+		// 同时设置CsrfToken字段，确保与CSRF字段同步
+		renderData.CsrfToken = renderData.CSRF
+	} else {
+		// 为新的RenderData设置默认的CSRF token
+		csrfToken := e.getCSRFToken()
+		renderData.CSRF = csrfToken
+		renderData.CsrfToken = csrfToken // 同时设置两个字段
 	}
 
 	return renderData
@@ -312,8 +397,13 @@ func (e *TemplateEngine) buildURL(path string, params ...any) string {
 
 // getCSRFToken 获取CSRF令牌
 func (e *TemplateEngine) getCSRFToken() string {
-	// 这里应该从请求上下文中获取CSRF令牌
-	// 暂时返回占位符
+	// 尝试通过CSRF提供者获取token
+	provider := GetCSRFTokenProvider()
+	if provider != nil {
+		return provider.GenerateSimpleToken()
+	}
+
+	// 如果没有提供者，返回占位符
 	return "csrf-token-placeholder"
 }
 
@@ -540,6 +630,27 @@ func (e *TemplateEngine) ClearCache() {
 	e.components = make(map[string]*template.Template)
 
 	config.Info("Template cache cleared")
+}
+
+// ReloadAllTemplates 清除缓存并重新加载所有模板
+func (e *TemplateEngine) ReloadAllTemplates() error {
+	// 清除缓存
+	e.ClearCache()
+
+	// 重新加载所有模板
+	err := e.loadAllTemplates()
+	if err != nil {
+		config.Errorf("Failed to reload templates: %v", err)
+		return err
+	}
+
+	config.Info("All templates reloaded successfully")
+	return nil
+}
+
+// PrepareRenderData 公开的渲染数据准备方法（用于测试和外部调用）
+func (e *TemplateEngine) PrepareRenderData(data any) *RenderData {
+	return e.prepareRenderData(data)
 }
 
 // GetStats 获取模板引擎统计信息

@@ -2,25 +2,27 @@ package session
 
 import (
 	"github.com/cloudwego/hertz/pkg/app"
+	
+	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 )
 
 // ContextExtension Context的session/cookie扩展
 // 为各种Context类型提供统一的session和cookie操作接口
 type ContextExtension struct {
-	Cookie         *BaseCookie     // 基础cookie操作
-	SecureCookie   *SecureCookie   // 安全cookie操作
-	OutputCookie   *OutputCookie   // 输出cookie操作
-	SessionMgr     *SessionManager // session管理器
-	context        any             // 关联的上下文
-	currentSession *Adapter        // 当前session适配器
+	Cookie         *cookie.BaseCookie     // 基础cookie操作
+	SecureCookie   *cookie.SecureCookie   // 安全cookie操作
+	OutputCookie   *cookie.OutputCookie   // 输出cookie操作
+	SessionMgr     *SessionManager        // session管理器
+	context        any                    // 关联的上下文
+	currentSession *Adapter               // 当前session适配器
 }
 
 // NewExtensionForHertzContext 为Hertz RequestContext创建扩展
 func NewExtensionForHertzContext(ctx *app.RequestContext) *ContextExtension {
 	return &ContextExtension{
-		Cookie:       NewBaseCookie(ctx),
-		SecureCookie: NewSecureCookie(ctx),
-		OutputCookie: NewOutputCookie(ctx),
+		Cookie:       cookie.NewBaseCookie(ctx),
+		SecureCookie: cookie.NewSecureCookie(ctx),
+		OutputCookie: cookie.NewOutputCookie(ctx),
 		SessionMgr:   NewSessionManager(nil), // 使用默认配置避免测试环境配置问题
 		context:      ctx,
 	}
@@ -44,9 +46,9 @@ func NewExtensionForYYHertzContext(ctx any) *ContextExtension {
 	}
 
 	if hertzCtx != nil {
-		extension.Cookie = NewBaseCookie(hertzCtx)
-		extension.SecureCookie = NewSecureCookie(hertzCtx)
-		extension.OutputCookie = NewOutputCookie(hertzCtx)
+		extension.Cookie = cookie.NewBaseCookie(hertzCtx)
+		extension.SecureCookie = cookie.NewSecureCookie(hertzCtx)
+		extension.OutputCookie = cookie.NewOutputCookie(hertzCtx)
 	}
 
 	return extension

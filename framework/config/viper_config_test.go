@@ -54,33 +54,33 @@ func TestConfigManager_TemplateConfig(t *testing.T) {
 		require.NotNil(t, config)
 
 		// 检查默认值
-		assert.Equal(t, "html", config.Engine.Type)
-		assert.Equal(t, "./views", config.Engine.Directory)
-		assert.Equal(t, ".html", config.Engine.Extension)
-		assert.True(t, config.Cache.Enable)
+		assert.Equal(t, ".html", config.Extension)
+		assert.Contains(t, config.ViewPaths, "./views")
+		assert.Equal(t, "./views/layouts", config.LayoutPath)
+		assert.True(t, config.EnableCache)
 	})
 
 	t.Run("使用泛型便捷函数", func(t *testing.T) {
-		engineType := GetConfigString(TemplateConfig{}, "engine.type")
-		assert.Equal(t, "html", engineType)
+		extension := GetConfigString(TemplateConfig{}, "extension")
+		assert.Equal(t, ".html", extension)
 
-		templateDir := GetConfigString(TemplateConfig{}, "engine.directory")
-		assert.Equal(t, "./views", templateDir)
+		layoutPath := GetConfigString(TemplateConfig{}, "layout_path")
+		assert.Equal(t, "./views/layouts", layoutPath)
 
-		cacheEnabled := GetConfigBool(TemplateConfig{}, "cache.enable")
+		cacheEnabled := GetConfigBool(TemplateConfig{}, "enable_cache")
 		assert.True(t, cacheEnabled)
 	})
 
 	t.Run("设置模板配置值", func(t *testing.T) {
 		// 设置新值
-		SetConfigValue(TemplateConfig{}, "engine.type", "pug")
-		SetConfigValue(TemplateConfig{}, "cache.enable", false)
+		SetConfigValue(TemplateConfig{}, "extension", ".pug")
+		SetConfigValue(TemplateConfig{}, "enable_cache", false)
 
 		// 验证设置的值
-		engineType := GetConfigString(TemplateConfig{}, "engine.type")
-		assert.Equal(t, "pug", engineType)
+		extension := GetConfigString(TemplateConfig{}, "extension")
+		assert.Equal(t, ".pug", extension)
 
-		cacheEnabled := GetConfigBool(TemplateConfig{}, "cache.enable")
+		cacheEnabled := GetConfigBool(TemplateConfig{}, "enable_cache")
 		assert.False(t, cacheEnabled)
 	})
 }

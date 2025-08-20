@@ -108,6 +108,9 @@ func (c *BaseController) initFromFactory(controllerName string, appController IC
 	if c.Data == nil {
 		c.Data = make(map[string]any)
 	}
+	
+	// 确保所有基础组件都已初始化
+	c.initializeBaseController()
 }
 
 // ============= 便捷的构造函数生成器 =============

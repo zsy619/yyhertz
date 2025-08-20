@@ -1,0 +1,66 @@
+# YYHertz Template Engine Configuration
+# 模板引擎配置文件
+
+# 模板引擎基础配置
+engine:
+  type: "html"                    # 模板引擎类型: html, pug, handlebars
+  directory: "./views"            # 模板文件目录
+  extension: ".html"              # 模板文件扩展名
+  reload: true                    # 开发环境下自动重载
+  debug: false                    # 调试模式
+  charset: "UTF-8"                # 字符编码
+  delimiters: ["{{", "}}"]        # 模板分隔符
+  func_map: []                    # 自定义模板函数
+  layout_dir: "./views/layout"    # 布局文件目录
+  partials_dir: "./views/partials" # 部分模板目录
+  disable_cache: false            # 禁用缓存
+
+# 渲染配置
+render:
+  html_escape: true               # HTML自动转义
+  compress_html: false           # 压缩HTML输出
+  indent_json: false             # JSON格式化输出
+  indent_xml: false              # XML格式化输出
+  default_type: "text/html"      # 默认Content-Type
+  headers: []                    # 默认响应头
+
+# 缓存配置
+cache:
+  enable: true                   # 启用模板缓存
+  type: "memory"                 # 缓存类型: memory, redis, file
+  ttl: 3600                      # 缓存生存时间(秒)
+  max_size: 1000                 # 内存缓存最大条目数
+  key_prefix: "template:"        # 缓存键前缀
+  cache_dir: "./cache/templates" # 文件缓存目录
+
+# 静态资源配置
+static:
+  enable: true                   # 启用静态文件服务
+  root: "./static"               # 静态文件根目录
+  index: ["index.html", "index.htm"] # 默认首页文件
+  browse: false                  # 启用目录浏览
+  compress: true                 # 启用gzip压缩
+  cache_duration: 86400          # 浏览器缓存时长(秒)
+  exclude: [".git", ".svn", ".DS_Store"] # 排除的文件/目录
+
+# 组件系统配置
+components:
+  enable: false                  # 启用组件系统
+  directory: "./views/components" # 组件文件目录
+  auto_register: true            # 自动注册组件
+  namespace: ""                  # 组件命名空间
+  extensions: [".html", ".htm"]  # 组件文件扩展名
+
+# 开发环境配置
+development:
+  live_reload: true              # 实时重载
+  auto_build: false              # 自动构建
+  watch_patterns: ["*.html", "*.css", "*.js"] # 监听文件模式
+  build_command: ""              # 构建命令
+  
+  # 开发服务器配置
+  dev_server:
+    port: 3000                   # 开发服务器端口
+    host: "localhost"            # 开发服务器主机
+    proxy: ""                    # 代理后端服务地址
+    open_browser: false          # 自动打开浏览器

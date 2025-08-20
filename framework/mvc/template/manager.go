@@ -5,13 +5,13 @@ import (
 	"sync"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/view"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // TemplateManager 模板管理器（单实例）
 type TemplateManager struct {
 	engine *view.TemplateEngine
-	config *view.TemplateConfig
+	config *config.ViewTemplateConfig
 	mutex  sync.RWMutex
 }
 
@@ -37,8 +37,8 @@ func GetTemplateManager() *TemplateManager {
 
 // NewTemplateManager 创建新的模板管理器
 func NewTemplateManager() (*TemplateManager, error) {
-	// 使用默认模板配置（暂时简化，避免配置读取问题）
-	templateConfig := view.DefaultTemplateConfig()
+	// 使用从config包加载的模板配置
+	templateConfig := config.DefaultViewTemplateConfig()
 
 	// 创建模板引擎
 	engine, err := view.NewTemplateEngine(templateConfig)
@@ -56,52 +56,13 @@ func NewTemplateManager() (*TemplateManager, error) {
 }
 
 // loadTemplateConfigFromFile 从配置文件加载模板配置
-func loadTemplateConfigFromFile() (*view.TemplateConfig, error) {
-	cfg := &view.TemplateConfig{}
-
-	// 基础配置 - 使用默认值的方式
-	cfg.ViewPaths = []string{"views", "templates"}
-	cfg.LayoutPath = "views/layouts"
-	cfg.ComponentPath = "views/components"
-	cfg.Extension = ".html"
-	cfg.DelimLeft = "{{"
-	cfg.DelimRight = "}}"
-	cfg.EnableCache = true
-	cfg.EnableReload = true
-	cfg.EnableCompress = false
-	cfg.CurrentTheme = "default"
-	cfg.Themes = view.DefaultTemplateConfig().Themes
-
-	// 尝试从配置文件读取模板配置 (如果配置文件存在的话)
-	if layoutPath := configEngine.GetString("engine.layout_dir"); layoutPath != "" {
-		cfg.LayoutPath = layoutPath
-	}
-
-	if extension := configEngine.GetString("engine.extension"); extension != "" {
-		cfg.Extension = extension
-	}
-
-	if delimiters := configEngine.GetStringSlice("engine.delimiters"); len(delimiters) == 2 {
-		cfg.DelimLeft = delimiters[0]
-		cfg.DelimRight = delimiters[1]
-	}
-
-	if viewPaths := configEngine.GetStringSlice("engine.directory"); len(viewPaths) > 0 {
-		cfg.ViewPaths = viewPaths
-	}
-
-	// 性能配置
-	cfg.EnableCache = configEngine.GetBool("template.enable_cache")
-	cfg.EnableReload = configEngine.GetBool("template.enable_reload")
-	cfg.EnableCompress = configEngine.GetBool("template.enable_compress")
-
-	// 主题配置
-	if currentTheme := configEngine.GetString("template.current_theme"); currentTheme != "" {
-		cfg.CurrentTheme = currentTheme
-	}
+func loadTemplateConfigFromFile() (*config.ViewTemplateConfig, error) {
+	// 使用config包的LoadTemplateConfig并转换为view兼容格式
+	cfg := config.LoadTemplateConfig()
+	viewConfig := config.ConvertToViewTemplateConfig(cfg)
 
 	config.Infof("Loaded template configuration from config file")
-	return cfg, nil
+	return viewConfig, nil
 }
 
 // GetEngine 获取模板引擎
@@ -112,7 +73,7 @@ func (tm *TemplateManager) GetEngine() *view.TemplateEngine {
 }
 
 // GetConfig 获取模板配置
-func (tm *TemplateManager) GetConfig() *view.TemplateConfig {
+func (tm *TemplateManager) GetConfig() *config.ViewTemplateConfig {
 	tm.mutex.RLock()
 	defer tm.mutex.RUnlock()
 	return tm.config
@@ -157,7 +118,7 @@ func (tm *TemplateManager) AddFunction(name string, fn any) {
 }
 
 // AddTheme 添加新主题
-func (tm *TemplateManager) AddTheme(name string, theme *view.ThemeConfig) error {
+func (tm *TemplateManager) AddTheme(name string, theme *config.ViewThemeConfig) error {
 	tm.mutex.Lock()
 	defer tm.mutex.Unlock()
 

@@ -70,6 +70,15 @@ session:
     csrf_protection: false               # CSRF保护
     encrypt_data: false                  # 加密Session数据
     secure_transmission: false           # 安全传输
+    
+    # CSRF配置
+    csrf:
+      secret: "yyhertz-csrf-secret-key-default" # CSRF签名密钥
+      token_length: 32                   # Token长度（字节）
+      expire_time: 3600                  # 过期时间（秒）- 1小时
+      cookie_name: "_csrf_token"         # CSRF token的Cookie名称
+      header_name: "X-CSRF-Token"        # 请求头中的CSRF token名称
+      form_field_name: "csrf_token"      # 表单字段中的CSRF token名称
   
   # 清理配置
   cleanup:

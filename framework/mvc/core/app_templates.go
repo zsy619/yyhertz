@@ -3,7 +3,7 @@ package core
 import (
 	"html/template"
 
-	"github.com/zsy619/yyhertz/framework/view"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // ============= 模板函数管理方法 =============

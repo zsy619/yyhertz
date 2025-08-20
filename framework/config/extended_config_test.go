@@ -127,81 +127,56 @@ func TestTemplateConfig_ConfigManager(t *testing.T) {
 		require.NotNil(t, config)
 
 		// 检查默认值
-		assert.Equal(t, "html", config.Engine.Type)
-		assert.Equal(t, "./views", config.Engine.Directory)
-		assert.Equal(t, ".html", config.Engine.Extension)
-		assert.True(t, config.Engine.Reload)
-		assert.Equal(t, "UTF-8", config.Engine.Charset)
-
-		assert.True(t, config.Render.HTMLEscape)
-		assert.False(t, config.Render.CompressHTML)
-		assert.Equal(t, "text/html", config.Render.DefaultType)
-
-		assert.True(t, config.Cache.Enable)
-		assert.Equal(t, "memory", config.Cache.Type)
-		assert.Equal(t, 3600, config.Cache.TTL)
-		assert.Equal(t, "template:", config.Cache.KeyPrefix)
-
-		assert.True(t, config.Static.Enable)
-		assert.Equal(t, "./static", config.Static.Root)
-		assert.Contains(t, config.Static.Index, "index.html")
-		assert.True(t, config.Static.Compress)
-
-		assert.False(t, config.Components.Enable)
-		assert.Equal(t, "./views/components", config.Components.Directory)
-		assert.True(t, config.Components.AutoRegister)
-
-		assert.True(t, config.Development.LiveReload)
-		assert.False(t, config.Development.AutoBuild)
-		assert.Equal(t, 3000, config.Development.DevServer.Port)
-		assert.Equal(t, "localhost", config.Development.DevServer.Host)
+		assert.Equal(t, ".html", config.Extension)
+		assert.Contains(t, config.ViewPaths, "./views")
+		assert.Equal(t, "./views/layouts", config.LayoutPath)
+		assert.True(t, config.EnableReload)
+		assert.True(t, config.EnableCache)
+		assert.Equal(t, "./views/components", config.ComponentPath)
+		assert.Equal(t, "default", config.CurrentTheme)
+		assert.NotNil(t, config.Themes)
+		assert.Contains(t, config.Themes, "default")
 	})
 
 	t.Run("使用泛型便捷函数 - TemplateConfig", func(t *testing.T) {
-		engineType := GetConfigString(TemplateConfig{}, "engine.type")
-		assert.Equal(t, "html", engineType)
+		extension := GetConfigString(TemplateConfig{}, "extension")
+		assert.Equal(t, ".html", extension)
 
-		templateDir := GetConfigString(TemplateConfig{}, "engine.directory")
-		assert.Equal(t, "./views", templateDir)
+		layoutPath := GetConfigString(TemplateConfig{}, "layout_path")
+		assert.Equal(t, "./views/layouts", layoutPath)
 
-		reloadEnabled := GetConfigBool(TemplateConfig{}, "engine.reload")
+		reloadEnabled := GetConfigBool(TemplateConfig{}, "enable_reload")
 		assert.True(t, reloadEnabled)
 
-		cacheEnabled := GetConfigBool(TemplateConfig{}, "cache.enable")
+		cacheEnabled := GetConfigBool(TemplateConfig{}, "enable_cache")
 		assert.True(t, cacheEnabled)
 
-		cacheTTL := GetConfigInt(TemplateConfig{}, "cache.ttl")
-		assert.Equal(t, 3600, cacheTTL)
+		componentPath := GetConfigString(TemplateConfig{}, "component_path")
+		assert.Equal(t, "./views/components", componentPath)
 
-		staticRoot := GetConfigString(TemplateConfig{}, "static.root")
-		assert.Equal(t, "./static", staticRoot)
-
-		liveReload := GetConfigBool(TemplateConfig{}, "development.live_reload")
-		assert.True(t, liveReload)
-
-		devPort := GetConfigInt(TemplateConfig{}, "development.dev_server.port")
-		assert.Equal(t, 3000, devPort)
+		currentTheme := GetConfigString(TemplateConfig{}, "current_theme")
+		assert.Equal(t, "default", currentTheme)
 	})
 
 	t.Run("设置模板配置值", func(t *testing.T) {
 		// 设置新值
-		SetConfigValue(TemplateConfig{}, "engine.type", "pug")
-		SetConfigValue(TemplateConfig{}, "engine.directory", "./templates")
-		SetConfigValue(TemplateConfig{}, "cache.enable", false)
-		SetConfigValue(TemplateConfig{}, "development.dev_server.port", 4000)
+		SetConfigValue(TemplateConfig{}, "extension", ".pug")
+		SetConfigValue(TemplateConfig{}, "layout_path", "./templates/layouts")
+		SetConfigValue(TemplateConfig{}, "enable_cache", false)
+		SetConfigValue(TemplateConfig{}, "current_theme", "custom")
 
 		// 验证设置的值
-		engineType := GetConfigString(TemplateConfig{}, "engine.type")
-		assert.Equal(t, "pug", engineType)
+		extension := GetConfigString(TemplateConfig{}, "extension")
+		assert.Equal(t, ".pug", extension)
 
-		templateDir := GetConfigString(TemplateConfig{}, "engine.directory")
-		assert.Equal(t, "./templates", templateDir)
+		layoutPath := GetConfigString(TemplateConfig{}, "layout_path")
+		assert.Equal(t, "./templates/layouts", layoutPath)
 
-		cacheEnabled := GetConfigBool(TemplateConfig{}, "cache.enable")
+		cacheEnabled := GetConfigBool(TemplateConfig{}, "enable_cache")
 		assert.False(t, cacheEnabled)
 
-		devPort := GetConfigInt(TemplateConfig{}, "development.dev_server.port")
-		assert.Equal(t, 4000, devPort)
+		theme := GetConfigString(TemplateConfig{}, "current_theme")
+		assert.Equal(t, "custom", theme)
 	})
 
 	t.Run("使用模板配置管理器", func(t *testing.T) {
@@ -222,19 +197,19 @@ func TestTemplateConfig_ConfigManager(t *testing.T) {
 		assert.True(t, staticCompress)
 
 		// 设置配置值
-		manager.Set("engine.type", "handlebars")
-		manager.Set("cache.ttl", 7200)
-		manager.Set("development.live_reload", false)
+		manager.Set("extension", ".hbs")
+		manager.Set("enable_cache", false)
+		manager.Set("current_theme", "custom")
 
 		// 验证设置的值
-		engineType := manager.GetString("engine.type")
-		assert.Equal(t, "handlebars", engineType)
+		extension = manager.GetString("extension")
+		assert.Equal(t, ".hbs", extension)
 
-		cacheTTL := manager.GetInt("cache.ttl")
-		assert.Equal(t, 7200, cacheTTL)
+		cacheEnabled := manager.GetBool("enable_cache")
+		assert.False(t, cacheEnabled)
 
-		liveReload := manager.GetBool("development.live_reload")
-		assert.False(t, liveReload)
+		theme := manager.GetString("current_theme")
+		assert.Equal(t, "custom", theme)
 	})
 }
 
@@ -267,7 +242,7 @@ func TestExtendedConfig_CrossConfigAccess(t *testing.T) {
 		// 设置不同配置类型的值
 		SetConfigValue(AppConfig{}, "app.name", "MyApp")
 		SetConfigValue(AuthConfig{}, "application.name", "MyAuthService")
-		SetConfigValue(TemplateConfig{}, "engine.type", "vue")
+		SetConfigValue(TemplateConfig{}, "extension", ".vue")
 
 		// 验证每个配置类型都维持独立的值
 		appName := GetConfigString(AppConfig{}, "app.name")

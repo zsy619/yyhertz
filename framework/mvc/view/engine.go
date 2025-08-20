@@ -51,62 +51,16 @@ type TemplateEngine struct {
 
 	// 主题支持
 	currentTheme string                  // 当前主题
-	themes       map[string]*ThemeConfig // 主题配置
+	themes       map[string]*config.ViewThemeConfig // 主题配置
 }
 
-// ThemeConfig 主题配置
-type ThemeConfig struct {
-	Name          string            `json:"name"`
-	ViewPaths     []string          `json:"view_paths"`
-	LayoutPath    string            `json:"layout_path"`
-	ComponentPath string            `json:"component_path"`
-	StaticPath    string            `json:"static_path"`
-	Enabled       bool              `json:"enabled"`
-	Default       bool              `json:"default"`
-	Variables     map[string]string `json:"variables"`
-}
+// 使用 config 包中的配置结构体
+// ThemeConfig 和 TemplateConfig 已迁移到 config 包
 
-// TemplateConfig 模板引擎配置
-type TemplateConfig struct {
-	ViewPaths      []string                `json:"view_paths" yaml:"view_paths"`
-	LayoutPath     string                  `json:"layout_path" yaml:"layout_path"`
-	ComponentPath  string                  `json:"component_path" yaml:"component_path"`
-	Extension      string                  `json:"extension" yaml:"extension"`
-	DelimLeft      string                  `json:"delim_left" yaml:"delim_left"`
-	DelimRight     string                  `json:"delim_right" yaml:"delim_right"`
-	EnableCache    bool                    `json:"enable_cache" yaml:"enable_cache"`
-	EnableReload   bool                    `json:"enable_reload" yaml:"enable_reload"`
-	EnableCompress bool                    `json:"enable_compress" yaml:"enable_compress"`
-	CurrentTheme   string                  `json:"current_theme" yaml:"current_theme"`
-	Themes         map[string]*ThemeConfig `json:"themes" yaml:"themes"`
-}
-
-// DefaultTemplateConfig 默认模板配置
-func DefaultTemplateConfig() *TemplateConfig {
-	return &TemplateConfig{
-		ViewPaths:      []string{"views", "templates"},
-		LayoutPath:     "views/layouts",
-		ComponentPath:  "views/components",
-		Extension:      ".html",
-		DelimLeft:      "{{",
-		DelimRight:     "}}",
-		EnableCache:    true,
-		EnableReload:   true,
-		EnableCompress: false,
-		CurrentTheme:   "default",
-		Themes: map[string]*ThemeConfig{
-			"default": {
-				Name:          "default",
-				ViewPaths:     []string{"views"},
-				LayoutPath:    "views/layouts",
-				ComponentPath: "views/components",
-				StaticPath:    "static",
-				Enabled:       true,
-				Default:       true,
-				Variables:     make(map[string]string),
-			},
-		},
-	}
+// DefaultTemplateConfig 默认模板配置（向后兼容）
+// 该函数返回 config 包中的默认配置，转换为 view 包兼容的格式
+func DefaultTemplateConfig() *config.ViewTemplateConfig {
+	return config.DefaultViewTemplateConfig()
 }
 
 var (
@@ -185,7 +139,7 @@ func GetDefaultEngine() *TemplateEngine {
 }
 
 // NewTemplateEngine 创建新的模板引擎
-func NewTemplateEngine(cfg *TemplateConfig) (*TemplateEngine, error) {
+func NewTemplateEngine(cfg *config.ViewTemplateConfig) (*TemplateEngine, error) {
 	if cfg == nil {
 		cfg = DefaultTemplateConfig()
 	}
@@ -249,6 +203,7 @@ func (e *TemplateEngine) registerDefaultFunctions() {
 	e.funcMap["asset"] = e.getAssetURL
 	e.funcMap["url"] = e.buildURL
 	e.funcMap["csrf"] = e.getCSRFToken
+	e.funcMap["csrf_token"] = e.getCSRFToken // 下划线别名
 	e.funcMap["flash"] = e.getFlashMessage
 	e.funcMap["truncate"] = e.truncateString
 	e.funcMap["markdown"] = e.renderMarkdown
@@ -315,12 +270,12 @@ func (e *TemplateEngine) SetTheme(themeName string) error {
 }
 
 // AddTheme 添加新主题
-func (e *TemplateEngine) AddTheme(name string, theme *ThemeConfig) error {
+func (e *TemplateEngine) AddTheme(name string, theme *config.ViewThemeConfig) error {
 	e.templateMutex.Lock()
 	defer e.templateMutex.Unlock()
 
 	if e.themes == nil {
-		e.themes = make(map[string]*ThemeConfig)
+		e.themes = make(map[string]*config.ViewThemeConfig)
 	}
 
 	theme.Name = name
@@ -331,7 +286,7 @@ func (e *TemplateEngine) AddTheme(name string, theme *ThemeConfig) error {
 }
 
 // GetTheme 获取主题配置
-func (e *TemplateEngine) GetTheme(name string) (*ThemeConfig, bool) {
+func (e *TemplateEngine) GetTheme(name string) (*config.ViewThemeConfig, bool) {
 	e.templateMutex.RLock()
 	defer e.templateMutex.RUnlock()
 
@@ -345,6 +300,34 @@ func (e *TemplateEngine) GetCurrentTheme() string {
 	defer e.templateMutex.RUnlock()
 
 	return e.currentTheme
+}
+
+// ============= 测试辅助方法 =============
+
+// CreateInlineTemplate 创建内联模板（用于测试）
+func (e *TemplateEngine) CreateInlineTemplate(name, content string) (*template.Template, error) {
+	tmpl := template.New(name).
+		Delims(e.delimLeft, e.delimRight).
+		Funcs(e.funcMap)
+
+	return tmpl.Parse(content)
+}
+
+// ExecuteTemplate 执行模板（用于测试）
+func (e *TemplateEngine) ExecuteTemplate(tmpl *template.Template, data interface{}) (string, error) {
+	var buf strings.Builder
+	err := tmpl.Execute(&buf, data)
+	return buf.String(), err
+}
+
+// createInlineTemplate 创建内联模板（用于测试）- 内部方法兼容性
+func (e *TemplateEngine) createInlineTemplate(name, content string) (*template.Template, error) {
+	return e.CreateInlineTemplate(name, content)
+}
+
+// executeTemplate 执行模板（用于测试）- 内部方法兼容性
+func (e *TemplateEngine) executeTemplate(tmpl *template.Template, data interface{}) (string, error) {
+	return e.ExecuteTemplate(tmpl, data)
 }
 
 // GetAvailableThemes 获取所有可用主题
@@ -588,13 +571,29 @@ func (e *TemplateEngine) loadViewTemplates() error {
 					Delims(e.delimLeft, e.delimRight).
 					Funcs(e.funcMap)
 
-				if _, err := tmpl.ParseFiles(path); err != nil {
+				parsedTmpl, err := tmpl.ParseFiles(path)
+				if err != nil {
 					config.Errorf("Failed to parse template %s: %v", path, err)
 					return nil
 				}
 
-				e.templates[templateName] = tmpl
-				config.Debugf("Loaded template: %s", templateName)
+				// 查找实际的模板（类似loadTemplate中的逻辑）
+				templates := parsedTmpl.Templates()
+				var actualTemplate *template.Template
+
+				for _, t := range templates {
+					if t.Tree != nil && t.Tree.Root != nil {
+						actualTemplate = t
+						break
+					}
+				}
+
+				if actualTemplate != nil {
+					e.templates[templateName] = actualTemplate
+					config.Debugf("Loaded template: %s -> %s", templateName, actualTemplate.Name())
+				} else {
+					config.Warnf("Template %s is empty or invalid", templateName)
+				}
 			}
 
 			return nil

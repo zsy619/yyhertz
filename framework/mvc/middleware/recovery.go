@@ -9,7 +9,7 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/errors"
-	"github.com/zsy619/yyhertz/framework/response"
+	"github.com/zsy619/yyhertz/framework/mvc/response"
 )
 
 // RecoveryMiddleware 恢复中间件 - 捕获panic并恢复(参考FreeCar项目)

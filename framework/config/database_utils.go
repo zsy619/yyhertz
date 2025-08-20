@@ -45,7 +45,7 @@ func (node *DatabaseNodeConfig) BuildDSN() string {
 
 var (
 	// 全局数据库实例
-	globalDatabase *DatabaseConfig
+	GlobalDatabase *DatabaseConfig
 	// 初始化锁
 	dbOnce sync.Once
 	// 配置文件是否已加载
@@ -284,47 +284,47 @@ func GetAllDatabaseNodes() []string {
 // InitGlobalDatabase 初始化全局数据库配置
 func InitGlobalDatabase() error {
 	dbOnce.Do(func() {
-		globalDatabase = DefaultDatabaseConfig()
+		GlobalDatabase = DefaultDatabaseConfig()
 	})
 	return nil
 }
 
 // SetGlobalDatabase 设置全局数据库配置
 func SetGlobalDatabase(config *DatabaseConfig) {
-	globalDatabase = config
+	GlobalDatabase = config
 }
 
 // GetGlobalDatabase 获取全局数据库配置
 func GetGlobalDatabase() *DatabaseConfig {
-	if globalDatabase == nil {
+	if GlobalDatabase == nil {
 		_ = InitGlobalDatabase() // 忽略错误，因为这是初始化默认配置
 	}
-	return globalDatabase
+	return GlobalDatabase
 }
 
 // 获取primary数据库的DSN（保持向后兼容）
 func GetGlobalDatabaseExt() string {
-	if globalDatabase == nil {
+	if GlobalDatabase == nil {
 		return ""
 	}
 
 	// 如果Primary.DSN已配置，直接返回
-	if globalDatabase.Primary.DSN != "" {
-		return globalDatabase.Primary.DSN
+	if GlobalDatabase.Primary.DSN != "" {
+		return GlobalDatabase.Primary.DSN
 	}
 
 	// 否则构建DSN
 	config := &DatabaseNodeConfig{
-		Driver:    globalDatabase.Primary.Driver,
-		Host:      globalDatabase.Primary.Host,
-		Port:      globalDatabase.Primary.Port,
-		Database:  globalDatabase.Primary.Database,
-		Username:  globalDatabase.Primary.Username,
-		Password:  globalDatabase.Primary.Password,
-		Charset:   globalDatabase.Primary.Charset,
-		Collation: globalDatabase.Primary.Collation,
-		Timezone:  globalDatabase.Primary.Timezone,
-		SSLMode:   globalDatabase.Primary.SSLMode,
+		Driver:    GlobalDatabase.Primary.Driver,
+		Host:      GlobalDatabase.Primary.Host,
+		Port:      GlobalDatabase.Primary.Port,
+		Database:  GlobalDatabase.Primary.Database,
+		Username:  GlobalDatabase.Primary.Username,
+		Password:  GlobalDatabase.Primary.Password,
+		Charset:   GlobalDatabase.Primary.Charset,
+		Collation: GlobalDatabase.Primary.Collation,
+		Timezone:  GlobalDatabase.Primary.Timezone,
+		SSLMode:   GlobalDatabase.Primary.SSLMode,
 	}
 
 	dsn, _ := buildDSN(config)

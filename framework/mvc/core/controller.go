@@ -8,8 +8,8 @@ import (
 	context "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
-	templatemanager "github.com/zsy619/yyhertz/framework/template"
-	"github.com/zsy619/yyhertz/framework/view"
+	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // BaseController 基础控制器结构
@@ -114,10 +114,11 @@ func NewBaseController() *BaseController {
 		optimizationEnabled: false,             // 默认不启用优化
 		middlewareList:      make([]string, 0), // 初始化空中间件列表
 
-		// 辅助工具
-		cookieHelper:   cookie.NewHelper(cookie.DefaultConfig()),
-		sessionHelper:  session.NewManager(session.DefaultConfig()),
-		templateEngine: templatemanager.GetTemplateManager().GetEngine(),
+		// 辅助工具 - 使用全局管理器的引用（向后兼容）
+		// 注意：这些字段现在指向全局实例，而不是每个控制器的独立实例
+		cookieHelper:   nil, // 将在 initializeBaseController 中设置
+		sessionHelper:  nil, // 将在 initializeBaseController 中设置
+		templateEngine: nil, // 将在 initializeBaseController 中设置
 	}
 }
 
@@ -175,6 +176,39 @@ func (c *BaseController) initializeBaseController() {
 		c.Layout = "layout.html"
 	}
 	c.EnableRender = true
+	
+	// 为了向后兼容，保留字段设置，但它们现在可能指向全局实例
+	// 通过 getGlobalManagerInstances 函数获取全局实例（如果可用）
+	c.ensureHelpersInitialized()
+}
+
+// ensureHelpersInitialized 确保辅助工具已初始化
+// 这个方法会尝试获取全局实例，如果不可用则创建本地实例
+func (c *BaseController) ensureHelpersInitialized() {
+	// 尝试获取全局实例，如果失败则使用本地实例
+	if c.cookieHelper == nil {
+		if globalHelper := getGlobalCookieHelperIfAvailable(); globalHelper != nil {
+			c.cookieHelper = globalHelper
+		} else {
+			c.cookieHelper = cookie.NewHelper(cookie.DefaultConfig())
+		}
+	}
+	
+	if c.sessionHelper == nil {
+		if globalManager := getGlobalSessionManagerIfAvailable(); globalManager != nil {
+			c.sessionHelper = globalManager
+		} else {
+			c.sessionHelper = session.NewManager(session.DefaultConfig())
+		}
+	}
+	
+	if c.templateEngine == nil {
+		if globalEngine := getGlobalTemplateEngineIfAvailable(); globalEngine != nil {
+			c.templateEngine = globalEngine
+		} else {
+			c.templateEngine = templatemanager.GetTemplateManager().GetEngine()
+		}
+	}
 }
 
 // Prepare 预处理方法
@@ -291,4 +325,49 @@ func (c *BaseController) DisableOptimization() {
 // IsOptimizationEnabled 检查是否启用优化特性
 func (c *BaseController) IsOptimizationEnabled() bool {
 	return c.optimizationEnabled
+}
+
+// ============= 全局实例访问器（避免循环导入） =============
+
+// 这些函数通过反射或其他方式访问全局实例，避免直接导入 mvc 包造成循环导入
+
+// globalManagerAccessor 全局管理器访问器接口
+type globalManagerAccessor interface {
+	GetSessionManager() *session.Manager
+	GetCookieHelper() *cookie.Helper
+	GetTemplateEngine() *view.TemplateEngine
+	IsInitialized() bool
+}
+
+// 全局管理器访问器实例（将在运行时设置）
+var globalAccessor globalManagerAccessor
+
+// SetGlobalManagerAccessor 设置全局管理器访问器
+// 这个函数将由 mvc 包在初始化时调用，以避免循环导入
+func SetGlobalManagerAccessor(accessor globalManagerAccessor) {
+	globalAccessor = accessor
+}
+
+// getGlobalSessionManagerIfAvailable 获取全局Session管理器（如果可用）
+func getGlobalSessionManagerIfAvailable() *session.Manager {
+	if globalAccessor != nil && globalAccessor.IsInitialized() {
+		return globalAccessor.GetSessionManager()
+	}
+	return nil
+}
+
+// getGlobalCookieHelperIfAvailable 获取全局Cookie辅助器（如果可用）
+func getGlobalCookieHelperIfAvailable() *cookie.Helper {
+	if globalAccessor != nil && globalAccessor.IsInitialized() {
+		return globalAccessor.GetCookieHelper()
+	}
+	return nil
+}
+
+// getGlobalTemplateEngineIfAvailable 获取全局模板引擎（如果可用）
+func getGlobalTemplateEngineIfAvailable() *view.TemplateEngine {
+	if globalAccessor != nil && globalAccessor.IsInitialized() {
+		return globalAccessor.GetTemplateEngine()
+	}
+	return nil
 }

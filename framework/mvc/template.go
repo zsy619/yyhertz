@@ -1,6 +1,6 @@
 package mvc
 
-import "github.com/zsy619/yyhertz/framework/view"
+import "github.com/zsy619/yyhertz/framework/mvc/view"
 
 func init() {
 	LogDebug("开始加载系统模板函数。。。")

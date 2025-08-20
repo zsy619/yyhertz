@@ -163,16 +163,34 @@ func init() {
 	RegisterConfigName[MiddlewareConfig](MiddlewareConfigName)
 
 	// 数据库初始化
-	dbOnce.Do(func() {
-		if globalDatabase == nil {
-			// 如果未初始化，使用默认配置初始化
-			dbConfig, err := GetDatabaseConfig()
-			if err != nil {
-				dbConfig = DefaultDatabaseConfig()
-			}
-			globalDatabase = dbConfig
+	if GlobalDatabase == nil {
+		// 如果未初始化，使用默认配置初始化
+		dbConfig, err := GetDatabaseConfig()
+		if err != nil {
+			dbConfig = DefaultDatabaseConfig()
 		}
-	})
+		GlobalDatabase = dbConfig
+	}
+
+	// session初始化
+	if GlobalSession == nil {
+		// 如果未初始化，使用默认配置初始化
+		sessionConfig, err := GetSessionConfig()
+		if err != nil {
+			sessionConfig = DefaultSessionConfig()
+		}
+		GlobalSession = sessionConfig
+	}
+
+	// template初始化
+	if GlobalTemplate == nil {
+		// 如果未初始化，使用默认配置初始化
+		templateConfig, err := GetTemplateConfig()
+		if err != nil {
+			templateConfig = DefaultTemplateConfig()
+		}
+		GlobalTemplate = templateConfig
+	}
 }
 
 // 全局便捷函数，用于快速获取不同类型的配置
@@ -210,6 +228,11 @@ func GetLogConfig() (*LogConfig, error) {
 // GetDatabaseConfig 获取数据库配置
 func GetDatabaseConfig() (*DatabaseConfig, error) {
 	manager := GetViperConfigManager(DatabaseConfig{})
+	return manager.GetConfig()
+}
+
+func GetSessionConfig() (*SessionConfig, error) {
+	manager := GetViperConfigManager(SessionConfig{})
 	return manager.GetConfig()
 }
 

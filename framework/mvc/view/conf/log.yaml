@@ -1,0 +1,97 @@
+# 日志配置
+# 支持日志级别: debug, info, warn, error, fatal, panic
+level: "info"
+
+# 日志格式: json, text, beego, log4go, logstash, syslog, fluentd, cloudwatch, azure_insights, gin, iris, ent, go_zero, fiber, echo, revel, buffalo
+# beego: Beego风格格式 [L] yyyy/mm/dd hh:mm:ss.sss [filename:line] message
+# log4go: Log4go风格格式 [yyyy/mm/dd hh:mm:ss] [LEVEL] (filename:line) message
+# logstash: Logstash JSON格式，包含@timestamp, @version, level, message等字段
+# syslog: 标准Syslog格式 <priority>timestamp hostname tag: message
+# fluentd: Fluentd JSON格式，适用于日志聚合
+# cloudwatch: AWS CloudWatch格式
+# azure_insights: Azure Application Insights格式
+# gin: Gin框架格式 [GIN] yyyy/mm/dd - hh:mm:ss | status | latency | client_ip | method | path
+# iris: Iris框架格式 [IRIS] yyyy/mm/dd hh:mm:ss | status | latency | client_ip | method path
+# ent: Ent ORM格式 [ENT] yyyy/mm/dd hh:mm:ss [LEVEL] SQL operation (latency)
+# go_zero: go-zero微服务格式 JSON包含服务名、追踪ID等微服务字段
+# fiber: Fiber框架格式 hh:mm:ss | status | latency | client_ip | method | path
+# echo: Echo框架格式 JSON包含时间、级别、前缀、文件、消息
+# revel: Revel MVC格式 LEVEL yyyy/mm/dd hh:mm:ss file:line: message
+# buffalo: Buffalo格式 --> METHOD path (latency) | client_ip | status
+format: "beego"
+
+# 输出配置
+enable_console: true  # 是否输出到控制台
+enable_file: true     # 是否输出到文件
+file_path: "./logs/app.log"  # 日志文件路径
+
+# 文件轮转配置
+max_size: 100      # 单个日志文件最大大小(MB)
+max_age: 7         # 日志文件保留天数
+max_backups: 10    # 最大备份数量
+compress: true     # 是否压缩旧日志
+
+# 高级配置
+show_caller: true      # 是否显示调用位置
+show_timestamp: true   # 是否显示时间戳
+timestamp_format: "2006/01/02 15:04:05.000"  # Beego风格时间格式
+
+# 全局字段（可选）
+fields:
+  service: "yyhertz"
+  version: "1.0.0"
+  # 可以添加更多全局字段
+
+# 输出目标配置
+outputs:
+  - "console"
+  - "file"
+  # - "syslog"
+  # - "fluentd"
+  # - "cloudwatch"
+  # - "azure_insights"
+  # - "elasticsearch"
+  # - "kafka"
+
+# 各输出目标的具体配置
+output_config:
+  syslog:
+    network: "udp"
+    address: "localhost:514"
+    priority: 16  # local0.info
+    tag: "yyhertz"
+  
+  fluentd:
+    host: "localhost"
+    port: 24224
+    tag: "yyhertz.logs"
+    timeout: "3s"
+    extra:
+      environment: "production"
+  
+  cloudwatch:
+    region: "us-east-1"
+    log_group_name: "/aws/yyhertz/application"
+    log_stream_name: "yyhertz-instance-001"
+    # access_key_id: "your-access-key"
+    # secret_access_key: "your-secret-key"
+  
+  azure_insights:
+    instrumentation_key: "your-instrumentation-key"
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    properties:
+      application: "yyhertz"
+      environment: "production"
+  
+  elasticsearch:
+    urls:
+      - "http://localhost:9200"
+    index: "yyhertz-logs"
+    # username: "elastic"
+    # password: "password"
+  
+  kafka:
+    brokers:
+      - "localhost:9092"
+    topic: "yyhertz-logs"
+    client_id: "yyhertz-logger"

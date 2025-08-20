@@ -1,23 +1,23 @@
-# YYHertz Session & Cookie 模块
+# YYHertz Session 模块
 
 ## 概述
 
-YYHertz Session & Cookie 模块提供了统一、安全、高性能的会话和Cookie管理功能。通过重构优化，现在所有session和cookie相关功能都集中在 `@framework/mvc/session` 包中，提供更好的模块化和维护性。
+YYHertz Session 模块提供了统一、安全、高性能的会话管理功能。通过架构重构优化，session功能现在专注于会话管理，而Cookie功能已独立为 `@framework/mvc/cookie` 包，提供更好的模块化和维护性。
 
 ## 🚀 主要特性
 
 ### ✨ 核心功能
 - **统一的API接口** - 兼容Beego Session API，零学习成本
 - **多种Context支持** - 同时支持Hertz和YYHertz Context
-- **安全Cookie** - 内置HMAC-SHA256签名防篡改
 - **高性能设计** - 代理模式实现，几乎零性能开销
 - **完全向后兼容** - 保持100%向后兼容性
+- **灵活存储** - 支持内存、Redis等多种存储后端
 
 ### 🔐 安全特性
-- HMAC-SHA256 安全签名
-- 时间戳验证防重放攻击
+- 安全的Session ID生成
+- Session劫持保护
 - 可配置的安全选项
-- HTTPS强制要求支持
+- 自动过期管理
 
 ### ⚡ 性能优化
 - 延迟初始化减少内存开销
@@ -29,23 +29,23 @@ YYHertz Session & Cookie 模块提供了统一、安全、高性能的会话和C
 
 ```
 framework/mvc/session/
-├── cookie.go              # 基础Cookie操作
-├── security.go            # 安全Cookie功能
 ├── session_adapter.go     # Session适配器
-├── context_extension.go   # Context扩展
+├── context_extension.go   # Context扩展（现已整合Cookie功能）
 ├── manager.go            # Session管理器
 ├── store.go              # Session存储接口
 ├── config.go             # 配置管理
-├── demo.go               # 使用示例
+├── demo.go               # 使用示例和Cookie迁移演示
 ├── session_test.go       # 功能测试
 ├── benchmark_test.go     # 性能基准测试
 ├── production_compatibility_test.go  # 生产环境测试
 └── README.md             # 本文档
 ```
 
+> **注意**: Cookie相关功能已迁移至 `@framework/mvc/cookie` 包。Session包中的Context扩展提供了向后兼容的Cookie接口。
+
 ## 🔧 快速开始
 
-### 基础Cookie操作
+### 基础Session操作
 
 ```go
 import "github.com/zsy619/yyhertz/framework/mvc/session"
@@ -54,45 +54,6 @@ import "github.com/zsy619/yyhertz/framework/mvc/session"
 ctx := // 你的RequestContext
 extension := session.NewExtensionForHertzContext(ctx)
 
-// 设置Cookie
-extension.SetCookie("user_preference", "dark_mode")
-
-// 获取Cookie
-value := extension.GetCookie("user_preference")
-
-// 删除Cookie
-extension.DelCookie("user_preference")
-
-// 检查Cookie是否存在
-exists := extension.CookieExists("user_preference")
-```
-
-### 安全Cookie操作
-
-```go
-// 设置安全Cookie
-secret := "your-hmac-secret-key"
-extension.SetSecureCookie(secret, "csrf_token", "random_token_value")
-
-// 获取并验证安全Cookie
-token, ok := extension.GetSecureCookie(secret, "csrf_token")
-if ok {
-    // Cookie验证成功，使用token
-}
-
-// 带选项的安全Cookie
-options := session.CookieSecurityOptions{
-    Secret:         "your-secret",
-    MaxAge:         time.Hour * 24,
-    ValidateExpiry: true,
-    RequireHTTPS:   true,
-}
-err := extension.SecureCookie.SetSecureWithOptions("secure_data", "value", options)
-```
-
-### Session操作
-
-```go
 // 设置Session
 err := extension.SetSession("user_id", "12345")
 err = extension.SetSession("username", "testuser")
@@ -104,6 +65,13 @@ username := extension.GetSession("username")
 // 删除Session
 err = extension.DelSession("user_id")
 
+// 检查Session是否存在
+exists := extension.GetSession("user_id") != nil
+```
+
+### 高级Session操作
+
+```go
 // 清空所有Session
 extension.ClearSession()
 
@@ -112,9 +80,15 @@ extension.DestroySession()
 
 // 重新生成Session ID
 extension.SessionRegenerateID()
+
+// 获取Session ID
+sessionID := extension.GetSessionID()
+
+// 检查Session是否已启动
+started := extension.IsSessionStarted()
 ```
 
-### 高级用法
+### 高级用法 - Session适配器
 
 ```go
 // 获取Session适配器进行批量操作
@@ -128,7 +102,13 @@ adapter.Set("key2", "value2")
 value1 := adapter.Get("key1")
 value2 := adapter.Get("key2")
 
-// 保存Session
+// 检查数据存在
+exists := adapter.Has("key1")
+
+// 删除特定数据
+adapter.Delete("key1")
+
+// 保存Session（通常自动完成）
 adapter.Save()
 
 // 获取Session ID
@@ -139,14 +119,30 @@ sessionID := adapter.GetSessionID()
 
 ### 从旧版本迁移
 
-如果你之前使用的是 `framework/mvc/context` 中的session/cookie功能，**无需修改任何代码**！新版本通过代理模式保持100%向后兼容。
+如果你之前使用的是 `framework/mvc/context` 中的session功能，**无需修改任何代码**！新版本通过代理模式保持100%向后兼容。
 
 ```go
-// 这些代码继续正常工作
-inputData.Cookie("key")
-inputData.SetCookie("key", "value")
+// 这些Session代码继续正常工作
 inputData.SetSession("key", "value")
+inputData.GetSession("key")
+inputData.DelSession("key")
 // ... 等等
+```
+
+### Cookie功能迁移
+
+Cookie相关功能已迁移到独立的 `@framework/mvc/cookie` 包：
+
+```go
+// 旧用法（仍然有效，通过代理）
+inputData.SetCookie("key", "value")
+inputData.Cookie("key")
+
+// 新推荐用法
+import "github.com/zsy619/yyhertz/framework/mvc/cookie"
+helper := cookie.NewHelper(cookie.DefaultConfig())
+helper.Set(ctx, "key", "value")
+value := helper.Get(ctx, "key")
 ```
 
 ### 推荐的新用法

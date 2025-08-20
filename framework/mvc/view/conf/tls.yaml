@@ -1,0 +1,112 @@
+# YYHertz TLS Configuration
+# TLS/SSL 安全传输层配置文件
+
+# 基本配置
+basic:
+  enable: false                              # 是否启用TLS
+  environment: "development"                 # 环境: development, testing, production
+  debug: true                                # 调试模式
+  log_level: "info"                          # 日志级别: debug, info, warn, error
+
+# 证书配置
+certificate:
+  cert_file: "./certs/server.crt"            # 服务器证书文件路径
+  key_file: "./certs/server.key"             # 服务器私钥文件路径
+  ca_file: ""                                # CA证书文件路径
+  cert_data: ""                              # PEM编码的证书内容（直接配置）
+  key_data: ""                               # PEM编码的私钥内容（直接配置）
+  pass_phrase: ""                            # 私钥密码
+  validity_period: 30                        # 证书有效期检查阈值(天)
+
+# TLS版本配置
+version:
+  min_version: "1.2"                         # 最小TLS版本: 1.0, 1.1, 1.2, 1.3
+  max_version: "1.3"                         # 最大TLS版本: 1.0, 1.1, 1.2, 1.3
+  supported_versions: ["1.2", "1.3"]        # 支持的TLS版本列表
+
+# 密码套件配置
+cipher:
+  suites:                                    # 支持的密码套件
+    - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+    - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+    - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+    - "TLS_RSA_WITH_AES_256_GCM_SHA384"
+    - "TLS_RSA_WITH_AES_128_GCM_SHA256"
+  prefer_server: true                        # 优先使用服务器密码套件
+  curves: ["P-256", "P-384", "P-521"]        # 支持的椭圆曲线
+  signature_algs: ["RSA-PSS-SHA256", "ECDSA-SHA256"] # 签名算法
+
+# 客户端认证配置
+client_auth:
+  mode: "NoClientCert"                       # 客户端认证模式: NoClientCert, RequestClientCert, RequireAnyClientCert, VerifyClientCertIfGiven, RequireAndVerifyClientCert
+  ca_file: ""                                # 客户端CA证书文件
+  ca_data: ""                                # 客户端CA证书内容
+  crl_file: ""                               # 证书撤销列表文件
+  verify_depth: 5                            # 证书链验证深度
+  allowed_cns: []                            # 允许的客户端证书CN列表
+
+# 证书自动管理
+auto_management:
+  enable: false                              # 启用证书自动管理
+  reload_interval: 300                       # 证书重载检查间隔(秒)
+  watch_files: true                          # 监控证书文件变化
+  backup_enabled: false                      # 启用证书备份
+  backup_dir: "./certs/backup"               # 证书备份目录
+  
+  # 健康检查
+  health_check:
+    enable: true                             # 启用证书健康检查
+    interval: 60                             # 检查间隔(秒)
+    timeout: 10                              # 检查超时(秒)
+
+# ALPN协议配置
+alpn:
+  next_protos: ["h2", "http/1.1"]            # 支持的应用层协议
+  h2_enabled: true                           # 启用HTTP/2
+  h2c_enabled: false                         # 启用HTTP/2 over cleartext
+  http1_enabled: true                        # 启用HTTP/1.1
+
+# 会话管理
+session:
+  tickets_enabled: true                      # 启用会话票据
+  ticket_key: ""                             # 会话票据密钥
+  ticket_key_rotation: false                 # 启用票据密钥轮换
+  ticket_lifetime: 86400                     # 会话票据生存时间(秒)
+  cache_size: 1000                           # 会话缓存大小
+  cache_ttl: 3600                            # 会话缓存TTL(秒)
+
+# OCSP配置
+ocsp:
+  enable: false                              # 启用OCSP装订
+  stapling_file: ""                          # OCSP响应文件
+  responder_url: ""                          # OCSP响应服务器URL
+  cache_time: 3600                           # OCSP响应缓存时间(秒)
+
+# HSTS配置
+hsts:
+  enable: false                              # 启用HSTS
+  max_age: 31536000                          # HSTS最大生存时间(秒)
+  include_subdomains: false                  # 包含子域名
+  preload: false                             # 启用HSTS预加载
+  header: "Strict-Transport-Security"        # HSTS头名称
+
+# 性能优化
+performance:
+  read_timeout: 60                           # 读取超时(秒)
+  write_timeout: 60                          # 写入超时(秒)
+  idle_timeout: 120                          # 空闲超时(秒)
+  max_header_bytes: 1048576                  # 最大请求头大小(字节)
+  keep_alive: true                           # 启用Keep-Alive
+  tcp_nodelay: true                          # 启用TCP_NODELAY
+  reuse_port: false                          # 启用端口复用
+  read_buffer_size: 4096                     # 读缓冲区大小(字节)
+  write_buffer_size: 4096                    # 写缓冲区大小(字节)
+
+# 监控配置
+monitoring:
+  enable: false                              # 启用TLS监控
+  metrics_path: "/metrics"                   # 监控指标路径
+  log_connections: false                     # 记录连接日志
+  log_handshakes: true                       # 记录握手日志
+  log_errors: true                           # 记录错误日志
+  stats_interval: 60                         # 统计信息更新间隔(秒)

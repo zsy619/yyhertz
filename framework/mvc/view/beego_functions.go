@@ -134,6 +134,10 @@ var BeegoTemplateFuncs = template.FuncMap{
 	"unique":    Unique,
 	"compact":   Compact,
 	"flatten":   Flatten,
+	
+	// ============= CSRF Token 函数 =============
+	"csrf":      GetCSRFTokenFromContext,
+	"csrf_token": GetCSRFTokenFromContext,
 }
 
 // ============= 字符串处理函数实现 =============

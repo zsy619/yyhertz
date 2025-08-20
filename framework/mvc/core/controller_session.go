@@ -11,13 +11,36 @@ func (c *BaseController) getSession() session.Store {
 	if c.Ctx == nil {
 		return nil
 	}
+	
+	// 先检查是否已经在中间件中设置了 session
 	if s, exists := c.Ctx.Request().Get("session"); exists {
 		if store, ok := s.(session.Store); ok {
 			return store
 		}
 	}
-	// 如果没有从中间件获取到Session，创建一个新的
-	return c.sessionHelper.GetOrCreateSession(c.Ctx.Request())
+	
+	// 获取Session管理器（优先使用全局管理器）
+	var sessionManager *session.Manager
+	
+	// 尝试获取全局Session管理器
+	if globalManager := getGlobalSessionManagerIfAvailable(); globalManager != nil {
+		sessionManager = globalManager
+	} else {
+		// 如果全局管理器不可用，确保控制器有本地管理器
+		if c.sessionHelper == nil {
+			c.sessionHelper = session.NewManager(session.DefaultConfig())
+		}
+		sessionManager = c.sessionHelper
+	}
+	
+	// 如果没有从中间件获取到Session，创建一个新的并保存到 context 中
+	store := sessionManager.GetOrCreateSession(c.Ctx.Request())
+	if store != nil {
+		// 将 session store 保存到 context 中，确保后续调用使用相同的 store
+		c.Ctx.Request().Set("session", store)
+	}
+	
+	return store
 }
 
 // SetSession 设置Session数据

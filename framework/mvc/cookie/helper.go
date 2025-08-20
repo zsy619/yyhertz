@@ -76,9 +76,11 @@ func LoadFromConfig() *Config {
 	return cookieConfig
 }
 
-// Helper Cookie辅助工具
+// Helper Cookie辅助工具 - 整合所有cookie功能
 type Helper struct {
-	config *Config
+	config       *Config
+	baseCookie   *BaseCookie
+	secureCookie *SecureCookie
 }
 
 // NewHelper 创建Cookie辅助工具
@@ -87,7 +89,9 @@ func NewHelper(config *Config) *Helper {
 		config = DefaultConfig()
 	}
 	return &Helper{
-		config: config,
+		config:       config,
+		baseCookie:   nil, // 延迟初始化
+		secureCookie: nil, // 延迟初始化
 	}
 }
 
@@ -95,7 +99,9 @@ func NewHelper(config *Config) *Helper {
 func NewHelperFromConfig() *Helper {
 	config := LoadFromConfig()
 	return &Helper{
-		config: config,
+		config:       config,
+		baseCookie:   nil, // 延迟初始化
+		secureCookie: nil, // 延迟初始化
 	}
 }
 
@@ -229,4 +235,62 @@ func (h *Helper) DeleteWithGlobalConfig(ctx *app.RequestContext, name string) {
 	}
 
 	ctx.Header("Set-Cookie", cookie)
+}
+
+// ============= BaseCookie 和 SecureCookie 整合方法 =============
+
+// GetBaseCookie 获取BaseCookie实例（延迟初始化）
+func (h *Helper) GetBaseCookie(ctx *app.RequestContext) *BaseCookie {
+	if h.baseCookie == nil {
+		h.baseCookie = NewBaseCookie(ctx)
+	}
+	return h.baseCookie
+}
+
+// GetSecureCookie 获取SecureCookie实例（延迟初始化）
+func (h *Helper) GetSecureCookie(ctx *app.RequestContext) *SecureCookie {
+	if h.secureCookie == nil {
+		h.secureCookie = NewSecureCookie(ctx)
+	}
+	return h.secureCookie
+}
+
+// ============= Beego兼容的安全Cookie方法 =============
+
+// SetSecureCookieValue 设置安全Cookie值（Beego兼容）
+func (h *Helper) SetSecureCookieValue(ctx *app.RequestContext, secret, name, value string, others ...any) {
+	secureCookie := h.GetSecureCookie(ctx)
+	secureCookie.SetSecure(secret, name, value, others...)
+}
+
+// GetSecureCookieValue 获取安全Cookie值（Beego兼容）
+func (h *Helper) GetSecureCookieValue(ctx *app.RequestContext, secret, key string) (string, bool) {
+	secureCookie := h.GetSecureCookie(ctx)
+	return secureCookie.GetSecure(secret, key)
+}
+
+// ValidateSecureCookieValue 验证安全Cookie（Beego兼容）
+func (h *Helper) ValidateSecureCookieValue(ctx *app.RequestContext, secret, key string) bool {
+	secureCookie := h.GetSecureCookie(ctx)
+	return secureCookie.Validate(secret, key)
+}
+
+// ============= 基础Cookie兼容方法 =============
+
+// GetBeegoStyle 获取Cookie值（Beego风格）
+func (h *Helper) GetBeegoStyle(ctx *app.RequestContext, key string) string {
+	baseCookie := h.GetBaseCookie(ctx)
+	return baseCookie.Get(key)
+}
+
+// SetBeegoStyle 设置Cookie（Beego风格）
+func (h *Helper) SetBeegoStyle(ctx *app.RequestContext, name, value string, others ...any) {
+	baseCookie := h.GetBaseCookie(ctx)
+	baseCookie.Set(name, value, others...)
+}
+
+// DeleteBeegoStyle 删除Cookie（Beego风格）
+func (h *Helper) DeleteBeegoStyle(ctx *app.RequestContext, name string) {
+	baseCookie := h.GetBaseCookie(ctx)
+	baseCookie.Delete(name)
 }

@@ -40,6 +40,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol"
 	"gopkg.in/yaml.v3"
 
+	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
 
@@ -1007,7 +1008,7 @@ func (i *InputData) ValidateSecureCookie(secret, key string) bool {
 // ============= 高级Cookie功能代理 =============
 
 // SetSecureCookieWithOptions 设置安全Cookie (增强版本) - 代理到session包
-func (i *InputData) SetSecureCookieWithOptions(name, value string, options session.CookieSecurityOptions, others ...any) error {
+func (i *InputData) SetSecureCookieWithOptions(name, value string, options cookie.CookieSecurityOptions, others ...any) error {
 	if ext := i.getExtension(); ext != nil && ext.SecureCookie != nil {
 		return ext.SecureCookie.SetSecureWithOptions(name, value, options, others...)
 	}
@@ -1015,7 +1016,7 @@ func (i *InputData) SetSecureCookieWithOptions(name, value string, options sessi
 }
 
 // GetSecureCookieWithOptions 获取安全Cookie (增强版本) - 代理到session包
-func (i *InputData) GetSecureCookieWithOptions(key string, options session.CookieSecurityOptions) (string, bool, error) {
+func (i *InputData) GetSecureCookieWithOptions(key string, options cookie.CookieSecurityOptions) (string, bool, error) {
 	if ext := i.getExtension(); ext != nil && ext.SecureCookie != nil {
 		return ext.SecureCookie.GetSecureWithOptions(key, options)
 	}
@@ -1141,7 +1142,7 @@ func NewSessionStore(store session.Store, ctx *Context) *SessionStore {
 }
 
 // CookieSecurityOptions 兼容性类型别名
-type CookieSecurityOptions = session.CookieSecurityOptions
+type CookieSecurityOptions = cookie.CookieSecurityOptions
 
 // ============= 初始化方法 =============
 

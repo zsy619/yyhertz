@@ -1,4 +1,4 @@
-package session
+package cookie
 
 import (
 	"crypto/hmac"

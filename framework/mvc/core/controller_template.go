@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	templatemanager "github.com/zsy619/yyhertz/framework/template"
+	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
 )
 
 // ============= 模板渲染方法 =============
@@ -266,9 +266,11 @@ func (c *BaseController) renderTemplate() error {
 
 	// 使用增强的模板引擎渲染
 	if c.templateEngine != nil {
+		// viewPath := filepath.Join(c.ViewPath, tplName)
+		viewPath := tplName
 		if c.Layout != "" {
 			// 使用布局渲染
-			if content, err := c.templateEngine.RenderWithLayout(tplName, c.Layout, c.Data); err != nil {
+			if content, err := c.templateEngine.RenderWithLayout(viewPath, c.Layout, c.Data); err != nil {
 				return err
 			} else {
 				c.SetHeader("Content-Type", "text/html; charset=utf-8")
@@ -278,7 +280,7 @@ func (c *BaseController) renderTemplate() error {
 			}
 		} else {
 			// 直接渲染模板
-			if content, err := c.templateEngine.Render(tplName, c.Data); err != nil {
+			if content, err := c.templateEngine.Render(viewPath, c.Data); err != nil {
 				return err
 			} else {
 				c.SetHeader("Content-Type", "text/html; charset=utf-8")

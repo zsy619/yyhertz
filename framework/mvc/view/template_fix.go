@@ -20,7 +20,7 @@ type TemplateIncludeEngine struct {
 }
 
 // NewTemplateIncludeEngine 创建支持include的模板引擎
-func NewTemplateIncludeEngine(cfg *TemplateConfig) (*TemplateIncludeEngine, error) {
+func NewTemplateIncludeEngine(cfg *config.ViewTemplateConfig) (*TemplateIncludeEngine, error) {
 	baseEngine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		return nil, err

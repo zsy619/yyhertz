@@ -56,6 +56,10 @@ var TemplateFuncs = template.FuncMap{
 	"len":           Len,
 	"index":         Index,
 	"slice":         Slice,
+	
+	// CSRF Token 相关函数
+	"csrf":          GetCSRFTokenFromContext,
+	"csrf_token":    GetCSRFTokenFromContext,
 }
 
 // LoadTemplate 加载模板文件
@@ -332,4 +336,15 @@ func toFloat64(v any) float64 {
 		}
 	}
 	return 0
+}
+
+// GetCSRFTokenFromContext 从模板上下文获取CSRF token
+// 这个函数用于模板函数 {{csrf}} 和 {{csrf_token}}
+func GetCSRFTokenFromContext() string {
+	// 获取全局CSRF提供者
+	provider := GetCSRFTokenProvider()
+	if provider != nil {
+		return provider.GenerateSimpleToken()
+	}
+	return ""
 }

@@ -44,7 +44,7 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 	"github.com/zsy619/yyhertz/framework/mvc/define"
-	errorPkg "github.com/zsy619/yyhertz/framework/mvc/errors"
+	errPkg "github.com/zsy619/yyhertz/framework/mvc/errors"
 	"github.com/zsy619/yyhertz/framework/mvc/router"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
@@ -167,10 +167,13 @@ func init() {
 	l := logConfig.CreateLogger()
 	hlog.SetLogger(l)
 
+	// 初始化全局管理器（Session、Cookie、Template、CSRF）
+	InitializeGlobalManagers()
+
 	// 创建全局Hertz应用实例
 	HertzApp = GetAppInstance()
 
-	errorPkg.QuickSetup("development")
+	errPkg.QuickSetup("development")
 
 	// 启用Beego风格的自动错误处理
 	HertzApp.EnableAutoErrorHandling()

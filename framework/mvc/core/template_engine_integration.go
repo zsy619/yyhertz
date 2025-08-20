@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	templatemanager "github.com/zsy619/yyhertz/framework/template"
-	"github.com/zsy619/yyhertz/framework/view"
+	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // initializeEnhancedTemplateEngine 初始化增强的模板引擎

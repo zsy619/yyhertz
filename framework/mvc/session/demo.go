@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	
+	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 )
 
 // SessionCookieUnifiedDemo 统一的Session和Cookie功能演示
@@ -57,7 +59,7 @@ func SessionCookieUnifiedDemo() {
 	fmt.Println("--------------------------------------")
 	
 	// 高级安全配置
-	securityOptions := CookieSecurityOptions{
+	securityOptions := cookie.CookieSecurityOptions{
 		Secret:          secret,
 		MaxAge:          time.Hour * 24,  // 24小时有效期
 		ValidateExpiry:  true,            // 验证过期时间
@@ -135,7 +137,7 @@ func CookieFeatureDemo() {
 	
 	// 创建Cookie操作器
 	mockRequest := &app.RequestContext{}
-	secureCookie := NewSecureCookie(mockRequest)
+	secureCookie := cookie.NewSecureCookie(mockRequest)
 	
 	fmt.Println("\n📋 功能1: 基础Cookie操作演示")
 	fmt.Println("--------------------------------------")
@@ -207,7 +209,7 @@ value, valid, err := secureCookie.GetSecureWithOptions("token", options)`)
 	
 	// 演示解析cookie字符串
 	cookieStr := "name1=value1; name2=value2; name3=value3"
-	parsed := ParseCookieString(cookieStr)
+	parsed := cookie.ParseCookieString(cookieStr)
 	fmt.Printf("✅ 解析Cookie字符串: %s -> %d个cookie\n", cookieStr, len(parsed))
 	
 	// 演示格式化cookie
@@ -215,12 +217,12 @@ value, valid, err := secureCookie.GetSecureWithOptions("token", options)`)
 		"session": "abc123",
 		"theme":   "dark",
 	}
-	formatted := FormatCookieString(testCookies)
+	formatted := cookie.FormatCookieString(testCookies)
 	fmt.Printf("✅ 格式化Cookie: %s\n", formatted)
 	
 	// 演示验证
-	fmt.Printf("✅ 验证Cookie名称 'valid_name': %t\n", ValidateCookieName("valid_name"))
-	fmt.Printf("✅ 验证Cookie名称 'invalid;name': %t\n", ValidateCookieName("invalid;name"))
+	fmt.Printf("✅ 验证Cookie名称 'valid_name': %t\n", cookie.ValidateCookieName("valid_name"))
+	fmt.Printf("✅ 验证Cookie名称 'invalid;name': %t\n", cookie.ValidateCookieName("invalid;name"))
 	
 	fmt.Println("\n📋 功能5: 安全工具函数演示")
 	fmt.Println("--------------------------------------")
@@ -230,15 +232,15 @@ value, valid, err := secureCookie.GetSecureWithOptions("token", options)`)
 	// 演示生成安全值
 	testSecret := "test_secret"
 	testValue := "test_data"
-	secureValue := GenerateSecureValue(testSecret, testValue)
+	secureValue := cookie.GenerateSecureValue(testSecret, testValue)
 	fmt.Printf("✅ 生成安全值: %s -> %s\n", testValue, secureValue[:30]+"...")
 	
 	// 演示解析安全值
-	parsedValue, isValid := ParseSecureValue(testSecret, secureValue)
+	parsedValue, isValid := cookie.ParseSecureValue(testSecret, secureValue)
 	fmt.Printf("✅ 解析安全值: %s (valid: %t)\n", parsedValue, isValid)
 	
 	// 演示时间戳获取
-	timestamp, _ := GetSecureCookieTimestamp(secureValue)
+	timestamp, _ := cookie.GetSecureCookieTimestamp(secureValue)
 	fmt.Printf("✅ Cookie创建时间: %s\n", timestamp.Format("2006-01-02 15:04:05"))
 }
 

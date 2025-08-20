@@ -31,14 +31,14 @@ import (
 	_ "github.com/zsy619/yyhertz/framework/mvc/context"    // 增强上下文系统
 	_ "github.com/zsy619/yyhertz/framework/mvc/middleware" // 增强中间件系统
 	_ "github.com/zsy619/yyhertz/framework/orm"            // ORM数据库集成
-	_ "github.com/zsy619/yyhertz/framework/response"       // 响应管理
+	_ "github.com/zsy619/yyhertz/framework/mvc/response"   // 响应管理
 	_ "github.com/zsy619/yyhertz/framework/scheduler"      // 任务调度系统
-	_ "github.com/zsy619/yyhertz/framework/session"        // 会话管理
+	_ "github.com/zsy619/yyhertz/framework/mvc/session"    // 会话管理
 	_ "github.com/zsy619/yyhertz/framework/testing"        // 单元测试工具
 	_ "github.com/zsy619/yyhertz/framework/util"           // 通用类型和工具
 	_ "github.com/zsy619/yyhertz/framework/validation"     // 数据验证
 	"github.com/zsy619/yyhertz/framework/version"          // 版本
-	_ "github.com/zsy619/yyhertz/framework/view"           // 视图模板
+	_ "github.com/zsy619/yyhertz/framework/mvc/view"       // 视图模板
 )
 
 const (

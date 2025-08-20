@@ -1,7 +1,20 @@
 package config
 
 import (
+	"sync"
+
 	"github.com/spf13/viper"
+)
+
+var (
+	// 全局实例
+	GlobalAuth *AuthConfig
+	// 初始化锁
+	authOnce sync.Once
+	// 配置文件是否已加载
+	authConfigLoaded bool
+	// 配置文件加载锁
+	authConfigOnce sync.Once
 )
 
 // AuthConfig 认证配置结构
@@ -126,6 +139,22 @@ type AuthConfig struct {
 		LogAuthEvents  bool   `mapstructure:"log_auth_events" yaml:"log_auth_events" json:"log_auth_events"`
 		LogErrorEvents bool   `mapstructure:"log_error_events" yaml:"log_error_events" json:"log_error_events"`
 	} `mapstructure:"logging" yaml:"logging" json:"logging"`
+}
+
+func DefaultAuthConfig() *AuthConfig {
+	authOnce.Do(func() {
+		GlobalAuth = &AuthConfig{}
+	})
+
+	authConfigOnce.Do(func() {
+		if !authConfigLoaded {
+			v := viper.New()
+			GlobalAuth.SetDefaults(v)
+			authConfigLoaded = true
+		}
+	})
+
+	return GlobalAuth
 }
 
 // OAuthProvider OAuth提供商配置

@@ -26,7 +26,7 @@ type EnhancedTemplateEngine struct {
 }
 
 // NewEnhancedTemplateEngine 创建增强模板引擎
-func NewEnhancedTemplateEngine(cfg *TemplateConfig) (*EnhancedTemplateEngine, error) {
+func NewEnhancedTemplateEngine(cfg *config.ViewTemplateConfig) (*EnhancedTemplateEngine, error) {
 	baseEngine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		return nil, err

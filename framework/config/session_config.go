@@ -1,7 +1,23 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"sync"
+
 	"github.com/spf13/viper"
+)
+
+var (
+	// 全局数据库实例
+	GlobalSession *SessionConfig
+	// 初始化锁
+	sessionOnce sync.Once
+	// 配置文件是否已加载
+	sessionConfigLoaded bool
+	// 配置文件加载锁
+	sessionConfigOnce sync.Once
 )
 
 // SessionConfig Session配置结构
@@ -84,6 +100,16 @@ type SessionConfig struct {
 			CSRFProtection     bool `mapstructure:"csrf_protection" yaml:"csrf_protection" json:"csrf_protection"`             // CSRF保护
 			EncryptData        bool `mapstructure:"encrypt_data" yaml:"encrypt_data" json:"encrypt_data"`                      // 加密Session数据
 			SecureTransmission bool `mapstructure:"secure_transmission" yaml:"secure_transmission" json:"secure_transmission"` // 安全传输
+
+			// CSRF配置
+			Csrf struct {
+				Secret        string `mapstructure:"secret" yaml:"secret" json:"secret"`                            // 用于签名的密钥
+				TokenLength   int    `mapstructure:"token_length" yaml:"token_length" json:"token_length"`          // Token长度（字节）
+				ExpireTime    int64  `mapstructure:"expire_time" yaml:"expire_time" json:"expire_time"`             // 过期时间（秒）
+				CookieName    string `mapstructure:"cookie_name" yaml:"cookie_name" json:"cookie_name"`             // CSRF token的Cookie名称
+				HeaderName    string `mapstructure:"header_name" yaml:"header_name" json:"header_name"`             // 请求头中的CSRF token名称
+				FormFieldName string `mapstructure:"form_field_name" yaml:"form_field_name" json:"form_field_name"` // 表单字段中的CSRF token名称
+			} `mapstructure:"csrf" yaml:"csrf" json:"csrf"`
 		} `mapstructure:"security" yaml:"security" json:"security"`
 
 		// 清理配置
@@ -132,6 +158,56 @@ type SessionConfig struct {
 	} `mapstructure:"development" yaml:"development" json:"development"`
 }
 
+// generateSecureKey 生成安全的随机密钥
+// size: 随机字节数 (生成的base64字符串长度约为 size * 4/3)
+func generateSecureKey(size int) string {
+	bytes := make([]byte, size)
+	if _, err := rand.Read(bytes); err != nil {
+		// 如果随机数生成失败，使用备用方案
+		Warnf("Failed to generate secure random key, using fallback: %v", err)
+		return generateFallbackKey(size)
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes)
+}
+
+// generateFallbackKey 备用密钥生成方案（基于时间和固定种子）
+func generateFallbackKey(size int) string {
+	// 这是一个简单的备用方案，实际生产环境应该有更复杂的处理
+	fallback := "YYHertz-Framework-Secure-Key-Generation-Fallback-"
+	for len(fallback) < size*2 {
+		fallback += fallback
+	}
+	return base64.RawURLEncoding.EncodeToString([]byte(fallback[:size]))
+}
+
+// generate32CharKey 生成正好32字符的密钥（用于AES256）
+func generate32CharKey() string {
+	// 24字节的随机数据，base64编码后约32字符
+	return generateSecureKey(24)
+}
+
+// generate64CharKey 生成约64字符的密钥（用于签名）
+func generate64CharKey() string {
+	// 48字节的随机数据，base64编码后约64字符
+	return generateSecureKey(48)
+}
+
+func DefaultSessionConfig() *SessionConfig {
+	sessionOnce.Do(func() {
+		GlobalSession = &SessionConfig{}
+	})
+
+	sessionConfigOnce.Do(func() {
+		if !sessionConfigLoaded {
+			v := viper.New()
+			GlobalSession.SetDefaults(v)
+			sessionConfigLoaded = true
+		}
+	})
+
+	return GlobalSession
+}
+
 // GetConfigName 实现 ConfigInterface 接口
 func (c SessionConfig) GetConfigName() string {
 	return SessionConfigName
@@ -150,11 +226,11 @@ func (c SessionConfig) SetDefaults(v *viper.Viper) {
 
 	// Cookie签名配置
 	v.SetDefault("cookie.sign.enable", false)
-	v.SetDefault("cookie.sign.secret", "your-cookie-sign-secret-change-me")
+	v.SetDefault("cookie.sign.secret", generate64CharKey()) // 动态生成64字符签名密钥
 
 	// Cookie加密配置
 	v.SetDefault("cookie.encrypt.enable", false)
-	v.SetDefault("cookie.encrypt.secret_key", "your-32-char-secret-key-change-me")
+	v.SetDefault("cookie.encrypt.secret_key", generate32CharKey()) // 动态生成32字符加密密钥
 	v.SetDefault("cookie.encrypt.algorithm", "AES256")
 
 	// Cookie压缩配置
@@ -164,7 +240,7 @@ func (c SessionConfig) SetDefaults(v *viper.Viper) {
 
 	// Session默认配置
 	v.SetDefault("session.name", "YYHERTZ_SESSION")
-	v.SetDefault("session.secret", "your-session-secret-key-change-me")
+	v.SetDefault("session.secret", generate64CharKey()) // 动态生成64字符Session密钥
 	v.SetDefault("session.max_age", 3600) // 1小时
 
 	// Session Cookie配置
@@ -194,9 +270,17 @@ func (c SessionConfig) SetDefaults(v *viper.Viper) {
 
 	// Session安全配置
 	v.SetDefault("session.security.regenerate_id", true)
-	v.SetDefault("session.security.csrf_protection", false)
+	v.SetDefault("session.security.csrf_protection", true)
 	v.SetDefault("session.security.encrypt_data", false)
 	v.SetDefault("session.security.secure_transmission", false)
+
+	// CSRF配置
+	v.SetDefault("session.security.csrf.secret", generate64CharKey()) // 动态生成64字符CSRF密钥
+	v.SetDefault("session.security.csrf.token_length", 32)
+	v.SetDefault("session.security.csrf.expire_time", 3600) // 1小时
+	v.SetDefault("session.security.csrf.cookie_name", "_csrf_token")
+	v.SetDefault("session.security.csrf.header_name", "X-CSRF-Token")
+	v.SetDefault("session.security.csrf.form_field_name", "csrf_token")
 
 	// Session清理配置
 	v.SetDefault("session.cleanup.enable", true)
@@ -231,7 +315,13 @@ func (c SessionConfig) SetDefaults(v *viper.Viper) {
 
 // GenerateDefaultContent 实现 ConfigInterface 接口 - 生成默认配置文件内容
 func (c SessionConfig) GenerateDefaultContent() string {
-	return `# YYHertz Session Configuration
+	// 每次生成配置文件时都创建新的动态密钥
+	cookieSignSecret := generate64CharKey()
+	cookieEncryptKey := generate32CharKey()
+	sessionSecret := generate64CharKey()
+	csrfSecret := generate64CharKey()
+	
+	return fmt.Sprintf(`# YYHertz Session Configuration
 # Session配置文件
 
 # Cookie配置
@@ -247,12 +337,12 @@ cookie:
   # Cookie签名配置
   sign:
     enable: false                        # 启用Cookie签名
-    secret: "your-cookie-sign-secret-change-me" # 签名密钥
+    secret: "%s" # 动态生成的签名密钥
   
   # Cookie加密配置
   encrypt:
     enable: false                        # 启用Cookie加密
-    secret_key: "your-32-char-secret-key-change-me" # 加密密钥(32字符)
+    secret_key: "%s" # 动态生成的加密密钥(32字符)
     algorithm: "AES256"                  # 加密算法: AES256, AES128
   
   # Cookie压缩配置
@@ -264,7 +354,7 @@ cookie:
 # Session配置
 session:
   name: "YYHERTZ_SESSION"                # Session名称
-  secret: "your-session-secret-key-change-me" # Session密钥
+  secret: "%s"   # 动态生成的Session密钥
   max_age: 3600                          # Session最大生存时间(秒) - 1小时
   
   # Session Cookie配置
@@ -303,6 +393,15 @@ session:
     csrf_protection: false               # CSRF保护
     encrypt_data: false                  # 加密Session数据
     secure_transmission: false           # 安全传输
+    
+    # CSRF配置
+    csrf:
+      secret: "%s"  # 动态生成的CSRF签名密钥
+      token_length: 32                   # Token长度（字节）
+      expire_time: 3600                  # 过期时间（秒）- 1小时
+      cookie_name: "_csrf_token"         # CSRF token的Cookie名称
+      header_name: "X-CSRF-Token"        # 请求头中的CSRF token名称
+      form_field_name: "csrf_token"      # 表单字段中的CSRF token名称
   
   # 清理配置
   cleanup:
@@ -355,5 +454,5 @@ development:
 # 3. 安全配置:
 #    cookie.encrypt.enable = true    // 敏感数据建议加密
 #    session.security.csrf_protection = true // 启用CSRF保护
-`
+`, cookieSignSecret, cookieEncryptKey, sessionSecret, csrfSecret)
 }

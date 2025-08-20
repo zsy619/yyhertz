@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/response"
+	"github.com/zsy619/yyhertz/framework/mvc/response"
 )
 
 // ============= JSON响应方法 =============

@@ -1,7 +1,20 @@
 package config
 
 import (
+	"sync"
+
 	"github.com/spf13/viper"
+)
+
+var (
+	// 全局模板实例
+	GlobalApp *AppConfig
+	// 初始化锁
+	appOnce sync.Once
+	// 配置文件是否已加载
+	appConfigLoaded bool
+	// 配置文件加载锁
+	appConfigOnce sync.Once
 )
 
 // AppConfig 应用程序主配置结构
@@ -76,6 +89,22 @@ type AppConfig struct {
 		Interval int    `mapstructure:"interval" yaml:"interval" json:"interval"` // 秒
 		Timeout  int    `mapstructure:"timeout" yaml:"timeout" json:"timeout"`    // 秒
 	} `mapstructure:"monitor" yaml:"monitor" json:"monitor"`
+}
+
+func DefaultAppConfig() *AppConfig {
+	appOnce.Do(func() {
+		GlobalApp = &AppConfig{}
+	})
+
+	appConfigOnce.Do(func() {
+		if !appConfigLoaded {
+			v := viper.New()
+			GlobalApp.SetDefaults(v)
+			appConfigLoaded = true
+		}
+	})
+
+	return GlobalApp
 }
 
 // GetConfigName 实现 ConfigInterface 接口

@@ -1,0 +1,48 @@
+# YYHertz MyBatis Configuration
+# MyBatis ORM框架配置文件
+
+# 基础配置
+basic:
+  enable: true                                    # 是否启用MyBatis
+  config_file: "./config/mybatis-config.xml"     # MyBatis配置文件路径
+  mapper_locations: "./mappers/*.xml"            # Mapper文件位置
+  type_aliases_package: ""                       # 类型别名包
+
+# 缓存配置
+cache:
+  enable: false                                 # 是否启用缓存
+  type: "memory"                                # 缓存类型: memory, redis
+  ttl: 3600                                     # 缓存生存时间(秒)
+  max_size: 1000                                # 最大缓存条目数
+  redis_addr: "localhost:6379"                  # Redis地址
+  redis_db: 0                                   # Redis数据库
+
+# 日志配置
+logging:
+  enable: true                                  # 是否启用SQL日志
+  level: "info"                                 # 日志级别: debug, info, warn, error
+  show_sql: false                               # 是否显示SQL语句
+  slow_query: 1000                              # 慢查询阈值(毫秒)
+
+# 性能配置
+performance:
+  lazy_loading: true                            # 延迟加载
+  multiple_result_sets: true                    # 多结果集
+  use_column_label: true                        # 使用列标签
+  use_generated_keys: false                     # 使用生成的键
+  auto_mapping_behavior: "PARTIAL"              # 自动映射行为: NONE, PARTIAL, FULL
+
+# 事务配置
+transaction:
+  default_timeout: 30                           # 默认事务超时时间(秒)
+  isolation_level: "READ_COMMITTED"             # 事务隔离级别
+  auto_commit: true                             # 自动提交
+
+# 插件配置
+plugins:
+  interceptors: []                              # 拦截器列表
+  page_helper:                                  # 分页插件配置
+    enable: false                               # 启用分页插件
+    helper_dialect: "mysql"                     # 分页方言
+    reasonable_enabled: true                    # 合理化参数
+    support_methods_arguments: true             # 支持方法参数

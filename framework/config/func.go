@@ -108,6 +108,24 @@ func convertToBoolSlice(value any) ([]bool, error) {
 	return nil, fmt.Errorf("unsupported type: %T", value)
 }
 
+// convertToIntSlice 将任意类型的值转换为 []int 切片。
+//
+// 参数:
+//
+//	value: 需要转换的任意类型值。
+//
+// 返回值:
+//
+//	[]int: 转换后的整数切片。
+//	error: 如果输入类型不支持或切片元素类型不支持，返回错误。
+//
+// 支持的类型:
+//   - 输入类型为切片时，支持的元素类型包括 int, int8, int16, int32, int64。
+//   - 其他类型会返回错误。
+//
+// 示例:
+//   - 输入: []interface{}{1, 2, 3}，输出: []int{1, 2, 3}, nil
+//   - 输入: "unsupported"，输出: nil, error("unsupported type: string")
 func convertToIntSlice(value any) ([]int, error) {
 	rv := reflect.ValueOf(value)
 

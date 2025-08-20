@@ -10,7 +10,7 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/constant"
-	"github.com/zsy619/yyhertz/framework/response"
+	"github.com/zsy619/yyhertz/framework/mvc/response"
 )
 
 // TLSConfig TLS配置结构

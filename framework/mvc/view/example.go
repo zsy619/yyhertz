@@ -152,7 +152,7 @@ func RunTemplateExample() error {
 	config.Info("=== Theme Switching Example ===")
 
 	// 添加自定义主题
-	adminTheme := &ThemeConfig{
+	adminTheme := &config.ViewThemeConfig{
 		Name:          "admin",
 		ViewPaths:     []string{"admin/views", "views"},
 		LayoutPath:    "admin/layouts",

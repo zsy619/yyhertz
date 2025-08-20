@@ -15,6 +15,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/route"
+	
+	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 )
 
 // 创建测试用的RequestContext
@@ -34,7 +36,7 @@ func createTestRequestContext() *app.RequestContext {
 // BenchmarkBaseCookieGet 测试基础Cookie获取性能
 func BenchmarkBaseCookieGet(b *testing.B) {
 	ctx := createTestRequestContext()
-	cookie := NewBaseCookie(ctx)
+	cookie := cookie.NewBaseCookie(ctx)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -47,7 +49,7 @@ func BenchmarkBaseCookieGet(b *testing.B) {
 // BenchmarkBaseCookieSetPerf 测试基础Cookie设置性能
 func BenchmarkBaseCookieSetPerf(b *testing.B) {
 	ctx := createTestRequestContext()
-	cookie := NewBaseCookie(ctx)
+	cookie := cookie.NewBaseCookie(ctx)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -60,7 +62,7 @@ func BenchmarkBaseCookieSetPerf(b *testing.B) {
 // BenchmarkBaseCookieDelete 测试Cookie删除性能
 func BenchmarkBaseCookieDelete(b *testing.B) {
 	ctx := createTestRequestContext()
-	cookie := NewBaseCookie(ctx)
+	cookie := cookie.NewBaseCookie(ctx)
 
 	// 预设一些cookie
 	for i := 0; i < 10; i++ {
@@ -78,7 +80,7 @@ func BenchmarkBaseCookieDelete(b *testing.B) {
 // BenchmarkBaseCookieGetAll 测试获取所有Cookie性能
 func BenchmarkBaseCookieGetAll(b *testing.B) {
 	ctx := createTestRequestContext()
-	cookie := NewBaseCookie(ctx)
+	cookie := cookie.NewBaseCookie(ctx)
 
 	// 预设一些cookie
 	for i := 0; i < 20; i++ {
@@ -98,7 +100,7 @@ func BenchmarkBaseCookieGetAll(b *testing.B) {
 // BenchmarkSecureCookieSetPerf 测试安全Cookie设置性能
 func BenchmarkSecureCookieSetPerf(b *testing.B) {
 	ctx := createTestRequestContext()
-	secureCookie := NewSecureCookie(ctx)
+	secureCookie := cookie.NewSecureCookie(ctx)
 	secret := "test-secret-key-for-hmac-256"
 
 	b.ResetTimer()
@@ -112,7 +114,7 @@ func BenchmarkSecureCookieSetPerf(b *testing.B) {
 // BenchmarkSecureCookieGet 测试安全Cookie获取性能
 func BenchmarkSecureCookieGet(b *testing.B) {
 	ctx := createTestRequestContext()
-	secureCookie := NewSecureCookie(ctx)
+	secureCookie := cookie.NewSecureCookie(ctx)
 	secret := "test-secret-key-for-hmac-256"
 
 	// 预设安全cookie
@@ -129,9 +131,9 @@ func BenchmarkSecureCookieGet(b *testing.B) {
 // BenchmarkSecureCookieWithOptions 测试带选项的安全Cookie性能
 func BenchmarkSecureCookieWithOptions(b *testing.B) {
 	ctx := createTestRequestContext()
-	secureCookie := NewSecureCookie(ctx)
+	secureCookie := cookie.NewSecureCookie(ctx)
 
-	options := CookieSecurityOptions{
+	options := cookie.CookieSecurityOptions{
 		Secret:         "test-secret-key-for-hmac-256",
 		MaxAge:         time.Hour,
 		ValidateExpiry: true,
@@ -331,7 +333,7 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 	b.Run("Cookie_Operations", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			cookie := NewBaseCookie(ctx)
+			cookie := cookie.NewBaseCookie(ctx)
 			cookie.Set("mem_test", "mem_value", 3600)
 			_ = cookie.Get("mem_test")
 			_ = cookie.GetAll()
@@ -341,7 +343,7 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 	b.Run("SecureCookie_Operations", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			secureCookie := NewSecureCookie(ctx)
+			secureCookie := cookie.NewSecureCookie(ctx)
 			secureCookie.SetSecure("secret", "mem_secure", "mem_value")
 			_, _ = secureCookie.GetSecure("secret", "mem_secure")
 		}
