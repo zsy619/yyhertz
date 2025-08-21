@@ -84,6 +84,14 @@ func (rh *RequestHandler) CreateHandler(route *RouteInfo) app.HandlerFunc {
 
 		results := method.Call(args)
 
+		// 检查是否应该停止执行
+		if iController, ok := controller.(core.IController); ok {
+			if iController.ShouldStopExecution() {
+				// 如果控制器要求停止执行，不处理返回值，不调用Finish
+				return
+			}
+		}
+
 		// 处理方法返回值
 		rh.handleMethodResults(c, results)
 
@@ -333,6 +341,14 @@ func (rp *RequestProcessor) ProcessRequest(route *RouteInfo, c *app.RequestConte
 	}
 
 	results := method.Call(args)
+
+	// 检查是否应该停止执行
+	if iController, ok := controller.(core.IController); ok {
+		if iController.ShouldStopExecution() {
+			// 如果控制器要求停止执行，不处理返回值
+			return
+		}
+	}
 
 	// 处理方法返回值
 	rp.handler.handleMethodResults(c, results)

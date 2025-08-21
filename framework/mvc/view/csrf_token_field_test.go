@@ -4,26 +4,28 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // TestCsrfTokenFieldAccess 测试CsrfToken字段的访问方式
 func TestCsrfTokenFieldAccess(t *testing.T) {
 	// 创建模板引擎
-	cfg := DefaultTemplateConfig()
+	cfg := config.GlobalTemplate
 	engine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
-	
+
 	// 测试数据
 	testData := &RenderData{
 		Data: map[string]interface{}{
 			"username": "testuser",
 		},
 		CSRF:      "test-csrf-123",
-		CsrfToken: "test-csrf-456",  // 不同的值用于区分
+		CsrfToken: "test-csrf-456", // 不同的值用于区分
 	}
-	
+
 	// 测试1: 直接访问 .CsrfToken 字段
 	t.Run("TestDirectCsrfTokenFieldAccess", func(t *testing.T) {
 		templateContent := `CSRF Token: {{.CsrfToken}}`
@@ -31,18 +33,18 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 		if err != nil {
 			t.Fatalf("创建内联模板失败: %v", err)
 		}
-		
+
 		result, err := engine.executeTemplate(tmpl, testData)
 		if err != nil {
 			t.Errorf("执行模板失败: %v", err)
 		}
-		
+
 		expected := "CSRF Token: test-csrf-456"
 		if result != expected {
 			t.Errorf("期望: %s, 实际: %s", expected, result)
 		}
 	})
-	
+
 	// 测试2: 验证prepareRenderData自动同步两个字段
 	t.Run("TestPrepareRenderDataSyncFields", func(t *testing.T) {
 		// 传入只有CSRF字段的数据
@@ -51,32 +53,32 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 			CSRF: "original-csrf-token",
 			// CsrfToken 留空
 		}
-		
+
 		prepared := engine.prepareRenderData(inputData)
-		
+
 		if prepared.CSRF != prepared.CsrfToken {
-			t.Errorf("CSRF字段与CsrfToken字段不同步: CSRF=%s, CsrfToken=%s", 
+			t.Errorf("CSRF字段与CsrfToken字段不同步: CSRF=%s, CsrfToken=%s",
 				prepared.CSRF, prepared.CsrfToken)
 		}
-		
+
 		if prepared.CsrfToken != "original-csrf-token" {
 			t.Errorf("期望CsrfToken为 'original-csrf-token', 实际为 '%s'", prepared.CsrfToken)
 		}
 	})
-	
+
 	// 测试3: 验证从普通数据创建RenderData时的字段同步
 	t.Run("TestCreateFromPlainDataSyncFields", func(t *testing.T) {
 		plainData := map[string]interface{}{
 			"username": "testuser",
 		}
-		
+
 		prepared := engine.prepareRenderData(plainData)
-		
+
 		if prepared.CSRF != prepared.CsrfToken {
-			t.Errorf("从普通数据创建时CSRF字段不同步: CSRF=%s, CsrfToken=%s", 
+			t.Errorf("从普通数据创建时CSRF字段不同步: CSRF=%s, CsrfToken=%s",
 				prepared.CSRF, prepared.CsrfToken)
 		}
-		
+
 		if prepared.CsrfToken == "" {
 			t.Error("期望CsrfToken不为空")
 		}
@@ -85,14 +87,14 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 
 // TestRealTemplateWithCsrfTokenField 测试真实模板中使用CsrfToken字段
 func TestRealTemplateWithCsrfTokenField(t *testing.T) {
-	cfg := DefaultTemplateConfig()
-	cfg.ViewPaths = []string{"../../views"}
-	
+	cfg := config.GlobalTemplate
+	cfg.Paths.ViewPaths = []string{"./../views"}
+
 	engine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
-	
+
 	// 创建一个使用 .CsrfToken 的测试模板
 	testTemplateContent := `
 <!DOCTYPE html>
@@ -114,61 +116,61 @@ func TestRealTemplateWithCsrfTokenField(t *testing.T) {
     </div>
 </body>
 </html>`
-	
+
 	tmpl, err := engine.createInlineTemplate("csrf_field_real_test", testTemplateContent)
 	if err != nil {
 		t.Fatalf("创建模板失败: %v", err)
 	}
-	
+
 	testData := &RenderData{
 		CSRF:      "real-csrf-token-789",
-		CsrfToken: "should-be-overridden",  // 这应该被prepareRenderData同步
+		CsrfToken: "should-be-overridden", // 这应该被prepareRenderData同步
 		Data: map[string]interface{}{
 			"username": "testuser",
 		},
 	}
-	
+
 	// 通过prepareRenderData处理数据
 	preparedData := engine.prepareRenderData(testData)
-	
+
 	result, err := engine.executeTemplate(tmpl, preparedData)
 	if err != nil {
 		t.Errorf("执行模板失败: %v", err)
 		return
 	}
-	
+
 	// 验证结果包含正确的CSRF token
 	expectedToken := "real-csrf-token-789"
 	if !strings.Contains(result, fmt.Sprintf(`value="%s"`, expectedToken)) {
 		t.Errorf("期望结果包含 value=\"%s\"，但未找到", expectedToken)
 	}
-	
+
 	// 验证两个字段都有相同的值
 	if !strings.Contains(result, fmt.Sprintf("CSRF字段: %s", expectedToken)) {
 		t.Error("CSRF字段值不正确")
 	}
-	
+
 	if !strings.Contains(result, fmt.Sprintf("CsrfToken字段: %s", expectedToken)) {
 		t.Error("CsrfToken字段值不正确")
 	}
-	
+
 	t.Logf("模板渲染成功，HTML长度: %d", len(result))
 }
 
 // TestAllCsrfAccessMethods 测试所有CSRF访问方式的兼容性
 func TestAllCsrfAccessMethods(t *testing.T) {
-	cfg := DefaultTemplateConfig()
+	cfg := config.GlobalTemplate
 	engine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
-	
+
 	// 准备数据
 	plainData := map[string]interface{}{
 		"username": "testuser",
 	}
 	renderData := engine.prepareRenderData(plainData)
-	
+
 	// 测试各种访问方式
 	testCases := []struct {
 		name        string
@@ -183,7 +185,7 @@ func TestAllCsrfAccessMethods(t *testing.T) {
 		{"csrf函数", "{{csrf}}", true, "使用csrf模板函数"},
 		{"csrf_token函数", "{{csrf_token}}", true, "使用csrf_token模板函数"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tmpl, err := engine.createInlineTemplate(tc.name, tc.template)
@@ -193,7 +195,7 @@ func TestAllCsrfAccessMethods(t *testing.T) {
 				}
 				return
 			}
-			
+
 			result, err := engine.executeTemplate(tmpl, renderData)
 			if err != nil {
 				if tc.shouldWork {

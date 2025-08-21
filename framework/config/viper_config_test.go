@@ -54,10 +54,10 @@ func TestConfigManager_TemplateConfig(t *testing.T) {
 		require.NotNil(t, config)
 
 		// 检查默认值
-		assert.Equal(t, ".html", config.Extension)
-		assert.Contains(t, config.ViewPaths, "./views")
-		assert.Equal(t, "./views/layouts", config.LayoutPath)
-		assert.True(t, config.EnableCache)
+		assert.Equal(t, ".html", config.Paths.Extension)
+		assert.Contains(t, config.Paths.ViewPaths, "./views")
+		assert.Equal(t, "./views/layouts", config.Paths.LayoutPath)
+		assert.True(t, config.Cache.EnableCache)
 	})
 
 	t.Run("使用泛型便捷函数", func(t *testing.T) {

@@ -1,52 +1,190 @@
 # YYHertz Template Engine Configuration
-# 模板引擎配置文件
+# 模板引擎配置文件 - 分组结构配置示例
 
-# 基础路径配置
-view_paths: ["views", "templates"]  # 视图文件搜索路径
-layout_path: "views/layouts"        # 布局文件路径
-component_path: "views/components"  # 组件文件路径
-extension: ".html"                  # 模板文件扩展名
+# ========== 基础路径配置 ==========
+paths:
+  view_paths: ["views", "templates"]  # 视图文件搜索路径
+  layout_path: "views/layouts"        # 布局文件路径
+  component_path: "views/components"  # 组件文件路径
+  extension: ".html"                  # 模板文件扩展名
+  # 静态资源配置 - URL路径到本地路径的映射
+  static_paths:
+    "/static": "./static"             # 静态文件路径
+    "/assets": "./assets"             # 资源文件路径
+    "/uploads": "./uploads"           # 上传文件路径
+    "/downloads": "./downloads"       # 下载文件路径
+    "/public": "./public"             # 公共资源路径
 
-# 模板分隔符配置
-delim_left: "{{"                    # 左分隔符
-delim_right: "}}"                   # 右分隔符
+# ========== 模板语法配置 ==========
+syntax:
+  delim_left: "{{{"                    # 左分隔符
+  delim_right: "}}}"                   # 右分隔符
 
-# 功能开关配置
-enable_cache: true                  # 启用模板缓存
-enable_reload: true                 # 启用热重载
-enable_compress: false              # 启用压缩
+# ========== 缓存配置 ==========
+cache:
+  enable_cache: true                  # 启用模板缓存
+  cache_size: 1000                    # 缓存条目数量限制
+  cache_ttl: 3600                     # 缓存过期时间（秒）
+  cache_strategy: "lru"               # 缓存策略: lru, lfu, fifo
 
-# 主题配置
-current_theme: "default"            # 当前主题
+# ========== 性能优化配置 ==========
+performance:
+  precompile: false                   # 预编译模板
+  compile_parallel: false             # 并行编译
+  compile_workers: 4                  # 编译工作线程数
+  enable_compress: false              # 启用压缩
+  minify_html: false                  # HTML压缩
+  minify_css: false                   # CSS压缩
+  minify_js: false                    # JS压缩
+  bundle_assets: false                # 资源打包
 
-# 主题映射配置
-themes:
-  default:
-    name: "default"                 # 主题名称
-    view_paths: ["views"]           # 主题视图路径
-    layout_path: "views/layouts"    # 主题布局路径
-    component_path: "views/components" # 主题组件路径
-    static_path: "static"           # 静态资源路径
-    enabled: true                   # 是否启用
-    default: true                   # 是否为默认主题
-    variables: {}                   # 主题变量
+# ========== 国际化配置 ==========
+i18n:
+  enabled: false                      # 启用国际化
+  default_locale: "zh-CN"             # 默认语言
+  supported_locales: ["zh-CN", "en-US"] # 支持的语言列表
+  locale_path: "./locales"            # 语言文件路径
+  fallback_locale: "en-US"            # 回退语言
+  detect_from_header: true            # 从请求头检测语言
 
-# 使用示例:
-# 1. 自定义主题配置:
-#    themes:
-#      dark:
-#        name: "dark"
-#        view_paths: ["themes/dark/views"]
-#        layout_path: "themes/dark/layouts"
-#        enabled: true
-#        variables:
-#          primary_color: "#1a1a1a"
-#          secondary_color: "#333333"
+# ========== 错误处理配置 ==========
+error:
+  templates:                          # 错误页面模板映射
+    "404": "errors/404.html"
+    "500": "errors/500.html"
+    "403": "errors/403.html"
+  show_details: false                 # 显示错误详情（开发模式建议true）
+  log_level: "error"                  # 错误日志级别
+
+# ========== 开发调试配置 ==========
+debug:
+  mode: false                         # 调试模式
+  toolbar: false                      # 调试工具栏
+  template_comments: false            # 模板注释
+  source_map: false                   # 源码映射
+  profiling: false                    # 性能分析
+
+# ========== 资源管理配置 ==========
+assets:
+  versioning: false                   # 资源版本控制
+  version_strategy: "hash"            # 版本策略: hash, timestamp, manual
+  manifest_path: "./manifest.json"    # 资源清单文件
+  cdn_enabled: false                  # 启用CDN
+  cdn_url: ""                         # CDN基础URL
+  cdn_fallback: true                  # CDN回退到本地
+
+# ========== 布局和组件配置 ==========
+layout:
+  default_layout: "main"              # 默认布局
+  layout_suffix: "_layout"            # 布局文件后缀
+  partial_prefix: "_"                 # 片段文件前缀
+  component_namespace: "components"   # 组件命名空间
+  component_cache: true               # 组件缓存
+  component_timeout: 5000             # 组件渲染超时（毫秒）
+
+# ========== 渲染配置 ==========
+render:
+  max_render_depth: 10                # 最大渲染深度（防止无限递归）
+  render_timeout: 30000               # 渲染超时（毫秒）
+  buffer_size: 4096                   # 渲染缓冲区大小
+  streaming: false                    # 流式渲染
+
+# ========== 热重载配置 ==========
+reload:
+  enabled: true                       # 启用热重载
+  watch_interval: 1000                # 文件监控间隔（毫秒）
+  watch_extensions: [".html", ".css", ".js"] # 监控的文件扩展名
+  watch_exclude: ["node_modules", ".git"] # 排除的目录
+  debounce_delay: 500                 # 防抖延迟（毫秒）
+
+# ========== 插件系统配置 ==========
+plugins:
+  enabled: false                      # 启用插件
+  path: "./plugins"                   # 插件目录
+
+# ========== 高级功能配置 ==========
+advanced:
+  strict_mode: false                  # 严格模式
+  compatibility_mode: ""              # 兼容模式: "beego", "gin", ""
+
+# ========== 日志监控配置 ==========
+monitor:
+  template_log_enabled: false         # 模板日志
+  template_log_level: "info"          # 日志级别
+  template_log_file: "./logs/template.log" # 日志文件
+  metrics_enabled: false              # 启用指标收集
+  metrics_endpoint: "/metrics"        # 指标端点
+  slow_template_threshold: 1000       # 慢模板阈值（毫秒）
+
+# ========== 主题配置 ==========
+theme:
+  current: "default"                  # 当前主题
+  # 主题映射配置
+  themes:
+    default:
+      name: "default"                 # 主题名称
+      view_paths: ["views"]           # 主题视图路径
+      layout_path: "views/layouts"    # 主题布局路径
+      component_path: "views/components" # 主题组件路径
+      static_path: "static"           # 静态资源路径
+      enabled: true                   # 是否启用
+      default: true                   # 是否为默认主题
+      variables: {}                   # 主题变量
+
+# ========== 配置示例和使用说明 ==========
 #
-# 2. 多路径配置:
-#    view_paths: ["views", "custom_views", "third_party_views"]
+# 1. 生产环境优化配置:
+#    cache:
+#      enable_cache: true            # 启用缓存提高性能
+#    reload:
+#      enabled: false                # 禁用热重载
+#    performance:
+#      enable_compress: true         # 启用压缩
+#      minify_html: true             # HTML压缩
+#      precompile: true              # 预编译模板
+#      compile_parallel: true        # 并行编译
 #
-# 3. 性能优化:
-#    enable_cache: true      # 生产环境建议启用
-#    enable_reload: false    # 生产环境建议禁用
-#    enable_compress: true   # 启用压缩减少传输大小
+# 2. 开发环境调试配置:
+#    debug:
+#      mode: true                    # 开启调试模式
+#      toolbar: true                 # 显示调试工具栏
+#      template_comments: true       # 添加模板注释
+#      source_map: true              # 生成源码映射
+#    error:
+#      show_details: true            # 显示详细错误信息
+#
+# 3. 自定义主题配置:
+#    theme:
+#      themes:
+#        dark:
+#          name: "dark"
+#          view_paths: ["themes/dark/views"]
+#          layout_path: "themes/dark/layouts"
+#          component_path: "themes/dark/components"
+#          enabled: true
+#          variables:
+#            primary_color: "#1a1a1a"
+#            secondary_color: "#333333"
+#
+# 4. 国际化配置:
+#    i18n:
+#      enabled: true
+#      supported_locales: ["zh-CN", "en-US", "ja-JP", "ko-KR"]
+#      default_locale: "zh-CN"
+#      fallback_locale: "en-US"
+#
+# 5. CDN和资源优化:
+#    assets:
+#      cdn_enabled: true
+#      cdn_url: "https://cdn.example.com"
+#      versioning: true
+#      version_strategy: "hash"
+#      bundle_assets: true
+#
+# 6. 监控和性能分析:
+#    monitor:
+#      metrics_enabled: true
+#      template_log_enabled: true
+#      slow_template_threshold: 500
+#    debug:
+#      profiling: true

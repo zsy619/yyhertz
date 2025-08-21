@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// TemplateFuncs 模板函数映射
-var TemplateFuncs = template.FuncMap{
+// builtinTemplateFuncs 内置模板函数映射（私有）
+var builtinTemplateFuncs = template.FuncMap{
 	"makeSlice":     MakeSlice,
 	"concatString":  ConcatString,
 	"containString": ContainString,
@@ -61,6 +61,42 @@ var TemplateFuncs = template.FuncMap{
 	"csrf":          GetCSRFTokenFromContext,
 	"csrf_token":    GetCSRFTokenFromContext,
 }
+
+// ============= 访问接口 =============
+
+// GetBuiltinTemplateFunctions 获取内置模板函数映射（只读副本）
+func GetBuiltinTemplateFunctions() template.FuncMap {
+	funcMapCopy := make(template.FuncMap, len(builtinTemplateFuncs))
+	for name, fn := range builtinTemplateFuncs {
+		funcMapCopy[name] = fn
+	}
+	return funcMapCopy
+}
+
+// TemplateFuncs 向后兼容的全局变量
+var TemplateFuncs = builtinTemplateFuncs
+
+// GetBuiltinFunctionNames 获取所有内置函数名称
+func GetBuiltinFunctionNames() []string {
+	names := make([]string, 0, len(builtinTemplateFuncs))
+	for name := range builtinTemplateFuncs {
+		names = append(names, name)
+	}
+	return names
+}
+
+// HasBuiltinFunction 检查是否有指定的内置函数
+func HasBuiltinFunction(name string) bool {
+	_, exists := builtinTemplateFuncs[name]
+	return exists
+}
+
+// GetBuiltinFunctionCount 获取内置函数数量
+func GetBuiltinFunctionCount() int {
+	return len(builtinTemplateFuncs)
+}
+
+// ============= 原有的模板加载函数 =============
 
 // LoadTemplate 加载模板文件
 func LoadTemplate(templatePath string, data map[string]any) (string, error) {

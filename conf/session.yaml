@@ -14,12 +14,12 @@ cookie:
   # Cookie签名配置
   sign:
     enable: false                        # 启用Cookie签名
-    secret: "your-cookie-sign-secret-change-me" # 签名密钥
+    secret: "K9t3V4DqnzJdZKNLo8Bb7v7xGO_qbP2DQmxrlHWJVJQojcrSCGhuF7Elg3skV-PK" # 动态生成的签名密钥
   
   # Cookie加密配置
   encrypt:
     enable: false                        # 启用Cookie加密
-    secret_key: "your-32-char-secret-key-change-me" # 加密密钥(32字符)
+    secret_key: "wwE-9TT5po3tDMLj0Rq2-t0bhKxLVxUM" # 动态生成的加密密钥(32字符)
     algorithm: "AES256"                  # 加密算法: AES256, AES128
   
   # Cookie压缩配置
@@ -31,7 +31,7 @@ cookie:
 # Session配置
 session:
   name: "YYHERTZ_SESSION"                # Session名称
-  secret: "your-session-secret-key-change-me" # Session密钥
+  secret: "R1oE6LF_EMmcbR7zSWUwQA_7WO9fBeaznJWSyrQtyK7HKDX8qJoujk0Wzr_3wVxv"   # 动态生成的Session密钥
   max_age: 3600                          # Session最大生存时间(秒) - 1小时
   
   # Session Cookie配置
@@ -73,7 +73,7 @@ session:
     
     # CSRF配置
     csrf:
-      secret: "yyhertz-csrf-secret-key-default" # CSRF签名密钥
+      secret: "oocM__seblZsUbjB2LckOaPG2J-ALvRyXwN_Oh8fP8GPGdZmxa6djqYK-liwf_ZM"  # 动态生成的CSRF签名密钥
       token_length: 32                   # Token长度（字节）
       expire_time: 3600                  # 过期时间（秒）- 1小时
       cookie_name: "_csrf_token"         # CSRF token的Cookie名称

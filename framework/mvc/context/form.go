@@ -86,7 +86,8 @@ func parseFormToStruct(form url.Values, objT reflect.Type, objV reflect.Value) e
 				fieldV.Set(reflect.ValueOf(t))
 			}
 		case reflect.Slice:
-			if fieldT.Type == sliceOfInts {
+			switch fieldT.Type {
+			case sliceOfInts:
 				formVals := form[tag]
 				fieldV.Set(reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(int(1))), len(formVals), len(formVals)))
 				for i := 0; i < len(formVals); i++ {
@@ -96,7 +97,7 @@ func parseFormToStruct(form url.Values, objT reflect.Type, objV reflect.Value) e
 					}
 					fieldV.Index(i).SetInt(int64(val))
 				}
-			} else if fieldT.Type == sliceOfStrings {
+			case sliceOfStrings:
 				formVals := form[tag]
 				fieldV.Set(reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf("")), len(formVals), len(formVals)))
 				for i := 0; i < len(formVals); i++ {
@@ -180,6 +181,7 @@ func ParseForm(form url.Values, obj interface{}) error {
 	objV = objV.Elem()
 	return parseFormToStruct(form, objT, objV)
 }
+
 func isStructPtr(t reflect.Type) bool {
 	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct
 }

@@ -8,11 +8,55 @@ import (
 	context "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
-	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
+	"github.com/zsy619/yyhertz/framework/mvc/unified"
 	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
-// BaseController 基础控制器结构
+// BaseController 基础控制器结构，实现了完整的IController接口
+//
+// BaseController 是所有控制器的基类，完全兼容Beego的ControllerInterface规范。
+// 它提供了Web开发中所需的全部功能，包括但不限于：
+//
+// 核心功能：
+//   - 完整的HTTP请求处理 (GET, POST, PUT, DELETE等)
+//   - 多格式响应管理 (JSON, HTML, XML, YAML等)
+//   - 会话和Cookie管理
+//   - 模板渲染系统
+//   - XSRF/CSRF安全防护
+//   - 参数获取和验证
+//   - 错误处理和流程控制
+//
+// 接口实现：
+//   实现了完整的IController接口，包括：
+//   - 生命周期方法: Init(), Prepare(), Finish()
+//   - 控制器信息: GetControllerName(), GetActionName()
+//   - 模板渲染: Render()
+//   - 安全功能: XSRFToken(), CheckXSRFCookie()
+//   - 路由映射: URLMapping(), HandlerFunc()
+//   - 流程控制: ShouldStopExecution()
+//
+// 使用示例：
+//
+//	type UserController struct {
+//		mvc.BaseController
+//	}
+//
+//	func (c *UserController) Get() {
+//		user := c.GetCurrentUser()
+//		c.Data["json"] = map[string]any{
+//			"user": user,
+//		}
+//		c.ServeJSON() // 自动调用StopRun()
+//	}
+//
+//	func (c *UserController) Post() {
+//		if !c.CheckXSRFCookie() {
+//			c.Abort("403")
+//			return
+//		}
+//		// 处理POST请求
+//	}
+//
 type BaseController struct {
 	Ctx *context.Context // 统一的上下文
 
@@ -66,16 +110,27 @@ type BaseController struct {
 	sessionHelper  *session.Manager            // Session管理器
 	templateEngine *view.TemplateEngine        // 模板引擎实例
 	includeEngine  *view.TemplateIncludeEngine // 支持include的模板引擎
+	
+	// 统一管理器
+	unifiedManager *unified.Manager // 统一管理器实例
 
 	// ============= 优化控制器特性 =============
 
 	// 优化功能控制
 	optimizationEnabled bool     // 是否启用优化特性
 	middlewareList      []string // 中间件列表，支持GetMiddleware()
+	
+	// ============= 响应流程控制 =============
+	
+	// 响应状态控制（内部使用，不暴露给外部）
+	shouldStopExecution bool     // 是否应该停止执行
 
 	// 内部控制字段
 	initialized bool // 控制器名称是否已初始化（内部使用）
 }
+
+// 编译时检查：确保 BaseController 完全实现了 IController 接口
+var _ IController = (*BaseController)(nil)
 
 // NewBaseController 创建新的基础控制器实例
 func NewBaseController() *BaseController {
@@ -119,6 +174,9 @@ func NewBaseController() *BaseController {
 		cookieHelper:   nil, // 将在 initializeBaseController 中设置
 		sessionHelper:  nil, // 将在 initializeBaseController 中设置
 		templateEngine: nil, // 将在 initializeBaseController 中设置
+		
+		// 统一管理器
+		unifiedManager: unified.GetManager(), // 获取全局统一管理器
 	}
 }
 
@@ -184,8 +242,23 @@ func (c *BaseController) initializeBaseController() {
 
 // ensureHelpersInitialized 确保辅助工具已初始化
 // 这个方法会尝试获取全局实例，如果不可用则创建本地实例
+// 优先使用统一管理器，向后兼容独立组件
 func (c *BaseController) ensureHelpersInitialized() {
-	// 尝试获取全局实例，如果失败则使用本地实例
+	// 确保统一管理器已初始化
+	if c.unifiedManager == nil {
+		c.unifiedManager = unified.GetManager()
+	}
+	
+	// 尝试从统一管理器获取组件实例
+	if c.unifiedManager != nil && c.unifiedManager.IsInitialized() {
+		// 使用统一管理器的组件
+		c.cookieHelper = c.unifiedManager.GetCookieHelper()
+		c.sessionHelper = c.unifiedManager.GetSessionManager()
+		c.templateEngine = c.unifiedManager.GetTemplateEngine()
+		return
+	}
+	
+	// 向后兼容：如果统一管理器不可用，使用独立的全局实例
 	if c.cookieHelper == nil {
 		if globalHelper := getGlobalCookieHelperIfAvailable(); globalHelper != nil {
 			c.cookieHelper = globalHelper
@@ -206,7 +279,7 @@ func (c *BaseController) ensureHelpersInitialized() {
 		if globalEngine := getGlobalTemplateEngineIfAvailable(); globalEngine != nil {
 			c.templateEngine = globalEngine
 		} else {
-			c.templateEngine = templatemanager.GetTemplateManager().GetEngine()
+			c.templateEngine = view.GetTemplateManager().GetEngine()
 		}
 	}
 }
@@ -285,6 +358,9 @@ func (c *BaseController) Reset() {
 			delete(c.LayoutSections, k)
 		}
 	}
+	
+	// 重置执行状态
+	c.ResetExecutionState()
 }
 
 // GetMiddleware 获取中间件列表（优化控制器特性）
@@ -320,6 +396,18 @@ func (c *BaseController) EnableOptimization() {
 // DisableOptimization 禁用优化特性
 func (c *BaseController) DisableOptimization() {
 	c.optimizationEnabled = false
+}
+
+// ShouldStopExecution 检查是否应该停止执行
+// 这个方法主要用于框架内部，在路由处理中检查是否需要停止后续方法的执行
+func (c *BaseController) ShouldStopExecution() bool {
+	return c.shouldStopExecution
+}
+
+// ResetExecutionState 重置执行状态
+// 这个方法主要用于框架内部，在处理新请求时重置状态
+func (c *BaseController) ResetExecutionState() {
+	c.shouldStopExecution = false
 }
 
 // IsOptimizationEnabled 检查是否启用优化特性
@@ -370,4 +458,235 @@ func getGlobalTemplateEngineIfAvailable() *view.TemplateEngine {
 		return globalAccessor.GetTemplateEngine()
 	}
 	return nil
+}
+
+// ============= 统一管理器集成方法 =============
+
+// GetUnifiedManager 获取统一管理器
+// 
+// 返回当前控制器使用的统一管理器实例，用于高级功能操作。
+//
+// 返回：
+//   - *unified.Manager: 统一管理器实例
+//
+// 示例：
+//
+//	manager := controller.GetUnifiedManager()
+//	user := manager.GetCurrentUser(ctx)
+func (c *BaseController) GetUnifiedManager() *unified.Manager {
+	if c.unifiedManager == nil {
+		c.unifiedManager = unified.GetManager()
+	}
+	return c.unifiedManager
+}
+
+// ============= 统一管理器便捷方法 =============
+
+// SetContextData 设置上下文数据（使用统一管理器）
+//
+// 将数据存储到请求上下文中，可在整个请求生命周期内访问。
+//
+// 参数：
+//   - key: 数据键
+//   - value: 数据值
+//
+// 示例：
+//
+//	controller.SetContextData("user_id", 123)
+//	controller.SetContextData("user_info", userStruct)
+func (c *BaseController) SetContextData(key string, value any) {
+	if c.GetUnifiedManager() != nil {
+		c.unifiedManager.SetContextData(c.Ctx, key, value)
+	}
+}
+
+// GetContextData 获取上下文数据（使用统一管理器）
+//
+// 从请求上下文中获取存储的数据。
+//
+// 参数：
+//   - key: 数据键
+//
+// 返回：
+//   - interface{}: 数据值，如果不存在返回nil
+//
+// 示例：
+//
+//	userID := controller.GetContextData("user_id")
+//	if userID != nil {
+//	    id := userID.(int)
+//	}
+func (c *BaseController) GetContextData(key string) any {
+	if c.GetUnifiedManager() != nil {
+		return c.unifiedManager.GetContextData(c.Ctx, key)
+	}
+	return nil
+}
+
+// GetTypedContextData 获取类型安全的上下文数据（使用统一管理器）
+//
+// 提供类型安全的数据获取，避免类型转换错误。
+//
+// 参数：
+//   - key: 数据键
+//   - target: 目标类型的零值（用于类型推断）
+//
+// 返回：
+//   - interface{}: 数据值
+//   - bool: 是否成功获取（键存在）
+//
+// 示例：
+//
+//	userID, ok := controller.GetTypedContextData("user_id", 0)
+//	if ok {
+//	    id := userID.(int)
+//	    fmt.Printf("User ID: %d", id)
+//	}
+func (c *BaseController) GetTypedContextData(key string, target any) (any, bool) {
+	if c.GetUnifiedManager() != nil {
+		return c.unifiedManager.GetTypedContextData(c.Ctx, key, target)
+	}
+	return nil, false
+}
+
+
+
+// GenerateUnifiedCSRFToken 使用统一管理器生成CSRF令牌
+//
+// 参数：
+//   - userID: 用户ID
+//   - clientIP: 客户端IP地址
+//
+// 返回：
+//   - string: CSRF令牌值
+//   - error: 生成错误
+//
+// 示例：
+//
+//	token, err := controller.GenerateUnifiedCSRFToken("123", "192.168.1.1")
+func (c *BaseController) GenerateUnifiedCSRFToken(userID, clientIP string) (string, error) {
+	if c.GetUnifiedManager() != nil {
+		token, err := c.unifiedManager.GenerateCSRFToken(userID, clientIP)
+		if err != nil {
+			return "", err
+		}
+		return token.Value, nil
+	}
+	return "", unified.ErrCSRFManagerNotInitialized
+}
+
+// ValidateUnifiedCSRFToken 使用统一管理器验证CSRF令牌
+//
+// 参数：
+//   - tokenValue: 令牌值
+//   - userID: 用户ID
+//   - clientIP: 客户端IP地址
+//
+// 返回：
+//   - bool: 验证结果
+//   - error: 验证错误
+//
+// 示例：
+//
+//	valid, err := controller.ValidateUnifiedCSRFToken(token, "123", "192.168.1.1")
+func (c *BaseController) ValidateUnifiedCSRFToken(tokenValue, userID, clientIP string) (bool, error) {
+	if c.GetUnifiedManager() != nil {
+		return c.unifiedManager.ValidateCSRFToken(tokenValue, userID, clientIP)
+	}
+	return false, unified.ErrCSRFManagerNotInitialized
+}
+
+// RenderUnifiedTemplate 使用统一管理器渲染模板
+//
+// 参数：
+//   - templateName: 模板名称
+//   - data: 模板数据
+//
+// 返回：
+//   - string: 渲染结果
+//   - error: 渲染错误
+//
+// 示例：
+//
+//	html, err := controller.RenderUnifiedTemplate("user/profile", userData)
+func (c *BaseController) RenderUnifiedTemplate(templateName string, data any) (string, error) {
+	if c.GetUnifiedManager() != nil {
+		return c.unifiedManager.RenderTemplate(templateName, data)
+	}
+	return "", unified.ErrTemplateEngineNotInitialized
+}
+
+// ============= SSO 相关便捷方法 =============
+
+// LoginUser 用户登录（使用统一管理器的SSO功能）
+//
+// 在用户成功登录后调用此函数，设置SSO会话和Cookie。
+//
+// 参数：
+//   - userInfo: 用户信息
+//   - rememberMe: 是否记住我
+//
+// 返回：
+//   - error: 登录设置错误
+//
+// 示例：
+//
+//	err := controller.LoginUser(userInfo, true)
+func (c *BaseController) LoginUser(userInfo *unified.UserInfo, rememberMe bool) error {
+	manager := c.GetUnifiedManager()
+	if manager == nil {
+		return unified.ErrManagerNotInitialized
+	}
+	return unified.LoginUser(manager, c.Ctx, userInfo, rememberMe)
+}
+
+// LogoutUser 用户登出（使用统一管理器的SSO功能）
+//
+// 在用户登出时调用此函数，清除所有SSO相关数据。
+//
+// 示例：
+//
+//	controller.LogoutUser()
+func (c *BaseController) LogoutUser() {
+	manager := c.GetUnifiedManager()
+	if manager != nil {
+		unified.LogoutUser(manager, c.Ctx)
+	}
+}
+
+// GetCurrentUser 获取当前认证用户信息
+//
+// 返回：
+//   - *unified.UserInfo: 用户信息，如果未认证返回nil
+//
+// 示例：
+//
+//	user := controller.GetCurrentUser()
+//	if user != nil {
+//	    fmt.Printf("Welcome %s", user.Username)
+//	}
+func (c *BaseController) GetCurrentUser() *unified.UserInfo {
+	manager := c.GetUnifiedManager()
+	if manager != nil {
+		return unified.GetCurrentUser(manager, c.Ctx)
+	}
+	return nil
+}
+
+// IsUserAuthenticated 检查用户是否已认证
+//
+// 返回：
+//   - bool: 是否已认证
+//
+// 示例：
+//
+//	if controller.IsUserAuthenticated() {
+//	    // 处理已认证用户的逻辑
+//	}
+func (c *BaseController) IsUserAuthenticated() bool {
+	manager := c.GetUnifiedManager()
+	if manager != nil {
+		return unified.IsAuthenticated(manager, c.Ctx)
+	}
+	return false
 }

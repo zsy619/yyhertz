@@ -95,8 +95,8 @@ func (m *Manager) GetOrCreateSession(ctx *app.RequestContext) Store {
 		ctx.Header("Set-Cookie", cookie)
 	}
 
-	// 创建Session存储
-	return NewMemoryStore(sessionID)
+	// 使用全局存储池获取或创建Session存储
+	return GetOrCreateMemoryStore(sessionID)
 }
 
 // DestroySession 销毁Session
@@ -150,6 +150,20 @@ func (m *Manager) StartCleanup() {
 
 // cleanup 清理过期Session
 func (m *Manager) cleanup() {
-	// 这里可以实现清理逻辑，比如从存储中删除过期的Session
-	// 目前使用内存存储，暂时不需要特殊处理
+	if !m.IsEnabled() {
+		return
+	}
+	
+	// 使用配置的MaxAge作为清理标准
+	maxAge := time.Duration(m.config.MaxAge) * time.Second
+	if maxAge <= 0 {
+		maxAge = 24 * time.Hour // 默认24小时
+	}
+	
+	// 清理过期的Session存储
+	cleaned := GetSessionStorePool().Cleanup(maxAge)
+	if cleaned > 0 {
+		// 可以在这里记录日志
+		_ = cleaned // 避免未使用变量警告
+	}
 }

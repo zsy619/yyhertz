@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/util"
@@ -129,72 +130,158 @@ func InitConfig[T ConfigInterface](cnf T) {
 
 // 初始化配置注册表
 func init() {
-	// 打印启动banner
-	// go func() {
+	// 1. 打印 banner（保持同步）
 	stdout := version.NewColorWriter(os.Stderr)
 	coloredBanner := fmt.Sprintf(version.VerboseVersionBanner, "\x1b[35m", "\x1b[1m",
 		"\x1b[0m", "\x1b[32m", "\x1b[1m", "\x1b[0m")
 	version.InitBanner(stdout, bytes.NewBufferString(coloredBanner))
 	fmt.Println()
-	// }()
 
-	InitConfig(&AppConfig{})
-	InitConfig(&TemplateConfig{})
-	InitConfig(&AuthConfig{})
-	InitConfig(&LogConfig{})
-	InitConfig(&DatabaseConfig{})
-	InitConfig(&RedisConfig{})
-	InitConfig(&SessionConfig{})
-	InitConfig(&TLSServerConfig{})
-	InitConfig(&MyBatisConfig{})
-	InitConfig(&MVCConfig{})
-	InitConfig(&MiddlewareConfig{})
-
-	RegisterConfigName[AppConfig](AppConfigName)
-	RegisterConfigName[TemplateConfig](TemplateConfigName)
-	RegisterConfigName[AuthConfig](AuthConfigName)
-	RegisterConfigName[TLSServerConfig](TLSConfigName)
-	RegisterConfigName[LogConfig](LogConfigName)
-	RegisterConfigName[DatabaseConfig](DatabaseConfigName)
-	RegisterConfigName[SessionConfig](SessionConfigName)
-	RegisterConfigName[RedisConfig](RedisConfigName)
-	RegisterConfigName[MyBatisConfig](MyBatisConfigName)
-	RegisterConfigName[MVCConfig](MVCConfigName)
-	RegisterConfigName[MiddlewareConfig](MiddlewareConfigName)
-
-	// 数据库初始化
-	if GlobalDatabase == nil {
-		// 如果未初始化，使用默认配置初始化
-		dbConfig, err := GetDatabaseConfig()
-		if err != nil {
-			dbConfig = DefaultDatabaseConfig()
-		}
-		GlobalDatabase = dbConfig
+	// 2. 并发初始化配置
+	var wg sync.WaitGroup
+	{
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&AppConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("AppConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&TemplateConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("TemplateConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&AuthConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("AuthConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&LogConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("LogConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&DatabaseConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("DatabaseConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&RedisConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("RedisConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&SessionConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("SessionConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&TLSServerConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("TLSServerConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&MyBatisConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("MyBatisConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&MVCConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("MVCConfig initialized in %v\n", elapsed)
+		})
+		wg.Go(func() {
+			start := time.Now()
+			InitConfig(&MiddlewareConfig{})
+			elapsed := time.Since(start)
+			fmt.Printf("MiddlewareConfig initialized in %v\n", elapsed)
+		})
 	}
+	wg.Wait()
 
-	// session初始化
-	if GlobalSession == nil {
-		// 如果未初始化，使用默认配置初始化
-		sessionConfig, err := GetSessionConfig()
-		if err != nil {
-			sessionConfig = DefaultSessionConfig()
-		}
-		GlobalSession = sessionConfig
+	// 3. 注册配置名称（必须在初始化后）
+	start := time.Now()
+	{
+		RegisterConfigName[AppConfig](AppConfigName)
+		RegisterConfigName[TemplateConfig](TemplateConfigName)
+		RegisterConfigName[AuthConfig](AuthConfigName)
+		RegisterConfigName[TLSServerConfig](TLSConfigName)
+		RegisterConfigName[LogConfig](LogConfigName)
+		RegisterConfigName[DatabaseConfig](DatabaseConfigName)
+		RegisterConfigName[SessionConfig](SessionConfigName)
+		RegisterConfigName[RedisConfig](RedisConfigName)
+		RegisterConfigName[MyBatisConfig](MyBatisConfigName)
+		RegisterConfigName[MVCConfig](MVCConfigName)
+		RegisterConfigName[MiddlewareConfig](MiddlewareConfigName)
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("RegisterConfigName initialized in %v\n", elapsed)
 
-	// template初始化
-	if GlobalTemplate == nil {
-		// 如果未初始化，使用默认配置初始化
-		templateConfig, err := GetTemplateConfig()
-		if err != nil {
-			templateConfig = DefaultTemplateConfig()
+	// 4. 初始化全局变量
+	{
+		// 初始化应用配置
+		if GlobalApp == nil {
+			// 如果未初始化，使用默认配置初始化
+			appConfig, err := GetAppConfig()
+			if err != nil {
+				appConfig = DefaultAppConfig()
+			}
+			GlobalApp = appConfig
 		}
-		GlobalTemplate = templateConfig
+
+		// 数据库初始化
+		if GlobalDatabase == nil {
+			// 如果未初始化，使用默认配置初始化
+			dbConfig, err := GetDatabaseConfig()
+			if err != nil {
+				dbConfig = DefaultDatabaseConfig()
+			}
+			GlobalDatabase = dbConfig
+		}
+
+		// session初始化
+		if GlobalSession == nil {
+			// 如果未初始化，使用默认配置初始化
+			sessionConfig, err := GetSessionConfig()
+			if err != nil {
+				sessionConfig = DefaultSessionConfig()
+			}
+			GlobalSession = sessionConfig
+		}
+
+		// template初始化
+		if GlobalTemplate == nil {
+			// 如果未初始化，使用默认配置初始化
+			templateConfig, err := GetTemplateConfig()
+			if err != nil {
+				templateConfig = DefaultTemplateConfig()
+			}
+			GlobalTemplate = templateConfig
+		}
+
+		// redis初始化
+		if GlobalRedis == nil {
+			// 如果未初始化，使用默认配置初始化
+			redisConfig, err := GetRedisConfig()
+			if err != nil {
+				redisConfig = DefaultRedisConfig()
+			}
+			GlobalRedis = redisConfig
+		}
 	}
 }
 
 // 全局便捷函数，用于快速获取不同类型的配置
-
 // GetAppConfig 获取应用配置
 func GetAppConfig() (*AppConfig, error) {
 	manager := GetViperConfigManager(AppConfig{})

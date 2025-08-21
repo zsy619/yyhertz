@@ -11,22 +11,22 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
-	
+
 	// 准备数据
 	testData := &RenderData{
 		CSRF:      "test-csrf-token-123",
 		CsrfToken: "test-csrf-token-456", // 不同值用于区分
 		Data:      "test data",
 	}
-	
+
 	// 测试小写的 .csrf_token（这应该仍然不工作）
 	t.Run("TestLowercaseCsrfTokenStillFails", func(t *testing.T) {
-		templateContent := `{{.csrf_token}}`  // 全小写
+		templateContent := `{{.csrf_token}}` // 全小写
 		tmpl, err := engine.createInlineTemplate("lowercase_test", templateContent)
 		if err != nil {
 			t.Fatalf("创建模板失败: %v", err)
 		}
-		
+
 		_, err = engine.executeTemplate(tmpl, testData)
 		if err == nil {
 			t.Error("期望 .csrf_token (全小写) 仍然会失败，但却成功了")
@@ -34,15 +34,15 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 			t.Logf("正确：.csrf_token (全小写) 仍然失败: %v", err)
 		}
 	})
-	
+
 	// 测试大写的 .CsrfToken（这应该工作）
 	t.Run("TestCamelCaseCsrfTokenWorks", func(t *testing.T) {
-		templateContent := `{{.CsrfToken}}`  // 驼峰命名
+		templateContent := `{{.CsrfToken}}` // 驼峰命名
 		tmpl, err := engine.createInlineTemplate("camelcase_test", templateContent)
 		if err != nil {
 			t.Fatalf("创建模板失败: %v", err)
 		}
-		
+
 		result, err := engine.executeTemplate(tmpl, testData)
 		if err != nil {
 			t.Errorf("期望 .CsrfToken 成功，但失败了: %v", err)
@@ -54,7 +54,7 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 			t.Logf("正确：.CsrfToken 成功返回: %s", result)
 		}
 	})
-	
+
 	// 给出解决方案建议
 	t.Run("TestSolutionSuggestions", func(t *testing.T) {
 		solutions := []struct {
@@ -68,7 +68,7 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 			{"使用csrf_token函数", "{{csrf_token}}", true},
 			{"使用原始.csrf_token", "{{.csrf_token}}", false},
 		}
-		
+
 		for _, solution := range solutions {
 			tmpl, err := engine.createInlineTemplate(solution.name, solution.template)
 			if err != nil {
@@ -77,7 +77,7 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 				}
 				continue
 			}
-			
+
 			result, err := engine.executeTemplate(tmpl, testData)
 			if solution.works {
 				if err != nil {
@@ -103,7 +103,7 @@ func TestPracticalUsageExample(t *testing.T) {
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
-	
+
 	// 模拟真实的使用场景
 	t.Run("TestLoginFormExample", func(t *testing.T) {
 		// 这是用户可能会写的模板内容
@@ -114,30 +114,30 @@ func TestPracticalUsageExample(t *testing.T) {
     <button type="submit">登录</button>
 </form>
 `
-		
+
 		// 准备数据 - 模拟从控制器传来的数据
 		plainData := map[string]interface{}{
 			"username": "johndoe",
 			"message":  "欢迎登录",
 		}
-		
+
 		// 通过prepareRenderData处理（这会自动设置CSRF token）
 		renderData := engine.prepareRenderData(plainData)
-		
+
 		tmpl, err := engine.createInlineTemplate("login_form", loginFormTemplate)
 		if err != nil {
 			t.Fatalf("创建登录表单模板失败: %v", err)
 		}
-		
+
 		result, err := engine.executeTemplate(tmpl, renderData)
 		if err != nil {
 			t.Errorf("渲染登录表单失败: %v", err)
 		} else {
 			t.Logf("✅ 登录表单渲染成功，长度: %d", len(result))
-			
+
 			// 验证包含CSRF token
-			if renderData.CsrfToken != "" && 
-			   renderData.CSRF == renderData.CsrfToken {
+			if renderData.CsrfToken != "" &&
+				renderData.CSRF == renderData.CsrfToken {
 				t.Log("✅ CSRF token字段同步正确")
 			} else {
 				t.Error("❌ CSRF token字段同步失败")

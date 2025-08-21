@@ -43,7 +43,7 @@ type ConfigManager struct {
 	mutex              sync.RWMutex
 	sessionConfig      *session.Config
 	cookieConfig       *cookie.Config
-	templateConfig     *config.ViewTemplateConfig
+	templateConfig     *config.TemplateConfig
 	changeListeners    []ConfigChangeListener
 	validationEnabled  bool
 	hotReloadEnabled   bool
@@ -53,7 +53,7 @@ type ConfigManager struct {
 type ConfigChangeListener interface {
 	OnSessionConfigChanged(old, new *session.Config) error
 	OnCookieConfigChanged(old, new *cookie.Config) error
-	OnTemplateConfigChanged(old, new *config.ViewTemplateConfig) error
+	OnTemplateConfigChanged(old, new *config.TemplateConfig) error
 }
 
 // ConfigChangeEvent 配置变更事件
@@ -284,13 +284,13 @@ func (cm *ConfigManager) validateCookieConfig(config *cookie.Config) error {
 //
 // 返回：
 //   - error: 如果更新失败返回错误信息
-func UpdateTemplateConfig(config *config.ViewTemplateConfig) error {
+func UpdateTemplateConfig(config *config.TemplateConfig) error {
 	manager := GetConfigManager()
 	return manager.UpdateTemplateConfig(config)
 }
 
 // UpdateTemplateConfig 更新Template配置（实例方法）
-func (cm *ConfigManager) UpdateTemplateConfig(config *config.ViewTemplateConfig) error {
+func (cm *ConfigManager) UpdateTemplateConfig(config *config.TemplateConfig) error {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
@@ -324,14 +324,14 @@ func (cm *ConfigManager) UpdateTemplateConfig(config *config.ViewTemplateConfig)
 // GetTemplateConfig 获取当前Template配置
 //
 // 返回：
-//   - *config.ViewTemplateConfig: 当前的Template配置副本
-func GetTemplateConfig() *config.ViewTemplateConfig {
+//   - *config.TemplateConfig: 当前的Template配置副本
+func GetTemplateConfig() *config.TemplateConfig {
 	manager := GetConfigManager()
 	return manager.GetTemplateConfig()
 }
 
 // GetTemplateConfig 获取当前Template配置（实例方法）
-func (cm *ConfigManager) GetTemplateConfig() *config.ViewTemplateConfig {
+func (cm *ConfigManager) GetTemplateConfig() *config.TemplateConfig {
 	cm.mutex.RLock()
 	defer cm.mutex.RUnlock()
 	
@@ -345,11 +345,11 @@ func (cm *ConfigManager) GetTemplateConfig() *config.ViewTemplateConfig {
 }
 
 // validateTemplateConfig 验证Template配置
-func (cm *ConfigManager) validateTemplateConfig(config *config.ViewTemplateConfig) error {
-	if len(config.ViewPaths) == 0 {
+func (cm *ConfigManager) validateTemplateConfig(config *config.TemplateConfig) error {
+	if len(config.Paths.ViewPaths) == 0 {
 		return fmt.Errorf("view paths cannot be empty")
 	}
-	if config.Extension == "" {
+	if config.Paths.Extension == "" {
 		return fmt.Errorf("template extension cannot be empty")
 	}
 	return nil
@@ -386,7 +386,7 @@ func (cm *ConfigManager) ReloadAllConfigs() error {
 	}
 
 	// 重新加载Template配置
-	templateConfig := view.DefaultTemplateConfig()
+	templateConfig := config.DefaultTemplateConfig()
 	if err := cm.updateTemplateConfigInternal(templateConfig); err != nil {
 		return fmt.Errorf("failed to reload template config: %w", err)
 	}
@@ -417,7 +417,7 @@ func (cm *ConfigManager) updateCookieConfigInternal(config *cookie.Config) error
 }
 
 // updateTemplateConfigInternal 内部Template配置更新（不加锁）
-func (cm *ConfigManager) updateTemplateConfigInternal(config *config.ViewTemplateConfig) error {
+func (cm *ConfigManager) updateTemplateConfigInternal(config *config.TemplateConfig) error {
 	oldConfig := cm.templateConfig
 	cm.templateConfig = config
 	cm.notifyTemplateConfigChanged(oldConfig, config)
@@ -482,7 +482,7 @@ func (cm *ConfigManager) notifyCookieConfigChanged(old, new *cookie.Config) {
 	}
 }
 
-func (cm *ConfigManager) notifyTemplateConfigChanged(old, new *config.ViewTemplateConfig) {
+func (cm *ConfigManager) notifyTemplateConfigChanged(old, new *config.TemplateConfig) {
 	for _, listener := range cm.changeListeners {
 		if err := listener.OnTemplateConfigChanged(old, new); err != nil {
 			fmt.Printf("Config change listener error: %v\n", err)

@@ -433,6 +433,17 @@ func (app *App) getControllerName(controller IController) string {
 // createControllerHandler 创建控制器处理函数
 func (app *App) createControllerHandler(controller IController, method reflect.Method) define.HandlerFunc {
 	return func(ctx context.Context, c *define.RequestContext) {
+		// 添加 recover 机制来捕获 ErrAbort panic（完全兼容beego）
+		defer func() {
+			if r := recover(); r != nil {
+				if r == ErrAbort {
+					// 捕获到 ErrAbort，正常停止执行，不输出任何错误
+					return
+				}
+				// 其他 panic 重新抛出
+				panic(r)
+			}
+		}()
 		// 确保控制器实例正确设置（关键修复）
 		if method := reflect.ValueOf(controller).MethodByName("SetControllerInstance"); method.IsValid() {
 			method.Call([]reflect.Value{reflect.ValueOf(controller)})
@@ -487,6 +498,8 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 			}
 		}
 
+		// 注释：使用 beego 风格的 panic/recover 机制，不再需要检查 ShouldStopExecution
+
 		// 执行 AfterExec 过滤器
 		app.ExecuteFilters(enhancedCtx, AfterExec)
 
@@ -501,6 +514,17 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 // createMethodHandler 创建方法处理函数
 func (app *App) createMethodHandler(controller IController, methodName string) define.HandlerFunc {
 	return func(ctx context.Context, c *define.RequestContext) {
+		// 添加 recover 机制来捕获 ErrAbort panic（完全兼容beego）
+		defer func() {
+			if r := recover(); r != nil {
+				if r == ErrAbort {
+					// 捕获到 ErrAbort，正常停止执行，不输出任何错误
+					return
+				}
+				// 其他 panic 重新抛出
+				panic(r)
+			}
+		}()
 		// 初始化增强上下文
 		enhancedCtx := contextenhanced.NewContext(c)
 
@@ -545,6 +569,8 @@ func (app *App) createMethodHandler(controller IController, methodName string) d
 				methodValue.Call([]reflect.Value{})
 			}
 		}
+
+		// 注释：使用 beego 风格的 panic/recover 机制，不再需要检查 ShouldStopExecution
 
 		// 执行 AfterExec 过滤器
 		app.ExecuteFilters(enhancedCtx, AfterExec)

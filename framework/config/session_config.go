@@ -20,7 +20,7 @@ var (
 	sessionConfigOnce sync.Once
 )
 
-// SessionConfig Session配置结构
+// SessionConfig 会话配置结构
 type SessionConfig struct {
 	// Cookie配置
 	Cookie struct {
@@ -241,7 +241,7 @@ func (c SessionConfig) SetDefaults(v *viper.Viper) {
 	// Session默认配置
 	v.SetDefault("session.name", "YYHERTZ_SESSION")
 	v.SetDefault("session.secret", generate64CharKey()) // 动态生成64字符Session密钥
-	v.SetDefault("session.max_age", 3600) // 1小时
+	v.SetDefault("session.max_age", 3600)               // 1小时
 
 	// Session Cookie配置
 	v.SetDefault("session.cookie.path", "/")
@@ -320,7 +320,7 @@ func (c SessionConfig) GenerateDefaultContent() string {
 	cookieEncryptKey := generate32CharKey()
 	sessionSecret := generate64CharKey()
 	csrfSecret := generate64CharKey()
-	
+
 	return fmt.Sprintf(`# YYHertz Session Configuration
 # Session配置文件
 

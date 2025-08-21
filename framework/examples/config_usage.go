@@ -56,10 +56,10 @@ func ExampleTemplateConfig() {
 		return
 	}
 
-	fmt.Printf("模板扩展名: %s\n", templateConfig.Extension)
-	fmt.Printf("视图路径: %v\n", templateConfig.ViewPaths)
-	fmt.Printf("布局路径: %s\n", templateConfig.LayoutPath)
-	fmt.Printf("启用缓存: %v\n", templateConfig.EnableCache)
+	fmt.Printf("模板扩展名: %s\n", templateConfig.Paths.Extension)
+	fmt.Printf("视图路径: %v\n", templateConfig.Paths.ViewPaths)
+	fmt.Printf("布局路径: %s\n", templateConfig.Paths.LayoutPath)
+	fmt.Printf("启用缓存: %v\n", templateConfig.Cache.EnableCache)
 
 	// 方式2：使用配置管理器
 	manager := config.GetTemplateConfigManager()

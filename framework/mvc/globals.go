@@ -28,11 +28,11 @@ package mvc
 import (
 	"sync"
 
+	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 	"github.com/zsy619/yyhertz/framework/mvc/security"
 	"github.com/zsy619/yyhertz/framework/mvc/session"
-	"github.com/zsy619/yyhertz/framework/mvc/template"
 	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
@@ -210,8 +210,8 @@ func SetGlobalTemplateEngine(engine *view.TemplateEngine) {
 // initializeTemplateEngine 初始化模板引擎（内部使用）
 func initializeTemplateEngine() {
 	if !templateInitialized {
-		// 使用template包中已有的单例
-		templateManager := template.GetTemplateManager()
+		// 使用view包中已有的单例
+		templateManager := view.GetTemplateManager()
 		globalTemplateEngine = templateManager.GetEngine()
 		templateInitialized = true
 	}
@@ -308,6 +308,9 @@ func InitializeGlobalManagers() {
 	// 注册全局管理器访问器到 core 包，避免循环导入
 	accessor := &globalManagerAccessorImpl{}
 	core.SetGlobalManagerAccessor(accessor)
+
+	// 设置模板全局左右分隔符
+	view.SetTemplateDelimiters(config.GlobalTemplate.Syntax.DelimLeft, config.GlobalTemplate.Syntax.DelimRight)
 
 	globalsInitialized = true
 }

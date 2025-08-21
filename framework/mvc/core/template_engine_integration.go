@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
 	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
@@ -15,7 +14,7 @@ func (c *BaseController) initializeEnhancedTemplateEngine() {
 		cfg := view.DefaultTemplateConfig()
 		if c.ViewPath != "" {
 			// 扩展视图路径，包含基础路径、shared目录和其他常用目录
-			cfg.ViewPaths = []string{
+			cfg.Paths.ViewPaths = []string{
 				c.ViewPath,                              // 主视图路径
 				filepath.Join(c.ViewPath, "shared"),     // shared模板目录
 				filepath.Join(c.ViewPath, "layouts"),    // 布局目录
@@ -33,7 +32,7 @@ func (c *BaseController) initializeEnhancedTemplateEngine() {
 			c.addGlobalTemplateFunctions()
 		} else {
 			// 降级到标准模板引擎
-			c.templateEngine = templatemanager.GetTemplateManager().GetEngine()
+			c.templateEngine = view.GetTemplateManager().GetEngine()
 		}
 	}
 }

@@ -123,23 +123,30 @@ func (c *BaseController) Write(data []byte) (int, error) {
 // - 开发模式：格式化输出（有缩进）
 // - 生产模式：紧凑输出（无缩进）
 //
+// **重要特性：**
+// 该方法会自动调用 StopRun() 停止后续执行，防止JSON后继续输出HTML。
+// 这意味着调用 ServeJSON() 后无需手动调用 return 或 StopRun()。
+//
 // 参数:
 //
 //	encoding: 可选参数，如果为true，启用UTF-8字符转义为\uXXXX格式
 //
 // 使用方法:
 //
+//	// 基本用法 - 会自动停止后续执行
 //	c.Data["json"] = map[string]any{"status": "success", "data": userData}
 //	c.ServeJSON()
+//	// 无需 return 或 StopRun()，已自动停止
 //
-//	// 或带编码转换
+//	// 带编码转换
 //	c.Data["json"] = responseData
 //	c.ServeJSON(true)
 //
 // 注意:
-//   - 如果 c.Data["json"] 不存在，会返回 HTTP 500 错误
-//   - JSON序列化失败也会返回 HTTP 500 错误
+//   - 如果 c.Data["json"] 不存在，会返回 HTTP 500 错误并停止执行
+//   - JSON序列化失败也会返回 HTTP 500 错误并停止执行
 //   - Content-Type 自动设置为 "application/json; charset=utf-8"
+//   - **该方法会自动调用 StopRun() 停止后续执行**
 func (c *BaseController) ServeJSON(encoding ...bool) error {
 	// 检查上下文是否有效
 	if c.Ctx == nil {
@@ -153,6 +160,7 @@ func (c *BaseController) ServeJSON(encoding ...bool) error {
 		config.Error("No JSON data found in c.Data[\"json\"]")
 		c.Ctx.Status(consts.StatusInternalServerError)
 		c.Ctx.WriteString(`{"error": "No JSON data provided"}`)
+		c.StopRun() // 错误情况下也停止执行
 		return fmt.Errorf("no JSON data provided")
 	}
 
@@ -176,6 +184,7 @@ func (c *BaseController) ServeJSON(encoding ...bool) error {
 		config.Error("Failed to marshal JSON data:", err)
 		c.Ctx.Status(consts.StatusInternalServerError)
 		c.Ctx.WriteString(`{"error": "Failed to serialize JSON data"}`)
+		c.StopRun() // 错误情况下也停止执行
 		return fmt.Errorf("failed to serialize JSON data")
 	}
 
@@ -189,6 +198,10 @@ func (c *BaseController) ServeJSON(encoding ...bool) error {
 
 	// 写入响应
 	_, errx := c.Ctx.Write(jsonBytes)
+	
+	// 自动停止后续执行，防止JSON后继续输出HTML
+	c.StopRun()
+	
 	return errx
 }
 
@@ -358,6 +371,9 @@ func (c *BaseController) ServeXML() {
 	if err != nil {
 		config.Error("Failed to write XML response:", err)
 	}
+	
+	// 自动停止后续执行
+	c.StopRun()
 }
 
 // ServeJSONP 发送JSONP响应，完全兼容beego的ServeJSONP方法
@@ -429,6 +445,10 @@ func (c *BaseController) ServeJSONP() error {
 
 	// 写入响应
 	c.Ctx.WriteString(jsonpResponse)
+	
+	// 自动停止后续执行
+	c.StopRun()
+	
 	return nil
 }
 

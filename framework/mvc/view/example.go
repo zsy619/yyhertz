@@ -15,10 +15,10 @@ func RunTemplateExample() error {
 	config.Info("Starting template engine example...")
 
 	// 1. 创建模板引擎
-	templateConfig := DefaultTemplateConfig()
-	templateConfig.ViewPaths = []string{"example/views", "views"}
-	templateConfig.EnableReload = true
-	templateConfig.EnableCache = true
+	templateConfig := config.GlobalTemplate
+	templateConfig.Paths.ViewPaths = []string{"example/views", "views"}
+	templateConfig.Reload.Enabled = true
+	templateConfig.Cache.EnableCache = true
 
 	engine, err := NewTemplateEngine(templateConfig)
 	if err != nil {
@@ -152,7 +152,7 @@ func RunTemplateExample() error {
 	config.Info("=== Theme Switching Example ===")
 
 	// 添加自定义主题
-	adminTheme := &config.ViewThemeConfig{
+	adminTheme := &config.ThemeConfig{
 		Name:          "admin",
 		ViewPaths:     []string{"admin/views", "views"},
 		LayoutPath:    "admin/layouts",

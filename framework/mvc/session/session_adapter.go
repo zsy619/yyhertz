@@ -215,7 +215,7 @@ func (sm *SessionManager) CreateSession(ctx any) *Adapter {
 	// 这里需要根据context类型进行适配
 	// 目前简化实现，创建内存session
 	sessionID := sm.manager.generateSessionID()
-	store := NewMemoryStore(sessionID)
+	store := GetOrCreateMemoryStore(sessionID)
 	return NewAdapter(store, ctx)
 }
 
@@ -225,8 +225,8 @@ func (sm *SessionManager) GetSession(ctx any, sessionID string) *Adapter {
 		return nil
 	}
 
-	// 创建对应的store
-	store := NewMemoryStore(sessionID)
+	// 使用全局存储池获取对应的store
+	store := GetOrCreateMemoryStore(sessionID)
 	return NewAdapter(store, ctx)
 }
 

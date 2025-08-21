@@ -6,60 +6,82 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
-// ============= 模板函数管理方法 =============
+// ============= 模板函数管理方法（重构版本 - 直接使用 view 引擎） =============
 
 // AddFuncMap 添加全局模板函数
 // 参数：name - 函数名字符串，fn - 函数实现
 // 示例：AddFuncMap("containString", tool.ContainString)
+// 
+// 注意：此方法已重构为直接使用统一的模板函数管理器，避免重复存储
 func (app *App) AddFuncMap(name string, fn any) {
-	app.funcMapMutex.Lock()
-	defer app.funcMapMutex.Unlock()
-
-	// 添加到应用级别的全局模板函数映射
-	app.globalFuncMap[name] = fn
-
-	// 同时添加到view引擎的全局存储中
+	// 直接使用 view 引擎的统一管理器
 	view.AddGlobalFunction(name, fn)
-
 	app.LogInfof("Template function registered: %s", name)
 }
 
 // GetGlobalFuncMap 获取全局模板函数映射（只读副本）
+// 
+// 注意：此方法已重构为从统一管理器获取数据
 func (app *App) GetGlobalFuncMap() template.FuncMap {
-	app.funcMapMutex.RLock()
-	defer app.funcMapMutex.RUnlock()
-
-	// 创建副本以避免并发修改
-	funcMapCopy := make(template.FuncMap, len(app.globalFuncMap))
-	for name, fn := range app.globalFuncMap {
-		funcMapCopy[name] = fn
-	}
-
-	return funcMapCopy
+	// 从 view 引擎获取全局函数
+	return view.GetGlobalFunctions()
 }
 
 // RemoveFuncMap 移除全局模板函数
+// 
+// 注意：此方法已重构为直接操作统一管理器
 func (app *App) RemoveFuncMap(name string) {
-	app.funcMapMutex.Lock()
-	defer app.funcMapMutex.Unlock()
-
-	delete(app.globalFuncMap, name)
-
-	// 同时从view引擎的全局存储中移除
+	// 直接使用 view 引擎的统一管理器
 	view.RemoveGlobalFunction(name)
-
 	app.LogInfof("Template function removed: %s", name)
 }
 
 // ListFuncMap 列出所有已注册的模板函数名称
+// 
+// 注意：此方法已重构为从统一管理器获取数据
 func (app *App) ListFuncMap() []string {
-	app.funcMapMutex.RLock()
-	defer app.funcMapMutex.RUnlock()
-
-	names := make([]string, 0, len(app.globalFuncMap))
-	for name := range app.globalFuncMap {
-		names = append(names, name)
+	// 从统一管理器获取所有函数
+	funcList := view.ListTemplateFunctions()
+	
+	// 合并所有类型的函数名称
+	allNames := make([]string, 0)
+	for _, names := range funcList {
+		allNames = append(allNames, names...)
 	}
+	
+	return allNames
+}
 
-	return names
+// ============= 新增的增强方法 =============
+
+// AddFuncMapGroup 批量添加模板函数组
+// 参数：groupName - 函数组名称，funcs - 函数映射
+func (app *App) AddFuncMapGroup(groupName string, funcs template.FuncMap) {
+	view.RegisterTemplateFunctionGroup(groupName, funcs)
+	app.LogInfof("Template function group registered: %s (%d functions)", groupName, len(funcs))
+}
+
+// HasFuncMap 检查是否存在指定的模板函数
+func (app *App) HasFuncMap(name string) bool {
+	return view.HasTemplateFunction(name)
+}
+
+// GetFuncMapSource 获取模板函数的来源
+func (app *App) GetFuncMapSource(name string) string {
+	return string(view.GetTemplateFunctionSource(name))
+}
+
+// ListFuncMapBySource 按来源分类列出模板函数
+func (app *App) ListFuncMapBySource() map[string][]string {
+	return view.ListTemplateFunctions()
+}
+
+// GetFuncMapCount 获取模板函数总数
+func (app *App) GetFuncMapCount() int {
+	funcList := view.ListTemplateFunctions()
+	total := 0
+	for _, names := range funcList {
+		total += len(names)
+	}
+	return total
 }

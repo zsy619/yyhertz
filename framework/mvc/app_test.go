@@ -28,8 +28,8 @@ func TestNewAppWithLogConfig(t *testing.T) {
 // TestSetViewPath 测试视图路径设置
 func TestSetViewPath(t *testing.T) {
 	app := NewApp()
-	app.SetViewPath("/custom/views")
-	assert.Equal(t, "/custom/views", app.GetViewPath(), "SetViewPath should update the view path")
+	app.SetViewPath([]string{"/custom/views"})
+	assert.Equal(t, []string{"/custom/views"}, app.GetViewPath(), "SetViewPath should update the view path")
 }
 
 // TestStaticPathSetting 测试静态文件路径设置（新API）
@@ -48,7 +48,7 @@ func TestStaticPathSetting(t *testing.T) {
 	app.SetStaticPath("public")
 	staticPaths = app.GetStaticPaths()
 	assert.Equal(t, "public", staticPaths["/public"], "Public path should be auto-deduced")
-	
+
 	// 测试带 "./" 前缀的目录
 	app.SetStaticPath("./uploads", "/files")
 	staticPaths = app.GetStaticPaths()
@@ -98,13 +98,13 @@ func TestAppConfig(t *testing.T) {
 func TestSetStaticPathStaticMethod(t *testing.T) {
 	// 确保HertzApp已初始化
 	assert.NotNil(t, HertzApp, "HertzApp should be initialized")
-	
+
 	// 测试静态方法调用
 	assert.NotPanics(t, func() {
 		SetStaticPath("test-assets", "/test-static")
 		SetStaticPath("another-dir")
 	}, "SetStaticPath static method should not panic")
-	
+
 	// 验证路径是否正确设置
 	staticPaths := HertzApp.GetStaticPaths()
 	assert.Equal(t, "test-assets", staticPaths["/test-static"], "Static method should set path correctly")

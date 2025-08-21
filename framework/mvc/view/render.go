@@ -124,6 +124,7 @@ func (e *TemplateEngine) RenderWithLayout(templateName, layoutName string, data 
 	if err != nil {
 		return "", fmt.Errorf("template loading error: %w", err)
 	}
+	tmpl.Delims(e.delimLeft, e.delimRight)
 
 	// 渲染模板
 	var buf bytes.Buffer

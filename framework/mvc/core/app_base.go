@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"strconv"
 	"sync"
 	"time"
@@ -69,15 +68,11 @@ func AdaptHandler(handler define.HandlerFunc) app.HandlerFunc {
 // App 应用结构（精简版，只保留核心功能）
 type App struct {
 	*server.Hertz
-	ViewPath      string
+	ViewPaths     []string
 	StaticPaths   map[string]string // URL路径 -> 本地路径映射
 	startTime     time.Time
 	address       string
 	loggerManager *config.LoggerManager
-
-	// 全局模板函数管理
-	globalFuncMap template.FuncMap
-	funcMapMutex  sync.RWMutex
 
 	// 过滤器管理
 	filters      map[int][]*FilterPattern // 按位置分组的过滤器
@@ -123,16 +118,28 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	// 初始化全局日志管理器
 	loggerManager := config.InitGlobalLogger(logConfig)
 
-	app := &App{
-		Hertz:         h,                                        // 使用Hertz服务器实例
-		ViewPath:      "./views",                                // 默认视图路径
-		StaticPaths:   map[string]string{"/static": "./static"}, // 默认静态文件路径映射
-		startTime:     time.Now(),                               // 记录应用启动时间
-		address:       fmt.Sprintf("%s:%d", host, port),         // 应用监听地址
-		loggerManager: loggerManager,                            // 日志管理器
+	viewPaths := config.GlobalTemplate.Paths.ViewPaths
+	staticPaths := config.GlobalTemplate.Paths.StaticPaths
 
-		// 初始化全局模板函数映射
-		globalFuncMap: make(template.FuncMap),
+	// 如果配置中没有静态路径，使用默认值
+	if len(staticPaths) == 0 {
+		staticPaths = map[string]string{
+			"/favicon.ico": "./static/favicon.ico",
+			"/static":      "./static",    // 基础静态文件
+			"/assets":      "./assets",    // 前端资源
+			"/uploads":     "./uploads",   // 用户上传
+			"/downloads":   "./downloads", // 用户下载
+			"/public":      "./public",    // 公共资源
+		}
+	}
+
+	app := &App{
+		Hertz:         h,                                // 使用Hertz服务器实例
+		ViewPaths:     viewPaths,                        // 从配置读取视图路径
+		StaticPaths:   staticPaths,                      // 从配置读取静态文件路径映射
+		startTime:     time.Now(),                       // 记录应用启动时间
+		address:       fmt.Sprintf("%s:%d", host, port), // 应用监听地址
+		loggerManager: loggerManager,                    // 日志管理器
 
 		// 初始化过滤器管理
 		filters:      make(map[int][]*FilterPattern),
@@ -142,8 +149,6 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 		errorConfig: DefaultErrorConfig(),
 	}
 
-	// 配置视图路径
-	app.SetViewPath("./views")
 	// 注册默认静态路径
 	for urlPath, _ := range app.StaticPaths {
 		app.Static(urlPath, ".")
@@ -189,13 +194,13 @@ func (app *App) setupBasicRoutes() {
 }
 
 // SetViewPath 设置视图路径
-func (app *App) SetViewPath(path string) {
-	app.ViewPath = path
+func (app *App) SetViewPath(path []string) {
+	app.ViewPaths = path
 }
 
 // GetViewPath 获取视图路径
-func (app *App) GetViewPath() string {
-	return app.ViewPath
+func (app *App) GetViewPath() []string {
+	return app.ViewPaths
 }
 
 // Use 添加中间件

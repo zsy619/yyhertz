@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	templatemanager "github.com/zsy619/yyhertz/framework/mvc/template"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // ============= 模板渲染方法 =============
@@ -211,8 +211,8 @@ func (c *BaseController) AddTplFunc(name string, fn any) {
 }
 
 // GetTemplateManager 获取模板管理器
-func (c *BaseController) GetTemplateManager() *templatemanager.TemplateManager {
-	return templatemanager.GetTemplateManager()
+func (c *BaseController) GetTemplateManager() *view.TemplateManager {
+	return view.GetTemplateManager()
 }
 
 // SetTemplatePath 设置模板路径（便捷方法）

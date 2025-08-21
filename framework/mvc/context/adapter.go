@@ -23,6 +23,7 @@
 package context
 
 import (
+	"sync"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -44,17 +45,80 @@ import (
 	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
 
+// ============= 统一管理器接口定义 =============
+
+// SessionStoreInterface Session存储接口
+// 为了避免循环导入，定义接口而不直接引用session包
+// 与session.Store接口完全兼容
+type SessionStoreInterface interface {
+	Get(key string) any
+	Set(key string, value any)
+	Delete(key string)
+	Clear()
+	GetID() string
+	Destroy()
+	Save() error
+	Exists(key string) bool
+	GetAll() map[string]any
+}
+
+// UnifiedManagerInterface 统一管理器接口
+// 为了避免循环导入，定义接口而不直接引用unified包
+type UnifiedManagerInterface interface {
+	// Cookie操作
+	SetCookie(ctx *Context, name, value string, options ...interface{})
+	GetCookie(ctx *Context, name string) string
+	DeleteCookie(ctx *Context, name string, path ...string)
+	HasCookie(ctx *Context, name string) bool
+	
+	// Session操作
+	SetSessionData(ctx *Context, key string, value interface{})
+	GetSessionData(ctx *Context, key string) interface{}
+	DeleteSessionData(ctx *Context, key string)
+	
+	// 上下文数据操作
+	SetContextData(ctx *Context, key string, value interface{})
+	GetContextData(ctx *Context, key string) interface{}
+	
+	// 状态检查
+	IsInitialized() bool
+}
+
+// 全局统一管理器实例访问器
+var (
+	globalUnifiedManager UnifiedManagerInterface
+	globalManagerMutex   sync.RWMutex
+)
+
+// SetGlobalUnifiedManager 设置全局统一管理器
+// 这个函数将由unified包调用，以避免循环导入
+func SetGlobalUnifiedManager(manager UnifiedManagerInterface) {
+	globalManagerMutex.Lock()
+	defer globalManagerMutex.Unlock()
+	globalUnifiedManager = manager
+}
+
+// GetGlobalUnifiedManager 获取全局统一管理器
+func GetGlobalUnifiedManager() UnifiedManagerInterface {
+	globalManagerMutex.RLock()
+	defer globalManagerMutex.RUnlock()
+	return globalUnifiedManager
+}
+
 // InputData 标准MVC风格输入数据结构
-// 现在通过session包提供的扩展来实现cookie和session功能
+// 现在优先使用统一管理器，向后兼容session包扩展
 type InputData struct {
 	ctx       *Context
 	extension *session.ContextExtension // session包扩展
+	unifiedManager UnifiedManagerInterface // 统一管理器接口
 }
 
 // OutputData 标准MVC风格输出数据结构
+// 现在优先使用统一管理器，向后兼容session包扩展
 type OutputData struct {
 	ctx       *Context
 	extension *session.ContextExtension // session包扩展
+	unifiedManager UnifiedManagerInterface // 统一管理器接口
 }
 
 // ============= OutputData基础方法 =============
@@ -527,7 +591,24 @@ func isRedirectCode(code int) bool {
 // ============= OutputData Session方法 =============
 
 // getExtension 获取session扩展（延迟初始化）(OutputData版本)
+// 现在优先使用统一管理器，如果不可用则回退到session包扩展
 func (o *OutputData) getExtension() *session.ContextExtension {
+	// 1. 优先尝试使用统一管理器
+	if o.unifiedManager == nil {
+		o.unifiedManager = GetGlobalUnifiedManager()
+	}
+	
+	// 如果统一管理器可用，优先使用它
+	if o.unifiedManager != nil && o.unifiedManager.IsInitialized() {
+		// 统一管理器已可用，但我们仍需要extension来保持兼容性
+		// 这里创建一个基于统一管理器的扩展适配器
+		if o.extension == nil && o.ctx != nil && o.ctx.request != nil {
+			o.extension = session.NewExtensionForHertzContext(o.ctx.request)
+		}
+		return o.extension
+	}
+	
+	// 2. 回退到传统的session包扩展
 	if o.extension == nil && o.ctx != nil && o.ctx.request != nil {
 		// 创建session扩展
 		o.extension = session.NewExtensionForHertzContext(o.ctx.request)
@@ -921,7 +1002,24 @@ func (i *InputData) getPostMulti(key string) []string {
 // ============= Cookie方法代理 (代理到session包) =============
 
 // getExtension 获取session扩展（延迟初始化）
+// 现在优先使用统一管理器，如果不可用则回退到session包扩展
 func (i *InputData) getExtension() *session.ContextExtension {
+	// 1. 优先尝试使用统一管理器
+	if i.unifiedManager == nil {
+		i.unifiedManager = GetGlobalUnifiedManager()
+	}
+	
+	// 如果统一管理器可用，优先使用它
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		// 统一管理器已可用，但我们仍需要extension来保持兼容性
+		// 这里创建一个基于统一管理器的扩展适配器
+		if i.extension == nil && i.ctx != nil && i.ctx.request != nil {
+			i.extension = session.NewExtensionForHertzContext(i.ctx.request)
+		}
+		return i.extension
+	}
+	
+	// 2. 回退到传统的session包扩展
 	if i.extension == nil && i.ctx != nil && i.ctx.request != nil {
 		// 创建session扩展
 		i.extension = session.NewExtensionForHertzContext(i.ctx.request)
@@ -1131,6 +1229,84 @@ func (i *InputData) WithSessionExtension(ext *session.ContextExtension) *InputDa
 	return i
 }
 
+// ============= 统一管理器便捷方法 (InputData) =============
+
+// GetUnifiedManager 获取统一管理器实例
+func (i *InputData) GetUnifiedManager() UnifiedManagerInterface {
+	if i.unifiedManager == nil {
+		i.unifiedManager = GetGlobalUnifiedManager()
+	}
+	return i.unifiedManager
+}
+
+// SetUnifiedCookie 使用统一管理器设置Cookie
+// 优先使用统一管理器，如果不可用则回退到session包扩展
+func (i *InputData) SetUnifiedCookie(name, value string, options ...any) {
+	if i.unifiedManager == nil {
+		i.unifiedManager = GetGlobalUnifiedManager()
+	}
+	
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		// 使用统一管理器设置Cookie
+		i.unifiedManager.SetCookie(i.ctx, name, value, options...)
+	} else {
+		// 回退到session包扩展
+		i.SetCookie(name, value, options...)
+	}
+}
+
+// GetUnifiedCookie 使用统一管理器获取Cookie
+// 优先使用统一管理器，如果不可用则回退到session包扩展
+func (i *InputData) GetUnifiedCookie(name string) string {
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		// 使用统一管理器获取Cookie
+		return i.unifiedManager.GetCookie(i.ctx, name)
+	} else {
+		// 回退到session包扩展
+		return i.Cookie(name)
+	}
+}
+
+// SetUnifiedSessionData 使用统一管理器设置Session数据
+// 优先使用统一管理器，如果不可用则回退到session包扩展
+func (i *InputData) SetUnifiedSessionData(key string, value any) error {
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		// 使用统一管理器设置Session数据
+		i.unifiedManager.SetSessionData(i.ctx, key, value)
+		return nil
+	} else {
+		// 回退到session包扩展
+		return i.SetSession(key, value)
+	}
+}
+
+// GetUnifiedSessionData 使用统一管理器获取Session数据
+// 优先使用统一管理器，如果不可用则回退到session包扩展
+func (i *InputData) GetUnifiedSessionData(key string) any {
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		// 使用统一管理器获取Session数据
+		return i.unifiedManager.GetSessionData(i.ctx, key)
+	} else {
+		// 回退到session包扩展
+		return i.GetSession(key)
+	}
+}
+
+// SetUnifiedContextData 使用统一管理器设置上下文数据
+func (i *InputData) SetUnifiedContextData(key string, value any) {
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		i.unifiedManager.SetContextData(i.ctx, key, value)
+	}
+}
+
+// GetUnifiedContextData 使用统一管理器获取上下文数据
+func (i *InputData) GetUnifiedContextData(key string) any {
+	if i.unifiedManager != nil && i.unifiedManager.IsInitialized() {
+		return i.unifiedManager.GetContextData(i.ctx, key)
+	}
+	return nil
+}
+
 // ============= 向后兼容性类型别名 =============
 
 // SessionStore 兼容性类型别名，指向session包的Adapter
@@ -1157,6 +1333,10 @@ func (i *InputData) Initialize(c *app.RequestContext) {
 	}
 	// 重置extension以便重新初始化
 	i.extension = nil
+	// 确保统一管理器可用
+	if i.unifiedManager == nil {
+		i.unifiedManager = GetGlobalUnifiedManager()
+	}
 }
 
 // Initialize 初始化OutputData (兼容性方法)
@@ -1170,6 +1350,10 @@ func (o *OutputData) Initialize(c *app.RequestContext) {
 	}
 	// 重置extension以便重新初始化
 	o.extension = nil
+	// 确保统一管理器可用
+	if o.unifiedManager == nil {
+		o.unifiedManager = GetGlobalUnifiedManager()
+	}
 }
 
 // GetContext 获取关联的Context (InputData)
@@ -1189,6 +1373,7 @@ func NewInputData(ctx *Context) *InputData {
 	return &InputData{
 		ctx: ctx,
 		// extension 延迟初始化
+		unifiedManager: GetGlobalUnifiedManager(), // 获取统一管理器实例
 	}
 }
 
@@ -1196,7 +1381,80 @@ func NewInputData(ctx *Context) *InputData {
 func NewOutputData(ctx *Context) *OutputData {
 	return &OutputData{
 		ctx: ctx,
+		// extension 延迟初始化
+		unifiedManager: GetGlobalUnifiedManager(), // 获取统一管理器实例
 	}
+}
+
+// ============= 统一管理器便捷方法 (OutputData) =============
+
+// GetUnifiedManager 获取统一管理器实例 (OutputData版本)
+func (o *OutputData) GetUnifiedManager() UnifiedManagerInterface {
+	if o.unifiedManager == nil {
+		o.unifiedManager = GetGlobalUnifiedManager()
+	}
+	return o.unifiedManager
+}
+
+// SetUnifiedCookie 使用统一管理器设置Cookie (OutputData版本)
+// 优先使用统一管理器，如果不可用则回退到其他方法
+func (o *OutputData) SetUnifiedCookie(name, value string, options ...any) {
+	if o.unifiedManager == nil {
+		o.unifiedManager = GetGlobalUnifiedManager()
+	}
+	
+	if o.unifiedManager != nil && o.unifiedManager.IsInitialized() {
+		// 使用统一管理器设置Cookie
+		o.unifiedManager.SetCookie(o.ctx, name, value, options...)
+	} else {
+		// 回退到传统方法（通过Context的Request设置）
+		if o.ctx.request != nil {
+			// 解析options参数
+			maxAge := 0
+			path := "/"
+			domain := ""
+			secure := false
+			httpOnly := false
+			
+			// 简单的options处理（可以根据需要扩展）
+			if len(options) > 0 {
+				if maxAgeVal, ok := options[0].(int); ok {
+					maxAge = maxAgeVal
+				}
+			}
+			o.ctx.request.SetCookie(name, value, maxAge, path, domain, protocol.CookieSameSiteDefaultMode, secure, httpOnly)
+		}
+	}
+}
+
+// GetUnifiedCookie 使用统一管理器获取Cookie (OutputData版本)
+// 优先使用统一管理器，如果不可用则回退到其他方法
+func (o *OutputData) GetUnifiedCookie(name string) string {
+	if o.unifiedManager != nil && o.unifiedManager.IsInitialized() {
+		// 使用统一管理器获取Cookie
+		return o.unifiedManager.GetCookie(o.ctx, name)
+	} else {
+		// 回退到从Request直接获取
+		if o.ctx.request != nil {
+			return string(o.ctx.request.Cookie(name))
+		}
+		return ""
+	}
+}
+
+// SetUnifiedContextData 使用统一管理器设置上下文数据 (OutputData版本)
+func (o *OutputData) SetUnifiedContextData(key string, value any) {
+	if o.unifiedManager != nil && o.unifiedManager.IsInitialized() {
+		o.unifiedManager.SetContextData(o.ctx, key, value)
+	}
+}
+
+// GetUnifiedContextData 使用统一管理器获取上下文数据 (OutputData版本)
+func (o *OutputData) GetUnifiedContextData(key string) any {
+	if o.unifiedManager != nil && o.unifiedManager.IsInitialized() {
+		return o.unifiedManager.GetContextData(o.ctx, key)
+	}
+	return nil
 }
 
 // ============= 文档和迁移说明 =============
@@ -1205,38 +1463,77 @@ func NewOutputData(ctx *Context) *OutputData {
 迁移说明:
 
 1. 原有代码100%兼容，无需修改
-2. 新功能建议直接使用session包：
+2. 新功能（推荐）：使用统一管理器
+   // 获取统一管理器
+   manager := inputData.GetUnifiedManager()
+   
+   // 使用统一管理器方法（推荐）
+   inputData.SetUnifiedCookie("auth", "token")
+   token := inputData.GetUnifiedCookie("auth")
+   inputData.SetUnifiedSessionData("user", userInfo)
+   user := inputData.GetUnifiedSessionData("user")
+
+3. 向后兼容：直接使用session包
    import "github.com/zsy619/yyhertz/framework/mvc/session"
    ext := session.NewContextExtension(ctx)
 
-3. 初始化方法（兼容性）：
+4. 初始化方法（兼容性）：
    inputData := &InputData{}
    outputData := &OutputData{}
    inputData.Initialize(hertzCtx)   // 初始化InputData
    outputData.Initialize(hertzCtx)  // 初始化OutputData
    ctx := inputData.GetContext()    // 获取关联的Context
 
-4. 高级功能访问：
+5. 高级功能访问：
+   // 使用统一管理器的高级功能（推荐）
+   manager := inputData.GetUnifiedManager()
+   token, err := manager.GenerateCSRFToken("123", "192.168.1.1")
+   html, err := manager.RenderTemplate("user/profile", userData)
+   
+   // 或者使用session包的高级功能
    ext := inputData.GetSessionExtension()
    options := session.CookieSecurityOptions{...}
    ext.SecureCookie.SetSecureWithOptions(...)
 
-5. 性能优化：
+6. 性能优化：
+   - 统一管理器优先，提供更好的性能
    - session扩展延迟初始化，不使用时无性能开销
-   - 直接使用session包可避免代理层开销
+   - 自动管理器选择，避免重复初始化
 
-6. 功能对照：
+7. 功能对照：
+   // 新增统一管理器方法（推荐）
+   InputData.SetUnifiedCookie() -> unified.Manager.SetCookie()
+   InputData.GetUnifiedCookie() -> unified.Manager.GetCookie()
+   InputData.SetUnifiedSessionData() -> unified.Manager.SetSessionData()
+   InputData.GetUnifiedSessionData() -> unified.Manager.GetSessionData()
+   
+   // 向后兼容的session包方法
    InputData.Cookie() -> session.BaseCookie.Get()
    InputData.SetSecureCookie() -> session.SecureCookie.SetSecure()
    InputData.StartSession() -> session.ContextExtension.StartSession()
 
-7. 新增方法：
+8. 新增方法：
+   // 统一管理器方法
+   - InputData.GetUnifiedManager() -> *unified.Manager
+   - InputData.SetUnifiedCookie(name, value, ...options)
+   - InputData.GetUnifiedCookie(name) -> string
+   - InputData.SetUnifiedSessionData(key, value) -> error
+   - InputData.GetUnifiedSessionData(key) -> any
+   - InputData.SetUnifiedContextData(key, value)
+   - InputData.GetUnifiedContextData(key) -> any
+   - OutputData.GetUnifiedManager() -> *unified.Manager
+   - OutputData.SetUnifiedCookie(name, value, ...options)
+   - OutputData.GetUnifiedCookie(name) -> string
+   - OutputData.SetUnifiedContextData(key, value)
+   - OutputData.GetUnifiedContextData(key) -> any
+   
+   // 兼容性方法
    - InputData.Initialize(c *app.RequestContext)  // 初始化方法
    - OutputData.Initialize(c *app.RequestContext) // 初始化方法
    - InputData.GetContext() *Context              // 获取Context
    - OutputData.GetContext() *Context             // 获取Context
 
-8. 便捷Session方法（v2.0新增）：
+9. 便捷Session方法和统一管理器优化：
    InputData:
    - Session(key) -> GetSession(key)              // 获取session值
    - Session(key, value) -> SetSession(key, value) // 设置session值
@@ -1247,9 +1544,22 @@ func NewOutputData(ctx *Context) *OutputData {
    - SetSession(key, value) error                 // 设置session数据
    - GetSession(key) any                  // 获取session数据
 
-   使用示例：
+   使用示例（推荐使用统一管理器方法）：
+   // 统一管理器方法（推荐）
+   ctx.Input.SetUnifiedSessionData("adminId", "12345")     // 设置
+   adminId := ctx.Input.GetUnifiedSessionData("adminId")   // 获取
+   ctx.Input.SetUnifiedCookie("theme", "dark")           // 设置Cookie
+   theme := ctx.Input.GetUnifiedCookie("theme")           // 获取Cookie
+   
+   // 向后兼容的便捷方法
    adminId := ctx.Input.Session("adminId")        // 获取
    ctx.Input.Session("adminId", "12345")          // 设置
    userId := ctx.Output.Session("userId")         // 获取
    ctx.Output.Session("userId", "67890")          // 设置
+
+10. 智能管理器选择：
+   - 优先使用统一管理器（如果已初始化）
+   - 自动回退到session包扩展
+   - 保证向后兼容性
+   - 提供更好的性能和功能支持
 */

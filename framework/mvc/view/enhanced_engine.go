@@ -26,7 +26,7 @@ type EnhancedTemplateEngine struct {
 }
 
 // NewEnhancedTemplateEngine 创建增强模板引擎
-func NewEnhancedTemplateEngine(cfg *config.ViewTemplateConfig) (*EnhancedTemplateEngine, error) {
+func NewEnhancedTemplateEngine(cfg *config.TemplateConfig) (*EnhancedTemplateEngine, error) {
 	baseEngine, err := NewTemplateEngine(cfg)
 	if err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func (e *EnhancedTemplateEngine) ReloadTemplates() error {
 // GetEnhancedEngine 获取增强模板引擎实例
 func GetEnhancedEngine() *EnhancedTemplateEngine {
 	// 创建新的增强引擎实例
-	cfg := DefaultTemplateConfig()
+	cfg := config.GlobalTemplate
 	enhanced, err := NewEnhancedTemplateEngine(cfg)
 	if err != nil {
 		config.Errorf("Failed to create enhanced template engine: %v", err)

@@ -1,7 +1,20 @@
 package config
 
 import (
+	"sync"
+
 	"github.com/spf13/viper"
+)
+
+var (
+	// 全局模板实例
+	GlobalRedis *RedisConfig
+	// 初始化锁
+	redisOnce sync.Once
+	// 配置文件是否已加载
+	redisConfigLoaded bool
+	// 配置文件加载锁
+	redisConfigOnce sync.Once
 )
 
 // RedisConfig Redis配置结构
@@ -114,6 +127,22 @@ type RedisConfig struct {
 		LogResults  bool `mapstructure:"log_results" yaml:"log_results" json:"log_results"`    // 记录查询结果
 		DebugMode   bool `mapstructure:"debug_mode" yaml:"debug_mode" json:"debug_mode"`       // 调试模式
 	} `mapstructure:"development" yaml:"development" json:"development"`
+}
+
+func DefaultRedisConfig() *RedisConfig {
+	redisOnce.Do(func() {
+		GlobalRedis = &RedisConfig{}
+	})
+
+	redisConfigOnce.Do(func() {
+		if !redisConfigLoaded {
+			v := viper.New()
+			GlobalRedis.SetDefaults(v)
+			redisConfigLoaded = true
+		}
+	})
+
+	return GlobalRedis
 }
 
 // GetConfigName 实现 ConfigInterface 接口

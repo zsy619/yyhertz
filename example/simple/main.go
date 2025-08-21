@@ -30,9 +30,6 @@ func main() {
 		"./public":  "/public",
 	})
 
-	// 设置视图模板路径
-	app.SetViewPath("./views")
-
 	// 添加全局中间件
 	app.Use(
 		middleware.RecoveryMiddleware(),
