@@ -39,8 +39,8 @@ func TestServeJSON_BasicFunctionality(t *testing.T) {
 			expected: `{"age":25,"name":"test"}`,
 		},
 		{
-			name: "数组",
-			data: []string{"a", "b", "c"},
+			name:     "数组",
+			data:     []string{"a", "b", "c"},
 			expected: `["a","b","c"]`,
 		},
 		{
@@ -70,7 +70,7 @@ func TestServeJSON_BasicFunctionality(t *testing.T) {
 			controller.ServeJSON()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			assert.Equal(t, "application/json; charset=utf-8", string(response.Header.ContentType()))
 			assert.JSONEq(t, tt.expected, string(response.Body()))
 		})
@@ -140,9 +140,9 @@ func TestServeJSON_WithEncoding(t *testing.T) {
 			controller.ServeJSON(tt.encoding)
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			assert.Equal(t, "application/json; charset=utf-8", string(response.Header.ContentType()))
-			
+
 			// 对于编码测试，直接比较字符串
 			if tt.encoding {
 				assert.Equal(t, tt.expected, string(response.Body()))
@@ -156,38 +156,38 @@ func TestServeJSON_WithEncoding(t *testing.T) {
 // TestServeJSON_IndentationBehavior 测试缩进行为
 func TestServeJSON_IndentationBehavior(t *testing.T) {
 	tests := []struct {
-		name      string
-		runMode   string
+		name         string
+		runMode      string
 		shouldIndent bool
 	}{
 		{
-			name:      "开发模式_dev",
-			runMode:   "dev",
+			name:         "开发模式_dev",
+			runMode:      "dev",
 			shouldIndent: true,
 		},
 		{
-			name:      "开发模式_development",
-			runMode:   "development",
+			name:         "开发模式_development",
+			runMode:      "development",
 			shouldIndent: true,
 		},
 		{
-			name:      "调试模式_debug",
-			runMode:   "debug",
+			name:         "调试模式_debug",
+			runMode:      "debug",
 			shouldIndent: true,
 		},
 		{
-			name:      "生产模式_prod",
-			runMode:   "prod",
+			name:         "生产模式_prod",
+			runMode:      "prod",
 			shouldIndent: false,
 		},
 		{
-			name:      "生产模式_production",
-			runMode:   "production",
+			name:         "生产模式_production",
+			runMode:      "production",
 			shouldIndent: false,
 		},
 		{
-			name:      "测试模式_test",
-			runMode:   "test",
+			name:         "测试模式_test",
+			runMode:      "test",
 			shouldIndent: false,
 		},
 	}
@@ -215,12 +215,12 @@ func TestServeJSON_IndentationBehavior(t *testing.T) {
 			oldEnv := os.Getenv("APP_ENV")
 			os.Setenv("APP_ENV", tt.runMode)
 			defer os.Setenv("APP_ENV", oldEnv)
-			
+
 			// 调用ServeJSON
 			controller.ServeJSON()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			responseBody := string(response.Body())
 
 			if tt.shouldIndent {
@@ -232,7 +232,7 @@ func TestServeJSON_IndentationBehavior(t *testing.T) {
 				var compactData any
 				err := json.Unmarshal(response.Body(), &compactData)
 				assert.NoError(t, err)
-				
+
 				compactBytes, err := json.Marshal(compactData)
 				assert.NoError(t, err)
 				assert.Equal(t, string(compactBytes), responseBody)
@@ -265,7 +265,7 @@ func TestServeJSON_ErrorCases(t *testing.T) {
 		controller.ServeJSON()
 
 		// 验证错误响应
-		response := ctx.Request().Response
+		response := &ctx.Request().Response
 		assert.Equal(t, consts.StatusInternalServerError, response.StatusCode())
 		assert.Contains(t, string(response.Body()), "No JSON data provided")
 	})
@@ -281,7 +281,7 @@ func TestServeJSON_ErrorCases(t *testing.T) {
 		controller.ServeJSON()
 
 		// 验证错误响应
-		response := ctx.Request().Response
+		response := &ctx.Request().Response
 		assert.Equal(t, consts.StatusInternalServerError, response.StatusCode())
 		assert.Contains(t, string(response.Body()), "No JSON data provided")
 	})
@@ -301,7 +301,7 @@ func TestServeJSON_ErrorCases(t *testing.T) {
 		controller.ServeJSON()
 
 		// 验证错误响应
-		response := ctx.Request().Response
+		response := &ctx.Request().Response
 		assert.Equal(t, consts.StatusInternalServerError, response.StatusCode())
 		assert.Contains(t, string(response.Body()), "Failed to serialize JSON data")
 	})
@@ -320,7 +320,7 @@ func TestServeJSON_ComplexData(t *testing.T) {
 			},
 		},
 		"settings": map[string]any{
-			"theme":        "dark",
+			"theme":         "dark",
 			"notifications": true,
 			"preferences": map[string]any{
 				"language": "zh-CN",
@@ -344,14 +344,14 @@ func TestServeJSON_ComplexData(t *testing.T) {
 	controller.ServeJSON()
 
 	// 验证响应
-	response := ctx.Request().Response
+	response := &ctx.Request().Response
 	assert.Equal(t, "application/json; charset=utf-8", string(response.Header.ContentType()))
-	
+
 	// 验证JSON可以正确解析
 	var parsedData map[string]any
 	err := json.Unmarshal(response.Body(), &parsedData)
 	assert.NoError(t, err)
-	
+
 	// 验证部分数据结构
 	assert.Equal(t, float64(123), parsedData["user"].(map[string]any)["id"])
 	assert.Equal(t, "testuser", parsedData["user"].(map[string]any)["username"])
@@ -386,21 +386,21 @@ func TestServeJSON_BeegoCompatibility(t *testing.T) {
 	controller.ServeJSON()
 
 	// 验证响应
-	response := ctx.Request().Response
+	response := &ctx.Request().Response
 	assert.Equal(t, "application/json; charset=utf-8", string(response.Header.ContentType()))
-	
+
 	var parsedResponse map[string]any
 	err := json.Unmarshal(response.Body(), &parsedResponse)
 	assert.NoError(t, err)
-	
+
 	assert.Equal(t, "success", parsedResponse["status"])
 	assert.Equal(t, float64(200), parsedResponse["code"])
 	assert.Equal(t, "获取用户列表成功", parsedResponse["message"])
-	
+
 	// 验证数据结构
 	data := parsedResponse["data"].(map[string]any)
 	assert.Equal(t, float64(2), data["total"])
-	
+
 	users := data["users"].([]any)
 	assert.Len(t, users, 2)
 }
@@ -520,9 +520,9 @@ func TestServeXML_BasicFunctionality(t *testing.T) {
 			controller.ServeXML()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			responseBody := string(response.Body())
-			
+
 			if tt.shouldError {
 				// 验证错误情况
 				assert.Equal(t, consts.StatusInternalServerError, response.StatusCode())
@@ -561,7 +561,7 @@ func TestServeXML_ErrorCases(t *testing.T) {
 		controller.ServeXML()
 
 		// 验证错误响应
-		response := ctx.Request().Response
+		response := &ctx.Request().Response
 		assert.Equal(t, consts.StatusInternalServerError, response.StatusCode())
 		assert.Contains(t, string(response.Body()), "No XML data provided")
 	})
@@ -604,7 +604,7 @@ func TestServeJSONP_BasicFunctionality(t *testing.T) {
 			if tt.callback != "" {
 				ctx.Request().URI().QueryArgs().Set("callback", tt.callback)
 			}
-			
+
 			controller := NewBaseController()
 			controller.Ctx = ctx
 			controller.Data = make(map[string]any)
@@ -616,12 +616,12 @@ func TestServeJSONP_BasicFunctionality(t *testing.T) {
 			controller.ServeJSONP()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			assert.Equal(t, "application/javascript; charset=utf-8", string(response.Header.ContentType()))
-			
+
 			// 对于缩进，需要处理默认开发模式的格式化
 			responseBody := string(response.Body())
-			
+
 			// 验证回调函数包装
 			if tt.callback != "" {
 				assert.Contains(t, responseBody, tt.callback+"(")
@@ -676,13 +676,13 @@ func TestServeYAML_BasicFunctionality(t *testing.T) {
 			controller.ServeYAML()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			assert.Equal(t, "application/yaml; charset=utf-8", string(response.Header.ContentType()))
-			
+
 			// 验证YAML内容包含关键数据
 			responseBody := string(response.Body())
 			assert.NotEmpty(t, responseBody)
-			
+
 			// 对于简单验证，确保不是错误响应
 			assert.NotContains(t, responseBody, "error:")
 		})
@@ -743,7 +743,7 @@ func TestServeFormatted_AcceptHeader(t *testing.T) {
 			// 创建测试环境
 			ctx := createTestContext()
 			ctx.Request().Request.Header.Set("Accept", tt.acceptHeader)
-			
+
 			controller := NewBaseController()
 			controller.Ctx = ctx
 			controller.Data = make(map[string]any)
@@ -755,7 +755,7 @@ func TestServeFormatted_AcceptHeader(t *testing.T) {
 			controller.ServeFormatted()
 
 			// 验证响应
-			response := ctx.Request().Response
+			response := &ctx.Request().Response
 			assert.Equal(t, tt.expectedType, string(response.Header.ContentType()))
 			assert.NotEqual(t, consts.StatusInternalServerError, response.StatusCode())
 		})
@@ -767,6 +767,6 @@ func createTestContext() *context.Context {
 	hertzCtx := app.NewContext(0)
 	hertzCtx.Request.SetMethod("GET")
 	hertzCtx.Request.SetRequestURI("/test")
-	
+
 	return context.NewContext(hertzCtx)
 }

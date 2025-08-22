@@ -205,6 +205,7 @@ func (eo *EnhancedORM) recordQueryMetrics(db *gorm.DB, operation string) {
 	if !exists {
 		return
 	}
+	fmt.Println("recordQueryMetrics---->", operation)
 
 	start, ok := startTime.(time.Time)
 	if !ok {

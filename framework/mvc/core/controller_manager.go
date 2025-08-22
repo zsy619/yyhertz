@@ -385,7 +385,7 @@ func (c *BaseController) getOuterStructType() reflect.Type {
 func (c *BaseController) inferTypeFromAddress(addr uintptr) reflect.Type {
 	// 在Go中，由于类型安全的限制，我们无法直接从地址推断任意类型
 	// 但我们可以使用一些运行时技巧
-
+	c.Println("addr:", addr)
 	// 检查是否可以通过调用栈上下文推断类型
 	return c.inferTypeFromCallStack()
 }
