@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嵌套命名空间 WebSocket 测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e1e8ed;
+        }
+        h1 {
+            color: #1a202c;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .test-section {
+            border: 2px solid #e2e8f0;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .primary-test {
+            border-color: #3182ce;
+            background: #ebf8ff;
+        }
+        input, textarea, button {
+            margin: 8px 5px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .status {
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 120px;
+            text-align: center;
+        }
+        .status.connected {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+        }
+        .status.disconnected {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+        }
+        .status.connecting {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(237, 137, 54, 0.3);
+        }
+        .messages {
+            height: 250px;
+            overflow-y: auto;
+            border: 2px solid #e2e8f0;
+            padding: 15px;
+            background: #ffffff;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border-radius: 6px;
+        }
+        .message-input {
+            width: 350px;
+            min-width: 300px;
+        }
+        .endpoint-info {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .success-indicator {
+            color: #38a169;
+            font-size: 18px;
+            margin-left: 10px;
+        }
+        .error-indicator {
+            color: #e53e3e;
+            font-size: 18px;
+            margin-left: 10px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .quick-messages {
+            margin: 10px 0;
+        }
+        .quick-message-btn {
+            background: linear-gradient(135deg, #4fd1c7 0%, #319795 100%);
+            margin: 2px;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3182ce;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 嵌套命名空间 WebSocket 测试</h1>
+        <div class="subtitle">专门测试 YYHertz 框架的嵌套命名空间 WebSocket 路由</div>
+        
+        <!-- 连接统计 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-connections">0</div>
+                <div class="stat-label">总连接数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="active-connections">0</div>
+                <div class="stat-label">活跃连接</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="messages-sent">0</div>
+                <div class="stat-label">发送消息</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="messages-received">0</div>
+                <div class="stat-label">接收消息</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要测试：嵌套命名空间 -->
+    <div class="container">
+        <h2>🎯 主要测试：嵌套命名空间 (/admin/online/heartbeat)</h2>
+        <div class="test-section primary-test">
+            <div class="endpoint-info">ws://localhost:8888/admin/online/heartbeat</div>
+            <div class="controls">
+                <div id="heartbeat-status" class="status disconnected">未连接</div>
+                <button id="heartbeat-connect">连接</button>
+                <button id="heartbeat-disconnect" disabled>断开</button>
+                <span id="heartbeat-indicator"></span>
+            </div>
+            
+            <div class="controls">
+                <input type="text" id="heartbeat-input" class="message-input" placeholder="输入自定义消息..." disabled>
+                <button id="heartbeat-send" disabled>发送</button>
+            </div>
+            
+            <div class="quick-messages">
+                <strong>快速测试消息：</strong>
+                <button class="quick-message-btn" data-target="heartbeat" data-message="ping">发送 ping</button>
+                <button class="quick-message-btn" data-target="heartbeat" data-message="heartbeat">发送 heartbeat</button>
+                <button class="quick-message-btn" data-target="heartbeat" data-message="test">发送 test</button>
+                <button class="quick-message-btn" data-target="heartbeat" data-message="hello world">发送 hello world</button>
+            </div>
+            
+            <div id="heartbeat-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 对比测试：简单路由 -->
+    <div class="container">
+        <h2>📊 对比测试：简单路由 (/ws/simple)</h2>
+        <div class="test-section">
+            <div class="endpoint-info">ws://localhost:8888/ws/simple</div>
+            <div class="controls">
+                <div id="simple-status" class="status disconnected">未连接</div>
+                <button id="simple-connect">连接</button>
+                <button id="simple-disconnect" disabled>断开</button>
+                <span id="simple-indicator"></span>
+            </div>
+            
+            <div class="controls">
+                <input type="text" id="simple-input" class="message-input" placeholder="输入消息..." disabled>
+                <button id="simple-send" disabled>发送</button>
+            </div>
+            
+            <div class="quick-messages">
+                <button class="quick-message-btn" data-target="simple" data-message="ping">ping</button>
+                <button class="quick-message-btn" data-target="simple" data-message="test">test</button>
+            </div>
+            
+            <div id="simple-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 对比测试：单级命名空间 -->
+    <div class="container">
+        <h2>📈 对比测试：单级命名空间 (/api/v1/websocket/test)</h2>
+        <div class="test-section">
+            <div class="endpoint-info">ws://localhost:8888/api/v1/websocket/test</div>
+            <div class="controls">
+                <div id="api-status" class="status disconnected">未连接</div>
+                <button id="api-connect">连接</button>
+                <button id="api-disconnect" disabled>断开</button>
+                <span id="api-indicator"></span>
+            </div>
+            
+            <div class="controls">
+                <input type="text" id="api-input" class="message-input" placeholder="输入消息..." disabled>
+                <button id="api-send" disabled>发送</button>
+            </div>
+            
+            <div class="quick-messages">
+                <button class="quick-message-btn" data-target="api" data-message="api test">API 测试</button>
+                <button class="quick-message-btn" data-target="api" data-message="version check">版本检查</button>
+            </div>
+            
+            <div id="api-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 对比测试：聊天室嵌套 -->
+    <div class="container">
+        <h2>💬 对比测试：聊天室嵌套 (/chat/room/general)</h2>
+        <div class="test-section">
+            <div class="endpoint-info">ws://localhost:8888/chat/room/general</div>
+            <div class="controls">
+                <div id="chat-status" class="status disconnected">未连接</div>
+                <button id="chat-connect">连接</button>
+                <button id="chat-disconnect" disabled>断开</button>
+                <span id="chat-indicator"></span>
+            </div>
+            
+            <div class="controls">
+                <input type="text" id="chat-input" class="message-input" placeholder="输入聊天消息..." disabled>
+                <button id="chat-send" disabled>发送</button>
+            </div>
+            
+            <div class="quick-messages">
+                <button class="quick-message-btn" data-target="chat" data-message="hello everyone">打招呼</button>
+                <button class="quick-message-btn" data-target="chat" data-message="how are you?">问候</button>
+            </div>
+            
+            <div id="chat-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局统计
+        let stats = {
+            totalConnections: 0,
+            activeConnections: 0,
+            messagesSent: 0,
+            messagesReceived: 0
+        };
+
+        // 更新统计显示
+        function updateStats() {
+            document.getElementById('total-connections').textContent = stats.totalConnections;
+            document.getElementById('active-connections').textContent = stats.activeConnections;
+            document.getElementById('messages-sent').textContent = stats.messagesSent;
+            document.getElementById('messages-received').textContent = stats.messagesReceived;
+        }
+
+        // WebSocket 连接管理类
+        class NestedWebSocketTest {
+            constructor(name, url, messageContainer, statusContainer, inputElement, sendButton, connectButton, disconnectButton, indicator) {
+                this.name = name;
+                this.url = url;
+                this.ws = null;
+                this.messageContainer = messageContainer;
+                this.statusContainer = statusContainer;
+                this.inputElement = inputElement;
+                this.sendButton = sendButton;
+                this.connectButton = connectButton;
+                this.disconnectButton = disconnectButton;
+                this.indicator = indicator;
+                this.connectionStartTime = null;
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                this.connectButton.addEventListener('click', () => this.connect());
+                this.disconnectButton.addEventListener('click', () => this.disconnect());
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                this.inputElement.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+            }
+            
+            connect() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    return;
+                }
+                
+                this.connectionStartTime = Date.now();
+                this.addMessage('🔄 正在连接...');
+                this.updateStatus('connecting', '连接中...');
+                
+                try {
+                    this.ws = new WebSocket(this.url);
+                    
+                    this.ws.onopen = () => {
+                        const duration = Date.now() - this.connectionStartTime;
+                        this.addMessage(`✅ 连接成功！耗时: ${duration}ms`);
+                        this.updateStatus('connected', '已连接');
+                        this.updateIndicator('✅', 'success-indicator');
+                        this.enableControls(true);
+                        
+                        // 更新统计
+                        stats.totalConnections++;
+                        stats.activeConnections++;
+                        updateStats();
+                        
+                        // 发送连接测试消息
+                        setTimeout(() => {
+                            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                                this.ws.send('connection test');
+                                this.addMessage('📤 自动发送连接测试消息');
+                            }
+                        }, 500);
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        stats.messagesReceived++;
+                        updateStats();
+                        
+                        let message;
+                        try {
+                            // 尝试解析 JSON
+                            const data = JSON.parse(event.data);
+                            message = `📨 JSON 消息:\n${JSON.stringify(data, null, 2)}`;
+                        } catch (e) {
+                            // 普通文本消息
+                            message = `📨 收到: ${event.data}`;
+                        }
+                        this.addMessage(message);
+                    };
+                    
+                    this.ws.onclose = (event) => {
+                        const reason = event.code === 1000 ? '正常关闭' : `异常关闭 (code: ${event.code})`;
+                        this.addMessage(`❌ 连接关闭: ${reason}`);
+                        this.updateStatus('disconnected', '未连接');
+                        this.updateIndicator('❌', 'error-indicator');
+                        this.enableControls(false);
+                        
+                        // 更新统计
+                        stats.activeConnections = Math.max(0, stats.activeConnections - 1);
+                        updateStats();
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        this.addMessage(`❌ 连接错误: ${error.message || '未知错误'}`);
+                        this.addMessage(`🔍 请检查：\n  1. 服务器是否运行在 localhost:8888\n  2. 路由是否正确注册\n  3. 网络连接是否正常`);
+                        this.updateStatus('disconnected', '连接错误');
+                        this.updateIndicator('❌', 'error-indicator');
+                        this.enableControls(false);
+                    };
+                    
+                } catch (error) {
+                    this.addMessage(`❌ 创建连接失败: ${error.message}`);
+                    this.updateStatus('disconnected', '连接失败');
+                    this.updateIndicator('❌', 'error-indicator');
+                }
+            }
+            
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close(1000, '用户主动断开');
+                    this.ws = null;
+                }
+            }
+            
+            sendMessage(customMessage = null) {
+                if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                    this.addMessage('❌ 连接未建立，无法发送消息');
+                    return;
+                }
+                
+                const message = customMessage || this.inputElement.value.trim();
+                if (!message) {
+                    return;
+                }
+                
+                try {
+                    this.ws.send(message);
+                    this.addMessage(`📤 发送: ${message}`);
+                    
+                    // 更新统计
+                    stats.messagesSent++;
+                    updateStats();
+                    
+                    if (!customMessage) {
+                        this.inputElement.value = '';
+                    }
+                } catch (error) {
+                    this.addMessage(`❌ 发送失败: ${error.message}`);
+                }
+            }
+            
+            addMessage(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const formattedMessage = `[${timestamp}] ${message}\n`;
+                this.messageContainer.textContent += formattedMessage;
+                this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+            }
+            
+            updateStatus(type, text) {
+                this.statusContainer.className = `status ${type}`;
+                this.statusContainer.textContent = text;
+            }
+            
+            updateIndicator(text, className) {
+                this.indicator.textContent = text;
+                this.indicator.className = className;
+            }
+            
+            enableControls(enabled) {
+                this.inputElement.disabled = !enabled;
+                this.sendButton.disabled = !enabled;
+                this.connectButton.disabled = enabled;
+                this.disconnectButton.disabled = !enabled;
+                
+                // 启用/禁用快速消息按钮
+                const quickButtons = document.querySelectorAll(`[data-target="${this.name}"]`);
+                quickButtons.forEach(btn => {
+                    btn.disabled = !enabled;
+                });
+            }
+        }
+        
+        // 初始化测试实例
+        document.addEventListener('DOMContentLoaded', function() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = location.host;
+            
+            // 创建测试实例
+            const tests = {
+                heartbeat: new NestedWebSocketTest(
+                    'heartbeat',
+                    `${protocol}//${host}/admin/online/heartbeat`,
+                    document.getElementById('heartbeat-messages'),
+                    document.getElementById('heartbeat-status'),
+                    document.getElementById('heartbeat-input'),
+                    document.getElementById('heartbeat-send'),
+                    document.getElementById('heartbeat-connect'),
+                    document.getElementById('heartbeat-disconnect'),
+                    document.getElementById('heartbeat-indicator')
+                ),
+                simple: new NestedWebSocketTest(
+                    'simple',
+                    `${protocol}//${host}/ws/simple`,
+                    document.getElementById('simple-messages'),
+                    document.getElementById('simple-status'),
+                    document.getElementById('simple-input'),
+                    document.getElementById('simple-send'),
+                    document.getElementById('simple-connect'),
+                    document.getElementById('simple-disconnect'),
+                    document.getElementById('simple-indicator')
+                ),
+                api: new NestedWebSocketTest(
+                    'api',
+                    `${protocol}//${host}/api/v1/websocket/test`,
+                    document.getElementById('api-messages'),
+                    document.getElementById('api-status'),
+                    document.getElementById('api-input'),
+                    document.getElementById('api-send'),
+                    document.getElementById('api-connect'),
+                    document.getElementById('api-disconnect'),
+                    document.getElementById('api-indicator')
+                ),
+                chat: new NestedWebSocketTest(
+                    'chat',
+                    `${protocol}//${host}/chat/room/general`,
+                    document.getElementById('chat-messages'),
+                    document.getElementById('chat-status'),
+                    document.getElementById('chat-input'),
+                    document.getElementById('chat-send'),
+                    document.getElementById('chat-connect'),
+                    document.getElementById('chat-disconnect'),
+                    document.getElementById('chat-indicator')
+                )
+            };
+            
+            // 设置快速消息按钮
+            document.querySelectorAll('.quick-message-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const target = button.getAttribute('data-target');
+                    const message = button.getAttribute('data-message');
+                    if (tests[target]) {
+                        tests[target].sendMessage(message);
+                    }
+                });
+            });
+            
+            // 初始化统计显示
+            updateStats();
+            
+            // 自动连接主要测试（可选）
+            // setTimeout(() => {
+            //     tests.heartbeat.connect();
+            // }, 1000);
+        });
+    </script>
+</body>
+</html>

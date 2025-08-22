@@ -20,6 +20,8 @@ package mvc
 import (
 	"strings"
 
+	"github.com/hertz-contrib/websocket"
+
 	"github.com/zsy619/yyhertz/framework/mvc/core"
 	"github.com/zsy619/yyhertz/framework/mvc/define"
 )
@@ -32,10 +34,16 @@ import (
 // 采用函数式配置方式，使得API更加灵活和链式调用友好。
 type NamespaceFunc func(*Namespace)
 
+// WsHandlerFunc 定义 WebSocket 处理函数类型
+//
+// 该函数类型用于处理 WebSocket 连接，在连接建立后被调用。
+// 函数应该包含消息处理循环，负责读取和写入 WebSocket 消息。
+type WsHandlerFunc = define.WsHandlerFunc
+
 // Namespace 命名空间结构
 //
 // 提供了类似Beego框架的命名空间功能，用于组织和管理路由。
-// 支持嵌套结构和中间件继承。
+// 支持嵌套结构和中间件继承，现已扩展支持 WebSocket 路由。
 type Namespace struct {
 	// prefix 命名空间的URL前缀，如 "/api/v1"、"/admin"
 	prefix string
@@ -45,6 +53,12 @@ type Namespace struct {
 
 	// routers 手动注册的路由信息列表
 	routers []routerInfo
+
+	// wsRouters WebSocket路由信息列表
+	wsRouters []wsRouterInfo
+
+	// wsControllerRouters WebSocket控制器路由信息列表
+	wsControllerRouters []wsControllerRouterInfo
 
 	// namespaces 子命名空间列表，支持多级嵌套
 	namespaces []*Namespace
@@ -79,6 +93,38 @@ type routerInfo struct {
 	// method HTTP方法和控制器方法的映射
 	// 格式："GET:MethodName" 或 "*:MethodName" 或 "MethodName"
 	method string
+}
+
+// wsRouterInfo WebSocket路由信息
+//
+// 存储 WebSocket 路由的注册信息，包括路径和处理函数。
+type wsRouterInfo struct {
+	// path WebSocket路由路径，如 "/ws"、"/chat/:room"
+	path string
+
+	// handler WebSocket连接处理函数
+	handler WsHandlerFunc
+
+	// upgrader WebSocket升级器配置
+	upgrader websocket.HertzUpgrader
+}
+
+// wsControllerRouterInfo WebSocket控制器路由信息结构
+//
+// 用于存储命名空间中WebSocket控制器路由的配置信息，
+// 支持将控制器方法映射为WebSocket处理器。
+type wsControllerRouterInfo struct {
+	// path WebSocket路由路径，如 "/ws"、"/chat/:room"
+	path string
+
+	// controller 控制器实例
+	controller core.IController
+
+	// method 控制器方法名，如 "HandleChat"、"EchoMessage"
+	method string
+
+	// upgrader WebSocket升级器配置（可选）
+	upgrader *websocket.HertzUpgrader
 }
 
 // ============= 构造函数 =============
@@ -126,6 +172,7 @@ func NewNamespace(prefix string, funcs ...NamespaceFunc) *Namespace {
 		prefix:      prefix,
 		controllers: make([]controllerInfo, 0),
 		routers:     make([]routerInfo, 0),
+		wsRouters:   make([]wsRouterInfo, 0),
 		namespaces:  make([]*Namespace, 0),
 		middlewares: make([]define.HandlerFunc, 0),
 	}
@@ -305,6 +352,215 @@ func NSNamespace(prefix string, funcs ...NamespaceFunc) NamespaceFunc {
 	}
 }
 
+// NSWebSocket 为命名空间添加 WebSocket 路由
+//
+// 该函数用于在命名空间中注册 WebSocket 路由，支持 WebSocket 连接升级和消息处理。
+// WebSocket 路由会自动处理连接升级，并在连接建立后调用指定的处理函数。
+//
+// 参数：
+//   - path: string - WebSocket路由路径，相对于命名空间前缀的路径
+//   - handler: WebSocketHandlerFunc - WebSocket连接处理函数
+//
+// 返回值：
+//   - NamespaceFunc: 命名空间配置函数
+//
+// WebSocket 连接处理特性：
+//   - 自动升级：自动处理 HTTP 到 WebSocket 的协议升级
+//   - 连接管理：提供连接建立、断开的生命周期管理
+//   - 错误处理：内置连接错误和升级失败的处理机制
+//   - 中间件支持：继承命名空间的中间件，支持认证和授权
+//
+// 使用示例：
+//
+//	// 基本 WebSocket 路由
+//	ns := mvc.NewNamespace("/api/v1",
+//		mvc.NSWebSocket("/ws", func(conn *websocket.Conn) {
+//			for {
+//				// 读取消息
+//				messageType, message, err := conn.ReadMessage()
+//				if err != nil {
+//					log.Println("read error:", err)
+//					break
+//				}
+//
+//				// 处理消息
+//				log.Printf("Received: %s", message)
+//
+//				// 发送响应
+//				err = conn.WriteMessage(messageType, message)
+//				if err != nil {
+//					log.Println("write error:", err)
+//					break
+//				}
+//			}
+//		}),
+//	)
+//
+//	// 聊天室 WebSocket 路由
+//	ns := mvc.NewNamespace("/chat",
+//		mvc.NSMiddleware(authMiddleware), // WebSocket 也会继承中间件
+//		mvc.NSWebSocket("/room/:id", func(conn *websocket.Conn) {
+//			roomID := conn.Params().ByName("id") // 获取路径参数
+//			chatRoom.Join(roomID, conn)
+//			defer chatRoom.Leave(roomID, conn)
+//
+//			for {
+//				_, message, err := conn.ReadMessage()
+//				if err != nil {
+//					break
+//				}
+//				chatRoom.Broadcast(roomID, message)
+//			}
+//		}),
+//	)
+//
+//	// 实时数据推送
+//	ns := mvc.NewNamespace("/api",
+//		mvc.NSWebSocket("/stream", func(conn *websocket.Conn) {
+//			ticker := time.NewTicker(time.Second)
+//			defer ticker.Stop()
+//
+//			for {
+//				select {
+//				case <-ticker.C:
+//					data := getCurrentData()
+//					if err := conn.WriteJSON(data); err != nil {
+//						return
+//					}
+//				case <-conn.Done():
+//					return
+//				}
+//			}
+//		}),
+//	)
+//
+// 注意事项：
+//   - 处理函数应该包含消息处理循环
+//   - 建议使用 defer 清理资源
+//   - 需要适当的错误处理来处理连接断开
+//   - WebSocket 连接是长连接，注意内存和资源管理
+//   - 支持路径参数，如 "/chat/:room/:user"
+func NSWebSocket(path string, handler WsHandlerFunc) NamespaceFunc {
+	return func(ns *Namespace) {
+		ns.wsRouters = append(ns.wsRouters, wsRouterInfo{
+			path:     path,
+			handler:  handler,
+			upgrader: websocket.HertzUpgrader{}, // 使用默认配置
+		})
+	}
+}
+
+// NSWebSocketWithUpgrader 为命名空间添加带自定义升级器的 WebSocket 路由
+//
+// 该函数允许使用自定义的 WebSocket 升级器配置，提供更精细的控制。
+//
+// 参数：
+//   - path: string - WebSocket路由路径
+//   - handler: WebSocketHandlerFunc - WebSocket连接处理函数
+//   - upgrader: websocket.HertzUpgrader - 自定义升级器配置
+//
+// 返回值：
+//   - NamespaceFunc: 命名空间配置函数
+//
+// 使用示例：
+//
+//	// 自定义升级器配置
+//	upgrader := websocket.HertzUpgrader{
+//		ReadBufferSize:  1024,
+//		WriteBufferSize: 1024,
+//		CheckOrigin: func(ctx *app.RequestContext) bool {
+//			origin := ctx.GetHeader("Origin")
+//			return isAllowedOrigin(string(origin))
+//		},
+//	}
+//
+//	ns := mvc.NewNamespace("/api",
+//		mvc.NSWebSocketWithUpgrader("/ws", handler, upgrader),
+//	)
+func NSWebSocketWithUpgrader(path string, handler WsHandlerFunc, upgrader websocket.HertzUpgrader) NamespaceFunc {
+	return func(ns *Namespace) {
+		ns.wsRouters = append(ns.wsRouters, wsRouterInfo{
+			path:     path,
+			handler:  handler,
+			upgrader: upgrader,
+		})
+	}
+}
+
+// NSRouterWs 为命名空间添加WebSocket控制器路由映射
+//
+// 类似于NSRouter，但专门用于WebSocket路由。支持将控制器方法映射为WebSocket处理器。
+// 控制器方法应该接受WebSocket连接参数并处理WebSocket消息。
+//
+// 参数：
+//   - path: string - WebSocket路由路径，相对于命名空间前缀的路径
+//   - ctrl: core.IController - 控制器实例
+//   - method: string - 控制器方法名，如 "HandleChat"、"EchoMessage"
+//
+// 返回值：
+//   - NamespaceFunc: 命名空间配置函数
+//
+// 使用示例：
+//
+//	// WebSocket控制器路由
+//	ns := mvc.NewNamespace("/api/v1",
+//		mvc.NSRouterWs("/chat", &ChatController{}, "HandleChat"),
+//		mvc.NSRouterWs("/echo", &EchoController{}, "HandleEcho"),
+//	)
+//
+//	// 生成的路由：
+//	// WS /api/v1/chat -> ChatController.HandleChat(conn *websocket.Conn)
+//	// WS /api/v1/echo -> EchoController.HandleEcho(conn *websocket.Conn)
+//
+// 控制器方法要求：
+//
+//	func (c *YourController) HandleChat(conn *websocket.Conn) {
+//		// WebSocket 消息处理逻辑
+//	}
+func NSRouterWs(path string, ctrl core.IController, method string) NamespaceFunc {
+	return func(ns *Namespace) {
+		ns.wsControllerRouters = append(ns.wsControllerRouters, wsControllerRouterInfo{
+			path:       path,
+			controller: ctrl,
+			method:     method,
+			upgrader:   nil, // 使用默认升级器
+		})
+	}
+}
+
+// NSRouterWsWithUpgrader 为命名空间添加带自定义升级器的WebSocket控制器路由映射
+//
+// 类似于NSRouterWs，但允许指定自定义的WebSocket升级器配置。
+//
+// 参数：
+//   - path: string - WebSocket路由路径，相对于命名空间前缀的路径
+//   - ctrl: core.IController - 控制器实例
+//   - method: string - 控制器方法名，如 "HandleChat"、"EchoMessage"
+//   - upgrader: websocket.HertzUpgrader - 自定义WebSocket升级器配置
+//
+// 返回值：
+//   - NamespaceFunc: 命名空间配置函数
+//
+// 使用示例：
+//
+//	upgrader := websocket.HertzUpgrader{
+//		ReadBufferSize:  1024,
+//		WriteBufferSize: 1024,
+//	}
+//	ns := mvc.NewNamespace("/api/v1",
+//		mvc.NSRouterWsWithUpgrader("/chat", &ChatController{}, "HandleChat", upgrader),
+//	)
+func NSRouterWsWithUpgrader(path string, ctrl core.IController, method string, upgrader websocket.HertzUpgrader) NamespaceFunc {
+	return func(ns *Namespace) {
+		ns.wsControllerRouters = append(ns.wsControllerRouters, wsControllerRouterInfo{
+			path:       path,
+			controller: ctrl,
+			method:     method,
+			upgrader:   &upgrader,
+		})
+	}
+}
+
 // NSMiddleware 为命名空间添加中间件
 //
 // 添加到命名空间的中间件会应用于该命名空间及其所有子命名空间中的路由。
@@ -317,10 +573,10 @@ func NSNamespace(prefix string, funcs ...NamespaceFunc) NamespaceFunc {
 //   - NamespaceFunc: 命名空间配置函数
 //
 // 中间件执行顺序：
-//   1. 父命名空间中间件（按添加顺序）
-//   2. 当前命名空间中间件（按添加顺序）
-//   3. 路由级中间件
-//   4. 控制器方法
+//  1. 父命名空间中间件（按添加顺序）
+//  2. 当前命名空间中间件（按添加顺序）
+//  3. 路由级中间件
+//  4. 控制器方法
 //
 // 使用示例：
 //
@@ -367,10 +623,10 @@ func NSMiddleware(middlewares ...define.HandlerFunc) NamespaceFunc {
 //   - app: *core.App - YYHertz应用实例
 //
 // 注册过程：
-//   1. 注册自动路由控制器
-//   2. 注册手动路由映射
-//   3. 递归注册所有子命名空间
-//   4. 处理中间件继承和路径合并
+//  1. 注册自动路由控制器
+//  2. 注册手动路由映射
+//  3. 递归注册所有子命名空间
+//  4. 处理中间件继承和路径合并
 //
 // 注意事项：
 //   - 该方法由框架内部调用，用户不应直接调用
@@ -390,6 +646,16 @@ func (ns *Namespace) Register(app *core.App) {
 		ns.registerRouter(app, router)
 	}
 
+	// 步骤2.5：注册当前命名空间的 WebSocket 路由
+	for _, wsRouter := range ns.wsRouters {
+		ns.registerWebSocketRouter(app, wsRouter)
+	}
+
+	// 步骤2.6：注册当前命名空间的 WebSocket 控制器路由
+	for _, wsControllerRouter := range ns.wsControllerRouters {
+		ns.registerWebSocketControllerRouter(app, wsControllerRouter)
+	}
+
 	// 步骤3：递归注册所有子命名空间
 	for _, subNs := range ns.namespaces {
 		// 构建孌全的嵌套路径：父前缀 + 子前缀
@@ -401,11 +667,13 @@ func (ns *Namespace) Register(app *core.App) {
 
 		// 创建子命名空间的副本，更新完整路径和继承中间件
 		subNsCopy := &Namespace{
-			prefix:      fullPrefix,                                    // 合并后的完整前缀
-			controllers: subNs.controllers,                             // 子命名空间的控制器
-			routers:     subNs.routers,                                 // 子命名空间的路由
-			namespaces:  subNs.namespaces,                              // 子命名空间的子命名空间
-			middlewares: append(ns.middlewares, subNs.middlewares...), // 继承父级中间件并添加自己的中间件
+			prefix:              fullPrefix,                                   // 合并后的完整前缀
+			controllers:         subNs.controllers,                            // 子命名空间的控制器
+			routers:             subNs.routers,                                // 子命名空间的路由
+			wsRouters:           subNs.wsRouters,                              // 子命名空间的WebSocket路由
+			wsControllerRouters: subNs.wsControllerRouters,                    // 子命名空间的WebSocket控制器路由
+			namespaces:          subNs.namespaces,                             // 子命名空间的子命名空间
+			middlewares:         append(ns.middlewares, subNs.middlewares...), // 继承父级中间件并添加自己的中间件
 		}
 
 		// 递归注册子命名空间
@@ -457,6 +725,55 @@ func (ns *Namespace) registerRouter(app *core.App, router routerInfo) {
 	// - methodName: 控制器方法名
 	// - routeSpec: 路由规格
 	app.RouterPrefix(ns.prefix, router.controller, true, methodName, routeSpec)
+}
+
+// registerWebSocketRouter 注册单个 WebSocket 路由
+//
+// 该方法将 WebSocket 路由注册到应用，创建专门的 WebSocket 控制器来处理连接升级。
+//
+// 参数：
+//   - app: *core.App - 应用实例
+//   - wsRouter: wsRouterInfo - WebSocket路由信息
+func (ns *Namespace) registerWebSocketRouter(app *core.App, wsRouter wsRouterInfo) {
+	// 创建 WebSocket 控制器
+	wsController := CreateWebSocketController(wsRouter.handler, wsRouter.upgrader)
+
+	// 构建路由规格字符串，WebSocket 通常使用 GET 方法进行升级
+	routeSpec := "GET:" + wsRouter.path
+
+	// 使用框架的 RouterPrefix 方法注册 WebSocket 路由
+	// 注册为 GET 请求，由控制器内部处理 WebSocket 升级
+	// fmt.Printf("注册 WebSocket 路由: %s%s -> %s\n", ns.prefix, wsRouter.path, routeSpec)
+	app.RouterPrefix(ns.prefix, wsController, true, "HandleWebSocket", routeSpec)
+}
+
+// registerWebSocketControllerRouter 注册单个 WebSocket 控制器路由
+//
+// 该方法将 WebSocket 控制器路由注册到应用，直接使用控制器方法处理 WebSocket 连接。
+//
+// 参数：
+//   - app: *core.App - 应用实例
+//   - wsControllerRouter: wsControllerRouterInfo - WebSocket控制器路由信息
+func (ns *Namespace) registerWebSocketControllerRouter(app *core.App, wsControllerRouter wsControllerRouterInfo) {
+	// 构建完整的 WebSocket 路径
+	fullPath := ns.prefix
+	// 确保路径之间有正确的分隔符
+	if !strings.HasSuffix(fullPath, "/") {
+		fullPath += "/"
+	}
+	fullPath += strings.TrimPrefix(wsControllerRouter.path, "/")
+
+	// 规范化路径：移除重复的斜杠
+	fullPath = strings.ReplaceAll(fullPath, "//", "/")
+
+	// 使用专门的 WebSocket 路由注册方法
+	if wsControllerRouter.upgrader != nil {
+		// 如果有自定义升级器，使用 RouterWsWithUpgrader
+		app.RouterWsWithUpgrader(fullPath, wsControllerRouter.controller, wsControllerRouter.method, *wsControllerRouter.upgrader)
+	} else {
+		// 使用默认升级器的 RouterWs
+		app.RouterWs(fullPath, wsControllerRouter.controller, wsControllerRouter.method)
+	}
 }
 
 // ============= 命名空间查询方法 =============

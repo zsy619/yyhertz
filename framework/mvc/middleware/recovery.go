@@ -26,6 +26,7 @@ func RecoveryMiddleware() Middleware {
 				clientIP := ctx.ClientIP()
 				userAgent := string(ctx.UserAgent())
 				go func() {
+					config.Error(fmt.Sprintf("%v", err))
 					// 使用结构化日志记录panic信息
 					config.WithFields(map[string]any{
 						"error":      fmt.Sprintf("%v", err),

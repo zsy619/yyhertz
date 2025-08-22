@@ -294,11 +294,29 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 				methodName = strings.TrimPrefix(routePath, "/")
 			}
 
-			routePath = strings.ToLower(routePath) // 确保路由路径小写
+			// 检查是否为 WebSocket 路由（基于方法名判断）
+			isWebSocketRoute := strings.Contains(strings.ToLower(methodName), "websocket") || 
+							   strings.Contains(strings.ToLower(methodName), "ws") ||
+							   strings.HasPrefix(strings.ToLower(methodName), "handle") && 
+							   (strings.Contains(strings.ToLower(methodName), "chat") || 
+								strings.Contains(strings.ToLower(methodName), "socket"))
+			
+			// 对于 WebSocket 路由，保持原始路径大小写，对于普通 HTTP 路由，转换为小写
+			if !isWebSocketRoute {
+				routePath = strings.ToLower(routePath) // 确保路由路径小写
+			}
 
 			// 确保路由路径以基础路径开头
 			if !strings.HasPrefix(routePath, basePath) {
 				routePath = basePath + routePath
+			}
+			
+			// 规范化路径：移除重复的斜杠
+			routePath = strings.ReplaceAll(routePath, "//", "/")
+			
+			// 打印调试信息
+			if isWebSocketRoute {
+				app.LogInfof("注册 WebSocket 路由: %s %s -> %s.%s", httpMethod, routePath, app.getControllerName(controller), methodName)
 			}
 
 			// 获取控制器方法

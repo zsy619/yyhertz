@@ -4,7 +4,7 @@ YYHertz是基于CloudWeGo-Hertz构建的高性能Go Web框架，提供了Spring 
 
 ## 📁 目录结构
 
-```
+```text
 example/
 ├── simple/           # 基础示例 - 传统MVC方式
 ├── annotations/      # 注解示例 - 基于struct标签
@@ -206,7 +206,7 @@ func (c *UserController) GetUsers() {
 
 ## 🛠️ 如何选择
 
-### 选择Simple传统方式，如果你：
+### 选择Simple传统方式，如果你
 
 - ✅ 刚开始学习Go Web开发
 - ✅ 项目简单，路由不多
@@ -214,7 +214,7 @@ func (c *UserController) GetUsers() {
 - ✅ 不需要复杂的路由配置
 - ✅ 团队更熟悉传统MVC模式
 
-### 选择Struct标签注解，如果你：
+### 选择Struct标签注解，如果你
 
 - ✅ 开发企业级应用
 - ✅ 需要编译时类型安全
@@ -223,7 +223,7 @@ func (c *UserController) GetUsers() {
 - ✅ 喜欢链式API的配置方式
 - ✅ 需要在生产环境部署（无源码访问限制）
 
-### 选择注释注解，如果你：
+### 选择注释注解，如果你
 
 - ✅ 追求代码可读性
 - ✅ 喜欢Spring Boot的开发体验
@@ -235,7 +235,7 @@ func (c *UserController) GetUsers() {
 ## 📚 学习路径建议
 
 ### 1. 初学者路径
-```
+```text
 Simple传统方式 → Struct标签注解 → 注释注解
 ```
 
@@ -244,7 +244,7 @@ Simple传统方式 → Struct标签注解 → 注释注解
 3. **第三步：** 尝试`comments`示例，体验Spring Boot风格开发
 
 ### 2. 有经验开发者路径
-```
+```text
 根据项目需求直接选择合适的方式
 ```
 
@@ -329,7 +329,7 @@ go test -v
 
 基于相同的业务逻辑，三种方式的性能对比：
 
-```
+```text
 Simple传统方式:    1000000 requests/sec  (基准)
 Struct标签注解:   950000 requests/sec   (-5%)
 注释注解:         800000 requests/sec   (-20%)

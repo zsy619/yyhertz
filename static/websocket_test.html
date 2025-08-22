@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YYHertz WebSocket 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        input, textarea, button {
+            margin: 5px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+        .messages {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .message-input {
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YYHertz WebSocket 测试页面</h1>
+        <p>这个页面用于测试 YYHertz 框架的 WebSocket 功能。</p>
+    </div>
+
+    <!-- 命名空间 Echo 测试 -->
+    <div class="container">
+        <h2>1. 命名空间 Echo 测试</h2>
+        <div class="test-section">
+            <div id="echo-status" class="status disconnected">未连接</div>
+            <button id="echo-connect">连接</button>
+            <button id="echo-disconnect" disabled>断开</button>
+            <br>
+            <input type="text" id="echo-input" class="message-input" placeholder="输入消息..." disabled>
+            <button id="echo-send" disabled>发送</button>
+            <div id="echo-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 聊天室测试 -->
+    <div class="container">
+        <h2>2. 聊天室测试</h2>
+        <div class="test-section">
+            <div id="chat-status" class="status disconnected">未连接</div>
+            <button id="chat-connect">连接聊天室</button>
+            <button id="chat-disconnect" disabled>退出聊天室</button>
+            <br>
+            <input type="text" id="chat-input" class="message-input" placeholder="输入聊天消息..." disabled>
+            <button id="chat-send" disabled>发送</button>
+            <div id="chat-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 自定义升级器 JSON 测试 -->
+    <div class="container">
+        <h2>3. 自定义升级器 JSON 测试</h2>
+        <div class="test-section">
+            <div id="custom-status" class="status disconnected">未连接</div>
+            <button id="custom-connect">连接</button>
+            <button id="custom-disconnect" disabled>断开</button>
+            <br>
+            <textarea id="custom-input" class="message-input" rows="3" placeholder='输入 JSON 消息，例如: {"message": "hello", "type": "test"}' disabled></textarea>
+            <br>
+            <button id="custom-send" disabled>发送 JSON</button>
+            <div id="custom-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <!-- 控制器 Echo 测试 -->
+    <div class="container">
+        <h2>4. 控制器 Echo 测试</h2>
+        <div class="test-section">
+            <div id="controller-status" class="status disconnected">未连接</div>
+            <button id="controller-connect">连接</button>
+            <button id="controller-disconnect" disabled>断开</button>
+            <br>
+            <input type="text" id="controller-input" class="message-input" placeholder="输入消息..." disabled>
+            <button id="controller-send" disabled>发送</button>
+            <div id="controller-messages" class="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket 连接管理类
+        class WebSocketTest {
+            constructor(name, url, messageContainer, statusContainer, inputElement, sendButton, connectButton, disconnectButton) {
+                this.name = name;
+                this.url = url;
+                this.ws = null;
+                this.messageContainer = messageContainer;
+                this.statusContainer = statusContainer;
+                this.inputElement = inputElement;
+                this.sendButton = sendButton;
+                this.connectButton = connectButton;
+                this.disconnectButton = disconnectButton;
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                this.connectButton.addEventListener('click', () => this.connect());
+                this.disconnectButton.addEventListener('click', () => this.disconnect());
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                if (this.inputElement.tagName === 'INPUT') {
+                    this.inputElement.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.sendMessage();
+                        }
+                    });
+                }
+            }
+            
+            connect() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    return;
+                }
+                
+                this.addMessage('正在连接...');
+                this.ws = new WebSocket(this.url);
+                
+                this.ws.onopen = () => {
+                    this.addMessage('✅ 连接成功');
+                    this.updateStatus('connected', '已连接');
+                    this.enableControls(true);
+                };
+                
+                this.ws.onmessage = (event) => {
+                    let message;
+                    try {
+                        // 尝试解析 JSON
+                        const data = JSON.parse(event.data);
+                        message = `📨 JSON: ${JSON.stringify(data, null, 2)}`;
+                    } catch (e) {
+                        // 普通文本消息
+                        message = `📨 收到: ${event.data}`;
+                    }
+                    this.addMessage(message);
+                };
+                
+                this.ws.onclose = (event) => {
+                    this.addMessage(`❌ 连接关闭 (code: ${event.code})`);
+                    this.updateStatus('disconnected', '未连接');
+                    this.enableControls(false);
+                };
+                
+                this.ws.onerror = (error) => {
+                    this.addMessage(`❌ 连接错误: ${error}`);
+                    this.updateStatus('disconnected', '连接错误');
+                    this.enableControls(false);
+                };
+            }
+            
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+            }
+            
+            sendMessage() {
+                if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                    this.addMessage('❌ 连接未建立');
+                    return;
+                }
+                
+                const message = this.inputElement.value.trim();
+                if (!message) {
+                    return;
+                }
+                
+                try {
+                    if (this.name === 'custom') {
+                        // JSON 消息
+                        const jsonData = JSON.parse(message);
+                        this.ws.send(JSON.stringify(jsonData));
+                        this.addMessage(`📤 发送 JSON: ${JSON.stringify(jsonData, null, 2)}`);
+                    } else {
+                        // 文本消息
+                        this.ws.send(message);
+                        this.addMessage(`📤 发送: ${message}`);
+                    }
+                    this.inputElement.value = '';
+                } catch (e) {
+                    this.addMessage(`❌ JSON 格式错误: ${e.message}`);
+                }
+            }
+            
+            addMessage(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.messageContainer.textContent += `[${timestamp}] ${message}\n`;
+                this.messageContainer.scrollTop = this.messageContainer.scrollHeight;
+            }
+            
+            updateStatus(type, text) {
+                this.statusContainer.className = `status ${type}`;
+                this.statusContainer.textContent = text;
+            }
+            
+            enableControls(enabled) {
+                this.inputElement.disabled = !enabled;
+                this.sendButton.disabled = !enabled;
+                this.connectButton.disabled = enabled;
+                this.disconnectButton.disabled = !enabled;
+            }
+        }
+        
+        // 初始化测试实例
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取当前协议和主机
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = location.host;
+            
+            // 1. 命名空间 Echo 测试
+            new WebSocketTest(
+                'echo',
+                `${protocol}//${host}/api/echo`,
+                document.getElementById('echo-messages'),
+                document.getElementById('echo-status'),
+                document.getElementById('echo-input'),
+                document.getElementById('echo-send'),
+                document.getElementById('echo-connect'),
+                document.getElementById('echo-disconnect')
+            );
+            
+            // 2. 聊天室测试
+            new WebSocketTest(
+                'chat',
+                `${protocol}//${host}/chat/room/room1`,
+                document.getElementById('chat-messages'),
+                document.getElementById('chat-status'),
+                document.getElementById('chat-input'),
+                document.getElementById('chat-send'),
+                document.getElementById('chat-connect'),
+                document.getElementById('chat-disconnect')
+            );
+            
+            // 3. 自定义升级器测试
+            new WebSocketTest(
+                'custom',
+                `${protocol}//${host}/custom/ws`,
+                document.getElementById('custom-messages'),
+                document.getElementById('custom-status'),
+                document.getElementById('custom-input'),
+                document.getElementById('custom-send'),
+                document.getElementById('custom-connect'),
+                document.getElementById('custom-disconnect')
+            );
+            
+            // 4. 控制器测试
+            new WebSocketTest(
+                'controller',
+                `${protocol}//${host}/simple/Echo`,
+                document.getElementById('controller-messages'),
+                document.getElementById('controller-status'),
+                document.getElementById('controller-input'),
+                document.getElementById('controller-send'),
+                document.getElementById('controller-connect'),
+                document.getElementById('controller-disconnect')
+            );
+        });
+    </script>
+</body>
+</html>

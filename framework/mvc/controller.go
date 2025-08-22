@@ -46,7 +46,15 @@ package mvc
 
 // 重新导出BaseController，保持向后兼容
 import (
+	"github.com/hertz-contrib/websocket"
+
 	"github.com/zsy619/yyhertz/framework/mvc/core"
+)
+
+// 确保导入不被自动删除
+var (
+	_ = websocket.HertzUpgrader{}
+	_ = (*WsConn)(nil)
 )
 
 // BaseController MVC基础控制器类型别名
@@ -409,14 +417,14 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 // 参数：
 //   - ctrl: IController - 控制器实例
 //   - routes: map[string]string - 路由规则映射
-//     • key: HTTP方法:路径格式，如 "GET:/users/:id"
-//     • value: 控制器方法名，如 "Get"
+//   - key: HTTP方法:路径格式，如 "GET:/users/:id"
+//   - value: 控制器方法名，如 "Get"
 //
 // 返回值：
 //   - *App: 应用实例，支持链式调用
 //
 // 路由格式说明：
-//   - key格式: "HTTP_METHOD:PATH" 
+//   - key格式: "HTTP_METHOD:PATH"
 //   - value格式: "MethodName"
 //   - 支持路径参数: ":id", ":name" 等
 //   - 支持通配符: "*path", "*file" 等
@@ -426,7 +434,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //	type UserController struct {
 //		mvc.BaseController
 //	}
-//	
+//
 //	func (c *UserController) GetList() {
 //		// 获取用户列表
 //		users := []map[string]interface{}{
@@ -435,7 +443,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //		}
 //		c.Ctx.JSON(200, users)
 //	}
-//	
+//
 //	func (c *UserController) Get() {
 //		// 获取单个用户
 //		id := c.Ctx.Param("id")
@@ -443,7 +451,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //			"id": id, "name": "User " + id,
 //		})
 //	}
-//	
+//
 //	func (c *UserController) PostCreate() {
 //		// 创建用户
 //		name := c.GetString("name")
@@ -451,7 +459,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //			"id": 123, "name": name, "status": "created",
 //		})
 //	}
-//	
+//
 //	func (c *UserController) PutUpdate() {
 //		// 更新用户
 //		id := c.Ctx.Param("id")
@@ -460,7 +468,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //			"id": id, "name": name, "status": "updated",
 //		})
 //	}
-//	
+//
 //	func (c *UserController) DeleteRemove() {
 //		// 删除用户
 //		id := c.Ctx.Param("id")
@@ -468,7 +476,7 @@ func RouterPrefix(prefix string, ctrl IController, routePair bool, routes ...str
 //			"id": id, "status": "deleted",
 //		})
 //	}
-//	
+//
 //	// 使用Map格式注册路由
 //	mvc.RouterMap(&UserController{}, map[string]string{
 //		"GET:/users":     "GetList",     // 获取用户列表
@@ -512,7 +520,7 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //
 // 参数：
 //   - prefix: string - 路由前缀，如 "/api/v1", "/admin"
-//   - ctrl: IController - 控制器实例  
+//   - ctrl: IController - 控制器实例
 //   - routes: map[string]string - 路由规则映射
 //
 // 返回值：
@@ -523,7 +531,7 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //	type UserController struct {
 //		mvc.BaseController
 //	}
-//	
+//
 //	func (c *UserController) GetProfile() {
 //		// 获取用户个人资料
 //		id := c.Ctx.Param("id")
@@ -537,13 +545,13 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //			},
 //		})
 //	}
-//	
+//
 //	func (c *UserController) PutProfile() {
 //		// 更新用户个人资料
 //		id := c.Ctx.Param("id")
 //		name := c.GetString("name")
 //		email := c.GetString("email")
-//		
+//
 //		c.Ctx.JSON(200, map[string]interface{}{
 //			"id": id,
 //			"name": name,
@@ -551,12 +559,12 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //			"status": "profile updated",
 //		})
 //	}
-//	
+//
 //	func (c *UserController) GetFollowers() {
 //		// 获取用户关注者列表
 //		id := c.Ctx.Param("id")
 //		page := c.GetString("page", "1")
-//		
+//
 //		c.Ctx.JSON(200, map[string]interface{}{
 //			"user_id": id,
 //			"page": page,
@@ -567,27 +575,27 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //			"total": 234,
 //		})
 //	}
-//	
+//
 //	func (c *UserController) PostFollow() {
 //		// 关注用户
 //		id := c.Ctx.Param("id")
 //		followerId := c.GetString("follower_id")
-//		
+//
 //		c.Ctx.JSON(200, map[string]interface{}{
 //			"user_id": id,
 //			"follower_id": followerId,
 //			"status": "followed",
 //		})
 //	}
-//	
+//
 //	// API v1 用户相关路由
 //	mvc.RouterPrefixMap("/api/v1", &UserController{}, map[string]string{
 //		"GET:/users/:id/profile":    "GetProfile",    // 获取个人资料
-//		"PUT:/users/:id/profile":    "PutProfile",    // 更新个人资料  
+//		"PUT:/users/:id/profile":    "PutProfile",    // 更新个人资料
 //		"GET:/users/:id/followers":  "GetFollowers",  // 获取关注者
 //		"POST:/users/:id/follow":    "PostFollow",    // 关注用户
 //	})
-//	
+//
 //	// API v2 版本可以使用相同控制器但不同路径
 //	mvc.RouterPrefixMap("/api/v2", &UserController{}, map[string]string{
 //		"GET:/user/:id":         "GetProfile",    // v2简化路径
@@ -610,7 +618,7 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //	type AdminController struct {
 //		mvc.BaseController
 //	}
-//	
+//
 //	func (c *AdminController) GetDashboard() {
 //		c.Ctx.JSON(200, map[string]interface{}{
 //			"stats": map[string]int{
@@ -618,14 +626,14 @@ func RouterMap(ctrl IController, routes map[string]string) *App {
 //			},
 //		})
 //	}
-//	
+//
 //	func (c *AdminController) GetUsers() {
 //		page := c.GetString("page", "1")
 //		c.Ctx.JSON(200, map[string]interface{}{
 //			"page": page, "users": []string{"user1", "user2"},
 //		})
 //	}
-//	
+//
 //	// 管理后台路由
 //	mvc.RouterPrefixMap("/admin", &AdminController{}, map[string]string{
 //		"GET:/dashboard": "GetDashboard", // 仪表盘
@@ -742,6 +750,116 @@ func AddNamespace(ns ...*Namespace) {
 	}
 }
 
+// HandlerWs 注册 WebSocket 处理器到应用
+//
+// 该方法将一个 WebSocket 处理函数注册为应用路由。
+// 内部会创建一个 WebSocket 控制器来处理协议升级和连接管理。
+//
+// 参数：
+//   - path: string - WebSocket 路径，如 "/ws/echo"
+//   - handler: func(*define.WsConn) - WebSocket 连接处理函数
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 实现原理：
+//  1. 创建默认的 WebSocket 升级器
+//  2. 使用升级器和处理函数创建 WebSocket 控制器
+//  3. 将控制器的 HandleWebSocket 方法注册为 GET 路由
+//
+// 使用示例：
+//
+//	app := mvc.NewApp()
+//	app.HandlerWs("/ws/echo", func(conn *define.WsConn) {
+//		for {
+//			messageType, message, err := conn.ReadMessage()
+//			if err != nil {
+//				break
+//			}
+//			conn.WriteMessage(messageType, message)
+//		}
+//	})
+func HandlerWs(path string, handler func(*WsConn)) *App {
+	if HertzApp != nil {
+		HertzApp.HandlerWs(path, handler)
+		return HertzApp
+	}
+	return nil
+}
+
+// RouterWs 注册控制器的 WebSocket 方法到应用
+//
+// 该方法通过反射调用控制器的指定方法来处理 WebSocket 连接。
+// 控制器方法必须具有特定的签名：func(conn *define.WsConn)
+//
+// 参数：
+//   - path: string - WebSocket 路径
+//   - ctrl: IController - 控制器实例
+//   - method: string - 控制器方法名
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 方法签名要求：
+//
+//	控制器方法必须具有以下签名之一：
+//	- func (c *YourController) MethodName(conn *define.WsConn)
+//	- func (c *YourController) MethodName(conn *define.WsConn) error
+//
+// 使用示例：
+//
+//	type ChatController struct {
+//		core.BaseController
+//	}
+//
+//	func (c *ChatController) HandleChat(conn *define.WsConn) {
+//		// WebSocket 处理逻辑
+//	}
+//
+//	app.RouterWs("/ws/chat", &ChatController{}, "HandleChat")
+func RouterWs(path string, ctrl IController, method string) *App {
+	if HertzApp != nil {
+		HertzApp.RouterWs(path, ctrl, method)
+		return HertzApp
+	}
+	return nil
+}
+
+// RouterWsWithUpgrader 注册带自定义升级器的 WebSocket 控制器路由
+//
+// 该方法允许指定自定义的 WebSocket 升级器配置，
+// 适用于需要特殊配置的 WebSocket 连接。
+//
+// 参数：
+//   - path: string - WebSocket 路径
+//   - ctrl: IController - 控制器实例
+//   - method: string - 控制器方法名
+//   - upgrader: websocket.HertzUpgrader - 自定义升级器配置
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 升级器配置示例：
+//
+//	upgrader := websocket.HertzUpgrader{
+//		ReadBufferSize:   2048,
+//		WriteBufferSize:  2048,
+//		HandshakeTimeout: 10 * time.Second,
+//		CheckOrigin: func(ctx *app.RequestContext) bool {
+//			// 自定义来源检查
+//			return true
+//		},
+//	}
+//
+//	app.RouterWsWithUpgrader("/ws/game", &GameController{}, "HandleGame", upgrader)
+func RouterWsWithUpgrader(path string, ctrl IController, method string, upgrader WsHertzUpgrader) *App {
+	if HertzApp != nil {
+		HertzApp.RouterWsWithUpgrader(path, ctrl, method, upgrader)
+		return HertzApp
+	}
+	return nil
+}
+
 // ============= 性能和最佳实践指南 =============
 
 /*
@@ -823,9 +941,138 @@ func AddNamespace(ns ...*Namespace) {
 
 	mvc.AddNamespace(apiV1)
 
+// ============= WebSocket 路由静态方法 =============
+
+// HandlerWs 注册 WebSocket 处理器到全局应用
+//
+// 这是一个全局静态方法，用于快速注册 WebSocket 处理器。
+// 类似于 Handler 方法，但专门用于 WebSocket 连接处理。
+//
+// 参数：
+//   - path: string - WebSocket 路径，如 "/ws/echo"、"/websocket"
+//   - handler: func(*define.WsConn) - WebSocket 连接处理函数
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 使用示例：
+//
+//	// 基本 WebSocket Echo 服务
+//	mvc.HandlerWs("/ws/echo", func(conn *define.WsConn) {
+//		for {
+//			messageType, message, err := conn.ReadMessage()
+//			if err != nil {
+//				log.Printf("读取消息失败: %v", err)
+//				break
+//			}
+//			// Echo 消息
+//			err = conn.WriteMessage(messageType, message)
+//			if err != nil {
+//				log.Printf("发送消息失败: %v", err)
+//				break
+//			}
+//		}
+//	})
+//
+//	// 聊天服务
+//	mvc.HandlerWs("/ws/chat", func(conn *define.WsConn) {
+//		// 聊天逻辑处理
+//	})
+func HandlerWs(path string, handler func(*define.WsConn)) *App {
+	// 强制使用这些导入以防止被删除
+	var _ *define.WsConn
+
+	return HertzApp.HandlerWs(path, handler)
+}
+
+// RouterWs 注册控制器的 WebSocket 方法到全局应用
+//
+// 这是一个全局静态方法，用于将控制器的方法注册为 WebSocket 处理器。
+// 类似于 Router 方法，但专门用于 WebSocket 路由。
+//
+// 参数：
+//   - path: string - WebSocket 路径，如 "/ws/chat"、"/websocket/:room"
+//   - ctrl: IController - 控制器实例
+//   - method: string - 控制器方法名，如 "HandleChat"、"HandleWebSocket"
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 控制器方法要求：
+//   控制器方法必须具有以下签名：
+//   func (c *YourController) MethodName(conn *define.WsConn) {
+//       // WebSocket 处理逻辑
+//   }
+//
+// 使用示例：
+//
+//	type ChatController struct {
+//		core.BaseController
+//	}
+//
+//	func (c *ChatController) HandleChat(conn *define.WsConn) {
+//		// 聊天处理逻辑
+//	}
+//
+//	// 注册 WebSocket 路由
+//	mvc.RouterWs("/ws/chat", &ChatController{}, "HandleChat")
+//
+//	// 带路径参数
+//	mvc.RouterWs("/ws/room/:id", &ChatController{}, "HandleRoom")
+func RouterWs(path string, ctrl IController, method string) *App {
+	// 强制使用这些导入以防止被删除
+	var _ *define.WsConn
+
+	return HertzApp.RouterWs(path, ctrl, method)
+}
+
+// RouterWsWithUpgrader 注册带自定义升级器的 WebSocket 控制器路由
+//
+// 这是一个全局静态方法，允许使用自定义的 WebSocket 升级器配置。
+// 适用于需要特殊配置的 WebSocket 连接，如缓冲区大小、超时设置等。
+//
+// 参数：
+//   - path: string - WebSocket 路径
+//   - ctrl: IController - 控制器实例
+//   - method: string - 控制器方法名
+//   - upgrader: websocket.HertzUpgrader - 自定义升级器配置
+//
+// 返回值：
+//   - *App: 应用实例，支持链式调用
+//
+// 使用示例：
+//
+//	// 自定义升级器配置
+//	upgrader := websocket.HertzUpgrader{
+//		ReadBufferSize:  2048,
+//		WriteBufferSize: 2048,
+//		HandshakeTimeout: 10 * time.Second,
+//	}
+//
+//	// 注册高性能 WebSocket 路由
+//	mvc.RouterWsWithUpgrader("/ws/game", &GameController{}, "HandleGame", upgrader)
+//
+//	// 大数据传输 WebSocket
+//	largeUpgrader := websocket.HertzUpgrader{
+//		ReadBufferSize:  8192,
+//		WriteBufferSize: 8192,
+//	}
+//	mvc.RouterWsWithUpgrader("/ws/data", &DataController{}, "HandleData", largeUpgrader)
+func RouterWsWithUpgrader(path string, ctrl IController, method string, upgrader websocket.HertzUpgrader) *App {
+	// 强制使用这些导入以防止被删除
+	_ = websocket.HertzUpgrader{}
+	var _ *define.WsConn
+
+	return HertzApp.RouterWsWithUpgrader(path, ctrl, method, upgrader)
+}
+
+// ============= WebSocket 路由注意事项 =============
+/*
 注意事项：
 - 控制器实例在每次请求时会被重用，确保线程安全
 - 避免在控制器中存储状态，使用Context传递数据
 - 合理使用缓存减少数据库查询
 - 监控路由性能，及时优化热点路径
+- WebSocket 连接是长连接，注意资源管理和错误处理
+- 自定义升级器可以优化性能和安全性
 */

@@ -39,7 +39,7 @@ package core
 // 不应该作为HTTP路由端点暴露给外部访问。
 //
 // 基于实际扫描BaseController的所有公共方法重新构建，确保完整性和准确性。
-// 总计包含 300+ 个方法，按功能模块进行清晰分组管理。
+// 总计包含 300+ 个方法（包含新增的 WebSocket 支持方法），按功能模块进行清晰分组管理。
 //
 // 维护说明：
 // - 当BaseController添加新的公共方法时，必须同步更新此列表
@@ -354,6 +354,11 @@ var ReservedMethods = map[string]bool{
 	// ========== 40. 分页处理方法 ==========
 	// 数据分页和页面信息处理方法
 	"GetPageInfo": true, "GetPageInfoByParam": true, "GetPageInfoDefault": true,
+
+	// ========== 41. WebSocket 支持方法 ==========
+	// WebSocket 连接处理和管理相关方法
+	"HandleWebSocket": true, "IsWebSocketRequest": true, "SetWebSocketUpgrader": true,
+	"CreateWebSocketEchoHandler": true, "CreateWebSocketJSONHandler": true,
 }
 
 // ControllerNameSuffixReserved 控制器名称后缀保留字（统一在此定义）

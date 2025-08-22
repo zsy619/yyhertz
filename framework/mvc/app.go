@@ -74,6 +74,15 @@ type (
 
 	// FilterPattern 过滤器模式
 	FilterPattern = core.FilterPattern
+
+	// WsConn WebSocket 连接类型
+	WsConn = define.WsConn
+
+	// WsClientUpgrader WebSocket 客户端升级器类型
+	WsClientUpgrader = define.WsClientUpgrader
+
+	// WsHertzUpgrader WebSocket Hertz 升级器类型
+	WsHertzUpgrader = define.WsHertzUpgrader
 )
 
 // ============= 过滤器位置常量 =============

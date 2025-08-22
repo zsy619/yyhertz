@@ -145,6 +145,9 @@ func (c *BaseController) RenderHTML(viewName string, data ...map[string]any) {
 
 		c.SetHeader("Content-Type", "text/html; charset=utf-8")
 		_, err = c.Write([]byte(content))
+		if err != nil {
+			c.Errorf("写入响应失败: %v", err)
+		}
 		return
 	}
 

@@ -267,3 +267,8 @@ framework/mvc/core/conf/template.yaml
 framework/mvc/core/conf/tls.yaml
 framework/mvc/session/conf
 framework/view/conf
+framework/mvc/core/conf
+framework/mvc/engine/conf
+framework/mvc/errors/conf
+framework/mvc/view/conf
+!example/test_reports
