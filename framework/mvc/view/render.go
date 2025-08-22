@@ -240,10 +240,14 @@ func (e *TemplateEngine) loadTemplate(templateName string) (*template.Template, 
 	// 添加调试日志
 	config.Debugf("Loading template: %s from path: %s", templateName, templatePath)
 
-	// 创建空的主模板
+	// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+	manager := GetGlobalFunctionManager()
+	mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+
+	// 创建空的主模板，使用最新的合并函数
 	tmpl := template.New(templateName).
 		Delims(e.delimLeft, e.delimRight).
-		Funcs(e.funcMap)
+		Funcs(mergedFuncs)
 
 	// 解析文件到模板中
 	parsedTmpl, err := tmpl.ParseFiles(templatePath)
@@ -631,22 +635,6 @@ func (e *TemplateEngine) ClearCache() {
 	e.components = make(map[string]*template.Template)
 
 	config.Info("Template cache cleared")
-}
-
-// ReloadAllTemplates 清除缓存并重新加载所有模板
-func (e *TemplateEngine) ReloadAllTemplates() error {
-	// 清除缓存
-	e.ClearCache()
-
-	// 重新加载所有模板
-	err := e.loadAllTemplates()
-	if err != nil {
-		config.Errorf("Failed to reload templates: %v", err)
-		return err
-	}
-
-	config.Info("All templates reloaded successfully")
-	return nil
 }
 
 // PrepareRenderData 公开的渲染数据准备方法（用于测试和外部调用）

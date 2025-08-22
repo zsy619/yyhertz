@@ -11,16 +11,27 @@ import (
 // AddFuncMap 添加全局模板函数
 // 参数：name - 函数名字符串，fn - 函数实现
 // 示例：AddFuncMap("containString", tool.ContainString)
-// 
+//
 // 注意：此方法已重构为直接使用统一的模板函数管理器，避免重复存储
 func (app *App) AddFuncMap(name string, fn any) {
 	// 直接使用 view 引擎的统一管理器
 	view.AddGlobalFunction(name, fn)
 	app.LogInfof("Template function registered: %s", name)
+
+	app.ReloadTemplates()
+}
+
+func (app *App) ReloadTemplates() {
+	// 自动重新加载模板以确保新函数能被识别
+	if err := view.ReloadDefaultTemplates(); err != nil {
+		app.LogWarnf("Failed to reload templates after registering functions: %v", err)
+	} else {
+		app.LogInfof("Templates reloaded successfully after registering functions")
+	}
 }
 
 // GetGlobalFuncMap 获取全局模板函数映射（只读副本）
-// 
+//
 // 注意：此方法已重构为从统一管理器获取数据
 func (app *App) GetGlobalFuncMap() template.FuncMap {
 	// 从 view 引擎获取全局函数
@@ -28,7 +39,7 @@ func (app *App) GetGlobalFuncMap() template.FuncMap {
 }
 
 // RemoveFuncMap 移除全局模板函数
-// 
+//
 // 注意：此方法已重构为直接操作统一管理器
 func (app *App) RemoveFuncMap(name string) {
 	// 直接使用 view 引擎的统一管理器
@@ -37,18 +48,18 @@ func (app *App) RemoveFuncMap(name string) {
 }
 
 // ListFuncMap 列出所有已注册的模板函数名称
-// 
+//
 // 注意：此方法已重构为从统一管理器获取数据
 func (app *App) ListFuncMap() []string {
 	// 从统一管理器获取所有函数
 	funcList := view.ListTemplateFunctions()
-	
+
 	// 合并所有类型的函数名称
 	allNames := make([]string, 0)
 	for _, names := range funcList {
 		allNames = append(allNames, names...)
 	}
-	
+
 	return allNames
 }
 

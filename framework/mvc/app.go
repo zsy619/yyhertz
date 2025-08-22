@@ -219,22 +219,43 @@ func SetStaticPath(localDir string, urlPath ...string) {
 // ============= 模板函数管理静态方法 =============
 
 // AddFuncMap 添加全局模板函数的静态方法
+//
 // 参数：name - 函数名字符串，fn - 函数实现
+//
 // 示例：AddFuncMap("containString", tool.ContainString)
-func AddFuncMap(name string, fn any) error {
+//
+// 加载之后请调用 ReloadTemplates()
+func AddFuncMap(name string, fn any, reload ...bool) error {
 	if HertzApp != nil {
 		HertzApp.AddFuncMap(name, fn)
+		if len(reload) > 0 && reload[0] {
+			HertzApp.ReloadTemplates()
+		}
 		return nil
 	}
 	return fmt.Errorf("hertz app instance is not initialized")
 }
 
 // AddFuncMaps 批量添加全局模板函数的静态方法
-func AddFuncMaps(funcs map[string]any) error {
+//
+// 加载之后请调用 ReloadTemplates()
+func AddFuncMaps(funcs map[string]any, reload ...bool) error {
 	if HertzApp != nil {
 		for name, fn := range funcs {
 			HertzApp.AddFuncMap(name, fn)
 		}
+		if len(reload) > 0 && reload[0] {
+			HertzApp.ReloadTemplates()
+		}
+		return nil
+	}
+	return fmt.Errorf("hertz app instance is not initialized")
+}
+
+// ReloadTemplates 重新加载模板
+func ReloadTemplates() error {
+	if HertzApp != nil {
+		HertzApp.ReloadTemplates()
 		return nil
 	}
 	return fmt.Errorf("hertz app instance is not initialized")

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/hertz-contrib/websocket"
 
 	"github.com/zsy619/yyhertz/framework/mvc"
@@ -122,7 +123,7 @@ type ChatController struct {
 func (c *ChatController) Room() {
 	roomID := c.Ctx.GetParam("room")
 	if roomID == "" {
-		c.Abort("400", "Room ID is required")
+		c.Abort("400")
 		return
 	}
 
@@ -211,7 +212,7 @@ func (c *StreamController) Data() {
 
 func main() {
 	// 创建应用
-	app := core.NewApp()
+	appx := mvc.HertzApp
 
 	// ============= 使用命名空间注册 WebSocket 路由 =============
 
@@ -293,7 +294,7 @@ func main() {
 	customUpgrader := websocket.HertzUpgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: func(ctx *websocket.Context) bool {
+		CheckOrigin: func(ctx *app.RequestContext) bool {
 			// 允许所有源（生产环境应该限制）
 			return true
 		},
@@ -332,20 +333,20 @@ func main() {
 	)
 
 	// 注册命名空间
-	app.RegisterNamespace(echoNS)
-	app.RegisterNamespace(chatNS)
-	app.RegisterNamespace(streamNS)
-	app.RegisterNamespace(customNS)
+	mvc.AddNamespace(echoNS)
+	mvc.AddNamespace(chatNS)
+	mvc.AddNamespace(streamNS)
+	mvc.AddNamespace(customNS)
 
 	// ============= 使用控制器注册 WebSocket 路由 =============
 
 	// 注册控制器路由
-	app.RouterAutoRouter(&EchoController{})
-	app.RouterAutoRouter(&ChatController{})
-	app.RouterAutoRouter(&StreamController{})
+	appx.RouterAuto(&EchoController{})
+	appx.RouterAuto(&ChatController{})
+	appx.RouterAuto(&StreamController{})
 
 	// 静态文件服务（用于提供 WebSocket 客户端页面）
-	app.Static("/static", "./static")
+	appx.Static("/static", "./static")
 
 	// 启动服务器
 	fmt.Println("WebSocket Example Server Starting...")
@@ -358,5 +359,5 @@ func main() {
 	fmt.Println("  - ws://localhost:8080/ChatController/Room?room=test (Controller Chat)")
 	fmt.Println("  - ws://localhost:8080/StreamController/Data (Controller Stream)")
 
-	app.Run(":8080")
+	appx.Run(":8080")
 }

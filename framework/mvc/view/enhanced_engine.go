@@ -72,9 +72,13 @@ func (e *EnhancedTemplateEngine) loadAllTemplatesWithIncludes() error {
 	defer e.globalMux.Unlock()
 
 	// 创建全局模板实例
+	// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+	manager := GetGlobalFunctionManager()
+	mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+	
 	e.globalTemplate = template.New("global").
 		Delims(e.delimLeft, e.delimRight).
-		Funcs(e.funcMap)
+		Funcs(mergedFuncs)
 
 	// 第一步：扫描并收集所有模板文件
 	templateFiles := make(map[string]string) // name -> path
@@ -273,9 +277,13 @@ func (e *EnhancedTemplateEngine) CreateTemplate(name, content string) error {
 	defer e.globalMux.Unlock()
 
 	if e.globalTemplate == nil {
+		// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+		manager := GetGlobalFunctionManager()
+		mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+		
 		e.globalTemplate = template.New("global").
 			Delims(e.delimLeft, e.delimRight).
-			Funcs(e.funcMap)
+			Funcs(mergedFuncs)
 	}
 
 	// 解析模板内容

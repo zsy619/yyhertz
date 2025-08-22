@@ -74,6 +74,7 @@ func (app *App) HandlerWs(path string, handler func(*define.WsConn)) *App {
 //
 // 该方法通过反射调用控制器的指定方法来处理 WebSocket 连接。
 // 控制器方法必须具有特定的签名：func(conn *define.WsConn)
+// 现在使用新的包装器来确保控制器被正确初始化。
 //
 // 参数：
 //   - path: string - WebSocket 路径
@@ -101,20 +102,51 @@ func (app *App) HandlerWs(path string, handler func(*define.WsConn)) *App {
 //
 //	app.RouterWs("/ws/chat", &ChatController{}, "HandleChat")
 func (app *App) RouterWs(path string, ctrl IController, method string) *App {
-	// 创建控制器方法的 WebSocket 处理器
-	handler, err := app.createWebSocketHandler(ctrl, method)
-	if err != nil {
-		panic(fmt.Sprintf("RouterWs: 创建 WebSocket 处理器失败: %v", err))
+	// 验证控制器和方法
+	ctrlValue := reflect.ValueOf(ctrl)
+	ctrlType := reflect.TypeOf(ctrl)
+
+	// 检查控制器是否为指针类型
+	if ctrlType.Kind() != reflect.Ptr {
+		panic(fmt.Sprintf("RouterWs: 控制器必须是指针类型"))
 	}
 
-	// 使用 HandlerWs 注册处理器
-	return app.HandlerWs(path, handler)
+	// 获取指定的方法
+	methodValue := ctrlValue.MethodByName(method)
+	if !methodValue.IsValid() {
+		panic(fmt.Sprintf("RouterWs: 控制器方法 '%s' 不存在", method))
+	}
+
+	// 验证方法签名
+	if err := validateWebSocketMethodSignature(methodValue.Type(), method); err != nil {
+		panic(fmt.Sprintf("RouterWs: %v", err))
+	}
+
+	// 创建专门的 WebSocket 控制器方法包装器
+	wsController := &webSocketControllerMethodWrapper{
+		targetController: ctrl,
+		methodName:       method,
+		method:           methodValue,
+		upgrader:         websocket.HertzUpgrader{ReadBufferSize: 1024, WriteBufferSize: 1024},
+	}
+
+	// 创建处理器函数
+	handlerFunc := define.HandlerFunc(func(ctx context.Context, c *define.RequestContext) {
+		// 调用 WebSocket 处理方法
+		wsController.HandleWebSocket(c)
+	})
+
+	// 注册 GET 路由（WebSocket 升级使用 GET 请求）
+	app.registerRoute("GET", path, handlerFunc)
+
+	return app
 }
 
 // RouterWsWithUpgrader 注册带自定义升级器的 WebSocket 控制器路由
 //
 // 该方法允许指定自定义的 WebSocket 升级器配置，
 // 适用于需要特殊配置的 WebSocket 连接。
+// 现在使用新的包装器来确保控制器被正确初始化。
 //
 // 参数：
 //   - path: string - WebSocket 路径
@@ -139,14 +171,33 @@ func (app *App) RouterWs(path string, ctrl IController, method string) *App {
 //
 //	app.RouterWsWithUpgrader("/ws/game", &GameController{}, "HandleGame", upgrader)
 func (app *App) RouterWsWithUpgrader(path string, ctrl IController, method string, upgrader define.WsHertzUpgrader) *App {
-	// 创建控制器方法的 WebSocket 处理器
-	handler, err := app.createWebSocketHandler(ctrl, method)
-	if err != nil {
-		panic(fmt.Sprintf("RouterWsWithUpgrader: 创建 WebSocket 处理器失败: %v", err))
+	// 验证控制器和方法
+	ctrlValue := reflect.ValueOf(ctrl)
+	ctrlType := reflect.TypeOf(ctrl)
+
+	// 检查控制器是否为指针类型
+	if ctrlType.Kind() != reflect.Ptr {
+		panic(fmt.Sprintf("RouterWsWithUpgrader: 控制器必须是指针类型"))
 	}
 
-	// 创建带自定义升级器的 WebSocket 控制器
-	wsController := createWebSocketController(handler, upgrader).(*webSocketControllerWrapper)
+	// 获取指定的方法
+	methodValue := ctrlValue.MethodByName(method)
+	if !methodValue.IsValid() {
+		panic(fmt.Sprintf("RouterWsWithUpgrader: 控制器方法 '%s' 不存在", method))
+	}
+
+	// 验证方法签名
+	if err := validateWebSocketMethodSignature(methodValue.Type(), method); err != nil {
+		panic(fmt.Sprintf("RouterWsWithUpgrader: %v", err))
+	}
+
+	// 创建专门的 WebSocket 控制器方法包装器
+	wsController := &webSocketControllerMethodWrapper{
+		targetController: ctrl,
+		methodName:       method,
+		method:           methodValue,
+		upgrader:         upgrader,
+	}
 
 	// 创建处理器函数
 	handlerFunc := define.HandlerFunc(func(ctx context.Context, c *define.RequestContext) {
@@ -165,7 +216,7 @@ func (app *App) RouterWsWithUpgrader(path string, ctrl IController, method strin
 // createWebSocketHandler 创建控制器方法的 WebSocket 处理器
 //
 // 该方法通过反射获取控制器方法，并创建相应的 WebSocket 处理器函数。
-// 支持方法签名验证和错误处理。
+// 支持方法签名验证和错误处理。现在使用新的包装器来确保控制器被正确初始化。
 //
 // 参数：
 //   - ctrl: IController - 控制器实例
@@ -199,7 +250,11 @@ func (app *App) createWebSocketHandler(ctrl IController, methodName string) (fun
 	}
 
 	// 创建 WebSocket 处理器函数
+	// 注意：这个函数是一个占位符，实际的处理逻辑在 webSocketControllerMethodWrapper 中
 	handler := func(conn *define.WsConn) {
+		// 这个函数不应该被直接调用，因为我们使用了新的包装器
+		fmt.Printf("警告：createWebSocketHandler 创建的处理器被直接调用，这可能导致控制器未初始化\n")
+		
 		// 准备方法调用参数
 		args := []reflect.Value{
 			reflect.ValueOf(conn),
@@ -291,6 +346,17 @@ type webSocketControllerWrapper struct {
 	upgrader websocket.HertzUpgrader
 }
 
+// webSocketControllerMethodWrapper WebSocket 控制器方法包装器
+//
+// 专门用于处理控制器方法的 WebSocket 连接，确保控制器被正确初始化。
+type webSocketControllerMethodWrapper struct {
+	BaseController
+	targetController IController // 目标控制器实例
+	methodName       string      // 方法名
+	method           reflect.Value // 反射方法
+	upgrader         websocket.HertzUpgrader
+}
+
 // HandleWebSocket 处理 WebSocket 连接
 func (w *webSocketControllerWrapper) HandleWebSocket(ctx *define.RequestContext) {
 	// 创建MVC上下文包装
@@ -308,6 +374,50 @@ func (w *webSocketControllerWrapper) HandleWebSocket(ctx *define.RequestContext)
 	err := w.upgrader.Upgrade(w.Ctx.Request(), func(conn *websocket.Conn) {
 		// 直接调用处理器，define.WsConn 是 websocket.Conn 的别名
 		w.handler((*define.WsConn)(conn))
+	})
+
+	if err != nil {
+		fmt.Printf("WebSocket 升级失败: %v\n", err)
+		w.Ctx.String(500, "Internal Server Error: WebSocket upgrade failed")
+	}
+}
+
+// HandleWebSocket 处理控制器方法的 WebSocket 连接
+func (w *webSocketControllerMethodWrapper) HandleWebSocket(ctx *define.RequestContext) {
+	// 创建MVC上下文包装
+	mvcCtx := mvcContext.NewContext(ctx)
+	// 设置请求上下文
+	w.Ctx = mvcCtx
+
+	// 检查是否为 WebSocket 请求
+	if !w.Ctx.IsWebsocket() {
+		w.Ctx.String(400, "Bad Request: Not a WebSocket request")
+		return
+	}
+
+	// 升级连接
+	err := w.upgrader.Upgrade(w.Ctx.Request(), func(conn *websocket.Conn) {
+		// 重要：在这里初始化目标控制器的 Context
+		// 获取控制器名称和方法名称用于初始化
+		controllerName := reflect.TypeOf(w.targetController).Elem().Name()
+		
+		// 调用目标控制器的初始化方法
+		w.targetController.Init(mvcCtx, controllerName, w.methodName, w.targetController)
+		
+		// 准备方法调用参数
+		args := []reflect.Value{
+			reflect.ValueOf((*define.WsConn)(conn)),
+		}
+
+		// 调用控制器方法
+		results := w.method.Call(args)
+
+		// 处理方法返回值（如果有错误返回值）
+		if len(results) > 0 {
+			if err, ok := results[0].Interface().(error); ok && err != nil {
+				fmt.Printf("WebSocket 处理器执行错误: %v\n", err)
+			}
+		}
 	})
 
 	if err != nil {

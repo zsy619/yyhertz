@@ -119,6 +119,11 @@ func (tfm *TemplateFunctionManager) initBuiltinFunctions() {
 	for name, fn := range builtinFuncs {
 		tfm.builtinFuncs[name] = fn
 	}
+
+	// 添加 Beego 风格的模板函数
+	for name, fn := range BeegoTemplateFuncs {
+		tfm.builtinFuncs[name] = fn
+	}
 }
 
 // AddGlobalFunction 添加全局函数
@@ -341,6 +346,16 @@ func GetDefaultEngine() *TemplateEngine {
 		}
 	})
 	return defaultEngine
+}
+
+// ReloadDefaultTemplates 重新加载默认模板引擎的所有模板
+// 用于在函数注册后刷新模板，确保新注册的函数能被识别
+func ReloadDefaultTemplates() error {
+	engine := GetDefaultEngine()
+	if engine != nil {
+		return engine.ReloadAllTemplates()
+	}
+	return fmt.Errorf("default template engine not initialized")
 }
 
 // NewTemplateEngine 创建新的模板引擎
@@ -603,9 +618,13 @@ func (e *TemplateEngine) GetCurrentTheme() string {
 
 // CreateInlineTemplate 创建内联模板（用于测试）
 func (e *TemplateEngine) CreateInlineTemplate(name, content string) (*template.Template, error) {
+	// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+	manager := GetGlobalFunctionManager()
+	mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+
 	tmpl := template.New(name).
 		Delims(e.delimLeft, e.delimRight).
-		Funcs(e.funcMap)
+		Funcs(mergedFuncs)
 
 	return tmpl.Parse(content)
 }
@@ -736,6 +755,27 @@ func (e *TemplateEngine) reloadTemplate(filePath string) {
 	config.Debugf("Template cache cleared for: %s", templateName)
 }
 
+// ReloadAllTemplates 重新加载所有模板（用于函数注册后刷新模板）
+func (e *TemplateEngine) ReloadAllTemplates() error {
+	e.templateMutex.Lock()
+	defer e.templateMutex.Unlock()
+
+	// 清除所有缓存
+	e.templates = make(map[string]*template.Template)
+	e.layouts = make(map[string]*template.Template)
+	e.components = make(map[string]*template.Template)
+	
+	config.Infof("Reloading all templates with updated functions...")
+	
+	// 重新加载所有模板
+	if err := e.loadAllTemplates(); err != nil {
+		return fmt.Errorf("failed to reload templates: %w", err)
+	}
+	
+	config.Infof("Successfully reloaded all templates")
+	return nil
+}
+
 // Close 关闭模板引擎
 func (e *TemplateEngine) Close() error {
 	if e.watcher != nil {
@@ -800,9 +840,13 @@ func (e *TemplateEngine) loadLayouts() error {
 		if !d.IsDir() && strings.HasSuffix(path, e.extension) {
 			layoutName := e.getTemplateName(path)
 
+			// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+			manager := GetGlobalFunctionManager()
+			mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+
 			tmpl := template.New(layoutName).
 				Delims(e.delimLeft, e.delimRight).
-				Funcs(e.funcMap)
+				Funcs(mergedFuncs)
 
 			if _, err := tmpl.ParseFiles(path); err != nil {
 				config.Errorf("Failed to parse layout %s: %v", path, err)
@@ -831,9 +875,13 @@ func (e *TemplateEngine) loadComponents() error {
 		if !d.IsDir() && strings.HasSuffix(path, e.extension) {
 			componentName := e.getTemplateName(path)
 
+			// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+			manager := GetGlobalFunctionManager()
+			mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+
 			tmpl := template.New(componentName).
 				Delims(e.delimLeft, e.delimRight).
-				Funcs(e.funcMap)
+				Funcs(mergedFuncs)
 
 			if _, err := tmpl.ParseFiles(path); err != nil {
 				config.Errorf("Failed to parse component %s: %v", path, err)
@@ -864,9 +912,13 @@ func (e *TemplateEngine) loadViewTemplates() error {
 
 				templateName := e.getTemplateName(path)
 
+				// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+				manager := GetGlobalFunctionManager()
+				mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+
 				tmpl := template.New(templateName).
 					Delims(e.delimLeft, e.delimRight).
-					Funcs(e.funcMap)
+					Funcs(mergedFuncs)
 
 				parsedTmpl, err := tmpl.ParseFiles(path)
 				if err != nil {

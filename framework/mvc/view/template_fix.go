@@ -41,9 +41,13 @@ func NewTemplateIncludeEngine(cfg *config.TemplateConfig) (*TemplateIncludeEngin
 // loadAllTemplatesForInclude 加载所有模板到一个主模板中
 func (e *TemplateIncludeEngine) loadAllTemplatesForInclude() error {
 	// 创建主模板
+	// 动态获取最新的合并函数（包含用户通过mvc.AddFuncMap注册的函数）
+	manager := GetGlobalFunctionManager()
+	mergedFuncs := manager.GetMergedFunctions(e.funcMap)
+	
 	e.masterTemplate = template.New("master").
 		Delims(e.delimLeft, e.delimRight).
-		Funcs(e.funcMap)
+		Funcs(mergedFuncs)
 	
 	// 收集所有模板文件
 	templateFiles := make([]string, 0)
