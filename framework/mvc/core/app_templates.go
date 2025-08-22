@@ -13,14 +13,17 @@ import (
 // 示例：AddFuncMap("containString", tool.ContainString)
 //
 // 注意：此方法已重构为直接使用统一的模板函数管理器，避免重复存储
+// 注意：为了优化性能，此方法不会自动重载模板，需要手动调用 ReloadTemplates()
 func (app *App) AddFuncMap(name string, fn any) {
 	// 直接使用 view 引擎的统一管理器
 	view.AddGlobalFunction(name, fn)
 	app.LogInfof("Template function registered: %s", name)
 
-	app.ReloadTemplates()
+	// 移除自动重载以减少重复的模板解析和警告
+	// 用户需要在批量注册函数后手动调用 ReloadTemplates()
 }
 
+// ReloadTemplates 重新加载模板
 func (app *App) ReloadTemplates() {
 	// 自动重新加载模板以确保新函数能被识别
 	if err := view.ReloadDefaultTemplates(); err != nil {
