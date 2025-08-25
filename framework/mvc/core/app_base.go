@@ -74,6 +74,9 @@ type App struct {
 	address       string
 	loggerManager *config.LoggerManager
 
+	// 路由配置
+	RouterCaseSensitive bool // 路由大小写敏感配置
+
 	// 过滤器管理
 	filters      map[int][]*FilterPattern // 按位置分组的过滤器
 	filtersMutex sync.RWMutex             // 过滤器读写锁
@@ -113,7 +116,11 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	}
 
 	// 创建Hertz服务器实例
-	h := server.Default(server.WithHostPorts(host + ":" + strconv.Itoa(port)))
+	h := server.Default(server.WithHostPorts(
+		host+":"+strconv.Itoa(port)),
+		server.WithStreamBody(true),
+		server.WithExitWaitTime(3*time.Second),
+	)
 
 	// 初始化全局日志管理器
 	loggerManager := config.InitGlobalLogger(logConfig)
@@ -141,6 +148,9 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 		address:       fmt.Sprintf("%s:%d", host, port), // 应用监听地址
 		loggerManager: loggerManager,                    // 日志管理器
 
+		// 路由配置
+		RouterCaseSensitive: config.GlobalMvc.Router.CaseSensitive, // 从配置读取路由大小写敏感设置
+
 		// 初始化过滤器管理
 		filters:      make(map[int][]*FilterPattern),
 		nextFilterID: 0,
@@ -150,7 +160,7 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 	}
 
 	// 注册默认静态路径
-	for urlPath, _ := range app.StaticPaths {
+	for urlPath := range app.StaticPaths {
 		app.Static(urlPath, ".")
 	}
 
@@ -159,17 +169,18 @@ func NewAppWithLogConfig(logConfig *config.LogConfig) *App {
 		EnableRequestBody:  true,
 		EnableResponseBody: false,
 		SkipPaths:          []string{"/health", "/ping"},
-		MaxBodySize:        512,
+		MaxBodySize:        1024,
 	}
 
 	// 添加基础全局中间件
-	app.Use(
-		middleware.RecoveryMiddleware(),
-		middleware.TracingMiddleware(),
-		middleware.LoggerMiddlewareWithConfig(loggerConfig),
-		middleware.CORSMiddleware(),
-		middleware.RateLimitMiddleware(100, time.Minute),
-	)
+	var middlewares []define.HandlerFunc
+	middlewares = append(middlewares, middleware.RecoveryMiddleware())
+	middlewares = append(middlewares, middleware.TracingMiddleware())
+	middlewares = append(middlewares, middleware.LoggerMiddlewareWithConfig(loggerConfig))
+	middlewares = append(middlewares, middleware.CORSMiddleware())
+	middlewares = append(middlewares, middleware.RateLimitMiddleware(100, time.Minute)) // 默认限流100次/分钟
+
+	app.Use(middlewares...)
 
 	// 设置基础路由
 	app.setupBasicRoutes()

@@ -3,7 +3,6 @@ package context
 import (
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -79,21 +78,6 @@ func parseBool(s string) (bool, bool) {
 	return false, false
 }
 
-// ============= 性能优化相关 =============
-
-// 原子操作辅助函数
-func atomicLoadBool(addr *int32) bool {
-	return atomic.LoadInt32(addr) != 0
-}
-
-func atomicStoreBool(addr *int32, val bool) {
-	var intVal int32
-	if val {
-		intVal = 1
-	}
-	atomic.StoreInt32(addr, intVal)
-}
-
 // ============= 对象池 =============
 
 // 为频繁使用的对象类型创建对象池
@@ -102,13 +86,6 @@ var (
 	stringSlicePool = sync.Pool{
 		New: func() any {
 			return make([]string, 0, 8) // 预分配8个元素
-		},
-	}
-
-	// 错误切片池
-	errorSlicePool = sync.Pool{
-		New: func() any {
-			return make([]error, 0, 4) // 预分配4个元素
 		},
 	}
 )
@@ -123,19 +100,6 @@ func putStringSlice(slice []string) {
 	if slice != nil {
 		slice = slice[:0] // 重置长度但保留容量
 		stringSlicePool.Put(slice)
-	}
-}
-
-// getErrorSlice 从池中获取错误切片
-func getErrorSlice() []error {
-	return errorSlicePool.Get().([]error)
-}
-
-// putErrorSlice 将错误切片归还到池中
-func putErrorSlice(slice []error) {
-	if slice != nil {
-		slice = slice[:0]
-		errorSlicePool.Put(slice)
 	}
 }
 
@@ -181,27 +145,27 @@ const (
 	HeaderXRealIP            = "X-Real-IP"
 
 	// HTTP状态码常量
-	StatusOK                  = 200
-	StatusCreated             = 201
-	StatusAccepted            = 202
-	StatusNoContent           = 204
-	StatusPartialContent      = 206
-	StatusMovedPermanently    = 301
-	StatusFound               = 302
-	StatusSeeOther            = 303
-	StatusNotModified         = 304
-	StatusTemporaryRedirect   = 307
-	StatusPermanentRedirect   = 308
-	StatusBadRequest          = 400
-	StatusUnauthorized        = 401
-	StatusForbidden           = 403
+	StatusOK                           = 200
+	StatusCreated                      = 201
+	StatusAccepted                     = 202
+	StatusNoContent                    = 204
+	StatusPartialContent               = 206
+	StatusMovedPermanently             = 301
+	StatusFound                        = 302
+	StatusSeeOther                     = 303
+	StatusNotModified                  = 304
+	StatusTemporaryRedirect            = 307
+	StatusPermanentRedirect            = 308
+	StatusBadRequest                   = 400
+	StatusUnauthorized                 = 401
+	StatusForbidden                    = 403
 	StatusNotFound                     = 404
 	StatusMethodNotAllowed             = 405
 	StatusRequestedRangeNotSatisfiable = 416
 	StatusInternalServerError          = 500
-	StatusNotImplemented      = 501
-	StatusBadGateway          = 502
-	StatusServiceUnavailable  = 503
+	StatusNotImplemented               = 501
+	StatusBadGateway                   = 502
+	StatusServiceUnavailable           = 503
 )
 
 // ============= 实用工具函数 =============

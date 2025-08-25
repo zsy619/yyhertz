@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/zsy619/yyhertz/framework/mvc/context"
+	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/define"
 	"github.com/zsy619/yyhertz/framework/mvc/errors"
 )
@@ -86,7 +86,7 @@ func (app *App) TriggerError(ctx *define.RequestContext, statusCode int, err err
 // createEnhancedContext 创建增强的MVC上下文
 func createEnhancedContext(reqCtx *define.RequestContext) *errors.Context {
 	// 通过mvc/context包创建增强上下文，然后转换为errors.Context
-	mvcCtx := context.NewContext(reqCtx)
+	mvcCtx := contextenhanced.NewContext(reqCtx)
 	return (*errors.Context)(mvcCtx)
 }
 
@@ -106,13 +106,13 @@ func (app *App) handleBasicError(ctx *define.RequestContext, statusCode int, err
 // setupAutoErrorHandling 设置自动错误处理（类似Beego）
 func (app *App) setupAutoErrorHandling() {
 	// 设置NoRoute处理器 - 当路由不匹配时自动触发404错误处理
-	app.NoRoute(func(ctx *context.Context, c *define.RequestContext) {
+	app.NoRoute(func(ctx *contextenhanced.Context, c *define.RequestContext) {
 		// 自动触发404错误处理
 		app.TriggerError(c, http.StatusNotFound, fmt.Errorf("route not found: %s", string(c.Path())))
 	})
 
 	// 设置NoMethod处理器 - 当方法不被允许时自动触发405错误处理
-	app.NoMethod(func(ctx *context.Context, c *define.RequestContext) {
+	app.NoMethod(func(ctx *contextenhanced.Context, c *define.RequestContext) {
 		// 自动触发405错误处理
 		app.TriggerError(c, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed: %s", string(c.Method())))
 	})

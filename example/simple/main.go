@@ -7,7 +7,7 @@ import (
 
 	"github.com/zsy619/yyhertz/example/simple/controllers"
 	"github.com/zsy619/yyhertz/framework/mvc"
-	"github.com/zsy619/yyhertz/framework/mvc/devtools"
+	// "github.com/zsy619/yyhertz/framework/mvc/devtools" // 临时注释掉避免路由冲突
 	"github.com/zsy619/yyhertz/framework/mvc/middleware"
 )
 
@@ -15,20 +15,13 @@ func main() {
 	// 创建应用实例
 	app := mvc.HertzApp
 
-	// 设置开发工具
-	if err := devtools.SetupDevTools(app, nil); err != nil {
-		mvc.LogErrorf("设置开发工具失败: %v\n", err)
-	}
+	// 设置开发工具（临时注释掉避免路由冲突）
+	// if err := devtools.SetupDevTools(app, nil); err != nil {
+	// 	mvc.LogErrorf("设置开发工具失败: %v\n", err)
+	// }
 
-	app.SetStaticPath("./static")
-
-	// 设置静态文件路径 - 避免与默认路径冲突
-	app.SetStaticPaths(map[string]string{
-		"./assets":  "/assets",
-		"./uploads": "/uploads",
-		"./cdn":     "/cdn",
-		"./public":  "/public",
-	})
+	// 设置静态文件路径 - 简化配置避免冲突
+	app.SetStaticPath("./static", "/static")
 
 	// 添加全局中间件
 	app.Use(
@@ -50,6 +43,17 @@ func main() {
 	app.RouterAuto(homeController, userController, adminController, markdownController, docsController)
 
 	app.RouterPrefix("/", homeController, true, "GetIndex", "*:/")
+
+	prefix := "/admin/s3"
+	distController := &controllers.DistController{}
+	
+	// 测试：直接使用自动路由注册
+	fmt.Printf("开始注册DistController到前缀: %s\n", prefix)
+	fmt.Printf("DistController控制器名: %s\n", distController.GetControllerName())
+	mvc.RouterAutoPrefix(prefix, distController)
+	
+	// 临时解决方案：手动注册用户期望的路由变体
+	app.RouterPrefix("/admin/s3", distController, false, "GET:/dist/searchBill|GetSearchBill")
 
 	fmt.Println("🚀 YYHertz Namespace功能演示启动...", homeController.GetControllerName())
 	fmt.Println("		0000🚀🚀🚀 ", homeController.GetControllerName())

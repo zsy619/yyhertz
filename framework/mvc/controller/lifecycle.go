@@ -304,11 +304,8 @@ func (lm *LifecycleManager) startCleanupRoutine() {
 	ticker := time.NewTicker(5 * time.Minute) // 每5分钟清理一次
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			lm.cleanup()
-		}
+	for range ticker.C {
+		lm.cleanup()
 	}
 }
 

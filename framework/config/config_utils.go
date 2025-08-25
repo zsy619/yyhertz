@@ -278,6 +278,16 @@ func init() {
 			}
 			GlobalRedis = redisConfig
 		}
+
+		// mvc初始化
+		if GlobalMvc == nil {
+			// 如果未初始化，使用默认配置初始化
+			mvcConfig, err := GetMVCConfig()
+			if err != nil {
+				mvcConfig = DefaultMvcConfig()
+			}
+			GlobalMvc = mvcConfig
+		}
 	}
 }
 
@@ -338,6 +348,28 @@ func GetMyBatisConfig() (*MyBatisConfig, error) {
 func GetMVCConfig() (*MVCConfig, error) {
 	manager := GetViperConfigManager(MVCConfig{})
 	return manager.GetConfig()
+}
+
+// GetMVCConfigBool 获取MVC配置中的布尔值
+func GetMVCConfigBool(key string) bool {
+	config, err := GetMVCConfig()
+	if err != nil {
+		// 如果获取配置失败，返回默认值
+		switch key {
+		case "router.case_sensitive":
+			return false // 默认不区分大小写
+		default:
+			return false
+		}
+	}
+
+	// 根据key获取对应的配置值
+	switch key {
+	case "router.case_sensitive":
+		return config.Router.CaseSensitive
+	default:
+		return false
+	}
 }
 
 // GetMiddlewareConfig 获取中间件配置

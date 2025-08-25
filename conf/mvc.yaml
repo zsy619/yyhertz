@@ -61,6 +61,7 @@ router:
   enable_compression: true        # 启用压缩
   max_param_count: 50             # 最大参数数量
   enable_regex_optim: true        # 启用正则优化
+  case_sensitive: false           # 路由大小写敏感 (false: 不区分大小写, true: 区分大小写)
 
 # 环境特定配置示例:
 # development:

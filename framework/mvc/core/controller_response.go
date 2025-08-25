@@ -198,10 +198,13 @@ func (c *BaseController) ServeJSON(encoding ...bool) error {
 
 	// 写入响应
 	_, errx := c.Ctx.Write(jsonBytes)
-	
+	if errx != nil {
+		config.Error("Failed to write JSON response:", errx)
+	}
+
 	// 自动停止后续执行，防止JSON后继续输出HTML
 	c.StopRun()
-	
+
 	return errx
 }
 
@@ -371,7 +374,7 @@ func (c *BaseController) ServeXML() {
 	if err != nil {
 		config.Error("Failed to write XML response:", err)
 	}
-	
+
 	// 自动停止后续执行
 	c.StopRun()
 }
@@ -445,10 +448,10 @@ func (c *BaseController) ServeJSONP() error {
 
 	// 写入响应
 	c.Ctx.WriteString(jsonpResponse)
-	
+
 	// 自动停止后续执行
 	c.StopRun()
-	
+
 	return nil
 }
 

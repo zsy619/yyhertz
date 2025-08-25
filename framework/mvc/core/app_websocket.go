@@ -397,6 +397,19 @@ func (w *webSocketControllerMethodWrapper) HandleWebSocket(ctx *define.RequestCo
 
 	// 升级连接
 	err := w.upgrader.Upgrade(w.Ctx.Request(), func(conn *websocket.Conn) {
+		// 添加 recover 机制来捕获 ErrAbort panic（兼容beego）
+		defer func() {
+			if r := recover(); r != nil {
+				if r == ErrAbort {
+					// 捕获到 ErrAbort，正常停止执行，不输出任何错误
+					// 这是用户主动调用 StopRun() 或 ServeJSON() 的预期行为
+					return
+				}
+				// 其他类型的 panic，重新抛出
+				panic(r)
+			}
+		}()
+		
 		// 重要：在这里初始化目标控制器的 Context
 		// 获取控制器名称和方法名称用于初始化
 		controllerName := reflect.TypeOf(w.targetController).Elem().Name()

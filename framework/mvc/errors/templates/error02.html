@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%d - 错误页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        .error-code {
+            font-size: 120px;
+            font-weight: 800;
+            color: #2d3748;
+            line-height: 1;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0px rgba(66, 68, 90, 0.1);
+            position: relative;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .error-code::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            opacity: 0.7;
+        }
+
+        .error-title {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .error-message {
+            font-size: 18px;
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            transition: all 0.3s ease;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .error-illustration {
+            max-width: 300px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .error-illustration::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.7;
+            }
+        }
+
+        .search-box {
+            max-width: 400px;
+            margin: 30px auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateX(3px);
+        }
+
+        /* 错误选择器样式 */
+        .error-selector {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .error-selector select {
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            font-size: 16px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .error-selector select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 100px;
+            }
+
+            .error-title {
+                font-size: 28px;
+            }
+
+            .error-message {
+                font-size: 16px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .error-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .error-selector select {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                border-radius: 15px;
+            }
+
+            .error-code {
+                font-size: 80px;
+            }
+
+            .error-title {
+                font-size: 24px;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 250px;
+            }
+
+            .error-illustration {
+                max-width: 200px;
+            }
+        }
+
+        /* 错误详情区域 */
+        .error-details {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+            border-left: 4px solid #667eea;
+        }
+
+        .error-details summary {
+            font-weight: 600;
+            cursor: pointer;
+            padding: 10px;
+            margin: -10px;
+            color: #4a5568;
+        }
+
+        .error-details pre {
+            margin-top: 15px;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: monospace;
+            color: #2d3748;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            margin-top: 40px;
+            color: #a0aec0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="error-illustration">
+            <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="#667eea" stroke-width="5" />
+                <circle cx="100" cy="70" r="10" fill="#667eea" />
+                <path d="M70,130 Q100,160 130,130" fill="none" stroke="#667eea" stroke-width="5" />
+            </svg>
+        </div>
+        <h1 class="error-code" id="errorCode">404</h1>
+        <h2 class="error-title" id="errorTitle">页面未找到</h2>
+        <p class="error-message" id="errorMessage">抱歉，您访问的页面不存在。可能已被移动或删除，请检查URL是否正确，或返回主页继续浏览。</p>
+        <!-- <div class="search-box">
+            <input type="text" class="search-input" placeholder="搜索您需要的内容...">
+            <button class="search-btn">搜索</button>
+        </div> -->
+        <div class="actions">
+            <a href="#" class="btn btn-primary">返回首页</a>
+            <!-- <a href="#" class="btn btn-secondary">联系我们</a> -->
+            <a href="#" class="btn btn-secondary">上一页</a>
+        </div>
+        <!-- <div class="error-selector">
+            <select id="errorSelect">
+                <option value="400">400 - 错误请求</option>
+                <option value="401">401 - 未授权</option>
+                <option value="402">402 - 需要付款</option>
+                <option value="403">403 - 禁止访问</option>
+                <option value="404" selected>404 - 页面未找到</option>
+                <option value="405">405 - 方法不允许</option>
+                <option value="406">406 - 不可接受</option>
+                <option value="407">407 - 需要代理认证</option>
+                <option value="408">408 - 请求超时</option>
+                <option value="409">409 - 冲突</option>
+                <option value="410">410 - 已删除</option>
+                <option value="411">411 - 需要有效长度</option>
+                <option value="412">412 - 前提条件失败</option>
+                <option value="413">413 - 请求实体过大</option>
+                <option value="414">414 - 请求URI过长</option>
+                <option value="415">415 - 不支持的媒体类型</option>
+                <option value="416">416 - 请求范围不符合</option>
+                <option value="417">417 - 期望失败</option>
+                <option value="421">421 - 错误的请求</option>
+                <option value="422">422 - 不可处理的实体</option>
+                <option value="423">423 - 锁定</option>
+                <option value="424">424 - 失败的依赖</option>
+                <option value="425">425 - 太早了</option>
+                <option value="426">426 - 需要升级</option>
+                <option value="428">428 - 需要先决条件</option>
+                <option value="429">429 - 太多请求</option>
+                <option value="431">431 - 请求头字段太大</option>
+                <option value="451">451 - 法律原因不可用</option>
+                <option value="500">500 - 内部服务器错误</option>
+                <option value="501">501 - 未实现</option>
+                <option value="502">502 - 错误网关</option>
+                <option value="503">503 - 服务不可用</option>
+                <option value="504">504 - 网关超时</option>
+                <option value="505">505 - HTTP版本不支持</option>
+                <option value="506">506 - 变体也可协商</option>
+                <option value="507">507 - 存储空间不足</option>
+                <option value="508">508 - 检测到循环</option>
+                <option value="510">510 - 未扩展</option>
+                <option value="511">511 - 需要网络认证</option>
+            </select>
+        </div> -->
+        <div class="error-details">
+            <summary>错误详情</summary>
+            <pre id="errorDetails">请求的资源不存在。服务器无法找到您请求的页面。</pre>
+        </div>
+        <!-- <div class="footer">
+            <p>© 2023 您的网站 · 隐私政策 · 使用条款</p>
+        </div> -->
+    </div>
+    <script>
+        // 错误信息数据
+        const errorData = {
+            "400": {
+                title: "错误请求",
+                message: "服务器无法理解请求的格式，客户端不应重复提交此请求。",
+                details: "客户端发送的请求语法错误，服务器无法理解。请检查请求参数是否正确。"
+            },
+            "401": {
+                title: "未授权",
+                message: "请求要求身份验证。对于需要登录的网页，服务器可能返回此响应。",
+                details: "您需要提供有效的身份验证凭证才能访问此资源。"
+            },
+            "402": {
+                title: "需要付款",
+                message: "此状态码保留将来使用。创建此状态码最初的目的是用于数字支付系统。",
+                details: "此状态码目前尚未使用，保留给将来使用。"
+            },
+            "403": {
+                title: "禁止访问",
+                message: "服务器理解请求客户端的请求，但是拒绝执行此请求。",
+                details: "您没有权限访问此资源。如果您认为这是错误，请与网站管理员联系。"
+            },
+            "404": {
+                title: "页面未找到",
+                message: "抱歉，您访问的页面不存在。可能已被移动或删除，请检查URL是否正确。",
+                details: "请求的资源不存在。服务器无法找到您请求的页面。"
+            },
+            "405": {
+                title: "方法不允许",
+                message: "请求行中指定的请求方法不能用于请求相应的资源。",
+                details: "该资源不支持您使用的HTTP方法。请检查您的请求方法是否正确。"
+            },
+            "406": {
+                title: "不可接受",
+                message: "请求的资源的内容特性无法满足请求头中的条件，因而无法生成响应实体。",
+                details: "服务器无法生成符合客户端要求的内容。"
+            },
+            "407": {
+                title: "需要代理认证",
+                message: "与401响应类似，只不过客户端必须在代理服务器上进行身份验证。",
+                details: "您需要先通过代理服务器认证才能访问此资源。"
+            },
+            "408": {
+                title: "请求超时",
+                message: "服务器等候请求时发生超时。客户端可以随时再次提交该请求而无需进行任何更改。",
+                details: "服务器等待请求时间过长，已超时。请稍后重试。"
+            },
+            "409": {
+                title: "冲突",
+                message: "由于和被请求的资源的当前状态之间存在冲突，请求无法完成。",
+                details: "请求与资源的当前状态冲突，无法完成。"
+            },
+            "410": {
+                title: "已删除",
+                message: "被请求的资源在服务器上已经不再可用，而且没有任何已知的转发地址。",
+                details: "请求的资源已永久删除，无法恢复。"
+            },
+            "411": {
+                title: "需要有效长度",
+                message: "服务器拒绝接受没有定义Content-Length头的请求。",
+                details: "请求必须包含有效的Content-Length头字段。"
+            },
+            "412": {
+                title: "前提条件失败",
+                message: "服务器在验证在请求的头字段中给出先决条件时，没能满足其中的一个或多个。",
+                details: "请求的先决条件不满足，无法完成请求。"
+            },
+            "413": {
+                title: "请求实体过大",
+                message: "服务器拒绝处理当前请求，因为请求提交的实体数据大小超过了服务器能够处理的范围。",
+                details: "请求的数据量过大，服务器无法处理。请减少数据量后重试。"
+            },
+            "414": {
+                title: "请求URI过长",
+                message: "请求的URI长度超过了服务器能够解释的长度，因此服务器拒绝对该请求提供服务。",
+                details: "请求的URL过长，服务器无法处理。请缩短URL后重试。"
+            },
+            "415": {
+                title: "不支持的媒体类型",
+                message: "对于当前请求的方法和所请求的资源，请求中提交的实体并不是服务器中所支持的格式。",
+                details: "请求的媒体类型不被服务器支持。"
+            },
+            "416": {
+                title: "请求范围不符合",
+                message: "如果请求中包含了Range请求头，并且Range中指定的任何数据范围都与当前资源的可用范围不重合。",
+                details: "请求的范围不符合资源的可用范围。"
+            },
+            "417": {
+                title: "期望失败",
+                message: "在请求头Expect中指定的预期内容无法被服务器满足。",
+                details: "服务器无法满足Expect请求头字段的要求。"
+            },
+            "421": {
+                title: "错误的请求",
+                message: "请求被定向到无法生成响应的服务器。",
+                details: "请求被发送到无法产生响应的服务器。"
+            },
+            "422": {
+                title: "不可处理的实体",
+                message: "请求格式正确，但是由于含有语义错误，无法响应。",
+                details: "请求无法被处理，因为它包含语义错误。"
+            },
+            "423": {
+                title: "锁定",
+                message: "当前资源被锁定。",
+                details: "您尝试访问的资源当前已被锁定。"
+            },
+            "424": {
+                title: "失败的依赖",
+                message: "由于之前的某个请求发生的错误，导致当前请求失败。",
+                details: "请求失败，因为它依赖于另一个失败的请求。"
+            },
+            "425": {
+                title: "太早了",
+                message: "服务器不愿意冒险处理可能重播的请求。",
+                details: "服务器不愿意处理可能被重播的请求。"
+            },
+            "426": {
+                title: "需要升级",
+                message: "服务器拒绝使用当前协议执行请求，但可能在客户端升级到其他协议后愿意这样做。",
+                details: "客户端需要升级协议才能完成此请求。"
+            },
+            "428": {
+                title: "需要先决条件",
+                message: "原始服务器要求请求是有条件的。",
+                details: "请求必须包含正确的条件头字段。"
+            },
+            "429": {
+                title: "太多请求",
+                message: "用户在给定的时间内发送了太多请求。",
+                details: "您发送了太多请求，请稍后再试。"
+            },
+            "431": {
+                title: "请求头字段太大",
+                message: "服务器不愿意处理请求，因为它的头部字段太大。",
+                details: "请求头字段太大，服务器无法处理。"
+            },
+            "451": {
+                title: "法律原因不可用",
+                message: "由于法律原因，服务器无法提供该资源。",
+                details: "由于法律原因，此资源不可用。"
+            },
+            "500": {
+                title: "内部服务器错误",
+                message: "服务器遇到意外错误，无法完成您的请求。请稍后重试，或联系网站管理员。",
+                details: "服务器内部错误，无法完成请求。"
+            },
+            "501": {
+                title: "未实现",
+                message: "服务器不支持实现请求所需要的功能。",
+                details: "服务器不支持完成请求所需的功能。"
+            },
+            "502": {
+                title: "错误网关",
+                message: "作为网关或代理工作的服务器尝试执行请求时，从上游服务器接收到无效的响应。",
+                details: "服务器作为网关或代理，从上游服务器收到无效响应。"
+            },
+            "503": {
+                title: "服务不可用",
+                message: "服务器暂时无法处理请求。可能是维护中或负载过高，请稍后再试。",
+                details: "服务器暂时不可用，请稍后重试。"
+            },
+            "504": {
+                title: "网关超时",
+                message: "作为网关或代理工作的服务器尝试执行请求时，未能及时从上游服务器收到响应。",
+                details: "服务器作为网关或代理，但没有及时从上游服务器收到请求。"
+            },
+            "505": {
+                title: "HTTP版本不支持",
+                message: "服务器不支持请求中所使用的HTTP协议版本。",
+                details: "服务器不支持请求中使用的HTTP协议版本。"
+            },
+            "506": {
+                title: "变体也可协商",
+                message: "服务器存在内部配置错误。",
+                details: "服务器存在内部配置错误，导致内容协商出现问题。"
+            },
+            "507": {
+                title: "存储空间不足",
+                message: "服务器无法存储完成请求所必须的内容。",
+                details: "服务器存储空间不足，无法完成请求。"
+            },
+            "508": {
+                title: "检测到循环",
+                message: "服务器在处理请求时检测到无限循环。",
+                details: "服务器检测到无限循环，已终止请求处理。"
+            },
+            "510": {
+                title: "未扩展",
+                message: "获取资源所需要的策略并没有被满足。",
+                details: "请求需要扩展才能完成。"
+            },
+            "511": {
+                title: "需要网络认证",
+                message: "客户端需要进行身份验证才能获得网络访问权限。",
+                details: "您需要先通过网络认证才能访问此资源。"
+            }
+        };
+
+        // 获取DOM元素
+        const errorCodeElement = document.getElementById('errorCode');
+        const errorTitleElement = document.getElementById('errorTitle');
+        const errorMessageElement = document.getElementById('errorMessage');
+        const errorDetailsElement = document.getElementById('errorDetails');
+        const errorSelectElement = document.getElementById('errorSelect');
+
+        // 更新错误信息函数
+        function updateErrorDisplay(errorCode) {
+            const error = errorData[errorCode];
+            if (error) {
+                errorCodeElement.textContent = errorCode;
+                errorTitleElement.textContent = error.title;
+                errorMessageElement.textContent = error.message;
+                errorDetailsElement.textContent = error.details;
+
+                // 添加动画效果
+                errorCodeElement.style.opacity = 0;
+                errorTitleElement.style.opacity = 0;
+                errorMessageElement.style.opacity = 0;
+
+                setTimeout(() => {
+                    errorCodeElement.style.opacity = 1;
+                    errorTitleElement.style.opacity = 1;
+                    errorMessageElement.style.opacity = 1;
+                }, 300);
+            }
+        }
+
+        // 监听选择器变化
+        errorSelectElement.addEventListener('change', function () {
+            const selectedErrorCode = this.value;
+            updateErrorDisplay(selectedErrorCode);
+        });
+
+        // 搜索功能
+        document.querySelector('.search-btn').addEventListener('click', function () {
+            const searchTerm = document.querySelector('.search-input').value;
+            if (searchTerm.trim() !== '') {
+                alert('执行搜索: ' + searchTerm);
+                // 实际应用中这里应该跳转到搜索页面或执行搜索
+            }
+        });
+
+        // 允许按回车键执行搜索
+        document.querySelector('.search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.querySelector('.search-btn').click();
+            }
+        });
+
+        // 初始化页面
+        updateErrorDisplay('%d');
+    </script>
+</body>
+
+</html>

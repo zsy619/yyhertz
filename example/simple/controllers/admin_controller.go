@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"strings"
 	"github.com/zsy619/yyhertz/framework/mvc"
 )
 
@@ -160,6 +161,105 @@ func (c *AdminController) PostSettings() {
 			"site_name":        siteName,
 			"site_description": siteDesc,
 			"admin_email":      adminEmail,
+		},
+	})
+}
+
+// GetS3DistSearchBill 搜索S3分发账单
+func (c *AdminController) GetS3DistSearchBill() {
+	status := c.GetInt("status", 0)
+	limit := c.GetInt("limit", 10)
+	page := c.GetInt("page", 1)
+	keyword := c.GetString("keyword")
+	
+	// 模拟账单数据
+	bills := []map[string]any{
+		{
+			"ID":          1001,
+			"BillNo":      "S3-2024-001",
+			"Amount":      1250.50,
+			"Status":      1, // 1:已支付 2:未支付 3:已取消
+			"StatusText":  "已支付",
+			"Customer":    "张三企业",
+			"CreateTime":  "2024-08-25 10:30:00",
+			"PayTime":     "2024-08-25 11:15:00",
+			"Description": "S3存储费用-8月份",
+		},
+		{
+			"ID":          1002,
+			"BillNo":      "S3-2024-002", 
+			"Amount":      875.25,
+			"Status":      2,
+			"StatusText":  "未支付",
+			"Customer":    "李四科技",
+			"CreateTime":  "2024-08-25 09:45:00",
+			"PayTime":     "",
+			"Description": "S3流量费用-8月份",
+		},
+		{
+			"ID":          1003,
+			"BillNo":      "S3-2024-003",
+			"Amount":      2340.75,
+			"Status":      3,
+			"StatusText":  "已取消", 
+			"Customer":    "王五集团",
+			"CreateTime":  "2024-08-24 16:20:00",
+			"PayTime":     "",
+			"Description": "S3备份费用-8月份",
+		},
+		{
+			"ID":          1004,
+			"BillNo":      "S3-2024-004",
+			"Amount":      650.00,
+			"Status":      1,
+			"StatusText":  "已支付",
+			"Customer":    "赵六公司",
+			"CreateTime":  "2024-08-24 14:10:00", 
+			"PayTime":     "2024-08-24 15:30:00",
+			"Description": "S3 CDN费用-8月份",
+		},
+	}
+	
+	// 根据状态过滤
+	filteredBills := []map[string]any{}
+	for _, bill := range bills {
+		if status == 0 || bill["Status"].(int) == status {
+			// 如果有关键词，进行简单的模糊匹配
+			if keyword == "" || 
+				strings.Contains(strings.ToLower(bill["BillNo"].(string)), strings.ToLower(keyword)) ||
+				strings.Contains(strings.ToLower(bill["Customer"].(string)), strings.ToLower(keyword)) {
+				filteredBills = append(filteredBills, bill)
+			}
+		}
+	}
+	
+	// 应用分页
+	total := len(filteredBills)
+	start := (page - 1) * limit
+	end := start + limit
+	
+	if start > total {
+		filteredBills = []map[string]any{}
+	} else if end > total {
+		filteredBills = filteredBills[start:]
+	} else {
+		filteredBills = filteredBills[start:end]
+	}
+	
+	c.JSON(map[string]any{
+		"success": true,
+		"message": "搜索账单成功",
+		"data": map[string]any{
+			"bills": filteredBills,
+			"pagination": map[string]any{
+				"page":  page,
+				"limit": limit,
+				"total": total,
+			},
+			"filters": map[string]any{
+				"status":  status,
+				"keyword": keyword,
+			},
 		},
 	})
 }

@@ -34,19 +34,19 @@ func setupInMemoryDatabase() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 自动迁移表结构
 	err = db.AutoMigrate(&User{})
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return db, nil
 }
 
 // BenchmarkSimpleSession 简化版Session性能基准测试
 func BenchmarkSimpleSession(b *testing.B) {
-	// 跳过如果没有数据库连接  
+	// 跳过如果没有数据库连接
 	db, err := setupInMemoryDatabase()
 	if err != nil {
 		b.Skipf("Skipping benchmark: %v", err)
@@ -86,7 +86,7 @@ func BenchmarkSimpleSession(b *testing.B) {
 			timestamp := time.Now().UnixNano()
 			name := fmt.Sprintf("BenchUser_%d_%d", timestamp, i)
 			email := fmt.Sprintf("bench_%d_%d@test.com", timestamp, i)
-			_, err := session.Insert(ctx, 
+			_, err := session.Insert(ctx,
 				"INSERT INTO users (name, email, age, status) VALUES (?, ?, ?, ?)",
 				name, email, 25, "active")
 			if err != nil {
@@ -277,10 +277,10 @@ func TestConcurrentAccess(t *testing.T) {
 	setupBenchmarkData(t, session, ctx)
 
 	tests := []struct {
-		name        string
-		goroutines  int
-		operations  int
-		operation   func(session mybatis.SimpleSession, ctx context.Context, id int) error
+		name       string
+		goroutines int
+		operations int
+		operation  func(session mybatis.SimpleSession, ctx context.Context, id int) error
 	}{
 		{
 			name:       "ConcurrentRead",
@@ -309,11 +309,12 @@ func TestConcurrentAccess(t *testing.T) {
 			goroutines: 30,
 			operations: 100,
 			operation: func(session mybatis.SimpleSession, ctx context.Context, id int) error {
-				if id%3 == 0 {
+				switch id % 3 {
+				case 0:
 					// 读操作
 					_, err := session.SelectOne(ctx, "SELECT * FROM users WHERE id = ?", id%1000+1)
 					return err
-				} else if id%3 == 1 {
+				case 1:
 					// 写操作
 					name := fmt.Sprintf("MixedUser_%d", id)
 					email := fmt.Sprintf("mixed_%d@test.com", id)
@@ -321,7 +322,7 @@ func TestConcurrentAccess(t *testing.T) {
 						"INSERT INTO users (name, email, age, status) VALUES (?, ?, ?, ?)",
 						name, email, 25, "active")
 					return err
-				} else {
+				default:
 					// 更新操作
 					newAge := rand.Intn(80) + 18
 					_, err := session.Update(ctx, "UPDATE users SET age = ? WHERE id = ?", newAge, id%1000+1)
@@ -342,7 +343,7 @@ func TestConcurrentAccess(t *testing.T) {
 				wg.Add(1)
 				go func(goroutineID int) {
 					defer wg.Done()
-					
+
 					// 每个goroutine执行多次操作
 					for j := 0; j < tt.operations; j++ {
 						if err := tt.operation(session, ctx, goroutineID*tt.operations+j); err != nil {
@@ -355,7 +356,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 			wg.Wait()
 			close(errors)
-			
+
 			duration := time.Since(start)
 			totalOps := tt.goroutines * tt.operations
 
@@ -400,17 +401,18 @@ func TestMemoryUsage(t *testing.T) {
 	// 执行大量操作
 	const operations = 10000
 	for i := 0; i < operations; i++ {
-		if i%4 == 0 {
+		switch i % 4 {
+		case 0:
 			_, _ = session.SelectList(ctx, "SELECT * FROM users LIMIT 10")
-		} else if i%4 == 1 {
+		case 1:
 			name := fmt.Sprintf("MemUser_%d", i)
 			email := fmt.Sprintf("mem_%d@test.com", i)
 			_, _ = session.Insert(ctx,
 				"INSERT INTO users (name, email, age, status) VALUES (?, ?, ?, ?)",
 				name, email, 25, "active")
-		} else if i%4 == 2 {
+		case 2:
 			_, _ = session.Update(ctx, "UPDATE users SET status = 'updated' WHERE id = ?", i%100+1)
-		} else {
+		default:
 			_, _ = session.SelectOne(ctx, "SELECT COUNT(*) FROM users")
 		}
 
@@ -426,7 +428,7 @@ func TestMemoryUsage(t *testing.T) {
 	// 最终内存使用
 	runtime.GC()
 	runtime.ReadMemStats(&m2)
-	memUsed := (m2.Alloc - m1.Alloc) / 1024 / 1024 // MB
+	memUsed := (m2.Alloc - m1.Alloc) / 1024 / 1024               // MB
 	memPerOp := float64(m2.Alloc-m1.Alloc) / float64(operations) // bytes per operation
 
 	t.Logf("Total memory used: %d MB", memUsed)
@@ -466,10 +468,10 @@ func TestLongRunning(t *testing.T) {
 	session.AddAfterHook(func(ctx context.Context, result interface{}, duration time.Duration, err error) {
 		mu.Lock()
 		defer mu.Unlock()
-		
+
 		totalOperations++
 		totalDuration += duration
-		
+
 		if duration > 100*time.Millisecond {
 			slowQueries++
 		}
@@ -512,7 +514,7 @@ func TestLongRunning(t *testing.T) {
 
 TestComplete:
 	totalTime := time.Since(startTime)
-	
+
 	mu.Lock()
 	avgDuration := totalDuration / time.Duration(totalOperations)
 	slowQueryRate := float64(slowQueries) / float64(totalOperations) * 100
@@ -538,15 +540,15 @@ TestComplete:
 }
 
 // setupBenchmarkData 准备基准测试数据
-func setupBenchmarkData(tb testing.TB, session interface{}, ctx context.Context) {
+func setupBenchmarkData(tb testing.TB, session any, ctx context.Context) {
 	var simpleSession mybatis.SimpleSession
-	
+
 	// 类型断言
 	switch s := session.(type) {
+	case mybatis.XMLSession:
+		simpleSession = s // XMLSession继承了SimpleSession
 	case mybatis.SimpleSession:
 		simpleSession = s
-	case mybatis.XMLSession:
-		simpleSession = s  // XMLSession继承了SimpleSession
 	default:
 		tb.Fatal("Unsupported session type")
 	}
@@ -577,7 +579,7 @@ func setupBenchmarkData(tb testing.TB, session interface{}, ctx context.Context)
 		email := fmt.Sprintf("bench_%d@test.com", i)
 		age := rand.Intn(60) + 18
 		status := []string{"active", "inactive", "pending"}[rand.Intn(3)]
-		
+
 		_, err := simpleSession.Insert(ctx,
 			"INSERT OR IGNORE INTO users (name, email, age, status) VALUES (?, ?, ?, ?)",
 			name, email, age, status)
@@ -590,7 +592,7 @@ func setupBenchmarkData(tb testing.TB, session interface{}, ctx context.Context)
 // setupLargeDataset 准备大数据集
 func setupLargeDataset(tb testing.TB, session mybatis.SimpleSession, ctx context.Context, count int) {
 	tb.Logf("Setting up large dataset with %d records...", count)
-	
+
 	// 批量插入
 	batchSize := 100
 	for i := 0; i < count; i += batchSize {
@@ -602,7 +604,7 @@ func setupLargeDataset(tb testing.TB, session mybatis.SimpleSession, ctx context
 		// 构建批量插入SQL
 		values := make([]string, 0, end-i)
 		args := make([]interface{}, 0, (end-i)*4)
-		
+
 		for j := i; j < end; j++ {
 			values = append(values, "(?, ?, ?, ?)")
 			args = append(args,
@@ -614,7 +616,7 @@ func setupLargeDataset(tb testing.TB, session mybatis.SimpleSession, ctx context
 
 		sql := fmt.Sprintf("INSERT OR IGNORE INTO users (name, email, age, status) VALUES %s",
 			strings.Join(values, ", "))
-		
+
 		_, err := session.Insert(ctx, sql, args...)
 		if err != nil {
 			tb.Logf("Warning: Failed to insert large dataset batch %d-%d: %v", i, end-1, err)

@@ -56,6 +56,25 @@ func registerRouteInfo(method, path, controllerInfo string) {
 	registeredRoutes[routeKey] = controllerInfo
 }
 
+// getRegisteredRoutesCount 获取已注册路由数量（用于调试和统计）
+func getRegisteredRoutesCount() int {
+	routeRegistryMutex.RLock()
+	defer routeRegistryMutex.RUnlock()
+	return len(registeredRoutes)
+}
+
+// getRegisteredRoutes 获取所有已注册路由（用于调试）
+func getRegisteredRoutes() map[string]string {
+	routeRegistryMutex.RLock()
+	defer routeRegistryMutex.RUnlock()
+
+	routes := make(map[string]string)
+	for k, v := range registeredRoutes {
+		routes[k] = v
+	}
+	return routes
+}
+
 // ============= 路由注册方法 =============
 
 // RouterAuto 自动注册多个控制器路由（根据控制器方法名自动推导路由）
@@ -136,29 +155,28 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 	app.LogInfof("Processing controller: %s, initial basePath: '%s'", controllerName, basePath)
 
 	// 强制为每个控制器分配独立的路径空间，防止路径冲突
+	ctrlName := controllerName
 	for suffix := range ControllerNameSuffixReserved {
 		if strings.HasSuffix(controllerName, suffix) {
-			name := strings.TrimSuffix(controllerName, suffix)
-			name = strings.ToLower(name)
-
-			if basePath == "/" {
-				basePath += name
-			} else {
-				basePath = path.Join(basePath, name)
-			}
-
-			app.LogInfof("Processing Controller %s mapped to basePath: '%s'", controllerName, basePath)
+			ctrlName = strings.TrimSuffix(controllerName, suffix)
 			break
 		}
 	}
 
+	basePath = path.Join(basePath, ctrlName)
+	methodCount := rt.NumMethod()
+	app.LogInfof("Processing Controller %s mapped to basePath: '%s'  公开方法个数：%d", controllerName, basePath, methodCount)
+
 	// 遍历所有公共方法
-	for i := 0; i < rt.NumMethod(); i++ {
+	for i := range methodCount {
 		method := rt.Method(i)
 		methodName := method.Name
 
+		app.LogInfof("Processing controller: %s %s, method: %s", basePath, controllerName, methodName)
+
 		// 跳过生命周期方法和BaseController方法
 		if _, ok := ReservedMethods[methodName]; ok {
+			app.LogDebugf("Skipping reserved method: %s", methodName)
 			continue
 		}
 
@@ -171,13 +189,6 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 			httpMethod = "GET"
 			if methodName == "Get" || methodName == "Index" {
 				actionName = "" // 特殊处理Get和Index方法
-			} else {
-				actionName = strings.TrimPrefix(methodName, "Get")
-			}
-		case strings.HasPrefix(methodName, "Post"):
-			httpMethod = "POST"
-			if methodName == "Post" || methodName == "Index" {
-				actionName = "" // 特殊处理Post和Index方法
 			} else {
 				actionName = strings.TrimPrefix(methodName, "Get")
 			}
@@ -227,29 +238,26 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 
 		// 构建路由路径
 		routePath := basePath
-		if actionName != "" {
-			if !strings.HasSuffix(routePath, "/") {
-				routePath += "/"
-			}
-			routePath += strings.ToLower(actionName)
-		}
+		// 路由注册时保持原始大小写，匹配时再处理
+		actionPath := actionName
+		routePath = path.Join("/", routePath, actionPath)
 
 		// 清理路径，移除重复的斜杠
 		for strings.Contains(routePath, "//") {
 			routePath = strings.ReplaceAll(routePath, "//", "/")
 		}
-		if routePath != "/" && strings.HasSuffix(routePath, "/") {
-			routePath = strings.TrimSuffix(routePath, "/")
-		}
 
 		// 创建处理函数
+		// if !app.RouterCaseSensitive {
+		// 	routePath = strings.ToLower(routePath)
+		// }
 		handler := app.createControllerHandler(controller, method)
 
 		// 添加调试信息（可选，生产环境可注释掉）
-		// app.LogInfof("Processing Registering auto route: method=%s, path='%s', controller=%s.%s", httpMethod, routePath, controller.GetControllerName(), method.Name)
+		app.LogInfof("Processing Registering filters auto route: method=%s, path='%s', controller=%s.%s", httpMethod, routePath, controllerName, methodName)
 
 		// 注册路由（带控制器信息）
-		controllerInfo := fmt.Sprintf("%s.%s", controller.GetControllerName(), method.Name)
+		controllerInfo := fmt.Sprintf("%s.%s", controllerName, methodName)
 		app.registerRouteWithInfo(httpMethod, routePath, handler, controllerInfo)
 	}
 }
@@ -295,25 +303,22 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 			}
 
 			// 检查是否为 WebSocket 路由（基于方法名判断）
-			isWebSocketRoute := strings.Contains(strings.ToLower(methodName), "websocket") || 
-							   strings.Contains(strings.ToLower(methodName), "ws") ||
-							   strings.HasPrefix(strings.ToLower(methodName), "handle") && 
-							   (strings.Contains(strings.ToLower(methodName), "chat") || 
-								strings.Contains(strings.ToLower(methodName), "socket"))
-			
-			// 对于 WebSocket 路由，保持原始路径大小写，对于普通 HTTP 路由，转换为小写
-			if !isWebSocketRoute {
-				routePath = strings.ToLower(routePath) // 确保路由路径小写
-			}
+			lmethodName := strings.ToLower(methodName)
+			isWebSocketRoute := strings.Contains(lmethodName, "websocket") ||
+				strings.Contains(lmethodName, "ws") ||
+				strings.Contains(lmethodName, "wss") ||
+				strings.HasPrefix(lmethodName, "handle") &&
+					(strings.Contains(lmethodName, "chat") ||
+						strings.Contains(lmethodName, "socket"))
 
 			// 确保路由路径以基础路径开头
 			if !strings.HasPrefix(routePath, basePath) {
 				routePath = basePath + routePath
 			}
-			
+
 			// 规范化路径：移除重复的斜杠
 			routePath = strings.ReplaceAll(routePath, "//", "/")
-			
+
 			// 打印调试信息
 			if isWebSocketRoute {
 				app.LogInfof("注册 WebSocket 路由: %s %s -> %s.%s", httpMethod, routePath, app.getControllerName(controller), methodName)
@@ -332,6 +337,9 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 			handler := app.createMethodHandler(controller, methodName)
 
 			// 注册路由（带控制器信息）
+			// if !app.RouterCaseSensitive {
+			// 	routePath = strings.ToLower(routePath)
+			// }
 			controllerInfo := fmt.Sprintf("%s.%s", app.getControllerName(controller), methodName)
 			app.registerRouteWithInfo(httpMethod, routePath, handler, controllerInfo)
 		}
@@ -358,8 +366,6 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 				routePath = methodName
 			}
 
-			routePath = strings.ToLower(routePath) // 确保路由路径小写
-
 			// 确保路由路径以基础路径开头
 			if !strings.HasPrefix(routePath, basePath) {
 				routePath = basePath + routePath
@@ -378,6 +384,9 @@ func (app *App) registerManualRoutes(basePath string, controller IController, ro
 			handler := app.createMethodHandler(controller, methodName)
 
 			// 注册路由（带控制器信息）
+			// if !app.RouterCaseSensitive {
+			// 	routePath = strings.ToLower(routePath)
+			// }
 			controllerInfo := fmt.Sprintf("%s.%s", app.getControllerName(controller), methodName)
 			app.registerRouteWithInfo(httpMethod, routePath, handler, controllerInfo)
 		}
@@ -427,6 +436,9 @@ func (app *App) registerManualRoutesMap(basePath string, controller IController,
 		handler := app.createMethodHandler(controller, methodName)
 
 		// 注册路由（带控制器信息）
+		// if !app.RouterCaseSensitive {
+		// 	routePath = strings.ToLower(routePath)
+		// }
 		controllerInfo := fmt.Sprintf("%s.%s", app.getControllerName(controller), methodName)
 		app.registerRouteWithInfo(httpMethod, routePath, handler, controllerInfo)
 	}
@@ -638,7 +650,7 @@ func (app *App) registerRoute(method, path string, handler define.HandlerFunc) {
 	app.registerRouteWithInfo(method, path, handler, "unknown")
 }
 
-// registerRouteWithInfo 注册路由到应用（带控制器信息和冲突检测）
+// registerRouteWithInfo 注册路由到应用（增强版：带智能冲突检测和双路由注册支持）
 func (app *App) registerRouteWithInfo(method, path string, handler define.HandlerFunc, controllerInfo string) {
 	// 检查参数有效性
 	if app == nil {
@@ -648,7 +660,7 @@ func (app *App) registerRouteWithInfo(method, path string, handler define.Handle
 		panic("app.Hertz is nil")
 	}
 	if method == "" {
-		method = "GET" // 默认GET方法
+		method = "ANY" // 默认ANY方法
 	}
 	if path == "" {
 		path = "/" // 默认根路径
@@ -662,18 +674,127 @@ func (app *App) registerRouteWithInfo(method, path string, handler define.Handle
 		path = "/" + path
 	}
 
-	// 检查路由冲突
-	if exists, existing := isRouteRegistered(method, path); exists {
-		app.LogWarnf("Route conflict detected: %s %s already registered by %s, skipping registration for %s",
-			method, path, existing, controllerInfo)
-		return // 跳过重复注册，防止panic
+	// 调试：输出路由配置信息
+	app.LogInfof("RouterCaseSensitive config: %t, processing route: %s %s", app.RouterCaseSensitive, method, path)
+
+	// 实现智能路由变体注册机制：当不区分大小写时，注册多个路由变体
+	if !app.RouterCaseSensitive {
+		// 使用新的智能变体生成函数
+		routeVariantsMap := app.generateRouteVariantsMap(path)
+
+		// 只在生成多个变体时输出调试信息
+		if len(routeVariantsMap) > 1 {
+			app.LogDebugf("Case-insensitive mode: registering %d smart variants for %s", len(routeVariantsMap), path)
+		}
+
+		registeredCount := 0
+		skippedCount := 0
+
+		for variant, variantType := range routeVariantsMap {
+			// 增强的冲突检测
+			if exists, existing := isRouteRegistered(method, variant); exists {
+				// 只对原始路径输出警告，避免日志洪水
+				if variant == path {
+					app.LogWarnf("Route %s %s already registered by %s, skipping", method, variant, existing)
+				}
+				skippedCount++
+				continue
+			}
+
+			// 路径合法性验证
+			if !isValidRoutePath(variant) {
+				app.LogWarnf("Invalid route path detected: %s, skipping", variant)
+				continue
+			}
+
+			// 注册路由信息到注册表
+			registerRouteInfo(method, variant, controllerInfo)
+
+			// 实际注册路由到Hertz（带错误恢复）
+			if app.registerSingleRouteWithRecovery(method, variant, handler, controllerInfo) {
+				registeredCount++
+				// 输出智能变体信息，便于调试
+				if variant == path {
+					app.LogDebugf("Smart route registered (original): %s %s -> %s", method, variant, controllerInfo)
+				} else {
+					app.LogDebugf("Smart route registered (%s): %s %s -> %s", variantType, method, variant, controllerInfo)
+				}
+			}
+		}
+
+		// 性能统计 - 只在有问题时输出
+		if skippedCount > 0 {
+			app.LogInfof("Smart route registration summary for %s: %d registered, %d skipped, %d total variants",
+				path, registeredCount, skippedCount, len(routeVariantsMap))
+		}
+
+	} else {
+		// 大小写敏感模式：只注册原始路径
+		if exists, existing := isRouteRegistered(method, path); exists {
+			app.LogWarnf("Route conflict detected: %s %s already registered by %s, skipping registration for %s",
+				method, path, existing, controllerInfo)
+			return
+		}
+
+		// 注册路由信息到注册表
+		registerRouteInfo(method, path, controllerInfo)
+
+		// 实际注册路由到Hertz
+		if app.registerSingleRouteWithRecovery(method, path, handler, controllerInfo) {
+			app.LogDebugf("Route registered (case-sensitive): %s %s -> %s", method, path, controllerInfo)
+		}
+	}
+}
+
+// isValidRoutePath 验证路由路径的合法性
+func isValidRoutePath(path string) bool {
+	// 基础检查
+	if path == "" {
+		return false
 	}
 
-	// 注册路由信息到注册表
-	registerRouteInfo(method, path, controllerInfo)
+	// 路径长度限制
+	if len(path) > 200 {
+		return false
+	}
 
-	// 实际注册路由到Hertz
-	switch strings.ToUpper(method) {
+	// 不允许连续斜杠
+	if strings.Contains(path, "//") {
+		return false
+	}
+
+	// 必须以/开头
+	if !strings.HasPrefix(path, "/") {
+		return false
+	}
+
+	// 不允许某些特殊字符
+	if strings.ContainsAny(path, "<>\"'`") {
+		return false
+	}
+
+	return true
+}
+
+// registerSingleRouteWithRecovery 带错误恢复的单路由注册
+func (app *App) registerSingleRouteWithRecovery(method, path string, handler define.HandlerFunc, controllerInfo string) bool {
+	defer func() {
+		if r := recover(); r != nil {
+			app.LogErrorf("Failed to register route %s %s (%s): %v", method, path, controllerInfo, r)
+			// 记录失败但不影响其他路由注册
+		}
+	}()
+
+	// 调用基础的路由注册函数
+	app.registerSingleRoute(method, path, handler)
+	return true
+}
+
+// registerSingleRoute 注册单个路由到Hertz引擎
+func (app *App) registerSingleRoute(method, path string, handler define.HandlerFunc) {
+	// 根据HTTP方法注册到对应的Hertz路由
+	method = strings.ToUpper(method)
+	switch method {
 	case "GET":
 		app.GET(path, handler)
 	case "POST":
@@ -691,8 +812,62 @@ func (app *App) registerRouteWithInfo(method, path string, handler define.Handle
 	default:
 		app.Any(path, handler)
 	}
+}
 
-	app.LogDebugf("Route registered: %s %s -> %s", method, path, controllerInfo)
+// ============= 智能路由变体生成 =============
+
+// hasPathParameters 检测路径是否包含参数占位符
+func hasPathParameters(path string) bool {
+	return strings.Contains(path, "/:")
+}
+
+// toSnakeCase 将驼峰命名转换为蛇形命名
+func toSnakeCase(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	var result []byte
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result = append(result, '_')
+		}
+		result = append(result, byte(r)|0x20) // 转小写
+	}
+	return string(result)
+}
+
+// generateRouteVariantsMap 智能生成路由变体，返回 map[string]string 避免重复
+func (app *App) generateRouteVariantsMap(path string) map[string]string {
+	variants := make(map[string]string)
+
+	// 调试：输出函数调用信息
+	app.LogInfof("generateRouteVariantsMap called for path: %s", path)
+
+	// 检查是否包含参数占位符，如果有则跳过处理
+	if hasPathParameters(path) {
+		app.LogInfof("Path contains parameters, skipping variant generation: %s", path)
+		variants[path] = "original"
+		return variants
+	}
+
+	// 处理根路径
+	pathTrimmed := strings.Trim(path, "/")
+	if pathTrimmed == "" {
+		variants["/"] = "root"
+		return variants
+	}
+
+	// // 分割路径段
+	// segments := strings.Split(pathTrimmed, "/")
+
+	// // 添加原始路径
+	// variants[path] = "original"
+
+	// 根据路径长度应用不同策略
+	variants = GeneratePathVariants(pathTrimmed)
+
+	return variants
 }
 
 // ============= 特殊路由处理器（类似Beego） =============
@@ -727,4 +902,9 @@ func (app *App) NoMethod(handlers ...func(*contextenhanced.Context, *define.Requ
 
 	// 设置Hertz的NoMethod处理器
 	app.Hertz.NoMethod(hertzHandlers...)
+}
+
+// RegisterRouteWithInfo 公开的路由注册方法（用于测试和手动注册）
+func (app *App) RegisterRouteWithInfo(method, path string, handler define.HandlerFunc, controllerInfo string) {
+	app.registerRouteWithInfo(method, path, handler, controllerInfo)
 }

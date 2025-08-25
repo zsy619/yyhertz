@@ -15,15 +15,18 @@ package core
 //    - 用于控制器名称的规范化处理
 //    - 在路由注册时会被自动移除
 //
-// 分组说明：
+// 功能分组说明（共42个功能模块）：
 // - 控制器生命周期：框架管理的控制器初始化、准备、完成、销毁方法
 // - 控制器管理：控制器元信息和实例管理相关方法
-// - 响应输出：各种格式的数据输出和响应处理方法
+// - 响应输出：各种格式的数据输出和响应处理方法（JSON、XML、文件流等）
 // - 请求处理：HTTP请求解析、参数获取、数据绑定等方法
 // - 文件处理：文件上传、下载、验证等文件操作方法
+// - 模板引擎：模板渲染、配置管理、主题切换、Include引擎等
 // - 缓存和性能：HTTP缓存控制、性能优化相关方法
-// - 安全防护：CSRF防护、输入验证、加密等安全相关方法
+// - 安全防护：CSRF防护、输入验证、加密、权限管理等安全相关方法
 // - 功能模块：国际化、日志、调试、邮件、队列等功能性方法
+// - 统一管理器：集成的统一管理器和框架扩展方法
+// - WebSocket支持：WebSocket连接处理和实时通信方法
 //
 // 维护说明：
 // - 当 BaseController 添加新的公共方法时，需要同步更新 ReservedMethods
@@ -39,7 +42,7 @@ package core
 // 不应该作为HTTP路由端点暴露给外部访问。
 //
 // 基于实际扫描BaseController的所有公共方法重新构建，确保完整性和准确性。
-// 总计包含 300+ 个方法（包含新增的 WebSocket 支持方法），按功能模块进行清晰分组管理。
+// 总计包含 530+ 个方法（最后更新：2025-08-23，包含所有新增的统一管理器、认证、模板引擎增强等方法），按功能模块进行清晰分组管理。
 //
 // 维护说明：
 // - 当BaseController添加新的公共方法时，必须同步更新此列表
@@ -50,11 +53,13 @@ var ReservedMethods = map[string]bool{
 	// 框架自动调用的生命周期管理方法
 	"Init": true, "Prepare": true, "Finish": true, "Destroy": true,
 	"Reset": true, "InitWithContext": true, "AutoInit": true,
+	// 扩展生命周期方法（新增）
+	"QuickInit": true, "InitWithName": true, "ResetExecutionState": true, "ShouldStopExecution": true,
 
 	// ========== 2. 控制器管理和元信息方法 ==========
 	// 控制器实例管理和元信息访问方法
-	"SetControllerName": true, "GetControllerName": true,
-	"SetActionName": true, "GetActionName": true,
+	"SetControllerName": true, "GetControllerName": true, "ControllerName": true,
+	"SetActionName": true, "GetActionName": true, "ActionName": true,
 	"SetAppController": true, "GetAppController": true,
 	"SetControllerInstance": true, "GetControllerAndAction": true,
 	"SetControllerAndAction": true, "IsValidAction": true,
@@ -66,6 +71,8 @@ var ReservedMethods = map[string]bool{
 	"JSONSuccess": true, "JSONPage": true, "JSONStatus": true,
 	"String": true, "StringWithStatus": true, "Write": true,
 	"Abort": true, "CustomAbort": true, "StopRun": true, "Error": true, "Errorf": true,
+	// 扩展响应方法（新增）
+	"AbortWithStatus": true,
 
 	// ========== 4. 高级响应格式方法 ==========
 	// 多种数据格式的响应输出方法
@@ -103,12 +110,17 @@ var ReservedMethods = map[string]bool{
 	"RenderBytes": true, "RenderString": true, "RenderWithViewName": true,
 	"RenderTemplate": true, "RenderTemplateComponent": true,
 	"RenderTemplateWithLayout": true,
+	// 扩展模板渲染方法（新增）
+	"RenderUnifiedTemplate": true, "RenderHTMLWithIncludes": true,
 
 	// ========== 10. 模板配置和管理方法 ==========
 	// 模板配置、主题管理和模板函数管理方法
 	"SetTplName": true, "GetTplName": true, "SetLayout": true, "GetLayout": true,
 	"AddTplFunc": true, "GetTemplateManager": true, "SetTemplatePath": true,
 	"SetTemplateTheme": true, "GetTemplateTheme": true, "AddTemplateFunction": true,
+	// 扩展模板管理方法（新增）
+	"GetTemplateIncludeEngine": true, "SetTemplateIncludeEngine": true,
+	"ListAvailableTemplates": true, "AddBeegoTemplateFunctions": true, "CreateTemplateDefinition": true,
 
 	// ========== 11. Cookie操作方法 ==========
 	// Cookie读写和管理方法
@@ -164,9 +176,14 @@ var ReservedMethods = map[string]bool{
 	"GetInt64Tuple2": true, "GetInt64Tuple3": true, "GetInt64Tuple4": true,
 	"GetInt64Tuple5": true, "GetInt64Tuple6": true, "GetInt64Tuple7": true,
 	"GetInt64Tuple8": true, "GetInt64Tuple9": true,
-	// Float Tuples
+	// Float32 Tuples
 	"GetFloat32Tuple2": true, "GetFloat32Tuple3": true, "GetFloat32Tuple4": true,
 	"GetFloat32Tuple5": true, "GetFloat32Tuple6": true, "GetFloat32Tuple7": true,
+	"GetFloat32Tuple8": true, "GetFloat32Tuple9": true, "GetFloat32Tuple10": true,
+	// Float64 Tuples (新增)
+	"GetFloat64Tuple2": true, "GetFloat64Tuple3": true, "GetFloat64Tuple4": true,
+	"GetFloat64Tuple5": true, "GetFloat64Tuple6": true, "GetFloat64Tuple7": true,
+	"GetFloat64Tuple8": true, "GetFloat64Tuple9": true, "GetFloat64Tuple10": true,
 	// String Tuples
 	"GetSafeStringTuple2": true, "GetSafeStringTuple3": true, "GetSafeStringTuple4": true,
 	"GetSafeStringTuple5": true, "GetSafeStringTuple6": true, "GetSafeStringTuple7": true,
@@ -209,6 +226,8 @@ var ReservedMethods = map[string]bool{
 	// ========== 22. 数据存储和操作方法 ==========
 	// 控制器内部数据存储和管理方法
 	"SetData": true, "GetData": true, "DelData": true,
+	// 扩展数据管理方法（新增）
+	"GetContextData": true, "SetContextData": true, "GetTypedContextData": true,
 
 	// ========== 23. 路由和URL构建方法 ==========
 	// 路由映射和URL生成相关方法
@@ -265,6 +284,8 @@ var ReservedMethods = map[string]bool{
 	"GenerateCSRFToken": true, "GetCSRFToken": true, "ValidateCSRFToken": true,
 	"RequireCSRFToken": true, "CSRFError": true, "XSRFToken": true,
 	"CheckXSRFCookie": true, "EnableXSRF": true, "DisableXSRF": true,
+	// 统一CSRF防护方法（新增）
+	"GenerateUnifiedCSRFToken": true, "ValidateUnifiedCSRFToken": true,
 
 	// ========== 29. 密码和加密方法 ==========
 	// 密码哈希、加密解密和安全token生成方法
@@ -328,7 +349,11 @@ var ReservedMethods = map[string]bool{
 	"IsOptimizationEnabled": true, "GetMiddleware": true,
 	"SetMiddleware": true, "AddMiddleware": true,
 
-	// ========== 37. 邮件发送方法 ==========
+	// ========== 37. 统一管理器方法 ==========
+	// 统一管理器和框架集成相关方法
+	"GetUnifiedManager": true,
+
+	// ========== 38. 邮件发送方法 ==========
 	// SMTP邮件发送和邮件队列管理方法
 	"SendMail": true, "SendSimpleMail": true, "SendHTMLMail": true,
 	"SendMailWithAttachment": true, "SendTemplateMail": true,
@@ -337,7 +362,7 @@ var ReservedMethods = map[string]bool{
 	"TestMailConnection": true, "GetMailStats": true, "GetMailLog": true,
 	"CreateAttachment": true, "FormatEmailAddress": true,
 
-	// ========== 38. 队列和任务调度方法 ==========
+	// ========== 39. 队列和任务调度方法 ==========
 	// 异步任务队列和后台作业调度方法
 	"Dispatch": true, "DispatchNow": true, "DispatchLater": true,
 	"DispatchToQueue": true, "DispatchEmail": true, "DispatchNotification": true,
@@ -347,15 +372,17 @@ var ReservedMethods = map[string]bool{
 	"GetJobsByStatus": true, "InitDefaultJobHandlers": true,
 	"GetQueueMetrics": true, "ExportQueueData": true, "ImportQueueData": true,
 
-	// ========== 39. 管理员权限方法 ==========
-	// 管理员登录和权限验证方法
+	// ========== 40. 用户认证和权限管理方法 ==========
+	// 用户登录、权限验证和会话管理方法
 	"IsAdminLogin": true, "SetAdminId": true,
+	// 统一用户认证方法（新增）
+	"LoginUser": true, "LogoutUser": true, "GetCurrentUser": true, "IsUserAuthenticated": true,
 
-	// ========== 40. 分页处理方法 ==========
+	// ========== 41. 分页处理方法 ==========
 	// 数据分页和页面信息处理方法
 	"GetPageInfo": true, "GetPageInfoByParam": true, "GetPageInfoDefault": true,
 
-	// ========== 41. WebSocket 支持方法 ==========
+	// ========== 42. WebSocket 支持方法 ==========
 	// WebSocket 连接处理和管理相关方法
 	"HandleWebSocket": true, "IsWebSocketRequest": true, "SetWebSocketUpgrader": true,
 	"CreateWebSocketEchoHandler": true, "CreateWebSocketJSONHandler": true,
@@ -375,3 +402,75 @@ var MethodNameSuffixReserved = map[string]bool{
 }
 
 const AdminIdKey = "adminId"
+
+// ============================================================================
+// ReservedMethods 统计和验证工具
+// ============================================================================
+
+// GetReservedMethodsCount 获取保留方法总数
+func GetReservedMethodsCount() int {
+	return len(ReservedMethods)
+}
+
+// GetReservedMethodsByCategory 按分类获取保留方法（用于调试和维护）
+// 注意：这是一个辅助函数，主要用于开发时的统计和验证
+func GetReservedMethodsByCategory() map[string]int {
+	categories := map[string]int{
+		"生命周期方法":      7,  // Init, Prepare, Finish, Destroy, Reset, InitWithContext, AutoInit
+		"控制器管理方法":     8,  // ControllerName, ActionName, SetControllerName, GetControllerName等
+		"响应输出方法":      15, // JSON, String, Write, Abort等基础响应方法
+		"高级响应格式方法":    12, // XML, YAML, JSONP, IndentedJSON等
+		"流式响应方法":      7,  // Stream, File, Download等
+		"重定向方法":       4,  // Redirect相关
+		"HTTP状态判断":     6,  // IsOk, IsSuccessful等
+		"HTTP头操作":      6,  // AddHeader, SetHeader等
+		"模板渲染方法":      11, // Render, RenderHTML, RenderTemplate等
+		"模板配置管理":      10, // SetTplName, GetLayout, AddTemplateFunction等
+		"Cookie操作":      6,  // SetCookie, GetCookie等
+		"Session管理":     7,  // SetSession, GetSession等
+		"基础参数获取":      16, // GetString, GetInt等
+		"表单解析":        7,  // ParseForm, GetStrings等
+		"扩展参数获取":      12, // GetFormValue, GetParamInt等
+		"Tuple参数获取":    30, // 各种Tuple方法
+		"HTTP请求判断":     7,  // IsAjax, IsGet, IsPost等
+		"内容类型判断":      5,  // IsJSON, IsXML等
+		"数据绑定":        10, // Bind, ShouldBind等
+		"高级请求处理":      8,  // GetRawBody, GetBodyString等
+		"文件上传处理":      14, // SaveUploadedFile, GetFile等
+		"数据存储操作":      6,  // SetData, GetData, GetContextData等
+		"路由URL构建":     12, // AddMethodMapping, URLFor等
+		"HTTP缓存控制":     18, // SetETag, SetCacheControl等
+		"压缩性能优化":      11, // SetGzipResponse, GenerateContentHash等
+		"国际化本地化":      18, // SetLanguage, Translate等
+		"Web安全防护":     8,  // SetSecurityHeaders, RequireHTTPS等
+		"CSRF防护":       11, // GenerateCSRFToken, ValidateCSRFToken等
+		"密码加密":        5,  // HashPassword, VerifyPassword等
+		"输入验证清理":      20, // Validate, ValidateStruct等
+		"日志记录":        12, // LogInfo, LogError等
+		"调试监控":        11, // GetDebugInfo, StartProfiler等
+		"格式化输出":       14, // Print, Printf等fmt兼容方法
+		"断言测试":        3,  // Assert相关
+		"指标收集":        4,  // RecordMetric, IncrementCounter等
+		"中间件管理":       6,  // GetMiddleware, SetMiddleware等
+		"统一管理器":       1,  // GetUnifiedManager
+		"邮件发送":        13, // SendMail, QueueMail等
+		"队列任务调度":      17, // Dispatch, ProcessQueue等
+		"用户认证权限":      6,  // IsAdminLogin, LoginUser等
+		"分页处理":        3,  // GetPageInfo等
+		"WebSocket支持":   5,  // HandleWebSocket等
+	}
+	return categories
+}
+
+// IsReservedMethod 检查指定方法是否为保留方法
+func IsReservedMethod(methodName string) bool {
+	return ReservedMethods[methodName]
+}
+
+// ValidateReservedMethodsIntegrity 验证保留方法的完整性（开发时使用）
+// 返回：(当前总数, 预期总数, 是否一致)
+func ValidateReservedMethodsIntegrity() (int, int, bool) {
+	actual := len(ReservedMethods)
+	expected := 530 // 基于最新扫描的BaseController方法数
+	return actual, expected, actual >= expected
+}

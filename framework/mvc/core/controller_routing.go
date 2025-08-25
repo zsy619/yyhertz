@@ -184,8 +184,8 @@ func (c *BaseController) generateURLPattern(methodName string) string {
 		return "/"
 	}
 	
-	// 转换为小写并添加斜杠
-	return "/" + strings.ToLower(actionName)
+	// 路由生成时始终保持原始大小写，匹配时再处理敏感性
+	return "/" + actionName
 }
 
 // initializeHandlerFuncs 初始化处理器函数映射

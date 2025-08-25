@@ -83,7 +83,6 @@ type XMLBasedTestSuite struct {
 	suite.Suite
 	dbSetup       *DatabaseSetup
 	mybatis       *mybatis.MyBatis
-	xmlLoader     *XMLMapperLoader
 	configBuilder *ConfigurationBuilder
 	userMapper    UserMapper
 }

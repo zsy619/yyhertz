@@ -2,9 +2,21 @@ package config
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
+)
+
+var (
+	// 全局模板实例
+	GlobalMvc *MVCConfig
+	// 初始化锁
+	mvcOnce sync.Once
+	// 配置文件是否已加载
+	mvcConfigLoaded bool
+	// 配置文件加载锁
+	mvcConfigOnce sync.Once
 )
 
 // MVCConfigName MVC配置名称常量
@@ -14,13 +26,13 @@ const MVCConfigName = "mvc"
 type MVCConfig struct {
 	// 中间件配置
 	Middleware struct {
-		EnableOptimization    bool          `mapstructure:"enable_optimization" yaml:"enable_optimization" json:"enable_optimization"`
-		CompileOnStartup      bool          `mapstructure:"compile_on_startup" yaml:"compile_on_startup" json:"compile_on_startup"`
-		PrecompileChains      bool          `mapstructure:"precompile_chains" yaml:"precompile_chains" json:"precompile_chains"`
-		CacheSize             int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
-		CompileTimeout        time.Duration `mapstructure:"compile_timeout" yaml:"compile_timeout" json:"compile_timeout"`
-		MaxConcurrency        int           `mapstructure:"max_concurrency" yaml:"max_concurrency" json:"max_concurrency"`
-		EnableDependencyAnalysis bool       `mapstructure:"enable_dependency_analysis" yaml:"enable_dependency_analysis" json:"enable_dependency_analysis"`
+		EnableOptimization       bool          `mapstructure:"enable_optimization" yaml:"enable_optimization" json:"enable_optimization"`
+		CompileOnStartup         bool          `mapstructure:"compile_on_startup" yaml:"compile_on_startup" json:"compile_on_startup"`
+		PrecompileChains         bool          `mapstructure:"precompile_chains" yaml:"precompile_chains" json:"precompile_chains"`
+		CacheSize                int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
+		CompileTimeout           time.Duration `mapstructure:"compile_timeout" yaml:"compile_timeout" json:"compile_timeout"`
+		MaxConcurrency           int           `mapstructure:"max_concurrency" yaml:"max_concurrency" json:"max_concurrency"`
+		EnableDependencyAnalysis bool          `mapstructure:"enable_dependency_analysis" yaml:"enable_dependency_analysis" json:"enable_dependency_analysis"`
 	} `mapstructure:"middleware" yaml:"middleware" json:"middleware"`
 
 	// 错误处理配置
@@ -50,34 +62,51 @@ type MVCConfig struct {
 
 	// 调试配置
 	Debug struct {
-		EnableMode          bool   `mapstructure:"enable_mode" yaml:"enable_mode" json:"enable_mode"`
-		PrintMiddleware     bool   `mapstructure:"print_middleware" yaml:"print_middleware" json:"print_middleware"`
-		PrintError          bool   `mapstructure:"print_error" yaml:"print_error" json:"print_error"`
-		PrintStatistics     bool   `mapstructure:"print_statistics" yaml:"print_statistics" json:"print_statistics"`
-		LogLevel            string `mapstructure:"log_level" yaml:"log_level" json:"log_level"`
-		EnableTrace         bool   `mapstructure:"enable_trace" yaml:"enable_trace" json:"enable_trace"`
-		ShowRequestDetails  bool   `mapstructure:"show_request_details" yaml:"show_request_details" json:"show_request_details"`
+		EnableMode         bool   `mapstructure:"enable_mode" yaml:"enable_mode" json:"enable_mode"`
+		PrintMiddleware    bool   `mapstructure:"print_middleware" yaml:"print_middleware" json:"print_middleware"`
+		PrintError         bool   `mapstructure:"print_error" yaml:"print_error" json:"print_error"`
+		PrintStatistics    bool   `mapstructure:"print_statistics" yaml:"print_statistics" json:"print_statistics"`
+		LogLevel           string `mapstructure:"log_level" yaml:"log_level" json:"log_level"`
+		EnableTrace        bool   `mapstructure:"enable_trace" yaml:"enable_trace" json:"enable_trace"`
+		ShowRequestDetails bool   `mapstructure:"show_request_details" yaml:"show_request_details" json:"show_request_details"`
 	} `mapstructure:"debug" yaml:"debug" json:"debug"`
 
 	// 上下文配置
 	Context struct {
-		EnablePooling       bool          `mapstructure:"enable_pooling" yaml:"enable_pooling" json:"enable_pooling"`
-		PoolSize            int           `mapstructure:"pool_size" yaml:"pool_size" json:"pool_size"`
-		MaxPoolSize         int           `mapstructure:"max_pool_size" yaml:"max_pool_size" json:"max_pool_size"`
-		PoolTimeout         time.Duration `mapstructure:"pool_timeout" yaml:"pool_timeout" json:"pool_timeout"`
-		EnableBatchRelease  bool          `mapstructure:"enable_batch_release" yaml:"enable_batch_release" json:"enable_batch_release"`
-		BatchSize           int           `mapstructure:"batch_size" yaml:"batch_size" json:"batch_size"`
+		EnablePooling      bool          `mapstructure:"enable_pooling" yaml:"enable_pooling" json:"enable_pooling"`
+		PoolSize           int           `mapstructure:"pool_size" yaml:"pool_size" json:"pool_size"`
+		MaxPoolSize        int           `mapstructure:"max_pool_size" yaml:"max_pool_size" json:"max_pool_size"`
+		PoolTimeout        time.Duration `mapstructure:"pool_timeout" yaml:"pool_timeout" json:"pool_timeout"`
+		EnableBatchRelease bool          `mapstructure:"enable_batch_release" yaml:"enable_batch_release" json:"enable_batch_release"`
+		BatchSize          int           `mapstructure:"batch_size" yaml:"batch_size" json:"batch_size"`
 	} `mapstructure:"context" yaml:"context" json:"context"`
 
 	// 路由配置
 	Router struct {
-		EnableCaching       bool          `mapstructure:"enable_caching" yaml:"enable_caching" json:"enable_caching"`
-		CacheSize           int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
-		CacheTimeout        time.Duration `mapstructure:"cache_timeout" yaml:"cache_timeout" json:"cache_timeout"`
-		EnableCompression   bool          `mapstructure:"enable_compression" yaml:"enable_compression" json:"enable_compression"`
-		MaxParamCount       int           `mapstructure:"max_param_count" yaml:"max_param_count" json:"max_param_count"`
-		EnableRegexOptim    bool          `mapstructure:"enable_regex_optim" yaml:"enable_regex_optim" json:"enable_regex_optim"`
+		EnableCaching     bool          `mapstructure:"enable_caching" yaml:"enable_caching" json:"enable_caching"`
+		CacheSize         int           `mapstructure:"cache_size" yaml:"cache_size" json:"cache_size"`
+		CacheTimeout      time.Duration `mapstructure:"cache_timeout" yaml:"cache_timeout" json:"cache_timeout"`
+		EnableCompression bool          `mapstructure:"enable_compression" yaml:"enable_compression" json:"enable_compression"`
+		MaxParamCount     int           `mapstructure:"max_param_count" yaml:"max_param_count" json:"max_param_count"`
+		EnableRegexOptim  bool          `mapstructure:"enable_regex_optim" yaml:"enable_regex_optim" json:"enable_regex_optim"`
+		CaseSensitive     bool          `mapstructure:"case_sensitive" yaml:"case_sensitive" json:"case_sensitive"`
 	} `mapstructure:"router" yaml:"router" json:"router"`
+}
+
+func DefaultMvcConfig() *MVCConfig {
+	mvcOnce.Do(func() {
+		GlobalMvc = &MVCConfig{}
+	})
+
+	mvcConfigOnce.Do(func() {
+		if !mvcConfigLoaded {
+			v := viper.New()
+			GlobalMvc.SetDefaults(v)
+			mvcConfigLoaded = true
+		}
+	})
+
+	return GlobalMvc
 }
 
 // GetConfigName 实现 ConfigInterface 接口
@@ -141,6 +170,7 @@ func (c MVCConfig) SetDefaults(v *viper.Viper) {
 	v.SetDefault("router.enable_compression", true)
 	v.SetDefault("router.max_param_count", 50)
 	v.SetDefault("router.enable_regex_optim", true)
+	v.SetDefault("router.case_sensitive", false) // 默认不区分大小写，保持向后兼容
 }
 
 // GenerateDefaultContent 实现 ConfigInterface 接口 - 生成默认配置文件内容
@@ -208,6 +238,7 @@ router:
   enable_compression: true        # 启用压缩
   max_param_count: 50             # 最大参数数量
   enable_regex_optim: true        # 启用正则优化
+  case_sensitive: false           # 路由大小写敏感 (false: 不区分大小写, true: 区分大小写)
 
 # 环境特定配置示例:
 # development:
@@ -235,7 +266,7 @@ router:
 // GetDevelopmentConfig 获取开发环境配置
 func GetDevelopmentConfig() MVCConfig {
 	config := GetDefaultMVCConfig()
-	
+
 	// 开发环境特定配置
 	config.Debug.EnableMode = true
 	config.Debug.PrintMiddleware = true
@@ -244,16 +275,16 @@ func GetDevelopmentConfig() MVCConfig {
 	config.Debug.LogLevel = "debug"
 	config.Debug.EnableTrace = true
 	config.Debug.ShowRequestDetails = true
-	
+
 	config.Performance.StatsReportInterval = time.Minute
-	
+
 	return config
 }
 
 // GetProductionConfig 获取生产环境配置
 func GetProductionConfig() MVCConfig {
 	config := GetDefaultMVCConfig()
-	
+
 	// 生产环境特定配置
 	config.Debug.EnableMode = false
 	config.Debug.PrintMiddleware = false
@@ -262,38 +293,38 @@ func GetProductionConfig() MVCConfig {
 	config.Debug.LogLevel = "warn"
 	config.Debug.EnableTrace = false
 	config.Debug.ShowRequestDetails = false
-	
+
 	config.Performance.StatsReportInterval = 30 * time.Minute
 	config.Performance.EnableProfiler = false
-	
+
 	// 生产环境优化配置
 	config.Middleware.CacheSize = 1000
 	config.Context.PoolSize = 2000
 	config.Router.CacheSize = 2000
-	
+
 	return config
 }
 
 // GetTestingConfig 获取测试环境配置
 func GetTestingConfig() MVCConfig {
 	config := GetDefaultMVCConfig()
-	
+
 	// 测试环境特定配置
 	config.Debug.LogLevel = "debug"
 	config.ErrorHandling.RetryMaxCount = 1
 	config.Performance.StatsReportInterval = 10 * time.Second
-	
+
 	// 测试环境快速配置
 	config.Middleware.CompileTimeout = 5 * time.Second
 	config.Context.PoolTimeout = 1 * time.Second
-	
+
 	return config
 }
 
 // GetDefaultMVCConfig 获取默认MVC配置
 func GetDefaultMVCConfig() MVCConfig {
 	config := MVCConfig{}
-	
+
 	// 中间件默认配置
 	config.Middleware.EnableOptimization = true
 	config.Middleware.CompileOnStartup = true
@@ -348,7 +379,7 @@ func GetDefaultMVCConfig() MVCConfig {
 	config.Router.EnableCompression = true
 	config.Router.MaxParamCount = 50
 	config.Router.EnableRegexOptim = true
-	
+
 	return config
 }
 
@@ -382,18 +413,18 @@ func (c *MVCConfig) Validate() error {
 	if c.Middleware.CacheSize <= 0 {
 		return fmt.Errorf("middleware cache size must be positive")
 	}
-	
+
 	if c.ErrorHandling.RetryMaxCount < 0 {
 		return fmt.Errorf("retry max count cannot be negative")
 	}
-	
+
 	if c.Performance.MaxConcurrentRecoveries <= 0 {
 		return fmt.Errorf("max concurrent recoveries must be positive")
 	}
-	
+
 	if c.Context.PoolSize <= 0 {
 		return fmt.Errorf("context pool size must be positive")
 	}
-	
+
 	return nil
 }
