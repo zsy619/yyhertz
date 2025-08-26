@@ -233,13 +233,14 @@ func generateMixedCaseVariants(parts []string) [][]string {
 	if len(parts) >= 3 {
 		mixed6 := make([]string, len(parts))
 		for i := 0; i < len(parts); i++ {
-			if i == 0 {
+			switch i {
+			case 0:
 				mixed6[i] = strings.ToLower(parts[i]) // 第一部分小写
-			} else if i == 1 {
+			case 1:
 				mixed6[i] = strings.ToLower(parts[i]) // 第二部分小写
-			} else if i == 2 {
+			case 2:
 				mixed6[i] = toCamelCase(parts[i]) // 第三部分驼峰
-			} else {
+			default:
 				mixed6[i] = parts[i] // 其他部分保持原样
 			}
 		}

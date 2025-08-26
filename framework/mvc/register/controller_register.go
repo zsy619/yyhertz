@@ -54,7 +54,6 @@ type ControllerInfo struct {
 
 	// 控制器配置
 	initialize bool   // 是否已初始化
-	runMethod  string // 运行方法
 	actionName string // 动作名称
 }
 
@@ -283,9 +282,7 @@ func (cr *ControllerRegister) addAutoController(c core.IController) {
 
 	// 从控制器名称生成路由模式
 	controllerName := strings.ToLower(controllerType.Name())
-	if strings.HasSuffix(controllerName, "controller") {
-		controllerName = controllerName[:len(controllerName)-10] // 去除"controller"后缀
-	}
+	controllerName = strings.TrimSuffix(controllerName, "controller")
 
 	pattern := "/" + controllerName + "/*"
 	cr.addController(pattern, c)
@@ -299,9 +296,7 @@ func (cr *ControllerRegister) addAutoPrefixController(prefix string, c core.ICon
 	}
 
 	controllerName := strings.ToLower(controllerType.Name())
-	if strings.HasSuffix(controllerName, "controller") {
-		controllerName = controllerName[:len(controllerName)-10]
-	}
+	controllerName = strings.TrimSuffix(controllerName, "controller")
 
 	pattern := "/" + strings.Trim(prefix, "/") + "/" + controllerName + "/*"
 	cr.addController(pattern, c)

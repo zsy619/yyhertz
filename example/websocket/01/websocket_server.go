@@ -104,7 +104,7 @@ func (c *OnlineController) Welcome() {
 	}
 }
 
-func main_server() {
+func MainServer() {
 	fmt.Println("YYHertz WebSocket 服务器启动中...")
 
 	// 获取应用实例

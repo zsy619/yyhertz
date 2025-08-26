@@ -379,9 +379,9 @@ func (app *AppWithControllerRegister) generateAutoPattern(controller core.IContr
 	}
 
 	controllerName := strings.ToLower(controllerType.Name())
-	if strings.HasSuffix(controllerName, "controller") {
-		controllerName = controllerName[:len(controllerName)-10]
-	}
+
+	// 移除controller后缀（如果存在）
+	controllerName = strings.TrimSuffix(controllerName, "controller")
 
 	return "/" + controllerName + "/*"
 }

@@ -108,7 +108,7 @@ func (app *App) RouterWs(path string, ctrl IController, method string) *App {
 
 	// 检查控制器是否为指针类型
 	if ctrlType.Kind() != reflect.Ptr {
-		panic(fmt.Sprintf("RouterWs: 控制器必须是指针类型"))
+		panic("RouterWs: 控制器必须是指针类型")
 	}
 
 	// 获取指定的方法
@@ -177,7 +177,7 @@ func (app *App) RouterWsWithUpgrader(path string, ctrl IController, method strin
 
 	// 检查控制器是否为指针类型
 	if ctrlType.Kind() != reflect.Ptr {
-		panic(fmt.Sprintf("RouterWsWithUpgrader: 控制器必须是指针类型"))
+		panic("RouterWsWithUpgrader: 控制器必须是指针类型")
 	}
 
 	// 获取指定的方法
@@ -254,7 +254,7 @@ func (app *App) createWebSocketHandler(ctrl IController, methodName string) (fun
 	handler := func(conn *define.WsConn) {
 		// 这个函数不应该被直接调用，因为我们使用了新的包装器
 		fmt.Printf("警告：createWebSocketHandler 创建的处理器被直接调用，这可能导致控制器未初始化\n")
-		
+
 		// 准备方法调用参数
 		args := []reflect.Value{
 			reflect.ValueOf(conn),
@@ -351,8 +351,8 @@ type webSocketControllerWrapper struct {
 // 专门用于处理控制器方法的 WebSocket 连接，确保控制器被正确初始化。
 type webSocketControllerMethodWrapper struct {
 	BaseController
-	targetController IController // 目标控制器实例
-	methodName       string      // 方法名
+	targetController IController   // 目标控制器实例
+	methodName       string        // 方法名
 	method           reflect.Value // 反射方法
 	upgrader         websocket.HertzUpgrader
 }
@@ -409,14 +409,14 @@ func (w *webSocketControllerMethodWrapper) HandleWebSocket(ctx *define.RequestCo
 				panic(r)
 			}
 		}()
-		
+
 		// 重要：在这里初始化目标控制器的 Context
 		// 获取控制器名称和方法名称用于初始化
 		controllerName := reflect.TypeOf(w.targetController).Elem().Name()
-		
+
 		// 调用目标控制器的初始化方法
 		w.targetController.Init(mvcCtx, controllerName, w.methodName, w.targetController)
-		
+
 		// 准备方法调用参数
 		args := []reflect.Value{
 			reflect.ValueOf((*define.WsConn)(conn)),

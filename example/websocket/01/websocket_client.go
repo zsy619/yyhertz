@@ -56,7 +56,7 @@ func testWebSocketEndpoint(endpoint string, description string) {
 	fmt.Printf("✅ %s 测试完成\n", description)
 }
 
-func main_client() {
+func MainClient() {
 	fmt.Println("🚀 YYHertz WebSocket 客户端测试工具")
 	fmt.Println("正在测试嵌套命名空间 WebSocket 路由...")
 

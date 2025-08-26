@@ -85,21 +85,22 @@ var (
 	// 字符串切片池
 	stringSlicePool = sync.Pool{
 		New: func() any {
-			return make([]string, 0, 8) // 预分配8个元素
+			slice := make([]string, 0, 8) // 预分配8个元素
+			return &slice
 		},
 	}
 )
 
 // getStringSlice 从池中获取字符串切片
 func getStringSlice() []string {
-	return stringSlicePool.Get().([]string)
+	return *stringSlicePool.Get().(*[]string)
 }
 
 // putStringSlice 将字符串切片归还到池中
 func putStringSlice(slice []string) {
 	if slice != nil {
 		slice = slice[:0] // 重置长度但保留容量
-		stringSlicePool.Put(slice)
+		stringSlicePool.Put(&slice)
 	}
 }
 
@@ -167,20 +168,3 @@ const (
 	StatusBadGateway                   = 502
 	StatusServiceUnavailable           = 503
 )
-
-// ============= 实用工具函数 =============
-
-// isEmptyString 检查字符串是否为空或只包含空白字符
-func isEmptyString(s string) bool {
-	return len(s) == 0 || len(s) == len(s)-len(s[:len(s)])
-}
-
-// firstNonEmpty 返回第一个非空字符串
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}

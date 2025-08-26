@@ -86,4 +86,50 @@ Step-5  风险提示
 2.1 如拆分则给出合理的命名，并完成相关栏目与内容
 2.2.修订 @example/simple/docs/data-access/mybatis.md 文档
 
+## 2508-0005 持续集成
+
+目录 @framework/mybatis 是基于java mybatis框架的二次封装，完成如下功能：
+### 一、核心功能（基本使用）
+1.  **SQL 与代码分离**
+    **核心思想**：将 SQL 语句从 Java 代码中剥离出来，集中存放在 XML 配置文件或注解中。
+    **好处**：SQL 变更无需重新编译 Java 代码，易于维护和优化，DBA 也可以直接参与 SQL 审核。
+2.  **强大的参数映射 (Parameter Mapping)**
+    能够轻松地将 Java 对象（如 POJO, Map, 基本类型）作为参数传递给 SQL 语句。
+    支持在 SQL 中使用 `#{}`（预编译，防 SQL 注入）和 `${}`（字符串替换，慎用）来引用这些参数。
+3.  **强大的结果集映射 (Result Mapping)**
+    **自动映射**：如果数据库字段名（如 `user_name`）和 Java 对象属性名（如 `userName`）遵循一定的命名规则（如驼峰转换），MyBatis 可以自动完成映射，无需额外配置。
+    **显式映射**：通过 `<resultMap>` 标签，可以自定义非常复杂的映射关系，解决以下问题：
+       数据库字段名和 Java 属性名不一致。
+       处理一对一、一对多等复杂的关联查询。
+       将查询结果映射到复杂的对象树或集合中。
+4.  **动态 SQL (Dynamic SQL)**
+    **这是 MyBatis 的一个**标志性强大功能**。它允许在 XML 中编写条件判断、循环等动态生成的 SQL 语句。
+    **常用标签**：
+        `<if>`：条件判断。
+        `<choose>`, `<when>`, `<otherwise>`：类似 Java 的 switch-case。
+        `<trim>`, `<where>`, `<set>`：智能地处理 SQL 语句的前缀、后缀，避免语法错误（例如解决 `WHERE` 或 `SET` 后的冗余 `AND` 或逗号）。
+        `<foreach>`：遍历集合，常用于 `IN` 条件或批量操作。
+### 二、高级与扩展功能
+1.  **缓存机制 (Caching)**
+    **一级缓存**：默认开启，它是 **SqlSession 级别**的缓存。在同一个 SqlSession 中执行相同的查询，第二次会直接从缓存中取数据，而不再次访问数据库。
+    **二级缓存**：需要手动配置开启，它是 **Mapper 级别**的缓存（跨 SqlSession）。多个 SqlSession 操作同一个 Mapper 的 SQL，数据会共享到二级缓存中。非常适合用于只读或读多写少的场景。
+2.  **插件机制 (Plugin / Interceptor)**
+    允许用户编写插件来拦截 MyBatis 核心组件的执行过程，例如拦截 Executor、ParameterHandler、ResultSetHandler、StatementHandler 的方法。
+    **典型应用**：
+      **分页**：编写分页插件（如 PageHelper）。
+      **性能监控**：记录 SQL 执行时间。
+      **自定义权限控制**：在 SQL 执行前自动加上某些条件。
+      **通用审计字段（如 create_time, update_time）的自动填充**。
+3.  **与 Spring 框架无缝集成**
+    通过 `mybatis-spring` 集成包，可以非常方便地将 MyBatis 接入 Spring 和 Spring Boot 项目。
+    主要好处：
+      SqlSession 的生命周期交由 Spring 管理（通常是注入到 Mapper 接口中）。
+      可以使用 `@Autowired` 直接注入 Mapper 接口，无需手动创建。
+      支持与 Spring 的事务管理一起使用（`@Transactional`）。
+4.  **注解支持**
+    除了主流的 XML 配置方式，MyBatis 也提供了注解方式（如 `@Select`, `@Insert`, `@Update`, `@Delete`, `@Results` 等）来编写 SQL 和映射关系。
+    **适用场景**：简单的、SQL 不复杂的场景。对于复杂的动态 SQL，使用 XML 方式可读性和维护性更高。
+5.  **存储过程支持**
+    支持调用数据库中的存储过程，并处理输入/输出参数。
+
 
