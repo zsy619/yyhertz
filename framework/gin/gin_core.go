@@ -125,7 +125,7 @@ func (c *Context) Request() *http.Request {
 	req := &http.Request{
 		Method: string(c.RequestContext.Request.Method()),
 		URL:    u,
-		Proto:  proto,                                                          // 设置协议版本
+		Proto:  proto, // 设置协议版本
 		Header: convertHertzHeaderToHTTP(&c.RequestContext.Request.Header),
 		Body:   io.NopCloser(bytes.NewReader(c.RequestContext.Request.Body())),
 		Host:   string(uri.Host()),
@@ -156,27 +156,27 @@ func (c *Context) Request() *http.Request {
 func extractProtocolVersion(ctx *app.RequestContext) string {
 	// 获取Hertz请求的协议信息
 	// Hertz通常在连接信息中包含协议版本
-	
+
 	// 方法1: 尝试从连接信息获取协议版本
 	if conn := ctx.GetConn(); conn != nil {
 		// 检查是否为HTTP/2连接
 		// Hertz的HTTP/2实现通常会在连接中标识协议版本
 		connStr := conn.RemoteAddr().String()
-		
+
 		// 这里可以根据Hertz的具体实现进行协议版本检测
 		// 由于Hertz的协议检测可能因版本而异，我们采用保守策略
 		_ = connStr // 避免未使用变量警告
 	}
-	
+
 	// 方法2: 从请求头部检查协议版本指示符
 	headers := &ctx.Request.Header
-	
+
 	// 检查HTTP/2特有的头部
-	if headers.Peek("http2-settings") != nil || 
-	   string(headers.Peek("upgrade")) == "h2c" {
+	if headers.Peek("http2-settings") != nil ||
+		string(headers.Peek("upgrade")) == "h2c" {
 		return "HTTP/2.0"
 	}
-	
+
 	// 检查Connection头部的upgrade字段
 	if connection := string(headers.Peek("Connection")); connection != "" {
 		if strings.Contains(strings.ToLower(connection), "upgrade") {
@@ -188,7 +188,7 @@ func extractProtocolVersion(ctx *app.RequestContext) string {
 			}
 		}
 	}
-	
+
 	// 方法3: 检查HTTP版本头部（如果存在）
 	if version := string(headers.Peek("HTTP-Version")); version != "" {
 		switch version {
@@ -200,7 +200,7 @@ func extractProtocolVersion(ctx *app.RequestContext) string {
 			return "HTTP/1.1"
 		}
 	}
-	
+
 	// 默认返回HTTP/1.1（最常见的协议版本）
 	// 这与大多数现代Web服务器的默认行为一致
 	return "HTTP/1.1"

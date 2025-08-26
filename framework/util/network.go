@@ -267,9 +267,16 @@ func DnsGetRecord(hostname string, recordType ...int) []map[string]any {
 	return records
 }
 
-// Helper functions for validation
-
-func isValidEmail(email string) bool {
+// IsValidEmail 检查给定的字符串是否为有效的电子邮件地址。
+// 该函数执行简单的验证逻辑，确保电子邮件地址符合基本格式要求：
+// - 必须包含 "@" 符号。
+// - "@" 符号只能出现一次，且不能位于开头或结尾。
+// - 本地部分（@ 之前）和域名部分（@ 之后）均不能为空。
+// - 域名部分必须包含 "." 符号。
+// 返回值：
+//   - true：如果字符串符合上述条件。
+//   - false：如果字符串不符合上述条件。
+func IsValidEmail(email string) bool {
 	// Simple email validation
 	if !strings.Contains(email, "@") {
 		return false
@@ -292,7 +299,12 @@ func isValidEmail(email string) bool {
 	return true
 }
 
-func isValidURL(url string) bool {
+// IsValidURL 检查给定的字符串是否为有效的URL。
+// 有效的URL必须满足以下条件：
+// 1. 以 "http://"、"https://" 或 "ftp://" 开头。
+// 2. 包含至少一个 "." 字符。
+// 返回值为布尔类型，true表示有效，false表示无效。
+func IsValidURL(url string) bool {
 	// Simple URL validation
 	if !strings.HasPrefix(url, "http://") &&
 		!strings.HasPrefix(url, "https://") &&

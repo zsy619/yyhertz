@@ -2,10 +2,12 @@ package util
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -443,4 +445,102 @@ func TempNam(dir, prefix string) (string, error) {
 	name := file.Name()
 	file.Close()
 	return name, nil
+}
+
+func SelfPath() string {
+	path, _ := filepath.Abs(os.Args[0])
+	return path
+}
+
+// SearchFile 在给定的路径列表中搜索指定的文件。
+//
+// 参数:
+//
+//	filename: 需要搜索的文件名。
+//	paths: 可选的路径列表，用于搜索文件。
+//
+// 返回值:
+//
+//	fullpath: 如果找到文件，返回文件的完整路径。
+//	err: 如果未找到文件，返回错误信息。
+//
+// 示例:
+//
+//	fullpath, err := SearchFile("config.json", "/etc", "/usr/local/etc")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Println("Found file at:", fullpath)
+//
+// 注意:
+//
+//	函数会按顺序检查每个路径，一旦找到文件立即返回。
+func SearchFile(filename string, paths ...string) (fullpath string, err error) {
+	for _, path := range paths {
+		if fullpath = filepath.Join(path, filename); FileExists(fullpath) {
+			return
+		}
+	}
+	err = errors.New(fullpath + " not found in paths")
+	return
+}
+
+// GrepFile 根据给定的正则表达式模式在文件中搜索匹配的行。
+//
+// 参数:
+//   - patten: 用于匹配的正则表达式字符串。
+//   - filename: 要搜索的文件路径。
+//
+// 返回值:
+//   - lines: 包含所有匹配行的字符串切片。
+//   - err: 如果过程中发生错误，返回错误信息；否则为 nil。
+//
+// 功能说明:
+//   - 逐行读取文件内容，检查每行是否与正则表达式匹配。
+//   - 支持处理长行（即单行内容超过缓冲区大小的情况）。
+//   - 匹配的行会被收集并返回。
+//
+// 注意事项:
+//   - 如果正则表达式编译失败或文件无法打开，会立即返回错误。
+//   - 调用者需确保文件路径和正则表达式的有效性。
+func GrepFile(patten string, filename string) (lines []string, err error) {
+	re, err := regexp.Compile(patten)
+	if err != nil {
+		return
+	}
+
+	fd, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer fd.Close()
+	lines = make([]string, 0)
+	reader := bufio.NewReader(fd)
+	prefix := ""
+	var isLongLine bool
+	for {
+		byteLine, isPrefix, er := reader.ReadLine()
+		if er != nil && er != io.EOF {
+			return nil, er
+		}
+		if er == io.EOF {
+			break
+		}
+		line := string(byteLine)
+		if isPrefix {
+			prefix += line
+			continue
+		} else {
+			isLongLine = true
+		}
+
+		line = prefix + line
+		if isLongLine {
+			prefix = ""
+		}
+		if re.MatchString(line) {
+			lines = append(lines, line)
+		}
+	}
+	return lines, nil
 }
