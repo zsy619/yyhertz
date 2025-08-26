@@ -481,11 +481,11 @@ func (v *Validator) validateCard(value any, param string) bool {
 	}
 
 	// Luhn算法验证
-	return v.luhnCheck(str)
+	return v.LuhnCheck(str)
 }
 
-// luhnCheck Luhn算法检查
-func (v *Validator) luhnCheck(cardNumber string) bool {
+// LuhnCheck Luhn算法检查
+func (v *Validator) LuhnCheck(cardNumber string) bool {
 	var sum int
 	alternate := false
 

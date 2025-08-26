@@ -156,12 +156,12 @@ func (b *Builder) RegisterTypeAlias(alias string, valueType reflect.Type) *Build
 }
 
 // RegisterTypeHandler 注册类型处理器
-func (b *Builder) RegisterTypeHandler(javaType reflect.Type, handler config.TypeHandler) *Builder {
+func (b *Builder) RegisterTypeHandler(targetType reflect.Type, handler config.TypeHandler) *Builder {
 	if b.error != nil {
 		return b
 	}
 
-	b.config.GetTypeHandlerRegistry().RegisterTypeHandler(javaType, handler)
+	b.config.GetTypeHandlerRegistry().RegisterTypeHandler(targetType, handler)
 	return b
 }
 
@@ -498,9 +498,9 @@ type ResultMap struct {
 
 // ColumnMapping 列映射
 type ColumnMapping struct {
-	Property string
-	Column   string
-	JavaType reflect.Type
+	Property   string
+	Column     string
+	TargetType reflect.Type
 }
 
 // LegacyCache 缓存实现（保持向后兼容）
@@ -510,18 +510,9 @@ type LegacyCache struct {
 	maxSize int
 }
 
-// SqlSession SQL会话接口
-type SqlSession interface {
-	SelectOne(statement string, parameter any) (any, error)
-	SelectList(statement string, parameter any) ([]any, error)
-	Insert(statement string, parameter any) (int64, error)
-	Update(statement string, parameter any) (int64, error)
-	Delete(statement string, parameter any) (int64, error)
-	GetMapper(mapperType reflect.Type) any
-	Commit() error
-	Rollback() error
-	Close() error
-}
+// SqlSession SQL会话接口 - 使用session包中的统一定义
+// 为了保持向后兼容，这里使用类型别名
+type SqlSession = session.SqlSession
 
 // DefaultSqlSession 默认SQL会话实现
 type DefaultSqlSession struct {
@@ -721,10 +712,10 @@ func (session *DefaultSqlSession) executeUpdate(statement string, parameter any,
 }
 
 // GetMapper 获取映射器代理
-func (session *DefaultSqlSession) GetMapper(mapperType reflect.Type) any {
+func (session *DefaultSqlSession) GetMapper(mapperType reflect.Type) (any, error) {
 	// 简化实现：返回一个包含session的映射器实例
 	// 实际应该创建动态代理
-	return NewMapperProxy(mapperType, session)
+	return NewMapperProxy(mapperType, session), nil
 }
 
 // Commit 提交事务
@@ -752,6 +743,65 @@ func (session *DefaultSqlSession) Close() error {
 		}
 	}
 	return nil
+}
+
+// GetConfiguration 获取配置
+func (session *DefaultSqlSession) GetConfiguration() *config.Configuration {
+	// 返回默认配置
+	return config.NewConfiguration()
+}
+
+// GetConnection 获取连接
+func (session *DefaultSqlSession) GetConnection() *gorm.DB {
+	if session.tx != nil {
+		return session.tx
+	}
+	return session.db
+}
+
+// SelectMap 查询返回Map
+func (session *DefaultSqlSession) SelectMap(statement string, parameter any) (map[string]any, error) {
+	result, err := session.SelectOne(statement, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	if resultMap, ok := result.(map[string]any); ok {
+		return resultMap, nil
+	}
+
+	return map[string]any{"result": result}, nil
+}
+
+// ClearCache 清除缓存
+func (session *DefaultSqlSession) ClearCache() {
+	// 清理缓存
+	if session.mybatis.cache != nil {
+		session.mybatis.cache.Clear()
+	}
+}
+
+// SelectCursor 查询游标 (Go中可用channel模拟)
+func (session *DefaultSqlSession) SelectCursor(statement string, parameter any) (<-chan any, error) {
+	results, err := session.SelectList(statement, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建一个channel并在后台发送结果
+	cursor := make(chan any, len(results))
+	go func() {
+		defer close(cursor)
+		for _, result := range results {
+			cursor <- result
+		}
+	}()
+
+	return cursor, nil
 }
 
 // 辅助方法
@@ -1063,9 +1113,33 @@ func (adapter *SqlSessionAdapter) Delete(statement string, parameter any) (int64
 }
 
 // GetMapper 获取映射器（适配器实现）
-func (adapter *SqlSessionAdapter) GetMapper(mapperType reflect.Type) any {
-	mapper, _ := adapter.sqlSession.GetMapper(mapperType)
-	return mapper
+func (adapter *SqlSessionAdapter) GetMapper(mapperType reflect.Type) (any, error) {
+	return adapter.sqlSession.GetMapper(mapperType)
+}
+
+// GetConfiguration 获取配置（适配器实现）
+func (adapter *SqlSessionAdapter) GetConfiguration() *config.Configuration {
+	return adapter.sqlSession.GetConfiguration()
+}
+
+// GetConnection 获取连接（适配器实现）
+func (adapter *SqlSessionAdapter) GetConnection() *gorm.DB {
+	return adapter.sqlSession.GetConnection()
+}
+
+// SelectMap 查询返回Map（适配器实现）
+func (adapter *SqlSessionAdapter) SelectMap(statement string, parameter any) (map[string]any, error) {
+	return adapter.sqlSession.SelectMap(statement, parameter)
+}
+
+// ClearCache 清除缓存（适配器实现）
+func (adapter *SqlSessionAdapter) ClearCache() {
+	adapter.sqlSession.ClearCache()
+}
+
+// SelectCursor 查询游标（适配器实现）
+func (adapter *SqlSessionAdapter) SelectCursor(statement string, parameter any) (<-chan any, error) {
+	return adapter.sqlSession.SelectCursor(statement, parameter)
 }
 
 // Commit 提交事务（适配器实现）

@@ -221,9 +221,9 @@ func (example *PluginExample) demonstrateResultTransformation() {
 
 	// 模拟结构体数据
 	type User struct {
-		ID       int    `json:"id"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
+		ID       int       `json:"id"`
+		Name     string    `json:"name"`
+		Email    string    `json:"email"`
 		CreateAt time.Time `json:"create_at"`
 	}
 
@@ -376,7 +376,7 @@ func (plugin *CustomAuditPlugin) Intercept(invocation *Invocation) (any, error) 
 	// 记录审计日志
 	record := AuditRecord{
 		Timestamp: time.Now(),
-		Method:    invocation.Method.Name,
+		Method:    invocation.Method,
 		User:      "system", // 实际应该从上下文获取
 		Action:    "execute",
 		Details: map[string]any{

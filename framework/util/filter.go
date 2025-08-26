@@ -62,16 +62,16 @@ const (
 	FILTER_UNSAFE_RAW = 512
 )
 
+const (
+	INPUT_GET    = 0
+	INPUT_POST   = 1
+	INPUT_COOKIE = 2
+	INPUT_SERVER = 3
+	INPUT_ENV    = 4
+)
+
 // FilterInput gets external variables and optionally filters them
 func FilterInput(inputType int, variableName string, filter int, flags ...any) any {
-	const (
-		INPUT_GET    = 0
-		INPUT_POST   = 1
-		INPUT_COOKIE = 2
-		INPUT_SERVER = 3
-		INPUT_ENV    = 4
-	)
-
 	// In a real implementation, this would get data from the appropriate source
 	// For now, return a placeholder
 	value := "example_value"

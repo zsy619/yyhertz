@@ -136,7 +136,7 @@ func (plugin *PerformancePlugin) Intercept(invocation *Invocation) (any, error) 
 		ExecutionTime: executionTime,
 		Success:       err == nil,
 		Error:         err,
-		Method:        invocation.Method.Name,
+		Method:        invocation.Method,
 	}
 
 	// 更新统计信息
@@ -182,7 +182,7 @@ func (plugin *PerformancePlugin) extractSQL(invocation *Invocation) string {
 		}
 	}
 
-	return fmt.Sprintf("Method: %s", invocation.Method.Name)
+	return fmt.Sprintf("Method: %s", invocation.Method)
 }
 
 // extractParameters 提取参数

@@ -9,19 +9,19 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	
-	"github.com/zsy619/yyhertz/framework/mybatis/config"
+
 	"github.com/zsy619/yyhertz/framework/mybatis/cache"
+	"github.com/zsy619/yyhertz/framework/mybatis/config"
 )
 
 // BaseExecutor 基础执行器
 type BaseExecutor struct {
 	configuration *config.Configuration
-	db           any
-	transaction  *Transaction
-	localCache   cache.Cache
-	closed       bool
-	mutex        sync.RWMutex
+	db            any
+	transaction   *Transaction
+	localCache    cache.Cache
+	closed        bool
+	mutex         sync.RWMutex
 }
 
 // DefaultExecutor 默认执行器
@@ -38,14 +38,14 @@ type ReuseExecutor struct {
 // BatchExecutor 批处理执行器
 type BatchExecutor struct {
 	*BaseExecutor
-	statementList []any
+	statementList   []any
 	batchResultList []any
 }
 
 // CachingExecutor 缓存执行器
 type CachingExecutor struct {
-	delegate    Executor
-	cache       cache.Cache
+	delegate           Executor
+	cache              cache.Cache
 	flushCacheRequired bool
 }
 
@@ -66,11 +66,11 @@ type DynamicSqlBuilder struct {
 func NewDefaultExecutor(configuration *config.Configuration, db any) *DefaultExecutor {
 	baseExecutor := &BaseExecutor{
 		configuration: configuration,
-		db:           db,
-		localCache:   cache.NewLruCache(cache.NewPerpetualCache("default"), 256), // 本地缓存
-		closed:       false,
+		db:            db,
+		localCache:    cache.NewLruCache(cache.NewPerpetualCache("default"), 256), // 本地缓存
+		closed:        false,
 	}
-	
+
 	return &DefaultExecutor{
 		BaseExecutor: baseExecutor,
 	}
@@ -80,11 +80,11 @@ func NewDefaultExecutor(configuration *config.Configuration, db any) *DefaultExe
 func NewReuseExecutor(configuration *config.Configuration, db any) *ReuseExecutor {
 	baseExecutor := &BaseExecutor{
 		configuration: configuration,
-		db:           db,
-		localCache:   cache.NewLruCache(cache.NewPerpetualCache("reuse"), 256),
-		closed:       false,
+		db:            db,
+		localCache:    cache.NewLruCache(cache.NewPerpetualCache("reuse"), 256),
+		closed:        false,
 	}
-	
+
 	return &ReuseExecutor{
 		BaseExecutor:   baseExecutor,
 		statementCache: make(map[string]any),
@@ -95,11 +95,11 @@ func NewReuseExecutor(configuration *config.Configuration, db any) *ReuseExecuto
 func NewBatchExecutor(configuration *config.Configuration, db any) *BatchExecutor {
 	baseExecutor := &BaseExecutor{
 		configuration: configuration,
-		db:           db,
-		localCache:   cache.NewLruCache(cache.NewPerpetualCache("batch"), 256),
-		closed:       false,
+		db:            db,
+		localCache:    cache.NewLruCache(cache.NewPerpetualCache("batch"), 256),
+		closed:        false,
 	}
-	
+
 	return &BatchExecutor{
 		BaseExecutor:    baseExecutor,
 		statementList:   make([]any, 0),
@@ -110,8 +110,8 @@ func NewBatchExecutor(configuration *config.Configuration, db any) *BatchExecuto
 // NewCachingExecutor 创建缓存执行器
 func NewCachingExecutor(delegate Executor, cache cache.Cache) *CachingExecutor {
 	return &CachingExecutor{
-		delegate: delegate,
-		cache:    cache,
+		delegate:           delegate,
+		cache:              cache,
 		flushCacheRequired: false,
 	}
 }
@@ -120,33 +120,33 @@ func NewCachingExecutor(delegate Executor, cache cache.Cache) *CachingExecutor {
 func (executor *BaseExecutor) Update(ms *MappedStatement, parameter any) (int64, error) {
 	executor.mutex.Lock()
 	defer executor.mutex.Unlock()
-	
+
 	if executor.closed {
 		return 0, fmt.Errorf("executor is closed")
 	}
-	
+
 	// 清除本地缓存
 	executor.clearLocalCache()
-	
+
 	return executor.doUpdate(ms, parameter)
 }
 
 // Query 执行查询操作 (BaseExecutor)
-func (executor *BaseExecutor) Query(ms *MappedStatement, parameter any, rowBounds *RowBounds, 
+func (executor *BaseExecutor) Query(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, cacheKey *CacheKey, boundSql *BoundSql) ([]any, error) {
-	
+
 	executor.mutex.RLock()
 	defer executor.mutex.RUnlock()
-	
+
 	if executor.closed {
 		return nil, fmt.Errorf("executor is closed")
 	}
-	
+
 	// 检查本地缓存
 	if cacheKey == nil {
 		cacheKey = executor.CreateCacheKey(ms, parameter, rowBounds, boundSql)
 	}
-	
+
 	return executor.queryFromDatabase(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql)
 }
 
@@ -160,13 +160,13 @@ func (executor *BaseExecutor) QueryCursor(ms *MappedStatement, parameter any, ro
 func (executor *BaseExecutor) Commit(required bool) error {
 	executor.mutex.Lock()
 	defer executor.mutex.Unlock()
-	
+
 	if executor.closed {
 		return fmt.Errorf("executor is closed")
 	}
-	
+
 	executor.clearLocalCache()
-	
+
 	if executor.transaction != nil && !executor.transaction.autoCommit {
 		return executor.transaction.db.Commit().Error
 	}
@@ -177,13 +177,13 @@ func (executor *BaseExecutor) Commit(required bool) error {
 func (executor *BaseExecutor) Rollback(required bool) error {
 	executor.mutex.Lock()
 	defer executor.mutex.Unlock()
-	
+
 	if executor.closed {
 		return fmt.Errorf("executor is closed")
 	}
-	
+
 	executor.clearLocalCache()
-	
+
 	if executor.transaction != nil && !executor.transaction.autoCommit {
 		return executor.transaction.db.Rollback().Error
 	}
@@ -194,7 +194,7 @@ func (executor *BaseExecutor) Rollback(required bool) error {
 func (executor *BaseExecutor) Close(forceRollback bool) error {
 	executor.mutex.Lock()
 	defer executor.mutex.Unlock()
-	
+
 	if !executor.closed {
 		if forceRollback {
 			executor.rollback(true)
@@ -219,20 +219,20 @@ func (executor *BaseExecutor) ClearLocalCache() {
 }
 
 // CreateCacheKey 创建缓存键 (BaseExecutor)
-func (executor *BaseExecutor) CreateCacheKey(ms *MappedStatement, parameterObject any, 
+func (executor *BaseExecutor) CreateCacheKey(ms *MappedStatement, parameterObject any,
 	rowBounds *RowBounds, boundSql *BoundSql) *CacheKey {
-	
+
 	cacheKey := &CacheKey{
 		UpdateList: make([]any, 0),
 		Count:      0,
 	}
-	
+
 	cacheKey.UpdateList = append(cacheKey.UpdateList, ms.ID)
 	cacheKey.UpdateList = append(cacheKey.UpdateList, rowBounds.Offset)
 	cacheKey.UpdateList = append(cacheKey.UpdateList, rowBounds.Limit)
 	cacheKey.UpdateList = append(cacheKey.UpdateList, boundSql.Sql)
 	cacheKey.UpdateList = append(cacheKey.UpdateList, parameterObject)
-	
+
 	cacheKey.Count = len(cacheKey.UpdateList)
 	return cacheKey
 }
@@ -241,7 +241,7 @@ func (executor *BaseExecutor) CreateCacheKey(ms *MappedStatement, parameterObjec
 func (executor *BaseExecutor) IsCached(ms *MappedStatement, key *CacheKey) bool {
 	executor.mutex.RLock()
 	defer executor.mutex.RUnlock()
-	
+
 	keyStr := fmt.Sprintf("%v", key.UpdateList)
 	_, exists := executor.localCache.Get(keyStr)
 	return exists
@@ -265,91 +265,91 @@ func (executor *BaseExecutor) SetExecutorWrapper(wrapper ExecutorWrapper) {
 // doUpdate 执行更新
 func (executor *BaseExecutor) doUpdate(ms *MappedStatement, parameter any) (int64, error) {
 	boundSql := ms.SqlSource.GetBoundSql(parameter)
-	
+
 	db := executor.GetConnection()
 	if db == nil {
 		return 0, fmt.Errorf("database connection is nil")
 	}
-	
+
 	// 构建SQL和参数
 	sql, args := executor.buildSqlAndArgs(boundSql)
-	
+
 	// 执行SQL
 	result := db.Exec(sql, args...)
 	if result.Error != nil {
 		return 0, result.Error
 	}
-	
+
 	return result.RowsAffected, nil
 }
 
 // queryFromDatabase 从数据库查询
 func (executor *BaseExecutor) queryFromDatabase(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, cacheKey *CacheKey, boundSql *BoundSql) ([]any, error) {
-	
+
 	results, err := executor.doQuery(ms, parameter, rowBounds, resultHandler, boundSql)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 缓存结果
 	if cacheKey != nil {
 		executor.putToLocalCache(cacheKey, results)
 	}
-	
+
 	return results, nil
 }
 
 // doQuery 执行查询
 func (executor *BaseExecutor) doQuery(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, boundSql *BoundSql) ([]any, error) {
-	
+
 	db := executor.GetConnection()
 	if db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
-	
+
 	// 构建SQL和参数
 	sql, args := executor.buildSqlAndArgs(boundSql)
-	
+
 	// 应用行边界
 	if rowBounds.Limit > 0 {
 		sql = fmt.Sprintf("%s LIMIT %d OFFSET %d", sql, rowBounds.Limit, rowBounds.Offset)
 	}
-	
+
 	// 执行查询
 	var results []map[string]any
 	err := db.Raw(sql, args...).Scan(&results).Error
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 转换结果
 	convertedResults := make([]any, len(results))
 	for i, result := range results {
 		convertedResults[i] = result
 	}
-	
+
 	return convertedResults, nil
 }
 
 // doQueryCursor 执行游标查询
 func (executor *BaseExecutor) doQueryCursor(ms *MappedStatement, parameter any, rowBounds *RowBounds, boundSql *BoundSql) (<-chan any, error) {
 	ch := make(chan any, 100) // 缓冲通道
-	
+
 	go func() {
 		defer close(ch)
-		
+
 		results, err := executor.doQuery(ms, parameter, rowBounds, nil, boundSql)
 		if err != nil {
 			return
 		}
-		
+
 		for _, result := range results {
 			ch <- result
 		}
 	}()
-	
+
 	return ch, nil
 }
 
@@ -357,13 +357,13 @@ func (executor *BaseExecutor) doQueryCursor(ms *MappedStatement, parameter any, 
 func (executor *BaseExecutor) buildSqlAndArgs(boundSql *BoundSql) (string, []any) {
 	sql := boundSql.Sql
 	args := make([]any, 0)
-	
+
 	// 处理参数映射
 	for _, paramMapping := range boundSql.ParameterMappings {
 		value := executor.getParameterValue(boundSql.ParameterObject, paramMapping.Property)
 		args = append(args, value)
 	}
-	
+
 	return sql, args
 }
 
@@ -372,12 +372,12 @@ func (executor *BaseExecutor) getParameterValue(parameterObject any, property st
 	if parameterObject == nil {
 		return nil
 	}
-	
+
 	// 简化实现，实际需要更复杂的参数处理
 	if m, ok := parameterObject.(map[string]any); ok {
 		return m[property]
 	}
-	
+
 	return parameterObject
 }
 
@@ -414,7 +414,7 @@ func (executor *DefaultExecutor) doUpdate(ms *MappedStatement, parameter any) (i
 // doQuery 默认执行器的查询实现
 func (executor *DefaultExecutor) doQuery(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, boundSql *BoundSql) ([]any, error) {
-	
+
 	return executor.BaseExecutor.doQuery(ms, parameter, rowBounds, resultHandler, boundSql)
 }
 
@@ -426,17 +426,17 @@ func (executor *ReuseExecutor) prepareStatement(sql string) any {
 	if stmt, exists := executor.statementCache[sql]; exists {
 		return stmt
 	}
-	
+
 	// 创建新的预处理语句
 	db := executor.GetConnection()
 	if db == nil {
 		return nil
 	}
-	
+
 	// 这里应该创建真正的预处理语句
 	newStmt := sql // 简化实现
 	executor.statementCache[sql] = newStmt
-	
+
 	return newStmt
 }
 
@@ -450,16 +450,16 @@ func (executor *BatchExecutor) addBatch(ms *MappedStatement, parameter any) {
 // doFlushStatements 批处理执行器刷新语句
 func (executor *BatchExecutor) doFlushStatements() ([]any, error) {
 	results := make([]any, len(executor.statementList))
-	
+
 	for i, _ := range executor.statementList {
 		// 执行批处理
 		results[i] = 1 // 模拟结果
 	}
-	
+
 	// 清空批次
 	executor.statementList = executor.statementList[:0]
 	executor.batchResultList = executor.batchResultList[:0]
-	
+
 	return results, nil
 }
 
@@ -468,31 +468,31 @@ func (executor *BatchExecutor) doFlushStatements() ([]any, error) {
 // Query 缓存执行器的查询实现
 func (executor *CachingExecutor) Query(ms *MappedStatement, parameter any, rowBounds *RowBounds,
 	resultHandler ResultHandler, cacheKey *CacheKey, boundSql *BoundSql) ([]any, error) {
-	
+
 	// 检查二级缓存
 	if ms.UseCache && executor.cache != nil {
 		if cacheKey == nil {
 			cacheKey = executor.CreateCacheKey(ms, parameter, rowBounds, boundSql)
 		}
-		
+
 		keyStr := fmt.Sprintf("%v", cacheKey.UpdateList)
 		if cached, exists := executor.cache.Get(keyStr); exists {
 			if results, ok := cached.([]any); ok {
 				return results, nil
 			}
 		}
-		
+
 		// 从委托执行器查询
 		results, err := executor.delegate.Query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// 缓存结果
 		executor.cache.Put(keyStr, results)
 		return results, nil
 	}
-	
+
 	return executor.delegate.Query(ms, parameter, rowBounds, resultHandler, cacheKey, boundSql)
 }
 

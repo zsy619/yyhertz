@@ -352,9 +352,7 @@ func IsValidCookieDomain(domain, hostDomain string) bool {
 	}
 
 	// Remove leading dot
-	if strings.HasPrefix(domain, ".") {
-		domain = domain[1:]
-	}
+	domain = strings.TrimPrefix(domain, ".")
 
 	// Check if host domain ends with cookie domain
 	return strings.HasSuffix(hostDomain, domain)

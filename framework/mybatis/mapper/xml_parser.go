@@ -80,18 +80,18 @@ type ResultMapXML struct {
 
 // IDMapping ID字段映射
 type IDMapping struct {
-	Property string `xml:"property,attr"`
-	Column   string `xml:"column,attr"`
-	JavaType string `xml:"javaType,attr,omitempty"`
-	JdbcType string `xml:"jdbcType,attr,omitempty"`
+	Property   string `xml:"property,attr"`
+	Column     string `xml:"column,attr"`
+	TargetType string `xml:"targetType,attr,omitempty"`
+	JdbcType   string `xml:"jdbcType,attr,omitempty"`
 }
 
 // ResultMapping 结果字段映射
 type ResultMapping struct {
-	Property string `xml:"property,attr"`
-	Column   string `xml:"column,attr"`
-	JavaType string `xml:"javaType,attr,omitempty"`
-	JdbcType string `xml:"jdbcType,attr,omitempty"`
+	Property   string `xml:"property,attr"`
+	Column     string `xml:"column,attr"`
+	TargetType string `xml:"targetType,attr,omitempty"`
+	JdbcType   string `xml:"jdbcType,attr,omitempty"`
 }
 
 // ConstructorMapping 构造函数映射
@@ -101,10 +101,10 @@ type ConstructorMapping struct {
 
 // ConstructorArg 构造函数参数
 type ConstructorArg struct {
-	Column   string `xml:"column,attr,omitempty"`
-	JavaType string `xml:"javaType,attr,omitempty"`
-	JdbcType string `xml:"jdbcType,attr,omitempty"`
-	Select   string `xml:"select,attr,omitempty"`
+	Column     string `xml:"column,attr,omitempty"`
+	TargetType string `xml:"targetType,attr,omitempty"`
+	JdbcType   string `xml:"jdbcType,attr,omitempty"`
+	Select     string `xml:"select,attr,omitempty"`
 }
 
 // CollectionMapping 集合映射
@@ -118,11 +118,11 @@ type CollectionMapping struct {
 
 // AssociationMapping 关联映射
 type AssociationMapping struct {
-	Property  string `xml:"property,attr"`
-	JavaType  string `xml:"javaType,attr,omitempty"`
-	Column    string `xml:"column,attr,omitempty"`
-	Select    string `xml:"select,attr,omitempty"`
-	ResultMap string `xml:"resultMap,attr,omitempty"`
+	Property   string `xml:"property,attr"`
+	TargetType string `xml:"targetType,attr,omitempty"`
+	Column     string `xml:"column,attr,omitempty"`
+	Select     string `xml:"select,attr,omitempty"`
+	ResultMap  string `xml:"resultMap,attr,omitempty"`
 }
 
 // SQLXML 可重用SQL片段
@@ -172,10 +172,10 @@ type XMLResultMap struct {
 
 // XMLColumnMapping 列映射
 type XMLColumnMapping struct {
-	Property string
-	Column   string
-	JavaType string
-	JdbcType string
+	Property   string
+	Column     string
+	TargetType string
+	JdbcType   string
 }
 
 // XMLConstructorMapping 构造函数映射
@@ -185,10 +185,10 @@ type XMLConstructorMapping struct {
 
 // XMLConstructorArg 构造函数参数
 type XMLConstructorArg struct {
-	Column   string
-	JavaType string
-	JdbcType string
-	Select   string
+	Column     string
+	TargetType string
+	JdbcType   string
+	Select     string
 }
 
 // XMLCollectionMapping 集合映射
@@ -202,11 +202,11 @@ type XMLCollectionMapping struct {
 
 // XMLAssociationMapping 关联映射
 type XMLAssociationMapping struct {
-	Property  string
-	JavaType  string
-	Column    string
-	Select    string
-	ResultMap string
+	Property   string
+	TargetType string
+	Column     string
+	Select     string
+	ResultMap  string
 }
 
 // StatementType 语句类型
@@ -315,20 +315,20 @@ func (parser *MapperXMLParser) parseResultMaps(resultMaps []ResultMapXML) error 
 		// 解析ID映射
 		for _, idMapping := range rm.IDs {
 			resultMap.IDMappings = append(resultMap.IDMappings, XMLColumnMapping{
-				Property: idMapping.Property,
-				Column:   idMapping.Column,
-				JavaType: idMapping.JavaType,
-				JdbcType: idMapping.JdbcType,
+				Property:   idMapping.Property,
+				Column:     idMapping.Column,
+				TargetType: idMapping.TargetType,
+				JdbcType:   idMapping.JdbcType,
 			})
 		}
 
 		// 解析结果映射
 		for _, resultMapping := range rm.Results {
 			resultMap.ResultMappings = append(resultMap.ResultMappings, XMLColumnMapping{
-				Property: resultMapping.Property,
-				Column:   resultMapping.Column,
-				JavaType: resultMapping.JavaType,
-				JdbcType: resultMapping.JdbcType,
+				Property:   resultMapping.Property,
+				Column:     resultMapping.Column,
+				TargetType: resultMapping.TargetType,
+				JdbcType:   resultMapping.JdbcType,
 			})
 		}
 
@@ -337,10 +337,10 @@ func (parser *MapperXMLParser) parseResultMaps(resultMaps []ResultMapXML) error 
 			var args []XMLConstructorArg
 			for _, arg := range constructor.Args {
 				args = append(args, XMLConstructorArg{
-					Column:   arg.Column,
-					JavaType: arg.JavaType,
-					JdbcType: arg.JdbcType,
-					Select:   arg.Select,
+					Column:     arg.Column,
+					TargetType: arg.TargetType,
+					JdbcType:   arg.JdbcType,
+					Select:     arg.Select,
 				})
 			}
 			resultMap.Constructors = append(resultMap.Constructors, XMLConstructorMapping{Args: args})
@@ -360,11 +360,11 @@ func (parser *MapperXMLParser) parseResultMaps(resultMaps []ResultMapXML) error 
 		// 解析关联映射
 		for _, association := range rm.Association {
 			resultMap.Associations = append(resultMap.Associations, XMLAssociationMapping{
-				Property:  association.Property,
-				JavaType:  association.JavaType,
-				Column:    association.Column,
-				Select:    association.Select,
-				ResultMap: association.ResultMap,
+				Property:   association.Property,
+				TargetType: association.TargetType,
+				Column:     association.Column,
+				Select:     association.Select,
+				ResultMap:  association.ResultMap,
 			})
 		}
 

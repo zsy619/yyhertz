@@ -72,7 +72,7 @@ func (plugin *ResultTransformerPlugin) Intercept(invocation *Invocation) (any, e
 	}
 
 	// 转换结果
-	transformedResult := plugin.transformResult(invocation.Method.Name, result)
+	transformedResult := plugin.transformResult(invocation.Method, result)
 	return transformedResult, err
 }
 

@@ -92,7 +92,7 @@ func (plugin *ValidatorPlugin) SetProperties(properties map[string]any) {
 
 // validateParameters 验证参数
 func (plugin *ValidatorPlugin) validateParameters(invocation *Invocation) error {
-	methodName := invocation.Method.Name
+	methodName := invocation.Method
 	rules, exists := plugin.rules[methodName]
 	if !exists || len(rules) == 0 {
 		return nil // 没有验证规则
@@ -483,12 +483,11 @@ type NumberValidator struct{}
 func (v *NumberValidator) GetName() string { return "number" }
 
 func (v *NumberValidator) Validate(value any, rule ValidationRule) error {
-	switch value.(type) {
+	switch value := value.(type) {
 	case int, int32, int64, float32, float64:
 		return nil
 	case string:
-		str := value.(string)
-		if _, err := strconv.ParseFloat(str, 64); err != nil {
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
 			return fmt.Errorf("必须是有效的数字")
 		}
 		return nil

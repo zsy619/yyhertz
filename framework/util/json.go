@@ -389,14 +389,14 @@ func JsonType(jsonString string, path ...string) string {
 		obj = extractByPath(obj, path[0])
 	}
 
-	switch obj.(type) {
+	switch v := obj.(type) {
 	case nil:
 		return "NULL"
 	case bool:
 		return "BOOLEAN"
 	case float64:
 		// Check if it's an integer
-		if f, ok := obj.(float64); ok && f == float64(int64(f)) {
+		if v == float64(int64(v)) {
 			return "INTEGER"
 		}
 		return "DOUBLE"

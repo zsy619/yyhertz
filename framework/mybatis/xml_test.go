@@ -227,7 +227,7 @@ func TestXMLMapperResultMap(t *testing.T) {
     <id property="id" column="user_id"/>
     <result property="name" column="user_name"/>
     <result property="email" column="user_email"/>
-    <result property="createAt" column="create_time" javaType="date"/>
+    <result property="createAt" column="create_time" targetType="date"/>
   </resultMap>
   
   <select id="getUserWithResultMap" parameterType="long" resultMap="userResultMap">

@@ -6,6 +6,7 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -33,7 +34,7 @@ type Plugin interface {
 // Invocation 方法调用信息
 type Invocation struct {
 	Target     any             // 目标对象
-	Method     reflect.Method  // 调用的方法
+	Method     string          // 调用的方法名（使用string类型保持API简洁性）
 	Args       []any           // 方法参数
 	Context    context.Context // 上下文
 	StartTime  time.Time       // 开始时间
@@ -64,10 +65,10 @@ type Intercepts struct {
 }
 
 // NewInvocation 创建方法调用信息
-func NewInvocation(target any, method reflect.Method, args []any) *Invocation {
+func NewInvocation(target any, methodName string, args []any) *Invocation {
 	return &Invocation{
 		Target:     target,
-		Method:     method,
+		Method:     methodName,
 		Args:       args,
 		Context:    context.Background(),
 		StartTime:  time.Now(),
@@ -84,7 +85,12 @@ func (inv *Invocation) Proceed() (any, error) {
 	}
 
 	targetValue := reflect.ValueOf(inv.Target)
-	results := targetValue.MethodByName(inv.Method.Name).Call(values)
+	method := targetValue.MethodByName(inv.Method)
+	if !method.IsValid() {
+		return nil, fmt.Errorf("方法 %s 不存在", inv.Method)
+	}
+
+	results := method.Call(values)
 
 	// 处理返回值
 	if len(results) == 0 {
@@ -197,8 +203,8 @@ func NewPluginProxy(target any, interceptor Plugin) *PluginProxy {
 }
 
 // Invoke 调用方法
-func (proxy *PluginProxy) Invoke(method reflect.Method, args []any) (any, error) {
-	invocation := NewInvocation(proxy.target, method, args)
+func (proxy *PluginProxy) Invoke(methodName string, args []any) (any, error) {
+	invocation := NewInvocation(proxy.target, methodName, args)
 	return proxy.interceptor.Intercept(invocation)
 }
 

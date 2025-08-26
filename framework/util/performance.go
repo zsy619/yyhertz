@@ -20,7 +20,7 @@ type PerformanceMonitor struct {
 type MetricData struct {
 	count      int64 // 使用atomic操作
 	totalNanos int64 // 总时间纳秒，使用atomic操作
-	minNanos   int64 // 最小时间纳秒，使用atomic操作  
+	minNanos   int64 // 最小时间纳秒，使用atomic操作
 	maxNanos   int64 // 最大时间纳秒，使用atomic操作
 	lastCall   int64 // 最后调用时间戳，使用atomic操作
 }
@@ -87,11 +87,11 @@ func (pm *PerformanceMonitor) StartTracking(name string) func() {
 func (pm *PerformanceMonitor) recordMetric(name string, duration time.Duration) {
 	durationNanos := duration.Nanoseconds()
 	now := time.Now().UnixNano()
-	
+
 	pm.mutex.RLock()
 	metric, exists := pm.metrics[name]
 	pm.mutex.RUnlock()
-	
+
 	if !exists {
 		// 需要创建新metric，使用写锁
 		pm.mutex.Lock()
@@ -105,12 +105,12 @@ func (pm *PerformanceMonitor) recordMetric(name string, duration time.Duration) 
 		}
 		pm.mutex.Unlock()
 	}
-	
+
 	// 使用原子操作更新，无锁
 	atomic.AddInt64(&metric.count, 1)
 	atomic.AddInt64(&metric.totalNanos, durationNanos)
 	atomic.StoreInt64(&metric.lastCall, now)
-	
+
 	// 原子更新min/max值
 	for {
 		oldMin := atomic.LoadInt64(&metric.minNanos)
@@ -121,7 +121,7 @@ func (pm *PerformanceMonitor) recordMetric(name string, duration time.Duration) 
 			break
 		}
 	}
-	
+
 	for {
 		oldMax := atomic.LoadInt64(&metric.maxNanos)
 		if durationNanos <= oldMax {
@@ -137,7 +137,7 @@ func (pm *PerformanceMonitor) recordMetric(name string, duration time.Duration) 
 func (pm *PerformanceMonitor) GetMetrics() map[string]*MetricData {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
-	
+
 	result := make(map[string]*MetricData)
 	for k, v := range pm.metrics {
 		// 返回原始metric的引用，因为所有访问都通过方法进行
@@ -150,12 +150,12 @@ func (pm *PerformanceMonitor) GetMetrics() map[string]*MetricData {
 func (pm *PerformanceMonitor) GetMetric(name string) (*MetricData, bool) {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
-	
+
 	metric, exists := pm.metrics[name]
 	if !exists {
 		return nil, false
 	}
-	
+
 	// 返回原始metric的引用
 	return metric, true
 }
@@ -164,7 +164,7 @@ func (pm *PerformanceMonitor) GetMetric(name string) (*MetricData, bool) {
 func (pm *PerformanceMonitor) Reset() {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
-	
+
 	pm.metrics = make(map[string]*MetricData)
 	pm.startTime = time.Now()
 }
@@ -210,64 +210,79 @@ func (mp *MemoryPool[T]) Put(obj *T) {
 // BytePool 字节池，使用固定大小池减少锁竞争
 type BytePool struct {
 	// 预定义常用大小的池，避免map查找和读写锁
-	pool1K   sync.Pool // 1KB
-	pool2K   sync.Pool // 2KB
-	pool4K   sync.Pool // 4KB
-	pool8K   sync.Pool // 8KB
-	pool16K  sync.Pool // 16KB
-	pool32K  sync.Pool // 32KB
-	pool64K  sync.Pool // 64KB
+	pool1K    sync.Pool // 1KB
+	pool2K    sync.Pool // 2KB
+	pool4K    sync.Pool // 4KB
+	pool8K    sync.Pool // 8KB
+	pool16K   sync.Pool // 16KB
+	pool32K   sync.Pool // 32KB
+	pool64K   sync.Pool // 64KB
 	poolLarge sync.Pool // 大于64K的缓冲区
+}
+
+// byteSliceWrapper 包装[]byte切片以避免sync.Pool的额外分配
+type byteSliceWrapper struct {
+	buf []byte
 }
 
 // NewBytePool 创建字节池
 func NewBytePool() *BytePool {
 	bp := &BytePool{}
-	
+
 	// 初始化各个大小的池
-	bp.pool1K.New = func() any { return make([]byte, 1024) }
-	bp.pool2K.New = func() any { return make([]byte, 2048) }
-	bp.pool4K.New = func() any { return make([]byte, 4096) }
-	bp.pool8K.New = func() any { return make([]byte, 8192) }
-	bp.pool16K.New = func() any { return make([]byte, 16384) }
-	bp.pool32K.New = func() any { return make([]byte, 32768) }
-	bp.pool64K.New = func() any { return make([]byte, 65536) }
-	bp.poolLarge.New = func() any { return make([]byte, 0, 131072) } // 128K初始容量
-	
+	bp.pool1K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 1024)} }
+	bp.pool2K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 2048)} }
+	bp.pool4K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 4096)} }
+	bp.pool8K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 8192)} }
+	bp.pool16K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 16384)} }
+	bp.pool32K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 32768)} }
+	bp.pool64K.New = func() any { return &byteSliceWrapper{buf: make([]byte, 65536)} }
+	bp.poolLarge.New = func() any { return &byteSliceWrapper{buf: make([]byte, 0, 131072)} } // 128K初始容量
+
 	return bp
 }
 
 // Get 获取指定大小的字节切片 - 无锁快速路径
 func (bp *BytePool) Get(size int) []byte {
+	var wrapper *byteSliceWrapper
 	switch {
 	case size <= 1024:
-		buf := bp.pool1K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool1K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 2048:
-		buf := bp.pool2K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool2K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 4096:
-		buf := bp.pool4K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool4K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 8192:
-		buf := bp.pool8K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool8K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 16384:
-		buf := bp.pool16K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool16K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 32768:
-		buf := bp.pool32K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool32K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	case size <= 65536:
-		buf := bp.pool64K.Get().([]byte)
-		return buf[:size]
+		wrapper = bp.pool64K.Get().(*byteSliceWrapper)
+		wrapper.buf = wrapper.buf[:size]
+		return wrapper.buf
 	default:
 		// 大缓冲区处理
-		buf := bp.poolLarge.Get().([]byte)
-		if cap(buf) < size {
-			buf = make([]byte, size)
+		wrapper = bp.poolLarge.Get().(*byteSliceWrapper)
+		if cap(wrapper.buf) < size {
+			wrapper.buf = make([]byte, size)
+		} else {
+			wrapper.buf = wrapper.buf[:size]
 		}
-		return buf[:size]
+		return wrapper.buf
 	}
 }
 
@@ -276,33 +291,33 @@ func (bp *BytePool) Put(buf []byte) {
 	if buf == nil {
 		return
 	}
-	
+
 	capacity := cap(buf)
-	
+
 	// 清零切片内容（安全考虑）
-	for i := range buf[:len(buf)] {
+	for i := range buf[:] {
 		buf[i] = 0
 	}
-	
+
 	// 根据容量归还到对应的池
 	switch {
 	case capacity == 1024:
-		bp.pool1K.Put(buf[:1024])
+		bp.pool1K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 2048:
-		bp.pool2K.Put(buf[:2048])
+		bp.pool2K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 4096:
-		bp.pool4K.Put(buf[:4096])
+		bp.pool4K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 8192:
-		bp.pool8K.Put(buf[:8192])
+		bp.pool8K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 16384:
-		bp.pool16K.Put(buf[:16384])
+		bp.pool16K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 32768:
-		bp.pool32K.Put(buf[:32768])
+		bp.pool32K.Put(&byteSliceWrapper{buf: buf})
 	case capacity == 65536:
-		bp.pool64K.Put(buf[:65536])
+		bp.pool64K.Put(&byteSliceWrapper{buf: buf})
 	case capacity >= 131072:
 		// 只回收大缓冲区，避免内存泄漏
-		bp.poolLarge.Put(buf[:0])
+		bp.poolLarge.Put(&byteSliceWrapper{buf: buf[:0]})
 	}
 	// 其他大小的缓冲区直接丢弃，让GC处理
 }
@@ -336,11 +351,11 @@ func (sp *StringPool) Put(sb *strings.Builder) {
 
 // RateLimiter 令牌桶限流器
 type RateLimiter struct {
-	tokens    int64
-	maxTokens int64
+	tokens     int64
+	maxTokens  int64
 	refillRate int64
 	lastRefill time.Time
-	mutex     sync.Mutex
+	mutex      sync.Mutex
 }
 
 // NewRateLimiter 创建限流器
@@ -362,23 +377,23 @@ func (rl *RateLimiter) Allow() bool {
 func (rl *RateLimiter) AllowN(n int64) bool {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
-	
+
 	now := time.Now()
 	elapsed := now.Sub(rl.lastRefill)
-	
+
 	// 添加令牌
 	if elapsed > 0 {
 		tokensToAdd := int64(elapsed.Seconds()) * rl.refillRate
 		rl.tokens = min(rl.maxTokens, rl.tokens+tokensToAdd)
 		rl.lastRefill = now
 	}
-	
+
 	// 检查是否有足够的令牌
 	if rl.tokens >= n {
 		rl.tokens -= n
 		return true
 	}
-	
+
 	return false
 }
 
@@ -401,10 +416,10 @@ func min(a, b int64) int64 {
 type CircuitBreaker struct {
 	failureThreshold int64
 	resetTimeout     time.Duration
-	state           CBState
-	failures        int64
-	lastFailTime    time.Time
-	mutex           sync.RWMutex
+	state            CBState
+	failures         int64
+	lastFailTime     time.Time
+	mutex            sync.RWMutex
 }
 
 // CBState 熔断器状态
@@ -421,7 +436,7 @@ func NewCircuitBreaker(failureThreshold int64, resetTimeout time.Duration) *Circ
 	return &CircuitBreaker{
 		failureThreshold: failureThreshold,
 		resetTimeout:     resetTimeout,
-		state:           CBStateClosed,
+		state:            CBStateClosed,
 	}
 }
 
@@ -430,7 +445,7 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 	if !cb.allowRequest() {
 		return fmt.Errorf("circuit breaker is open")
 	}
-	
+
 	err := fn()
 	cb.recordResult(err == nil)
 	return err
@@ -440,9 +455,9 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 func (cb *CircuitBreaker) allowRequest() bool {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
-	
+
 	now := time.Now()
-	
+
 	switch cb.state {
 	case CBStateClosed:
 		return true
@@ -463,7 +478,7 @@ func (cb *CircuitBreaker) allowRequest() bool {
 func (cb *CircuitBreaker) recordResult(success bool) {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
-	
+
 	if success {
 		cb.failures = 0
 		if cb.state == CBStateHalfOpen {
@@ -472,7 +487,7 @@ func (cb *CircuitBreaker) recordResult(success bool) {
 	} else {
 		cb.failures++
 		cb.lastFailTime = time.Now()
-		
+
 		if cb.failures >= cb.failureThreshold {
 			cb.state = CBStateOpen
 		}
@@ -491,10 +506,10 @@ type SystemInfo struct {
 	GoVersion    string `json:"goVersion"`
 	NumCPU       int    `json:"numCPU"`
 	NumGoroutine int    `json:"numGoroutine"`
-	
+
 	// 内存信息
 	MemStats MemoryStats `json:"memStats"`
-	
+
 	// GC信息
 	GCStats GCStats `json:"gcStats"`
 }
@@ -513,17 +528,17 @@ type MemoryStats struct {
 
 // GCStats GC统计
 type GCStats struct {
-	NumGC        uint32  `json:"numGC"`
-	PauseTotal   uint64  `json:"pauseTotal"`
-	PauseNs      []uint64 `json:"pauseNs"`
-	LastGC       uint64  `json:"lastGC"`
+	NumGC      uint32   `json:"numGC"`
+	PauseTotal uint64   `json:"pauseTotal"`
+	PauseNs    []uint64 `json:"pauseNs"`
+	LastGC     uint64   `json:"lastGC"`
 }
 
 // GetSystemInfo 获取系统信息
 func GetSystemInfo() *SystemInfo {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	return &SystemInfo{
 		GoVersion:    runtime.Version(),
 		NumCPU:       runtime.NumCPU(),
@@ -556,19 +571,19 @@ func ForceGC() {
 func GetMemoryUsage() map[string]float64 {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	return map[string]float64{
-		"alloc_mb":      float64(m.Alloc) / 1024 / 1024,
+		"alloc_mb":       float64(m.Alloc) / 1024 / 1024,
 		"total_alloc_mb": float64(m.TotalAlloc) / 1024 / 1024,
-		"sys_mb":        float64(m.Sys) / 1024 / 1024,
-		"heap_alloc_mb": float64(m.HeapAlloc) / 1024 / 1024,
-		"heap_sys_mb":   float64(m.HeapSys) / 1024 / 1024,
+		"sys_mb":         float64(m.Sys) / 1024 / 1024,
+		"heap_alloc_mb":  float64(m.HeapAlloc) / 1024 / 1024,
+		"heap_sys_mb":    float64(m.HeapSys) / 1024 / 1024,
 	}
 }
 
 // 全局性能监控器实例
 var (
-	GlobalMonitor = NewPerformanceMonitor()
-	GlobalBytePool = NewBytePool()
+	GlobalMonitor    = NewPerformanceMonitor()
+	GlobalBytePool   = NewBytePool()
 	GlobalStringPool = NewStringPool()
 )

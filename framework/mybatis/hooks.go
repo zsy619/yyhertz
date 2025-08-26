@@ -1,6 +1,6 @@
 // Package mybatis 提供常用钩子函数
 //
-// 使用Go函数式编程风格，避免Java式的过度抽象
+// 使用Go函数式编程风格，避免过度抽象
 package mybatis
 
 import (
@@ -92,7 +92,7 @@ func TransactionHook() BeforeHook {
 }
 
 // CacheHook 缓存钩子 - 简单的查询结果缓存
-func CacheHook(cache Cache) (BeforeHook, AfterHook) {
+func CacheHook(cache HooksCache) (BeforeHook, AfterHook) {
 	beforeHook := func(ctx context.Context, sql string, args []any) error {
 		// 在这里可以检查缓存，但由于钩子的限制，我们主要在after中处理
 		return nil
@@ -238,8 +238,9 @@ type MetricsCollector interface {
 	IncrementErrorCount()
 }
 
-// Cache 简单缓存接口
-type Cache interface {
+// Cache 缓存接口 - 使用cache包中的统一定义
+// 为了保持向后兼容，这里使用类型别名
+type HooksCache interface {
 	Set(key string, value any, duration time.Duration)
 	Get(key string) (any, bool)
 	Delete(key string)
@@ -283,6 +284,9 @@ func (c *SimpleMetricsCollector) GetStats() map[string]any {
 type SimpleCache struct {
 	data map[string]cacheItem
 }
+
+// 确保 SimpleCache 实现 HooksCache 接口
+var _ HooksCache = (*SimpleCache)(nil)
 
 type cacheItem struct {
 	value  any

@@ -32,8 +32,6 @@ type ExecutorPool struct {
 	onBeforeExecute func(*TaskExecution)
 	onAfterExecute  func(*TaskExecution, error)
 	onPanic         func(*TaskExecution, any)
-
-	mutex sync.RWMutex
 }
 
 // ExecutorConfig 执行器配置
@@ -215,11 +213,21 @@ func (ep *ExecutorPool) ExecuteSync(task *Task) error {
 	}
 
 	// 等待执行完成
-	for execution.Status == ExecutionStatusPending || execution.Status == ExecutionStatusRunning || execution.Status == ExecutionStatusRetrying {
+	for {
+		execution.mutex.RLock()
+		status := execution.Status
+		execution.mutex.RUnlock()
+
+		if status != ExecutionStatusPending && status != ExecutionStatusRunning && status != ExecutionStatusRetrying {
+			break
+		}
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	return execution.LastError
+	execution.mutex.RLock()
+	lastError := execution.LastError
+	execution.mutex.RUnlock()
+	return lastError
 }
 
 // worker 工作协程
@@ -242,9 +250,11 @@ func (ep *ExecutorPool) worker(workerID int) {
 
 // executeTask 执行任务
 func (ep *ExecutorPool) executeTask(execution *TaskExecution, workerID int) {
+	execution.mutex.Lock()
 	execution.WorkerID = workerID
 	execution.Status = ExecutionStatusRunning
 	execution.StartTime = time.Now()
+	execution.mutex.Unlock()
 
 	// 执行前回调
 	if ep.onBeforeExecute != nil {
@@ -280,6 +290,7 @@ func (ep *ExecutorPool) executeTask(execution *TaskExecution, workerID int) {
 	}
 
 	// 更新执行结果
+	execution.mutex.Lock()
 	execution.EndTime = time.Now()
 	execution.Duration = execution.EndTime.Sub(execution.StartTime)
 	execution.LastError = err
@@ -288,12 +299,15 @@ func (ep *ExecutorPool) executeTask(execution *TaskExecution, workerID int) {
 	if err != nil {
 		execution.Status = ExecutionStatusFailed
 		execution.RetryCount++
+		execution.mutex.Unlock()
 
 		atomic.AddInt64(&ep.totalFailed, 1)
 
 		// 重试逻辑
 		if execution.RetryCount < ep.config.MaxRetries {
+			execution.mutex.Lock()
 			execution.Status = ExecutionStatusRetrying
+			execution.mutex.Unlock()
 
 			// 延迟重试
 			go func() {
@@ -305,13 +319,18 @@ func (ep *ExecutorPool) executeTask(execution *TaskExecution, workerID int) {
 					config.Infof("Task %s retry %d/%d scheduled",
 						execution.Task.ID, execution.RetryCount, ep.config.MaxRetries)
 				default:
+					execution.mutex.Lock()
 					execution.Status = ExecutionStatusFailed
+					execution.mutex.Unlock()
 					config.Errorf("Failed to schedule retry for task %s: queue full", execution.Task.ID)
 				}
 			}()
+		} else {
+			execution.mutex.Unlock()
 		}
 	} else {
 		execution.Status = ExecutionStatusCompleted
+		execution.mutex.Unlock()
 		atomic.AddInt64(&ep.totalSuccessful, 1)
 	}
 
@@ -323,12 +342,18 @@ func (ep *ExecutorPool) executeTask(execution *TaskExecution, workerID int) {
 	}
 
 	// 记录执行日志
-	if execution.Status == ExecutionStatusCompleted {
+	execution.mutex.RLock()
+	status := execution.Status
+	endTime := execution.EndTime
+	retryCount := execution.RetryCount
+	execution.mutex.RUnlock()
+
+	if status == ExecutionStatusCompleted {
 		config.Infof("Task %s completed in %v by worker %d",
-			execution.Task.ID, execution.Duration, workerID)
-	} else if execution.Status == ExecutionStatusFailed {
+			execution.Task.ID, endTime.Sub(execution.StartTime), workerID)
+	} else if status == ExecutionStatusFailed {
 		config.Errorf("Task %s failed after %d retries in %v by worker %d: %v",
-			execution.Task.ID, execution.RetryCount, execution.Duration, workerID, err)
+			execution.Task.ID, retryCount, endTime.Sub(execution.StartTime), workerID, err)
 	}
 }
 

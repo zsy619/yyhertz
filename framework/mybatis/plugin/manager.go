@@ -324,13 +324,13 @@ func (manager *PluginManager) LoadConfiguration(pluginConfig *PluginConfiguratio
 
 // ExecuteWithPlugins 使用插件执行方法
 func (manager *PluginManager) ExecuteWithPlugins(target any, methodName string, args []any) (any, error) {
-	// 创建调用信息
-	method, exists := manager.findMethod(target, methodName)
+	// 检查方法是否存在
+	_, exists := manager.findMethod(target, methodName)
 	if !exists {
 		return nil, fmt.Errorf("方法 %s 不存在", methodName)
 	}
 
-	invocation := NewInvocation(target, method, args)
+	invocation := NewInvocation(target, methodName, args)
 
 	// 获取启用的插件
 	enabledPlugins := manager.GetEnabledPlugins()

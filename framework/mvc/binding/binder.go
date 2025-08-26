@@ -228,7 +228,7 @@ func (pb *ParameterBinder) extractRawValue(adapter *ContextAdapter, param *Param
 	case SourceJSON:
 		return pb.extractJSONValue(adapter, param)
 	case SourceHeader:
-		return adapter.ContextHelpers.GetHeader(adapter.ctx, param.Name), nil
+		return adapter.ContextHelper.GetHeader(adapter.ctx, param.Name), nil
 	case SourceCookie:
 		cookie := adapter.Cookie(param.Name)
 		if cookie == "" {

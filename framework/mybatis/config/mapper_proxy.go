@@ -5,14 +5,28 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"reflect"
+	"sync"
 )
+
+// MethodStats 方法统计信息
+type MethodStats struct {
+	CallCount    int64
+	TotalTime    int64
+	SuccessCount int64
+	ErrorCount   int64
+}
 
 // MapperProxy 映射器代理
 type MapperProxy struct {
 	sqlSession      any
 	mapperInterface reflect.Type
 	methodCache     map[string]*MapperMethod
+
+	// 统计信息
+	statsMutex sync.RWMutex
+	stats      map[string]*MethodStats
 }
 
 // MapperInvocationHandler 映射器调用处理器
@@ -34,30 +48,10 @@ func NewMapperProxy(mapperInterface reflect.Type, methodCache map[string]*Mapper
 
 // createProxy 创建代理实例
 func createProxy(mapperInterface reflect.Type, proxy *MapperProxy) any {
-	// 创建一个实现了mapperInterface的结构体类型
-	structFields := make([]reflect.StructField, 0)
+	// 创建方法映射
+	methodMap := make(map[string]reflect.Value)
 
-	// 为接口的每个方法创建对应的函数字段
-	for i := 0; i < mapperInterface.NumMethod(); i++ {
-		method := mapperInterface.Method(i)
-		structFields = append(structFields, reflect.StructField{
-			Name: method.Name,
-			Type: method.Type,
-		})
-	}
-
-	// 如果没有方法，创建一个空结构体
-	if len(structFields) == 0 {
-		structFields = append(structFields, reflect.StructField{
-			Name: "dummy",
-			Type: reflect.TypeOf(int(0)),
-		})
-	}
-
-	structType := reflect.StructOf(structFields)
-	structValue := reflect.New(structType).Elem()
-
-	// 为每个方法设置实现
+	// 为接口的每个方法创建对应的函数实现
 	for i := 0; i < mapperInterface.NumMethod(); i++ {
 		method := mapperInterface.Method(i)
 		methodName := method.Name
@@ -66,22 +60,24 @@ func createProxy(mapperInterface reflect.Type, proxy *MapperProxy) any {
 			return proxy.invoke(methodName, args)
 		})
 
-		if i < structValue.NumField() {
-			structValue.Field(i).Set(funcImpl)
-		}
+		methodMap[methodName] = funcImpl
 	}
 
 	// 创建一个实现接口的包装器
-	return &MapperProxyWrapper{
+	wrapper := &MapperProxyWrapper{
 		proxy:           proxy,
 		mapperInterface: mapperInterface,
+		methodMap:       methodMap,
 	}
+
+	return wrapper
 }
 
 // MapperProxyWrapper 映射器代理包装器
 type MapperProxyWrapper struct {
 	proxy           *MapperProxy
 	mapperInterface reflect.Type
+	methodMap       map[string]reflect.Value
 }
 
 // 实现接口方法的通用调用
@@ -89,7 +85,11 @@ func (w *MapperProxyWrapper) Call(methodName string, args ...any) ([]any, error)
 	// 转换参数为reflect.Value
 	reflectArgs := make([]reflect.Value, len(args))
 	for i, arg := range args {
-		reflectArgs[i] = reflect.ValueOf(arg)
+		if arg == nil {
+			reflectArgs[i] = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
+		} else {
+			reflectArgs[i] = reflect.ValueOf(arg)
+		}
 	}
 
 	// 调用代理方法
@@ -98,7 +98,11 @@ func (w *MapperProxyWrapper) Call(methodName string, args ...any) ([]any, error)
 	// 转换返回值
 	returnValues := make([]any, len(results))
 	for i, result := range results {
-		returnValues[i] = result.Interface()
+		if result.IsValid() {
+			returnValues[i] = result.Interface()
+		} else {
+			returnValues[i] = nil
+		}
 	}
 
 	// 检查最后一个返回值是否为error
@@ -111,16 +115,62 @@ func (w *MapperProxyWrapper) Call(methodName string, args ...any) ([]any, error)
 	return returnValues, nil
 }
 
+// 实现接口的所有方法
+func (w *MapperProxyWrapper) ImplementsMethod(methodName string) bool {
+	_, exists := w.methodMap[methodName]
+	return exists
+}
+
+// 获取方法实现
+func (w *MapperProxyWrapper) GetMethod(methodName string) (reflect.Value, bool) {
+	method, exists := w.methodMap[methodName]
+	return method, exists
+}
+
+// 添加通用方法调用支持
+func (w *MapperProxyWrapper) CallMethod(methodName string, args ...reflect.Value) []reflect.Value {
+	if method, exists := w.methodMap[methodName]; exists {
+		return method.Call(args)
+	}
+	return []reflect.Value{reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())}
+}
+
 // invoke 调用映射器方法
 func (mp *MapperProxy) invoke(methodName string, args []reflect.Value) []reflect.Value {
-	// 获取或创建映射器方法
-	mapperMethod := mp.cachedMapperMethod(methodName)
-	if mapperMethod == nil {
+	// 检查方法名是否为空
+	if methodName == "" {
+		log.Printf("Empty method name provided")
 		return []reflect.Value{reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())}
 	}
 
+	// 获取或创建映射器方法
+	mapperMethod := mp.cachedMapperMethod(methodName)
+	if mapperMethod == nil {
+		log.Printf("Failed to create mapper method for: %s", methodName)
+		return []reflect.Value{reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())}
+	}
+
+	// 记录方法调用
+	log.Printf("Invoking mapper method: %s", methodName)
+
 	// 执行映射器方法
-	return mapperMethod.execute(mp.sqlSession, args)
+	results := mapperMethod.execute(mp.sqlSession, args)
+
+	// 检查执行结果
+	if len(results) == 0 {
+		log.Printf("Mapper method %s returned empty results", methodName)
+		return []reflect.Value{reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())}
+	}
+
+	// 检查是否有错误返回
+	if len(results) > 0 {
+		lastResult := results[len(results)-1]
+		if lastResult.Type().String() == "error" && !lastResult.IsNil() {
+			log.Printf("Mapper method %s returned error: %v", methodName, lastResult.Interface())
+		}
+	}
+
+	return results
 }
 
 // cachedMapperMethod 获取缓存的映射器方法
@@ -135,6 +185,12 @@ func (mp *MapperProxy) cachedMapperMethod(methodName string) *MapperMethod {
 
 // createMapperMethod 创建映射器方法
 func (mp *MapperProxy) createMapperMethod(methodName string) *MapperMethod {
+	// 验证方法签名
+	if err := mp.validateMethodSignature(methodName); err != nil {
+		log.Printf("Invalid method signature for %s: %v", methodName, err)
+		return nil
+	}
+
 	// 获取方法信息
 	method, exists := mp.mapperInterface.MethodByName(methodName)
 	if !exists {
@@ -162,18 +218,33 @@ func (mp *MapperProxy) createMapperMethod(methodName string) *MapperMethod {
 	}
 }
 
+
 // getSqlCommandType 获取SQL命令类型
 func (mp *MapperProxy) getSqlCommandType(methodName string) SqlCommandType {
 	// 根据方法名推断SQL类型
 	switch {
-	case len(methodName) >= 6 && methodName[:6] == "insert" || methodName[:6] == "Insert":
+	case len(methodName) >= 6 && (methodName[:6] == "insert" || methodName[:6] == "Insert"):
 		return SqlCommandTypeInsert
-	case len(methodName) >= 6 && methodName[:6] == "update" || methodName[:6] == "Update":
+	case len(methodName) >= 6 && (methodName[:6] == "update" || methodName[:6] == "Update"):
 		return SqlCommandTypeUpdate
-	case len(methodName) >= 6 && methodName[:6] == "delete" || methodName[:6] == "Delete":
+	case len(methodName) >= 6 && (methodName[:6] == "delete" || methodName[:6] == "Delete"):
 		return SqlCommandTypeDelete
-	case len(methodName) >= 6 && methodName[:6] == "select" || methodName[:6] == "Select":
+	case len(methodName) >= 6 && (methodName[:6] == "select" || methodName[:6] == "Select"):
 		return SqlCommandTypeSelect
+	case len(methodName) >= 4 && (methodName[:4] == "list" || methodName[:4] == "List"):
+		return SqlCommandTypeSelect
+	case len(methodName) >= 3 && (methodName[:3] == "get" || methodName[:3] == "Get"):
+		return SqlCommandTypeSelect
+	case len(methodName) >= 4 && (methodName[:4] == "find" || methodName[:4] == "Find"):
+		return SqlCommandTypeSelect
+	case len(methodName) >= 5 && (methodName[:5] == "query" || methodName[:5] == "Query"):
+		return SqlCommandTypeSelect
+	case len(methodName) >= 3 && (methodName[:3] == "add" || methodName[:3] == "Add"):
+		return SqlCommandTypeInsert
+	case len(methodName) >= 3 && (methodName[:3] == "put" || methodName[:3] == "Put"):
+		return SqlCommandTypeUpdate
+	case len(methodName) >= 6 && (methodName[:6] == "remove" || methodName[:6] == "Remove"):
+		return SqlCommandTypeDelete
 	default:
 		return SqlCommandTypeSelect // 默认为查询
 	}
@@ -205,6 +276,43 @@ func (mp *MapperProxy) returnsVoid(methodType reflect.Type) bool {
 		(methodType.NumOut() == 1 && methodType.Out(0).String() == "error")
 }
 
+
+// getMethodType 获取方法类型
+func (mp *MapperProxy) getMethodType(methodName string) reflect.Type {
+	method, exists := mp.mapperInterface.MethodByName(methodName)
+	if !exists {
+		return nil
+	}
+	return method.Type
+}
+
+// validateMethodSignature 验证方法签名是否符合MyBatis规范
+func (mp *MapperProxy) validateMethodSignature(methodName string) error {
+	methodType := mp.getMethodType(methodName)
+	if methodType == nil {
+		return fmt.Errorf("method %s not found", methodName)
+	}
+
+	// 检查参数数量（最多支持2个参数：参数对象和RowBounds）
+	if methodType.NumIn() > 2 {
+		return fmt.Errorf("method %s has too many parameters, maximum 2 allowed", methodName)
+	}
+
+	// 检查返回值数量（最多支持2个返回值：结果对象和error）
+	if methodType.NumOut() > 2 {
+		return fmt.Errorf("method %s has too many return values, maximum 2 allowed", methodName)
+	}
+
+	// 如果有返回值，最后一个必须是error类型
+	if methodType.NumOut() == 2 {
+		if methodType.Out(1).String() != "error" {
+			return fmt.Errorf("method %s second return value must be error type", methodName)
+		}
+	}
+
+	return nil
+}
+
 // execute 执行映射器方法
 func (mm *MapperMethod) execute(sqlSession any, args []reflect.Value) []reflect.Value {
 	// 转换参数
@@ -232,82 +340,211 @@ func (mm *MapperMethod) convertArgsToSqlCommandParam(args []reflect.Value) any {
 	}
 
 	if len(args) == 1 {
+		// 如果参数是nil，返回nil
+		if !args[0].IsValid() || (args[0].Kind() == reflect.Ptr && args[0].IsNil()) {
+			return nil
+		}
 		return args[0].Interface()
 	}
 
 	// 多参数情况，转换为map
 	paramMap := make(map[string]any)
 	for i, arg := range args {
-		paramMap[fmt.Sprintf("param%d", i+1)] = arg.Interface()
+		// 处理nil参数
+		if !arg.IsValid() || (arg.Kind() == reflect.Ptr && arg.IsNil()) {
+			paramMap[fmt.Sprintf("param%d", i+1)] = nil
+		} else {
+			paramMap[fmt.Sprintf("param%d", i+1)] = arg.Interface()
+		}
 	}
 	return paramMap
 }
 
 // executeInsert 执行插入操作
 func (mm *MapperMethod) executeInsert(sqlSession any, param any) []reflect.Value {
-	// 这里需要调用sqlSession的Insert方法
-	// 简化实现，实际需要类型断言和错误处理
-	result := int64(1) // 模拟插入结果
-	var err error
+	// 使用反射调用SqlSession的Insert方法
+	sessionValue := reflect.ValueOf(sqlSession)
+	if !sessionValue.IsValid() || sessionValue.Kind() != reflect.Interface && sessionValue.Kind() != reflect.Ptr {
+		err := fmt.Errorf("invalid sqlSession type for insert operation")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 通过反射调用Insert方法
+	insertMethod := sessionValue.MethodByName("Insert")
+	if !insertMethod.IsValid() {
+		err := fmt.Errorf("sqlSession does not have Insert method")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 调用Insert方法
+	args := []reflect.Value{
+		reflect.ValueOf(mm.Command.Name),
+		reflect.ValueOf(param),
+	}
+	results := insertMethod.Call(args)
+
+	// 记录SQL执行日志  
+	getConfigMethod := sessionValue.MethodByName("GetConfiguration")
+	if getConfigMethod.IsValid() {
+		configResults := getConfigMethod.Call([]reflect.Value{})
+		if len(configResults) > 0 && !configResults[0].IsNil() {
+			log.Printf("Executing INSERT statement: %s with parameters: %v", mm.Command.Name, param)
+		}
+	}
 
 	if mm.MethodSignature.ReturnsVoid {
-		if err != nil {
-			return []reflect.Value{reflect.ValueOf(err)}
+		if len(results) > 1 && !results[1].IsNil() {
+			return []reflect.Value{results[1]}
 		}
 		return []reflect.Value{}
 	}
 
+	if len(results) >= 2 {
+		return []reflect.Value{results[0], results[1]}
+	}
 	return []reflect.Value{
-		reflect.ValueOf(result),
-		reflect.ValueOf(err),
+		reflect.Zero(reflect.TypeOf(int64(0))),
+		reflect.ValueOf(fmt.Errorf("unexpected return values from Insert method")),
 	}
 }
 
 // executeUpdate 执行更新操作
 func (mm *MapperMethod) executeUpdate(sqlSession any, param any) []reflect.Value {
-	result := int64(1) // 模拟更新结果
-	var err error
+	// 使用反射调用SqlSession的Update方法
+	sessionValue := reflect.ValueOf(sqlSession)
+	if !sessionValue.IsValid() || sessionValue.Kind() != reflect.Interface && sessionValue.Kind() != reflect.Ptr {
+		err := fmt.Errorf("invalid sqlSession type for update operation")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 通过反射调用Update方法
+	updateMethod := sessionValue.MethodByName("Update")
+	if !updateMethod.IsValid() {
+		err := fmt.Errorf("sqlSession does not have Update method")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 调用Update方法
+	args := []reflect.Value{
+		reflect.ValueOf(mm.Command.Name),
+		reflect.ValueOf(param),
+	}
+	results := updateMethod.Call(args)
+
+	// 记录SQL执行日志
+	getConfigMethod := sessionValue.MethodByName("GetConfiguration")
+	if getConfigMethod.IsValid() {
+		configResults := getConfigMethod.Call([]reflect.Value{})
+		if len(configResults) > 0 && !configResults[0].IsNil() {
+			log.Printf("Executing UPDATE statement: %s with parameters: %v", mm.Command.Name, param)
+		}
+	}
 
 	if mm.MethodSignature.ReturnsVoid {
-		if err != nil {
-			return []reflect.Value{reflect.ValueOf(err)}
+		if len(results) > 1 && !results[1].IsNil() {
+			return []reflect.Value{results[1]}
 		}
 		return []reflect.Value{}
 	}
 
+	if len(results) >= 2 {
+		return []reflect.Value{results[0], results[1]}
+	}
 	return []reflect.Value{
-		reflect.ValueOf(result),
-		reflect.ValueOf(err),
+		reflect.Zero(reflect.TypeOf(int64(0))),
+		reflect.ValueOf(fmt.Errorf("unexpected return values from Update method")),
 	}
 }
 
 // executeDelete 执行删除操作
 func (mm *MapperMethod) executeDelete(sqlSession any, param any) []reflect.Value {
-	result := int64(1) // 模拟删除结果
-	var err error
+	// 使用反射调用SqlSession的Delete方法
+	sessionValue := reflect.ValueOf(sqlSession)
+	if !sessionValue.IsValid() || sessionValue.Kind() != reflect.Interface && sessionValue.Kind() != reflect.Ptr {
+		err := fmt.Errorf("invalid sqlSession type for delete operation")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 通过反射调用Delete方法
+	deleteMethod := sessionValue.MethodByName("Delete")
+	if !deleteMethod.IsValid() {
+		err := fmt.Errorf("sqlSession does not have Delete method")
+		if mm.MethodSignature.ReturnsVoid {
+			return []reflect.Value{reflect.ValueOf(err)}
+		}
+		return []reflect.Value{
+			reflect.Zero(reflect.TypeOf(int64(0))),
+			reflect.ValueOf(err),
+		}
+	}
+
+	// 调用Delete方法
+	args := []reflect.Value{
+		reflect.ValueOf(mm.Command.Name),
+		reflect.ValueOf(param),
+	}
+	results := deleteMethod.Call(args)
+
+	// 记录SQL执行日志
+	getConfigMethod := sessionValue.MethodByName("GetConfiguration")
+	if getConfigMethod.IsValid() {
+		configResults := getConfigMethod.Call([]reflect.Value{})
+		if len(configResults) > 0 && !configResults[0].IsNil() {
+			log.Printf("Executing DELETE statement: %s with parameters: %v", mm.Command.Name, param)
+		}
+	}
 
 	if mm.MethodSignature.ReturnsVoid {
-		if err != nil {
-			return []reflect.Value{reflect.ValueOf(err)}
+		if len(results) > 1 && !results[1].IsNil() {
+			return []reflect.Value{results[1]}
 		}
 		return []reflect.Value{}
 	}
 
+	if len(results) >= 2 {
+		return []reflect.Value{results[0], results[1]}
+	}
 	return []reflect.Value{
-		reflect.ValueOf(result),
-		reflect.ValueOf(err),
+		reflect.Zero(reflect.TypeOf(int64(0))),
+		reflect.ValueOf(fmt.Errorf("unexpected return values from Delete method")),
 	}
 }
 
 // executeSelect 执行查询操作
 func (mm *MapperMethod) executeSelect(sqlSession any, param any) []reflect.Value {
-	// 类型断言获取SqlSession
-	session, ok := sqlSession.(interface {
-		SelectOne(statement string, parameter any) (any, error)
-		SelectList(statement string, parameter any) ([]any, error)
-		SelectMap(statement string, parameter any) (map[string]any, error)
-	})
-	if !ok {
+	// 使用反射调用SqlSession的查询方法
+	sessionValue := reflect.ValueOf(sqlSession)
+	if !sessionValue.IsValid() || sessionValue.Kind() != reflect.Interface && sessionValue.Kind() != reflect.Ptr {
 		err := fmt.Errorf("invalid sqlSession type")
 		return []reflect.Value{
 			reflect.Zero(reflect.TypeOf((*any)(nil)).Elem()),
@@ -315,47 +552,86 @@ func (mm *MapperMethod) executeSelect(sqlSession any, param any) []reflect.Value
 		}
 	}
 
+	// 记录SQL执行日志
+	getConfigMethod := sessionValue.MethodByName("GetConfiguration")
+	if getConfigMethod.IsValid() {
+		configResults := getConfigMethod.Call([]reflect.Value{})
+		if len(configResults) > 0 && !configResults[0].IsNil() {
+			log.Printf("Executing SELECT statement: %s with parameters: %v", mm.Command.Name, param)
+		}
+	}
+
 	if mm.MethodSignature.ReturnsMany {
-		// 返回列表
-		result, err := session.SelectList(mm.Command.Name, param)
-		if err != nil {
+		// 返回列表 - 调用SelectList方法
+		selectListMethod := sessionValue.MethodByName("SelectList")
+		if !selectListMethod.IsValid() {
+			err := fmt.Errorf("sqlSession does not have SelectList method")
 			return []reflect.Value{
 				reflect.Zero(reflect.TypeOf([]any{})),
 				reflect.ValueOf(err),
 			}
 		}
 
+		args := []reflect.Value{
+			reflect.ValueOf(mm.Command.Name),
+			reflect.ValueOf(param),
+		}
+		results := selectListMethod.Call(args)
+
+		if len(results) >= 2 {
+			return []reflect.Value{results[0], results[1]}
+		}
 		return []reflect.Value{
-			reflect.ValueOf(result),
-			reflect.ValueOf((*error)(nil)).Elem(),
+			reflect.Zero(reflect.TypeOf([]any{})),
+			reflect.ValueOf(fmt.Errorf("unexpected return values from SelectList method")),
 		}
 	} else if mm.MethodSignature.ReturnsMap {
-		// 返回Map
-		result, err := session.SelectMap(mm.Command.Name, param)
-		if err != nil {
+		// 返回Map - 调用SelectMap方法
+		selectMapMethod := sessionValue.MethodByName("SelectMap")
+		if !selectMapMethod.IsValid() {
+			err := fmt.Errorf("sqlSession does not have SelectMap method")
 			return []reflect.Value{
 				reflect.Zero(reflect.TypeOf(map[string]any{})),
 				reflect.ValueOf(err),
 			}
 		}
 
+		args := []reflect.Value{
+			reflect.ValueOf(mm.Command.Name),
+			reflect.ValueOf(param),
+		}
+		results := selectMapMethod.Call(args)
+
+		if len(results) >= 2 {
+			return []reflect.Value{results[0], results[1]}
+		}
 		return []reflect.Value{
-			reflect.ValueOf(result),
-			reflect.ValueOf((*error)(nil)).Elem(),
+			reflect.Zero(reflect.TypeOf(map[string]any{})),
+			reflect.ValueOf(fmt.Errorf("unexpected return values from SelectMap method")),
 		}
 	} else {
-		// 返回单个对象
-		result, err := session.SelectOne(mm.Command.Name, param)
-		if err != nil {
+		// 返回单个对象 - 调用SelectOne方法
+		selectOneMethod := sessionValue.MethodByName("SelectOne")
+		if !selectOneMethod.IsValid() {
+			err := fmt.Errorf("sqlSession does not have SelectOne method")
 			return []reflect.Value{
 				reflect.Zero(reflect.TypeOf((*any)(nil)).Elem()),
 				reflect.ValueOf(err),
 			}
 		}
 
+		args := []reflect.Value{
+			reflect.ValueOf(mm.Command.Name),
+			reflect.ValueOf(param),
+		}
+		results := selectOneMethod.Call(args)
+
+		if len(results) >= 2 {
+			return []reflect.Value{results[0], results[1]}
+		}
 		return []reflect.Value{
-			reflect.ValueOf(result),
-			reflect.ValueOf((*error)(nil)).Elem(),
+			reflect.Zero(reflect.TypeOf((*any)(nil)).Elem()),
+			reflect.ValueOf(fmt.Errorf("unexpected return values from SelectOne method")),
 		}
 	}
 }

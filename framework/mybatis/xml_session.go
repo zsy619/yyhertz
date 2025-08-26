@@ -1,6 +1,6 @@
 // Package mybatis XML Mapper会话支持
 //
-// 扩展SimpleSession以支持XML Mapper文件，提供与Java MyBatis兼容的使用体验
+// 扩展SimpleSession以支持XML Mapper文件，提供与MyBatis兼容的使用体验
 package mybatis
 
 import (
@@ -476,14 +476,14 @@ func (xs *xmlSession) applyResultMap(result any, resultMapId string) (any, error
 		// 应用ID映射
 		for _, idMapping := range resultMap.IDMappings {
 			if value, exists := resultData[idMapping.Column]; exists {
-				mappedResult[idMapping.Property] = xs.convertValue(value, idMapping.JavaType)
+				mappedResult[idMapping.Property] = xs.convertValue(value, idMapping.TargetType)
 			}
 		}
 
 		// 应用结果映射
 		for _, mapping := range resultMap.ResultMappings {
 			if value, exists := resultData[mapping.Column]; exists {
-				mappedResult[mapping.Property] = xs.convertValue(value, mapping.JavaType)
+				mappedResult[mapping.Property] = xs.convertValue(value, mapping.TargetType)
 			}
 		}
 
@@ -502,44 +502,44 @@ func (xs *xmlSession) applyResultMap(result any, resultMapId string) (any, error
 	return result, nil
 }
 
-// convertValue 根据JavaType转换值
-func (xs *xmlSession) convertValue(value any, javaType string) any {
-	if javaType == "" || value == nil {
+// convertValue 根据TargetType转换值
+func (xs *xmlSession) convertValue(value any, targetType string) any {
+	if targetType == "" || value == nil {
 		return value
 	}
 
-	switch strings.ToLower(javaType) {
-	case "string", "java.lang.string":
+	switch strings.ToLower(targetType) {
+	case "string", "go.string":
 		return fmt.Sprintf("%v", value)
-	case "int", "integer", "java.lang.integer":
+	case "int", "integer", "go.int":
 		if str, ok := value.(string); ok {
 			if i, err := strconv.Atoi(str); err == nil {
 				return i
 			}
 		}
 		return value
-	case "long", "java.lang.long":
+	case "long", "go.long":
 		if str, ok := value.(string); ok {
 			if l, err := strconv.ParseInt(str, 10, 64); err == nil {
 				return l
 			}
 		}
 		return value
-	case "double", "java.lang.double":
+	case "double", "go.double":
 		if str, ok := value.(string); ok {
 			if d, err := strconv.ParseFloat(str, 64); err == nil {
 				return d
 			}
 		}
 		return value
-	case "boolean", "java.lang.boolean":
+	case "boolean", "go.bool":
 		if str, ok := value.(string); ok {
 			if b, err := strconv.ParseBool(str); err == nil {
 				return b
 			}
 		}
 		return value
-	case "date", "java.util.date":
+	case "date", "time.time":
 		if str, ok := value.(string); ok {
 			// 尝试解析常见的日期格式
 			formats := []string{

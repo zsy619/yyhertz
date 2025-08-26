@@ -31,7 +31,7 @@ type Product struct {
 	Price       float64  `json:"price" form:"price" validate:"required|decimal|positive"`
 	Description string   `json:"description" form:"description" validate:"maxLength:1000"`
 	Category    string   `json:"category" form:"category" validate:"required|in:electronics,clothing,books,home"`
-	SKU         string   `json:"sku" form:"sku" validate:"required|regex:^[A-Z]{2}-\d{6}$"`
+	SKU         string   `json:"sku" form:"sku" validate:"required|regex:^[A-Z]{2}-\\d{6}$"`
 	Weight      float64  `json:"weight" form:"weight" validate:"positive"`
 	InStock     bool     `json:"in_stock" form:"in_stock"`
 	Tags        []string `json:"tags" form:"tags" validate:"maxLength:5"`

@@ -163,7 +163,7 @@ func (plugin *CacheEnhancerPlugin) SetProperties(properties map[string]any) {
 // generateCacheKey 生成缓存键
 func (plugin *CacheEnhancerPlugin) generateCacheKey(invocation *Invocation) string {
 	// 使用方法名和参数生成缓存键
-	keyData := fmt.Sprintf("%s:%v", invocation.Method.Name, invocation.Args)
+	keyData := fmt.Sprintf("%s:%v", invocation.Method, invocation.Args)
 
 	// 使用MD5生成固定长度的键
 	hash := md5.Sum([]byte(keyData))

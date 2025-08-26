@@ -383,14 +383,31 @@ func (ms *MemoryStorage) SaveTask(task *Task) error {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
 
-	// 深拷贝任务
-	taskCopy := *task
-	taskCopy.Metadata = make(map[string]string)
+	// 创建新的 Task 对象而不是直接复制
+	taskCopy := &Task{
+		ID:          task.ID,
+		Name:        task.Name,
+		Description: task.Description,
+		Schedule:    task.Schedule,
+		Job:         task.Job,
+		Status:      task.Status,
+		CreatedAt:   task.CreatedAt,
+		UpdatedAt:   task.UpdatedAt,
+		LastRunTime: task.LastRunTime,
+		NextRunTime: task.NextRunTime,
+		RunCount:    task.RunCount,
+		FailCount:   task.FailCount,
+		MaxRetries:  task.MaxRetries,
+		Timeout:     task.Timeout,
+		Metadata:    make(map[string]string),
+	}
+
+	// 深拷贝 Metadata
 	for k, v := range task.Metadata {
 		taskCopy.Metadata[k] = v
 	}
 
-	ms.tasks[task.ID] = &taskCopy
+	ms.tasks[task.ID] = taskCopy
 	return nil
 }
 
@@ -404,14 +421,31 @@ func (ms *MemoryStorage) LoadTask(taskID string) (*Task, error) {
 		return nil, fmt.Errorf("task %s not found", taskID)
 	}
 
-	// 返回深拷贝
-	taskCopy := *task
-	taskCopy.Metadata = make(map[string]string)
+	// 创建新的 Task 对象而不是直接复制
+	taskCopy := &Task{
+		ID:          task.ID,
+		Name:        task.Name,
+		Description: task.Description,
+		Schedule:    task.Schedule,
+		Job:         task.Job,
+		Status:      task.Status,
+		CreatedAt:   task.CreatedAt,
+		UpdatedAt:   task.UpdatedAt,
+		LastRunTime: task.LastRunTime,
+		NextRunTime: task.NextRunTime,
+		RunCount:    task.RunCount,
+		FailCount:   task.FailCount,
+		MaxRetries:  task.MaxRetries,
+		Timeout:     task.Timeout,
+		Metadata:    make(map[string]string),
+	}
+
+	// 深拷贝 Metadata
 	for k, v := range task.Metadata {
 		taskCopy.Metadata[k] = v
 	}
 
-	return &taskCopy, nil
+	return taskCopy, nil
 }
 
 // LoadTasks 加载所有任务
@@ -421,13 +455,30 @@ func (ms *MemoryStorage) LoadTasks() ([]*Task, error) {
 
 	tasks := make([]*Task, 0, len(ms.tasks))
 	for _, task := range ms.tasks {
-		// 深拷贝
-		taskCopy := *task
-		taskCopy.Metadata = make(map[string]string)
+		// 创建新的 Task 对象而不是直接复制
+		taskCopy := &Task{
+			ID:          task.ID,
+			Name:        task.Name,
+			Description: task.Description,
+			Schedule:    task.Schedule,
+			Job:         task.Job,
+			Status:      task.Status,
+			CreatedAt:   task.CreatedAt,
+			UpdatedAt:   task.UpdatedAt,
+			LastRunTime: task.LastRunTime,
+			NextRunTime: task.NextRunTime,
+			RunCount:    task.RunCount,
+			FailCount:   task.FailCount,
+			MaxRetries:  task.MaxRetries,
+			Timeout:     task.Timeout,
+			Metadata:    make(map[string]string),
+		}
+
+		// 深拷贝 Metadata
 		for k, v := range task.Metadata {
 			taskCopy.Metadata[k] = v
 		}
-		tasks = append(tasks, &taskCopy)
+		tasks = append(tasks, taskCopy)
 	}
 
 	return tasks, nil
@@ -467,15 +518,29 @@ func (ms *MemoryStorage) SaveExecution(execution *TaskExecution) error {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
 
-	// 深拷贝执行记录
-	execCopy := *execution
-	execCopy.Metadata = make(map[string]any)
+	// 创建新的 TaskExecution 对象而不是直接复制
+	execCopy := &TaskExecution{
+		Task:        execution.Task,
+		Context:     execution.Context,
+		CancelFunc:  execution.CancelFunc,
+		StartTime:   execution.StartTime,
+		EndTime:     execution.EndTime,
+		Duration:    execution.Duration,
+		RetryCount:  execution.RetryCount,
+		LastError:   execution.LastError,
+		Status:      execution.Status,
+		WorkerID:    execution.WorkerID,
+		ExecutionID: execution.ExecutionID,
+		Metadata:    make(map[string]any),
+	}
+
+	// 深拷贝 Metadata
 	for k, v := range execution.Metadata {
 		execCopy.Metadata[k] = v
 	}
 
 	taskID := execution.Task.ID
-	ms.executions[taskID] = append(ms.executions[taskID], &execCopy)
+	ms.executions[taskID] = append(ms.executions[taskID], execCopy)
 
 	return nil
 }
@@ -498,13 +563,27 @@ func (ms *MemoryStorage) LoadExecutions(taskID string, limit int) ([]*TaskExecut
 
 	result := make([]*TaskExecution, len(executions)-start)
 	for i, exec := range executions[start:] {
-		// 深拷贝
-		execCopy := *exec
-		execCopy.Metadata = make(map[string]any)
+		// 创建新的 TaskExecution 对象而不是直接复制
+		execCopy := &TaskExecution{
+			Task:        exec.Task,
+			Context:     exec.Context,
+			CancelFunc:  exec.CancelFunc,
+			StartTime:   exec.StartTime,
+			EndTime:     exec.EndTime,
+			Duration:    exec.Duration,
+			RetryCount:  exec.RetryCount,
+			LastError:   exec.LastError,
+			Status:      exec.Status,
+			WorkerID:    exec.WorkerID,
+			ExecutionID: exec.ExecutionID,
+			Metadata:    make(map[string]any),
+		}
+
+		// 深拷贝 Metadata
 		for k, v := range exec.Metadata {
 			execCopy.Metadata[k] = v
 		}
-		result[i] = &execCopy
+		result[i] = execCopy
 	}
 
 	return result, nil

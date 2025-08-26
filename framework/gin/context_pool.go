@@ -4,6 +4,7 @@ package gin
 
 import (
 	"sync"
+
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
@@ -19,9 +20,9 @@ func NewContextPool() *ContextPool {
 			New: func() any {
 				return &Context{
 					// 预分配slice容量以减少后续分配
-					Keys:   make(map[string]any, 8),  // 预分配8个键值对容量
-					Errors: make([]error, 0, 4),      // 预分配4个错误容量
-					Params: make(Params, 0, 16),      // 预分配16个参数容量
+					Keys:   make(map[string]any, 8), // 预分配8个键值对容量
+					Errors: make([]error, 0, 4),     // 预分配4个错误容量
+					Params: make(Params, 0, 16),     // 预分配16个参数容量
 				}
 			},
 		},
@@ -49,7 +50,7 @@ func (c *Context) reset() {
 	c.handlers = nil
 	c.index = -1
 	c.engine = nil
-	
+
 	// 重置但保持容量
 	if c.Keys != nil {
 		for k := range c.Keys {
@@ -66,9 +67,9 @@ func (c *Context) cleanup() {
 	c.RequestContext = nil
 	c.handlers = nil
 	c.engine = nil
-	
+
 	// 避免持有大量内存
-	if c.Keys != nil && len(c.Keys) > 64 {
+	if len(c.Keys) > 64 {
 		c.Keys = make(map[string]any, 8)
 	}
 	if cap(c.Errors) > 32 {
@@ -86,7 +87,7 @@ var defaultContextPool = NewContextPool()
 type ZeroAllocHandler struct {
 	// 预分配的处理器函数池
 	handlerPool sync.Pool
-	
+
 	// 参数池
 	paramPool sync.Pool
 }
@@ -144,13 +145,13 @@ var defaultZeroAllocHandler = NewZeroAllocHandler()
 func (engine *Engine) acquireContext(c *app.RequestContext, handlers []HandlerFunc) *Context {
 	// 从池中获取Context
 	ctx := defaultContextPool.Get()
-	
+
 	// 设置Context属性
 	ctx.RequestContext = c
 	ctx.handlers = handlers
 	ctx.index = -1
 	ctx.engine = engine
-	
+
 	// 从Hertz RequestContext中提取路由参数（零分配）
 	if len(c.Params) > 0 {
 		// 确保参数切片有足够容量
@@ -159,7 +160,7 @@ func (engine *Engine) acquireContext(c *app.RequestContext, handlers []HandlerFu
 		} else {
 			ctx.Params = ctx.Params[:len(c.Params)]
 		}
-		
+
 		// 复制参数（避免分配）
 		for i, param := range c.Params {
 			ctx.Params[i] = Param{
@@ -168,7 +169,7 @@ func (engine *Engine) acquireContext(c *app.RequestContext, handlers []HandlerFu
 			}
 		}
 	}
-	
+
 	return ctx
 }
 
@@ -184,7 +185,7 @@ func (engine *Engine) handleHTTPRequestOptimized(c *app.RequestContext) {
 		// 创建优化的Context
 		ctx := engine.acquireContext(c, nil)
 		defer engine.releaseContext(ctx)
-		
+
 		// 使用新的路由引擎处理
 		engine.router.handleHTTPRequest(ctx)
 	} else {
@@ -201,18 +202,18 @@ func (engine *Engine) WarmupPools() {
 	for i := range contexts {
 		contexts[i] = defaultContextPool.Get()
 	}
-	
+
 	// 归还给池
 	for _, ctx := range contexts {
 		defaultContextPool.Put(ctx)
 	}
-	
+
 	// 预创建一些处理器切片
 	handlers := make([][]HandlerFunc, 5)
 	for i := range handlers {
 		handlers[i] = defaultZeroAllocHandler.GetHandlers()
 	}
-	
+
 	// 归还给池
 	for _, h := range handlers {
 		defaultZeroAllocHandler.PutHandlers(h)
@@ -240,10 +241,10 @@ func GetPoolStats() *PoolStats {
 type MemoryOptimizer struct {
 	// 最大内存使用量（字节）
 	MaxMemoryUsage uint64
-	
+
 	// 当前内存使用量
 	CurrentMemoryUsage uint64
-	
+
 	// GC触发阈值
 	GCThreshold uint64
 }

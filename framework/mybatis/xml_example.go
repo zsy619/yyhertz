@@ -1,6 +1,6 @@
 // Package mybatis XML Mapper使用示例
 //
-// 展示如何使用XML Mapper文件，体现与Java MyBatis的兼容性
+// 展示如何使用XML Mapper文件，体现与MyBatis的兼容性
 package mybatis
 
 import (
@@ -70,7 +70,7 @@ func (s *UserXMLService) loadMappers() error {
     <result property="name" column="user_name"/>
     <result property="email" column="user_email"/>
     <result property="status" column="user_status"/>
-    <result property="createAt" column="create_time" javaType="date"/>
+    <result property="createAt" column="create_time" targetType="date"/>
   </resultMap>
   
   <select id="getUserWithMapping" parameterType="long" resultMap="userResultMap">

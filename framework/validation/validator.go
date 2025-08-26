@@ -443,6 +443,12 @@ func (v *Validator) registerBuiltinValidators() {
 	v.funcs["idCard"] = v.validateIDCard
 	v.funcs["zipCode"] = v.validateZipCode
 
+	// 高级验证器
+	v.funcs["card"] = v.validateCard
+	v.funcs["json"] = v.validateJSON
+	v.funcs["base64"] = v.validateBase64
+	v.funcs["hexColor"] = v.validateHexColor
+
 	config.Debug("Built-in validators registered")
 }
 

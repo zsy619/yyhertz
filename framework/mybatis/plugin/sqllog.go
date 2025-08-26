@@ -8,25 +8,22 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/zsy619/yyhertz/framework/mybatis/cache"
 )
 
 // SqlLogPlugin SQL日志插件
 type SqlLogPlugin struct {
 	*BasePlugin
-	logLevel     string // 日志级别
-	logSql       bool   // 是否记录SQL
-	logResult    bool   // 是否记录结果
-	logParameter bool   // 是否记录参数
-	logger       Logger // 日志记录器
+	logLevel     string       // 日志级别
+	logSql       bool         // 是否记录SQL
+	logResult    bool         // 是否记录结果
+	logParameter bool         // 是否记录参数
+	logger       cache.Logger // 日志记录器，使用cache包中的Logger接口
 }
 
-// Logger 日志记录器接口
-type Logger interface {
-	Debug(msg string, args ...any)
-	Info(msg string, args ...any)
-	Warn(msg string, args ...any)
-	Error(msg string, args ...any)
-}
+// Logger 日志记录器接口 - 使用cache包中的统一定义
+type Logger = cache.Logger
 
 // DefaultLogger 默认日志记录器
 type DefaultLogger struct{}
@@ -67,7 +64,7 @@ func (plugin *SqlLogPlugin) Intercept(invocation *Invocation) (any, error) {
 	// 记录日志
 	plugin.logExecution(&SqlLogEntry{
 		Timestamp:     startTime,
-		Method:        invocation.Method.Name,
+		Method:        invocation.Method, // 现在Method是string类型
 		SQL:           plugin.extractSQL(invocation),
 		Parameters:    plugin.extractParameters(invocation),
 		ExecutionTime: time.Since(startTime),
