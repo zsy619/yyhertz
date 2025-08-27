@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/zsy619/yyhertz/framework/config"
 )
@@ -90,6 +92,27 @@ func AuthMiddleware(skipPaths ...string) Middleware {
 }
 
 // JWTAuthMiddleware JWT认证中间件（简化版）
+// JWTAuthMiddleware 是一个中间件函数，用于验证请求中的 JWT 令牌。
+//
+// 参数:
+//   - secretKey: 用于验证 JWT 令牌的密钥。
+//   - skipPaths: 可选参数，指定不需要验证的路径列表。
+//
+// 返回值:
+//   - Middleware: 返回一个中间件函数，用于处理请求的 JWT 验证逻辑。
+//
+// 功能说明:
+//   - 检查请求路径是否在跳过列表中，如果是，则直接放行。
+//   - 从请求头中提取 "Authorization" 字段，验证 JWT 令牌的有效性。
+//   - 如果令牌缺失或无效，返回 401 状态码并记录日志。
+//   - 如果验证成功，设置用户信息并继续处理请求。
+//
+// 日志记录:
+//   - 记录缺失令牌、无效令牌和验证成功的事件。
+//
+// 注意事项:
+//   - 实际项目中应使用标准的 JWT 验证库（如 github.com/golang-jwt/jwt）。
+//   - 示例中使用了简化的验证逻辑，仅用于演示。
 func JWTAuthMiddleware(secretKey string, skipPaths ...string) Middleware {
 	skipMap := make(map[string]bool)
 	for _, path := range skipPaths {
@@ -175,10 +198,30 @@ func JWTAuthMiddleware(secretKey string, skipPaths ...string) Middleware {
 }
 
 // AdminAuthMiddleware 管理员认证中间件
+// AdminAuthMiddleware 返回一个中间件函数，用于验证管理员权限。
+//
+// 该中间件执行以下操作：
+// 1. 检查请求是否已通过基础认证（通过检查 `adminId` 是否存在）。
+//   - 如果未通过认证，记录警告日志并返回 401 状态码（未授权）。
+//
+// 2. 检查请求头中的 `X-Admin-Token` 是否匹配预设的管理员令牌。
+//   - 如果令牌不匹配，记录警告日志并返回 403 状态码（权限不足）。
+//
+// 3. 如果认证和权限检查通过，记录成功日志并设置 `is_admin` 标志为 `true`，然后继续处理请求。
+//
+// 返回值：
+//   - 返回一个 `Middleware` 函数，用于处理 HTTP 请求。
+//
+// 日志记录：
+//   - 记录认证失败、权限不足和认证成功的日志事件，包含客户端 IP、请求路径、用户 ID 和请求 ID 等信息。
+//
+// 注意：
+//   - 该中间件假设 `adminId` 和 `user_id` 等字段已在请求上下文中设置。
+//   - 管理员令牌硬编码为 "admin-secret-token"，实际项目中应替换为动态配置或更安全的验证方式。
 func AdminAuthMiddleware() Middleware {
 	return func(c context.Context, ctx *app.RequestContext) {
 		// 检查是否已经通过基础认证
-		if !ctx.GetBool("authenticated") {
+		if !ctx.GetBool("adminId") {
 			go func() {
 				config.WithFields(map[string]any{
 					"event":      "admin_auth_not_authenticated",
@@ -232,13 +275,42 @@ func AdminAuthMiddleware() Middleware {
 }
 
 // validateJWT 简化的JWT验证函数（实际应用中应使用专业的JWT库）
+// validateJWT 验证传入的JWT令牌是否有效。
+//
+// 参数:
+//
+//	token: 待验证的JWT令牌字符串。
+//	secretKey: 用于验证令牌的密钥。
+//
+// 返回值:
+//
+//	bool: 如果令牌有效则返回true，否则返回false。
+//
+// 注意:
+//
+//	当前实现仅为演示用途，仅检查令牌长度和是否包含密钥。
+//	实际应用中应替换为完整的JWT验证逻辑。
 func validateJWT(token, secretKey string) bool {
-	// 这里应该实现真正的JWT验证逻辑
-	// 为了演示，我们只做简单的字符串检查
-	return len(token) > 10 && strings.Contains(token, secretKey)
+	// 使用 github.com/golang-jwt/jwt 库进行验证
+	_, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(secretKey), nil
+	})
+	return err == nil
 }
 
 // min 辅助函数
+// min 返回两个整数中的较小值。
+// 参数:
+//
+//	a: 第一个整数
+//	b: 第二个整数
+//
+// 返回值:
+//
+//	较小的整数
 func min(a, b int) int {
 	if a < b {
 		return a

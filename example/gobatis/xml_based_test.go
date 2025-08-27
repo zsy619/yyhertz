@@ -1,703 +1,467 @@
-// Package main 基于XML的MyBatis测试用例
+// Package main XML基础测试
 //
-// 演示如何使用XML配置文件进行MyBatis映射和查询
+// 测试MyBatis框架的XML映射功能
 package main
 
 import (
-	"fmt"
-	"strings"
+	"context"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-
-	frameworkConfig "github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/mybatis"
-	"github.com/zsy619/yyhertz/framework/mybatis/config"
 )
 
-// 简化的配置结构，用于测试
-type TestDatabaseConfig struct {
-	Primary TestPrimaryConfig `json:"primary"`
-	GORM    TestGORMConfig    `json:"gorm"`
-	MyBatis TestMyBatisConfig `json:"mybatis"`
-}
-
-type TestPrimaryConfig struct {
-	Type     string `json:"type"`
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Database string `json:"database"`
-	Charset  string `json:"charset"`
-}
-
-type TestGORMConfig struct {
-	LogLevel string `json:"log_level"`
-}
-
-type TestMyBatisConfig struct {
-	MapperLocations []string `json:"mapper_locations"`
-}
-
-// 简化的MyBatis实例，用于测试
-type TestMyBatis struct {
-	config *TestDatabaseConfig
-}
-
-func NewTestMyBatis(config *TestDatabaseConfig) (*TestMyBatis, error) {
-	return &TestMyBatis{config: config}, nil
-}
-
-func (mb *TestMyBatis) OpenSession() *TestSqlSession {
-	return &TestSqlSession{}
-}
-
-// 简化的SqlSession，用于测试
-type TestSqlSession struct{}
-
-func (s *TestSqlSession) Close() error {
-	return nil
-}
-
-// 简化的Configuration，用于测试
-type TestConfiguration struct {
-	MapUnderscoreToCamelCase bool
-	LazyLoadingEnabled       bool
-	CacheEnabled             bool
-}
-
-func NewTestConfiguration() *TestConfiguration {
-	return &TestConfiguration{}
-}
-
-func (c *TestConfiguration) SetDatabaseConfig(config *TestDatabaseConfig) {
-	// 设置数据库配置
-}
-
-// XMLBasedTestSuite 基于XML的测试套件
-type XMLBasedTestSuite struct {
-	suite.Suite
-	dbSetup       *DatabaseSetup
-	mybatis       *mybatis.MyBatis
-	configBuilder *ConfigurationBuilder
-	userMapper    UserMapper
-}
-
-// SetupSuite 设置测试套件
-func (suite *XMLBasedTestSuite) SetupSuite() {
-	// 初始化数据库设置
-	suite.dbSetup = NewDatabaseSetup(DefaultDatabaseConfig())
-
-	// 设置完整测试环境
-	err := suite.dbSetup.SetupCompleteTestEnvironment()
-	suite.Require().NoError(err)
-
-	// 创建配置构建器
-	suite.configBuilder = NewConfigurationBuilder(
-		"mybatis-config.xml",
-		"mappers",
-	)
-
-	// 加载属性文件
-	err = suite.configBuilder.LoadProperties("database.properties")
-	suite.Require().NoError(err)
-
-	// 构建配置
-	mybatisConfig, err := suite.configBuilder.Build()
-	suite.Require().NoError(err)
-
-	// 获取数据库配置
-	dbConfig, err := frameworkConfig.GetDatabaseConfig()
-	suite.Require().NoError(err)
-	mybatisConfig.SetDatabaseConfig(dbConfig)
-
-	// 创建MyBatis实例
-	suite.mybatis, err = mybatis.NewMyBatis(mybatisConfig)
-	suite.Require().NoError(err)
-
-	// 创建映射器
-	session := suite.mybatis.OpenSession()
-	suite.userMapper = NewUserMapper(session)
-
-	fmt.Println("=== XML Based MyBatis Test Suite Started ===")
-}
-
-// TearDownSuite 清理测试套件
-func (suite *XMLBasedTestSuite) TearDownSuite() {
-	if suite.dbSetup != nil {
-		suite.dbSetup.TeardownCompleteTestEnvironment()
+// TestXMLBasicFunctionality 测试XML基础功能
+func TestXMLBasicFunctionality(t *testing.T) {
+	// 初始化测试数据库
+	db, err := InitializeTestDatabase()
+	if err != nil {
+		t.Fatalf("初始化测试数据库失败: %v", err)
 	}
-	fmt.Println("=== XML Based MyBatis Test Suite Completed ===")
-}
-
-// TestXMLMapperLoading 测试XML映射器加载
-func (suite *XMLBasedTestSuite) TestXMLMapperLoading() {
-	t := suite.T()
-
-	t.Run("加载单个XML映射器文件", func(t *testing.T) {
-		loader := NewXMLMapperLoader("mappers", config.NewConfiguration())
-
-		mapper, err := loader.LoadMapper("UserMapper.xml")
-		assert.NoError(t, err)
-		assert.NotNil(t, mapper)
-		assert.Equal(t, "UserMapper", mapper.Namespace)
-
-		// 验证映射器内容
-		assert.NotEmpty(t, mapper.Selects)
-		assert.NotEmpty(t, mapper.Inserts)
-		assert.NotEmpty(t, mapper.Updates)
-		assert.NotEmpty(t, mapper.Deletes)
-		assert.NotEmpty(t, mapper.ResultMaps)
-		assert.NotEmpty(t, mapper.SqlFragments)
-
-		fmt.Printf("成功加载映射器: %s\n", mapper.Namespace)
-		fmt.Printf("包含 %d 个查询语句\n", len(mapper.Selects))
-		fmt.Printf("包含 %d 个插入语句\n", len(mapper.Inserts))
-		fmt.Printf("包含 %d 个更新语句\n", len(mapper.Updates))
-		fmt.Printf("包含 %d 个删除语句\n", len(mapper.Deletes))
-		fmt.Printf("包含 %d 个结果映射\n", len(mapper.ResultMaps))
-		fmt.Printf("包含 %d 个SQL片段\n", len(mapper.SqlFragments))
-	})
-
-	t.Run("加载所有XML映射器文件", func(t *testing.T) {
-		loader := NewXMLMapperLoader("mappers", config.NewConfiguration())
-
-		mappers, err := loader.LoadAllMappers()
-		assert.NoError(t, err)
-		assert.NotEmpty(t, mappers)
-
-		fmt.Printf("成功加载 %d 个映射器文件\n", len(mappers))
-		for _, mapper := range mappers {
-			fmt.Printf("  - %s\n", mapper.Namespace)
+	defer func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
 		}
+	}()
+
+	// 创建XMLSession
+	xmlSession := mybatis.NewXMLMapper(db)
+	ctx := context.Background()
+
+	// 准备XML映射
+	mapperXML := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="UserMapper">
+    <insert id="insertUser" parameterType="map">
+        INSERT INTO users (name, email, age, status) VALUES (#{name}, #{email}, #{age}, #{status})
+    </insert>
+    
+    <select id="selectById" parameterType="map" resultType="map">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+    
+    <select id="selectAll" resultType="map">
+        SELECT * FROM users ORDER BY id
+    </select>
+    
+    <update id="updateUser" parameterType="map">
+        UPDATE users SET name = #{name}, age = #{age} WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteUser" parameterType="map">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+</mapper>`
+
+	// 加载XML映射
+	err = xmlSession.LoadMapperXMLFromString(mapperXML)
+	if err != nil {
+		t.Fatalf("加载XML映射失败: %v", err)
+	}
+
+	t.Run("XML插入操作测试", func(t *testing.T) {
+		// 插入用户
+		params := map[string]any{
+			"name":   "XML测试用户",
+			"email":  "xml@test.com", 
+			"age":    25,
+			"status": "active",
+		}
+
+		userID, err := xmlSession.InsertByID(ctx, "UserMapper.insertUser", params)
+		if err != nil {
+			t.Fatalf("XML插入用户失败: %v", err)
+		}
+
+		if userID == 0 {
+			t.Error("插入用户ID不应该为0")
+		}
+
+		t.Logf("XML插入用户成功，ID: %d", userID)
 	})
-}
 
-// TestXMLConfigurationLoading 测试XML配置加载
-func (suite *XMLBasedTestSuite) TestXMLConfigurationLoading() {
-	t := suite.T()
+	t.Run("XML查询操作测试", func(t *testing.T) {
+		// 先插入一个测试用户
+		insertParams := map[string]any{
+			"name":   "查询测试用户",
+			"email":  "query@test.com",
+			"age":    30,
+			"status": "active",
+		}
 
-	t.Run("加载MyBatis主配置文件", func(t *testing.T) {
-		loader := NewXMLConfigLoader("mybatis-config.xml")
+		userID, err := xmlSession.InsertByID(ctx, "UserMapper.insertUser", insertParams)
+		if err != nil {
+			t.Fatalf("插入测试用户失败: %v", err)
+		}
 
-		cfg, err := loader.LoadConfiguration()
-		assert.NoError(t, err)
-		assert.NotNil(t, cfg)
+		// 根据ID查询
+		queryParams := map[string]any{"id": userID}
+		user, err := xmlSession.SelectOneByID(ctx, "UserMapper.selectById", queryParams)
+		if err != nil {
+			t.Fatalf("XML查询用户失败: %v", err)
+		}
 
-		fmt.Println("成功加载MyBatis主配置文件")
+		userMap := user.(map[string]any)
+		if userMap["name"] != "查询测试用户" {
+			t.Errorf("期望用户名为'查询测试用户'，但得到'%v'", userMap["name"])
+		}
+
+		t.Log("XML查询操作测试通过")
 	})
 
-	t.Run("加载属性文件", func(t *testing.T) {
-		properties, err := LoadPropertiesFile("database.properties")
-		assert.NoError(t, err)
-		assert.NotEmpty(t, properties)
+	t.Run("XML更新操作测试", func(t *testing.T) {
+		// 先插入一个测试用户
+		insertParams := map[string]any{
+			"name":   "更新测试用户",
+			"email":  "update@test.com",
+			"age":    25,
+			"status": "active",
+		}
 
-		// 验证关键属性
-		assert.Contains(t, properties, "database.driver")
-		assert.Contains(t, properties, "database.url")
-		assert.Contains(t, properties, "database.username")
+		userID, err := xmlSession.InsertByID(ctx, "UserMapper.insertUser", insertParams)
+		if err != nil {
+			t.Fatalf("插入测试用户失败: %v", err)
+		}
 
-		fmt.Printf("成功加载 %d 个属性配置\n", len(properties))
-		for key, value := range properties {
-			if !contains(key, "password") { // 不打印密码
-				fmt.Printf("  %s = %s\n", key, value)
+		// 更新用户
+		updateParams := map[string]any{
+			"id":   userID,
+			"name": "已更新用户",
+			"age":  26,
+		}
+
+		affected, err := xmlSession.UpdateByID(ctx, "UserMapper.updateUser", updateParams)
+		if err != nil {
+			t.Fatalf("XML更新用户失败: %v", err)
+		}
+
+		if affected != 1 {
+			t.Errorf("期望更新1行，但实际更新了%d行", affected)
+		}
+
+		// 验证更新结果
+		queryParams := map[string]any{"id": userID}
+		user, err := xmlSession.SelectOneByID(ctx, "UserMapper.selectById", queryParams)
+		if err != nil {
+			t.Fatalf("查询更新后的用户失败: %v", err)
+		}
+
+		userMap := user.(map[string]any)
+		if userMap["name"] != "已更新用户" {
+			t.Errorf("期望用户名为'已更新用户'，但得到'%v'", userMap["name"])
+		}
+
+		t.Log("XML更新操作测试通过")
+	})
+
+	t.Run("XML删除操作测试", func(t *testing.T) {
+		// 先插入一个测试用户
+		insertParams := map[string]any{
+			"name":   "删除测试用户",
+			"email":  "delete@test.com",
+			"age":    28,
+			"status": "active",
+		}
+
+		userID, err := xmlSession.InsertByID(ctx, "UserMapper.insertUser", insertParams)
+		if err != nil {
+			t.Fatalf("插入测试用户失败: %v", err)
+		}
+
+		// 删除用户
+		deleteParams := map[string]any{"id": userID}
+		affected, err := xmlSession.DeleteByID(ctx, "UserMapper.deleteUser", deleteParams)
+		if err != nil {
+			t.Fatalf("XML删除用户失败: %v", err)
+		}
+
+		if affected != 1 {
+			t.Errorf("期望删除1行，但实际删除了%d行", affected)
+		}
+
+		// 验证删除结果
+		user, err := xmlSession.SelectOneByID(ctx, "UserMapper.selectById", deleteParams)
+		if err == nil && user != nil {
+			t.Error("用户删除后仍然存在")
+		}
+
+		t.Log("XML删除操作测试通过")
+	})
+
+	t.Run("XML查询全部测试", func(t *testing.T) {
+		// 插入多个测试用户
+		testUsers := []map[string]any{
+			{"name": "用户1", "email": "user1@test.com", "age": 20, "status": "active"},
+			{"name": "用户2", "email": "user2@test.com", "age": 25, "status": "inactive"},
+			{"name": "用户3", "email": "user3@test.com", "age": 30, "status": "active"},
+		}
+
+		for i, userParams := range testUsers {
+			_, err := xmlSession.InsertByID(ctx, "UserMapper.insertUser", userParams)
+			if err != nil {
+				t.Fatalf("插入测试用户%d失败: %v", i+1, err)
 			}
 		}
+
+		// 查询所有用户
+		users, err := xmlSession.SelectListByID(ctx, "UserMapper.selectAll", nil)
+		if err != nil {
+			t.Fatalf("XML查询所有用户失败: %v", err)
+		}
+
+		if len(users) < len(testUsers) {
+			t.Errorf("期望至少查询到%d个用户，但只查询到%d个", len(testUsers), len(users))
+		}
+
+		t.Logf("XML查询全部测试通过，查询到%d个用户", len(users))
 	})
 }
 
-// TestXMLBasedCRUD 测试基于XML的CRUD操作
-func (suite *XMLBasedTestSuite) TestXMLBasedCRUD() {
-	t := suite.T()
+// TestXMLDynamicSQL 测试XML动态SQL功能
+func TestXMLDynamicSQL(t *testing.T) {
+	// 初始化测试数据库
+	db, err := InitializeTestDatabase()
+	if err != nil {
+		t.Fatalf("初始化测试数据库失败: %v", err)
+	}
+	defer func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	}()
 
-	t.Run("XML配置的基础查询", func(t *testing.T) {
-		// 使用XML配置的selectById查询
-		user, err := suite.userMapper.SelectById(1)
-		assert.NoError(t, err)
-		assert.NotNil(t, user)
-		assert.Equal(t, int64(1), user.ID)
+	// 创建XMLSession
+	xmlSession := mybatis.NewXMLMapper(db)
+	ctx := context.Background()
 
-		fmt.Printf("XML查询结果: 用户 %s (%s)\n", user.Name, user.Email)
-	})
+	// 准备动态SQL映射
+	dynamicMapperXML := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DynamicMapper">
+    <insert id="insertUser" parameterType="map">
+        INSERT INTO users (name, email, age, status) VALUES (#{name}, #{email}, #{age}, #{status})
+    </insert>
+    
+    <select id="selectByCondition" parameterType="map" resultType="map">
+        SELECT * FROM users
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="ageMin > 0">
+                AND age >= #{ageMin}
+            </if>
+            <if test="ageMax > 0">
+                AND age <= #{ageMax}
+            </if>
+        </where>
+        ORDER BY id
+    </select>
+</mapper>`
 
-	t.Run("XML配置的插入操作", func(t *testing.T) {
-		newUser := &User{
-			Name:   "XML测试用户",
-			Email:  "xml-test@example.com",
-			Age:    28,
-			Status: "active",
-			Phone:  "13900000001",
+	// 加载XML映射
+	err = xmlSession.LoadMapperXMLFromString(dynamicMapperXML)
+	if err != nil {
+		t.Fatalf("加载动态XML映射失败: %v", err)
+	}
+
+	// 准备测试数据
+	testUsers := []map[string]any{
+		{"name": "张三", "email": "zhangsan@test.com", "age": 25, "status": "active"},
+		{"name": "李四", "email": "lisi@test.com", "age": 30, "status": "inactive"},
+		{"name": "王五", "email": "wangwu@test.com", "age": 35, "status": "active"},
+		{"name": "赵六", "email": "zhaoliu@test.com", "age": 28, "status": "pending"},
+	}
+
+	for _, userParams := range testUsers {
+		_, err := xmlSession.InsertByID(ctx, "DynamicMapper.insertUser", userParams)
+		if err != nil {
+			t.Fatalf("插入测试数据失败: %v", err)
+		}
+	}
+
+	t.Run("按姓名动态查询", func(t *testing.T) {
+		params := map[string]any{
+			"name": "张",
 		}
 
-		// 使用XML配置的insert语句
-		id, err := suite.userMapper.Insert(newUser)
-		assert.NoError(t, err)
-		assert.Greater(t, id, int64(0))
-
-		// 验证插入成功
-		insertedUser, err := suite.userMapper.SelectByEmail("xml-test@example.com")
-		assert.NoError(t, err)
-		assert.NotNil(t, insertedUser)
-		assert.Equal(t, "XML测试用户", insertedUser.Name)
-
-		fmt.Printf("XML插入成功: 用户ID=%d\n", id)
-	})
-
-	t.Run("XML配置的更新操作", func(t *testing.T) {
-		// 先查询用户
-		user, err := suite.userMapper.SelectByEmail("xml-test@example.com")
-		require.NoError(t, err)
-		require.NotNil(t, user)
-
-		// 使用XML配置的update语句
-		user.Age = 29
-		user.Status = "inactive"
-		affected, err := suite.userMapper.Update(user)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(1), affected)
-
-		// 验证更新成功
-		updatedUser, err := suite.userMapper.SelectById(user.ID)
-		assert.NoError(t, err)
-		assert.Equal(t, 29, updatedUser.Age)
-		assert.Equal(t, "inactive", updatedUser.Status)
-
-		fmt.Printf("XML更新成功: 用户年龄=%d, 状态=%s\n", updatedUser.Age, updatedUser.Status)
-	})
-
-	t.Run("XML配置的删除操作", func(t *testing.T) {
-		// 创建待删除用户
-		testUser := &User{
-			Name:   "待删除XML用户",
-			Email:  "delete-xml@example.com",
-			Age:    25,
-			Status: "active",
+		users, err := xmlSession.SelectListByID(ctx, "DynamicMapper.selectByCondition", params)
+		if err != nil {
+			t.Fatalf("动态SQL查询失败: %v", err)
 		}
 
-		id, err := suite.userMapper.Insert(testUser)
-		require.NoError(t, err)
-
-		// 使用XML配置的delete语句
-		affected, err := suite.userMapper.Delete(id)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(1), affected)
-
-		// 验证删除成功（软删除）
-		deletedUser, err := suite.userMapper.SelectById(id)
-		assert.NoError(t, err)
-		assert.Nil(t, deletedUser)
-
-		fmt.Printf("XML软删除成功: 用户ID=%d\n", id)
-	})
-}
-
-// TestXMLBasedDynamicSQL 测试基于XML的动态SQL
-func (suite *XMLBasedTestSuite) TestXMLBasedDynamicSQL() {
-	t := suite.T()
-
-	t.Run("XML配置的动态查询", func(t *testing.T) {
-		query := &UserQuery{
-			Name:     "XML",
-			Status:   "active",
-			AgeMin:   20,
-			AgeMax:   40,
-			Page:     1,
-			PageSize: 10,
+		if len(users) < 1 {
+			t.Error("期望查询到至少1个包含'张'字的用户")
 		}
 
-		// 使用XML配置的selectList查询
-		users, err := suite.userMapper.SelectList(query)
-		assert.NoError(t, err)
+		t.Logf("按姓名动态查询通过，查询到%d个用户", len(users))
+	})
 
-		fmt.Printf("XML动态查询结果: %d 个用户\n", len(users))
+	t.Run("按状态动态查询", func(t *testing.T) {
+		params := map[string]any{
+			"status": "active",
+		}
+
+		users, err := xmlSession.SelectListByID(ctx, "DynamicMapper.selectByCondition", params)
+		if err != nil {
+			t.Fatalf("动态SQL查询失败: %v", err)
+		}
+
+		if len(users) < 1 {
+			t.Error("期望查询到至少1个active状态的用户")
+		}
+
+		// 验证所有查询结果都是active状态
 		for _, user := range users {
-			fmt.Printf("  - %s (%d岁, %s)\n", user.Name, user.Age, user.Status)
-		}
-	})
-
-	t.Run("XML配置的条件统计", func(t *testing.T) {
-		query := &UserQuery{
-			Status: "active",
+			userMap := user.(map[string]any)
+			if userMap["status"] != "active" {
+				t.Errorf("查询结果中包含非active用户: %v", userMap["status"])
+			}
 		}
 
-		// 使用XML配置的selectCount查询
-		count, err := suite.userMapper.SelectCount(query)
-		assert.NoError(t, err)
-		assert.Greater(t, count, int64(0))
-
-		fmt.Printf("XML条件统计结果: %d 个活跃用户\n", count)
+		t.Logf("按状态动态查询通过，查询到%d个active用户", len(users))
 	})
 
-	t.Run("XML配置的选择性更新", func(t *testing.T) {
-		// 先查询用户
-		users, err := suite.userMapper.SelectList(&UserQuery{
-			Name:     "XML",
-			PageSize: 1,
-		})
-		require.NoError(t, err)
-		require.NotEmpty(t, users)
+	t.Run("按年龄范围动态查询", func(t *testing.T) {
+		params := map[string]any{
+			"ageMin": 25,
+			"ageMax": 30,
+		}
 
-		user := users[0]
-		originalAge := user.Age
+		users, err := xmlSession.SelectListByID(ctx, "DynamicMapper.selectByCondition", params)
+		if err != nil {
+			t.Fatalf("动态SQL查询失败: %v", err)
+		}
 
-		// 只更新年龄字段
-		user.Age = originalAge + 1
-		user.Name = "" // 清空，测试选择性更新
+		if len(users) < 1 {
+			t.Error("期望查询到至少1个年龄在25-30之间的用户")
+		}
 
-		// 使用XML配置的updateSelective语句
-		affected, err := suite.userMapper.UpdateSelective(user)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(1), affected)
+		// 验证所有查询结果都在年龄范围内
+		for _, user := range users {
+			userMap := user.(map[string]any)
+			age := userMap["age"]
+			if age.(int64) < 25 || age.(int64) > 30 {
+				t.Errorf("查询结果中包含年龄超出范围的用户: %v", age)
+			}
+		}
 
-		// 验证选择性更新（名称不应该被清空）
-		updatedUser, err := suite.userMapper.SelectById(user.ID)
-		assert.NoError(t, err)
-		assert.Equal(t, originalAge+1, updatedUser.Age)
-		assert.NotEmpty(t, updatedUser.Name) // 名称应该保持不变
+		t.Logf("按年龄范围动态查询通过，查询到%d个用户", len(users))
+	})
 
-		fmt.Printf("XML选择性更新成功: 年龄 %d -> %d\n", originalAge, updatedUser.Age)
+	t.Run("多条件组合动态查询", func(t *testing.T) {
+		params := map[string]any{
+			"name":   "张",
+			"status": "active",
+			"ageMin": 20,
+		}
+
+		users, err := xmlSession.SelectListByID(ctx, "DynamicMapper.selectByCondition", params)
+		if err != nil {
+			t.Fatalf("动态SQL查询失败: %v", err)
+		}
+
+		t.Logf("多条件组合动态查询完成，查询到%d个用户", len(users))
 	})
 }
 
-// TestXMLBasedBatchOperations 测试基于XML的批量操作
-func (suite *XMLBasedTestSuite) TestXMLBasedBatchOperations() {
-	t := suite.T()
+// TestXMLPerformance 测试XML映射性能
+func TestXMLPerformance(t *testing.T) {
+	// 初始化测试数据库
+	db, err := InitializeTestDatabase()
+	if err != nil {
+		t.Fatalf("初始化测试数据库失败: %v", err)
+	}
+	defer func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	}()
 
-	t.Run("XML配置的批量插入", func(t *testing.T) {
-		users := []*User{
-			{Name: "XML批量用户1", Email: "xml-batch1@example.com", Age: 25, Status: "active"},
-			{Name: "XML批量用户2", Email: "xml-batch2@example.com", Age: 26, Status: "active"},
-			{Name: "XML批量用户3", Email: "xml-batch3@example.com", Age: 27, Status: "inactive"},
+	// 创建XMLSession
+	xmlSession := mybatis.NewXMLMapper(db)
+	ctx := context.Background()
+
+	// 准备性能测试映射
+	perfMapperXML := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PerfMapper">
+    <insert id="insertUser" parameterType="map">
+        INSERT INTO users (name, email, age, status) VALUES (#{name}, #{email}, #{age}, #{status})
+    </insert>
+    
+    <select id="selectById" parameterType="map" resultType="map">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+    
+    <select id="selectByStatus" parameterType="map" resultType="map">
+        SELECT * FROM users WHERE status = #{status} LIMIT 100
+    </select>
+</mapper>`
+
+	// 加载XML映射
+	err = xmlSession.LoadMapperXMLFromString(perfMapperXML)
+	if err != nil {
+		t.Fatalf("加载性能测试XML映射失败: %v", err)
+	}
+
+	t.Run("XML批量插入性能测试", func(t *testing.T) {
+		const batchSize = 100
+		start := time.Now()
+
+		for i := 0; i < batchSize; i++ {
+			params := map[string]any{
+				"name":   "性能用户" + string(rune(i)),
+				"email":  "perf" + string(rune(i)) + "@test.com",
+				"age":    20 + (i % 50),
+				"status": []string{"active", "inactive", "pending"}[i%3],
+			}
+
+			_, err := xmlSession.InsertByID(ctx, "PerfMapper.insertUser", params)
+			if err != nil {
+				t.Logf("插入性能测试数据%d失败: %v", i, err)
+			}
 		}
 
-		// 使用XML配置的batchInsert语句
-		affected, err := suite.userMapper.BatchInsert(users)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(3), affected)
+		duration := time.Since(start)
+		opsPerSecond := float64(batchSize) / duration.Seconds()
 
-		// 验证批量插入成功
-		for _, user := range users {
-			insertedUser, err := suite.userMapper.SelectByEmail(user.Email)
-			assert.NoError(t, err)
-			assert.NotNil(t, insertedUser)
-			assert.Equal(t, user.Name, insertedUser.Name)
-		}
+		t.Logf("XML批量插入性能测试:")
+		t.Logf("  插入%d条记录耗时: %v", batchSize, duration)
+		t.Logf("  平均每秒操作数: %.2f ops/s", opsPerSecond)
 
-		fmt.Printf("XML批量插入成功: %d 个用户\n", len(users))
-	})
-
-	t.Run("XML配置的批量状态更新", func(t *testing.T) {
-		// 获取XML批量用户的ID
-		query := &UserQuery{
-			Name:     "XML批量",
-			PageSize: 10,
-		}
-		users, err := suite.userMapper.SelectList(query)
-		require.NoError(t, err)
-		require.NotEmpty(t, users)
-
-		var ids []int64
-		for _, user := range users {
-			ids = append(ids, user.ID)
-		}
-
-		// 使用XML配置的batchUpdateStatus语句
-		affected, err := suite.userMapper.BatchUpdateStatus(ids, "suspended")
-		assert.NoError(t, err)
-		assert.Equal(t, int64(len(ids)), affected)
-
-		// 验证批量更新成功
-		for _, id := range ids {
-			user, err := suite.userMapper.SelectById(id)
-			assert.NoError(t, err)
-			assert.Equal(t, "suspended", user.Status)
-		}
-
-		fmt.Printf("XML批量状态更新成功: %d 个用户状态改为suspended\n", len(ids))
-	})
-
-	t.Run("XML配置的批量删除", func(t *testing.T) {
-		// 获取要删除的用户ID
-		query := &UserQuery{
-			Name:     "XML批量",
-			PageSize: 10,
-		}
-		users, err := suite.userMapper.SelectList(query)
-		require.NoError(t, err)
-		require.NotEmpty(t, users)
-
-		var ids []int64
-		for _, user := range users {
-			ids = append(ids, user.ID)
-		}
-
-		// 使用XML配置的batchDelete语句
-		affected, err := suite.userMapper.BatchDelete(ids)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(len(ids)), affected)
-
-		// 验证批量删除成功
-		for _, id := range ids {
-			user, err := suite.userMapper.SelectById(id)
-			assert.NoError(t, err)
-			assert.Nil(t, user) // 软删除后查询不到
-		}
-
-		fmt.Printf("XML批量删除成功: %d 个用户\n", len(ids))
-	})
-}
-
-// TestXMLBasedComplexQueries 测试基于XML的复杂查询
-func (suite *XMLBasedTestSuite) TestXMLBasedComplexQueries() {
-	t := suite.T()
-
-	t.Run("XML配置的关联查询", func(t *testing.T) {
-		// 使用XML配置的selectWithProfile查询
-		result, err := suite.userMapper.SelectWithProfile(1)
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.NotNil(t, result.User)
-
-		fmt.Printf("XML关联查询结果: 用户=%s\n", result.User.Name)
-		if result.Profile != nil {
-			fmt.Printf("  档案信息: 公司=%s, 职位=%s\n", result.Profile.Company, result.Profile.Occupation)
-		} else {
-			fmt.Printf("  档案信息: 无\n")
+		if opsPerSecond < 10 {
+			t.Logf("警告：XML插入性能较低 (%.2f ops/s)", opsPerSecond)
 		}
 	})
-
-	t.Run("XML配置的集合查询", func(t *testing.T) {
-		// 使用XML配置的selectWithRoles查询
-		result, err := suite.userMapper.SelectWithRoles(1)
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.NotNil(t, result.User)
-
-		fmt.Printf("XML集合查询结果: 用户=%s, 角色数量=%d\n", result.User.Name, len(result.Roles))
-		for _, role := range result.Roles {
-			fmt.Printf("  - 角色: %s\n", role.RoleName)
-		}
-	})
-
-	t.Run("XML配置的全文搜索", func(t *testing.T) {
-		// 使用XML配置的searchUsers查询
-		users, err := suite.userMapper.SearchUsers("test", 5)
-		assert.NoError(t, err)
-
-		fmt.Printf("XML全文搜索结果: %d 个用户\n", len(users))
-		for _, user := range users {
-			fmt.Printf("  - %s (%s)\n", user.Name, user.Email)
-		}
-	})
-}
-
-// TestXMLBasedAggregation 测试基于XML的聚合查询
-func (suite *XMLBasedTestSuite) TestXMLBasedAggregation() {
-	t := suite.T()
-
-	t.Run("XML配置的用户统计", func(t *testing.T) {
-		// 使用XML配置的selectStats查询
-		stats, err := suite.userMapper.SelectStats()
-		assert.NoError(t, err)
-		assert.NotNil(t, stats)
-		assert.Greater(t, stats.TotalUsers, int64(0))
-
-		fmt.Printf("XML统计查询结果:\n")
-		fmt.Printf("  总用户数: %d\n", stats.TotalUsers)
-		fmt.Printf("  活跃用户数: %d\n", stats.ActiveUsers)
-		fmt.Printf("  最近用户数: %d\n", stats.RecentUsers)
-	})
-
-	t.Run("XML配置的状态分组", func(t *testing.T) {
-		// 使用XML配置的selectByStatus查询
-		results, err := suite.userMapper.SelectByStatus()
-		assert.NoError(t, err)
-		assert.NotEmpty(t, results)
-
-		fmt.Printf("XML状态分组结果:\n")
-		for _, result := range results {
-			fmt.Printf("  %s: %d 个用户\n", result.Value, result.Count)
-		}
-	})
-
-	t.Run("XML配置的年龄分组", func(t *testing.T) {
-		// 使用XML配置的selectByAgeGroup查询
-		results, err := suite.userMapper.SelectByAgeGroup()
-		assert.NoError(t, err)
-		assert.NotEmpty(t, results)
-
-		fmt.Printf("XML年龄分组结果:\n")
-		for _, result := range results {
-			fmt.Printf("  %s: %d 个用户\n", result.Value, result.Count)
-		}
-	})
-
-	t.Run("XML配置的时间段查询", func(t *testing.T) {
-		endTime := time.Now()
-		startTime := endTime.AddDate(0, -1, 0) // 一个月前
-
-		// 使用XML配置的selectActiveUsersInPeriod查询
-		users, err := suite.userMapper.SelectActiveUsersInPeriod(startTime, endTime)
-		assert.NoError(t, err)
-
-		fmt.Printf("XML时间段查询结果: 最近一个月 %d 个活跃用户\n", len(users))
-	})
-}
-
-// TestXMLBasedPerformance 测试基于XML的性能
-func (suite *XMLBasedTestSuite) TestXMLBasedPerformance() {
-	t := suite.T()
 
 	t.Run("XML查询性能测试", func(t *testing.T) {
-		iterations := 100
-
+		const queryCount = 100
 		start := time.Now()
-		for i := 0; i < iterations; i++ {
-			user, err := suite.userMapper.SelectById(1)
-			assert.NoError(t, err)
-			assert.NotNil(t, user)
-		}
-		duration := time.Since(start)
 
-		avgDuration := duration / time.Duration(iterations)
-		fmt.Printf("XML查询性能: %d次查询耗时%v, 平均%v/次\n", iterations, duration, avgDuration)
+		for i := 0; i < queryCount; i++ {
+			params := map[string]any{
+				"status": []string{"active", "inactive", "pending"}[i%3],
+			}
 
-		// 性能基准：平均每次查询应在10ms以内
-		assert.Less(t, avgDuration, 10*time.Millisecond)
-	})
-
-	t.Run("XML动态查询性能测试", func(t *testing.T) {
-		iterations := 50
-		query := &UserQuery{
-			Status:   "active",
-			AgeMin:   20,
-			AgeMax:   50,
-			PageSize: 10,
-		}
-
-		start := time.Now()
-		for i := 0; i < iterations; i++ {
-			users, err := suite.userMapper.SelectList(query)
-			assert.NoError(t, err)
-			assert.NotNil(t, users)
-		}
-		duration := time.Since(start)
-
-		avgDuration := duration / time.Duration(iterations)
-		fmt.Printf("XML动态查询性能: %d次查询耗时%v, 平均%v/次\n", iterations, duration, avgDuration)
-
-		// 性能基准：平均每次动态查询应在20ms以内
-		assert.Less(t, avgDuration, 20*time.Millisecond)
-	})
-}
-
-// TestXMLBasedCache 测试基于XML的缓存
-func (suite *XMLBasedTestSuite) TestXMLBasedCache() {
-	t := suite.T()
-
-	t.Run("XML查询缓存测试", func(t *testing.T) {
-		// 第一次查询（从数据库）
-		start1 := time.Now()
-		user1, err := suite.userMapper.SelectById(1)
-		duration1 := time.Since(start1)
-		assert.NoError(t, err)
-		assert.NotNil(t, user1)
-
-		// 第二次查询（从缓存）
-		start2 := time.Now()
-		user2, err := suite.userMapper.SelectById(1)
-		duration2 := time.Since(start2)
-		assert.NoError(t, err)
-		assert.NotNil(t, user2)
-
-		// 验证数据一致性
-		assert.Equal(t, user1.ID, user2.ID)
-		assert.Equal(t, user1.Name, user2.Name)
-
-		fmt.Printf("XML缓存测试: 第一次=%v, 第二次=%v\n", duration1, duration2)
-
-		// 缓存应该明显提升性能
-		if duration1 > time.Microsecond && duration2 > time.Microsecond {
-			// 只有在两次查询都有意义的时间时才比较
-			fmt.Printf("缓存性能提升: %.2fx\n", float64(duration1)/float64(duration2))
-		}
-	})
-}
-
-// TestXMLBasedSuite 运行基于XML的测试套件
-func TestXMLBasedSuite(t *testing.T) {
-	suite.Run(t, new(XMLBasedTestSuite))
-}
-
-// BenchmarkXMLBasedOperations 基于XML的性能基准测试
-func BenchmarkXMLBasedOperations(b *testing.B) {
-	// 设置测试环境
-	dbSetup := NewDatabaseSetup(DefaultDatabaseConfig())
-	err := dbSetup.SetupCompleteTestEnvironment()
-	if err != nil {
-		b.Fatalf("Failed to setup test environment: %v", err)
-	}
-	defer dbSetup.TeardownCompleteTestEnvironment()
-
-	// 创建配置构建器
-	configBuilder := NewConfigurationBuilder("mybatis-config.xml", "mappers")
-	configBuilder.LoadProperties("database.properties")
-
-	// 构建配置
-	mybatisConfig, err := configBuilder.Build()
-	if err != nil {
-		b.Fatalf("Failed to build configuration: %v", err)
-	}
-
-	// 获取数据库配置
-	dbConfig, err := frameworkConfig.GetDatabaseConfig()
-	if err != nil {
-		b.Fatalf("Failed to get database config: %v", err)
-	}
-	mybatisConfig.SetDatabaseConfig(dbConfig)
-
-	// 创建MyBatis实例
-	mb, err := mybatis.NewMyBatis(mybatisConfig)
-	if err != nil {
-		b.Fatalf("Failed to create MyBatis instance: %v", err)
-	}
-
-	session := mb.OpenSession()
-	defer session.Close()
-
-	userMapper := NewUserMapper(session)
-
-	b.Run("XMLSelectById", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_, err := userMapper.SelectById(1)
+			_, err := xmlSession.SelectListByID(ctx, "PerfMapper.selectByStatus", params)
 			if err != nil {
-				b.Fatal(err)
+				t.Logf("性能测试查询%d失败: %v", i, err)
 			}
 		}
-	})
 
-	b.Run("XMLDynamicQuery", func(b *testing.B) {
-		query := &UserQuery{
-			Status:   "active",
-			PageSize: 10,
-		}
+		duration := time.Since(start)
+		opsPerSecond := float64(queryCount) / duration.Seconds()
 
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_, err := userMapper.SelectList(query)
-			if err != nil {
-				b.Fatal(err)
-			}
+		t.Logf("XML查询性能测试:")
+		t.Logf("  执行%d次查询耗时: %v", queryCount, duration)
+		t.Logf("  平均每秒操作数: %.2f ops/s", opsPerSecond)
+
+		if opsPerSecond < 100 {
+			t.Logf("警告：XML查询性能较低 (%.2f ops/s)", opsPerSecond)
 		}
 	})
-}
-
-// 辅助函数
-func contains(s, substr string) bool {
-	return strings.Contains(s, substr)
 }

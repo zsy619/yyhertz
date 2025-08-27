@@ -99,8 +99,8 @@ func CacheHook(cache HooksCache) (BeforeHook, AfterHook) {
 	}
 
 	afterHook := func(ctx context.Context, result any, duration time.Duration, err error) {
-		if err == nil && isSelectOperation(sql(ctx)) {
-			cacheKey := generateCacheKey(sql(ctx), getArgs(ctx))
+		if err == nil && isSelectOperation(getSqlFromContext(ctx)) {
+			cacheKey := generateCacheKey(getSqlFromContext(ctx), getArgs(ctx))
 			cache.Set(cacheKey, result, 5*time.Minute) // 缓存5分钟
 		}
 	}
@@ -215,9 +215,9 @@ func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
 
-// sql 和 getArgs 是从 context 中获取 SQL 和参数的辅助函数
+// getSqlFromContext 和 getArgsFromContext 是从 context 中获取 SQL 和参数的辅助函数
 // 这里简化实现，实际使用中需要在 context 中存储这些信息
-func sql(ctx context.Context) string {
+func getSqlFromContext(ctx context.Context) string {
 	if s, ok := ctx.Value("current_sql").(string); ok {
 		return s
 	}

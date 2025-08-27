@@ -18,7 +18,12 @@ type MiddlewareLoggerConfig struct {
 	MaxBodySize        int      // 最大记录的Body大小
 }
 
-// DefaultLoggerConfig 返回默认日志中间件配置
+// DefaultLoggerConfig 返回一个默认的中间件日志配置。
+// 配置包括：
+//   - EnableRequestBody: 是否启用请求体日志记录，默认为 false。
+//   - EnableResponseBody: 是否启用响应体日志记录，默认为 false。
+//   - SkipPaths: 需要跳过日志记录的路径列表，默认包含 "/health" 和 "/ping"。
+//   - MaxBodySize: 日志记录的最大请求/响应体大小（单位：字节），默认为 1024（1KB）。
 func DefaultLoggerConfig() *MiddlewareLoggerConfig {
 	return &MiddlewareLoggerConfig{
 		EnableRequestBody:  false,
@@ -28,12 +33,47 @@ func DefaultLoggerConfig() *MiddlewareLoggerConfig {
 	}
 }
 
-// LoggerMiddleware 增强的请求日志中间件
+// LoggerMiddleware 返回一个默认配置的日志中间件。
+// 该中间件用于记录请求和响应的基本信息，如请求方法、路径、状态码和耗时。
+// 返回的中间件可以直接用于HTTP服务器的中间件链中。
 func LoggerMiddleware() Middleware {
 	return LoggerMiddlewareWithConfig(DefaultLoggerConfig())
 }
 
-// LoggerMiddlewareWithConfig 带配置的日志中间件
+// LoggerMiddlewareWithConfig 返回一个中间件函数，用于记录 HTTP 请求和响应的详细信息。
+//
+// 参数:
+//
+//	logConfig *MiddlewareLoggerConfig: 日志配置，包含是否启用请求/响应体记录、最大记录体大小、跳过的路径等配置项。
+//
+// 返回值:
+//
+//	Middleware: 一个中间件函数，用于处理请求并记录日志。
+//
+// 功能描述:
+//  1. 检查请求路径是否在跳过列表中，如果是则直接跳过日志记录。
+//  2. 为请求生成唯一请求ID，并记录请求开始时的基本信息（如请求方法、路径、用户代理、客户端IP等）。
+//  3. 如果启用，记录请求体内容（超过最大记录体大小时会截断并记录大小）。
+//  4. 继续处理请求，并在请求完成后记录响应状态码、处理时间等信息。
+//  5. 如果启用，记录响应体内容（超过最大记录体大小时会截断并记录大小）。
+//  6. 根据响应状态码选择日志级别（错误、警告或信息）。
+//
+// 示例:
+//
+//	配置日志中间件并应用到路由中：
+//	```
+//	logConfig := &MiddlewareLoggerConfig{
+//	    EnableRequestBody:  true,
+//	    EnableResponseBody: true,
+//	    MaxBodySize:        1024,
+//	    SkipPaths:         []string{"/health"},
+//	}
+//	router.Use(LoggerMiddlewareWithConfig(logConfig))
+//	```
+//
+// 注意事项:
+//   - 日志记录的性能开销取决于是否启用请求/响应体记录以及记录体大小。
+//   - 跳过的路径应避免包含敏感信息。
 func LoggerMiddlewareWithConfig(logConfig *MiddlewareLoggerConfig) Middleware {
 	return func(c context.Context, ctx *app.RequestContext) {
 		start := time.Now()
@@ -114,7 +154,16 @@ func LoggerMiddlewareWithConfig(logConfig *MiddlewareLoggerConfig) Middleware {
 	}
 }
 
-// AccessLogMiddleware 简化的访问日志中间件
+// AccessLogMiddleware 返回一个中间件函数，用于记录HTTP请求的访问日志。
+// 该中间件会在请求处理前后记录以下信息：
+//   - 请求方法（如GET、POST等）
+//   - 请求路径
+//   - 响应状态码
+//   - 请求处理耗时（包括毫秒和字符串格式）
+//   - 客户端IP地址
+//
+// 日志通过单例日志系统异步记录，避免阻塞请求处理流程。
+// 注意：此中间件会调用两次 ctx.Next(c)，确保在请求处理前后都能执行日志记录逻辑。
 func AccessLogMiddleware() Middleware {
 	return func(c context.Context, ctx *app.RequestContext) {
 		start := time.Now()

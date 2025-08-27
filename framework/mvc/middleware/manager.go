@@ -26,7 +26,9 @@ type MiddlewareRegistry struct {
 	mu       sync.RWMutex
 }
 
-// BuiltinMiddlewareFactory 内置中间件工厂函数
+// BuiltinMiddlewareFactory 是一个函数类型，用于创建内置中间件。
+// 它接收一个配置参数 `config`（可以是任意类型），并返回一个 `MiddlewareFunc` 类型的中间件函数。
+// 通常用于框架或库中，允许用户通过配置动态生成中间件。
 type BuiltinMiddlewareFactory func(config any) MiddlewareFunc
 
 // MiddlewareMetadata 中间件元数据
@@ -51,7 +53,15 @@ type ManagerConfig struct {
 	EnablePerformanceMonitor bool          // 启用性能监控
 }
 
-// NewMiddlewareManager 创建中间件管理器
+// NewMiddlewareManager 创建并初始化一个新的 MiddlewareManager 实例。
+//
+// 该函数负责：
+//
+//  1. 创建中间件管道（MiddlewarePipeline）、编译器（MiddlewareCompiler）和注册表（MiddlewareRegistry）。
+//  2. 设置默认的 Manager 配置。
+//  3. 注册内置中间件和扩展的内置中间件。
+//
+// 返回一个完全初始化的 MiddlewareManager 实例，用于管理中间件的生命周期和调用链。
 func NewMiddlewareManager() *MiddlewareManager {
 	pipeline := NewMiddlewarePipeline()
 	compiler := NewMiddlewareCompiler(pipeline)
@@ -73,7 +83,16 @@ func NewMiddlewareManager() *MiddlewareManager {
 	return manager
 }
 
-// NewMiddlewareRegistry 创建中间件注册表
+// NewMiddlewareRegistry 创建一个新的 MiddlewareRegistry 实例。
+//
+// 该函数负责：
+//
+//  1. 创建一个新的 MiddlewareRegistry 实例。
+//  2. 初始化内置中间件工厂函数映射表（builtins）。
+//  3. 初始化自定义中间件函数映射表（customs）。
+//  4. 初始化中间件元数据映射表（metadata）。
+//
+// 返回一个新的 MiddlewareRegistry 实例，用于管理中间件的工厂函数、自定义函数和元数据。
 func NewMiddlewareRegistry() *MiddlewareRegistry {
 	return &MiddlewareRegistry{
 		builtins: make(map[string]BuiltinMiddlewareFactory),
@@ -82,7 +101,14 @@ func NewMiddlewareRegistry() *MiddlewareRegistry {
 	}
 }
 
-// DefaultManagerConfig 默认管理器配置
+// DefaultManagerConfig 返回 ManagerConfig 的默认配置。
+// 默认配置包括：
+//   - 启用自动编译（EnableAutoCompile: true）
+//   - 禁用热重载（EnableHotReload: false）
+//   - 编译间隔为 5 分钟（CompileInterval: 5 * time.Minute）
+//   - 启用健康检查（EnableHealthCheck: true）
+//   - 健康检查间隔为 1 分钟（HealthCheckInterval: time.Minute）
+//   - 启用性能监控（EnablePerformanceMonitor: true）
 func DefaultManagerConfig() ManagerConfig {
 	return ManagerConfig{
 		EnableAutoCompile:        true,
@@ -94,7 +120,15 @@ func DefaultManagerConfig() ManagerConfig {
 	}
 }
 
-// Initialize 初始化管理器
+// Initialize 初始化中间件管理器。
+// 该方法会执行以下操作：
+//  1. 检查是否已经初始化，避免重复初始化。
+//  2. 如果配置启用了自动编译，启动一个协程执行自动编译循环。
+//  3. 如果配置启用了健康检查，启动一个协程执行健康检查循环。
+//
+// 该方法通过互斥锁保证线程安全。
+// 返回值：
+//   - error: 如果初始化过程中发生错误，返回错误信息；否则返回 nil。
 func (m *MiddlewareManager) Initialize() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -117,7 +151,26 @@ func (m *MiddlewareManager) Initialize() error {
 	return nil
 }
 
-// RegisterBuiltin 注册内置中间件
+// RegisterBuiltin 注册一个内置的中间件到中间件管理器中。
+//
+// 参数:
+//   - name: 中间件的名称，必须是唯一的。
+//   - factory: 中间件的工厂函数，用于创建中间件实例。
+//   - metadata: 中间件的元数据，包含中间件的描述、版本等信息。
+//
+// 返回值:
+//   - error: 如果中间件名称已存在，返回错误；否则返回 nil。
+//
+// 注意事项:
+//   - 该方法会加锁以确保线程安全。
+//   - 注册成功后，中间件的元数据会被标记为内置（IsBuiltin=true），并记录创建时间（CreatedAt）。
+//
+// 示例:
+//
+//	err := m.RegisterBuiltin("auth", authMiddlewareFactory, MiddlewareMetadata{Description: "Authentication middleware"})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 func (m *MiddlewareManager) RegisterBuiltin(name string, factory BuiltinMiddlewareFactory, metadata MiddlewareMetadata) error {
 	m.registry.mu.Lock()
 	defer m.registry.mu.Unlock()
@@ -135,7 +188,23 @@ func (m *MiddlewareManager) RegisterBuiltin(name string, factory BuiltinMiddlewa
 	return nil
 }
 
-// RegisterCustom 注册自定义中间件
+// RegisterCustom 注册一个自定义中间件到中间件管理器中。
+//
+// 参数:
+//   - name: 中间件的唯一名称，用于标识该中间件。
+//   - handler: 中间件的处理函数，类型为 MiddlewareFunc。
+//   - metadata: 中间件的元数据，包含中间件的附加信息。
+//
+// 返回值:
+//   - error: 如果中间件名称已存在，则返回错误；否则返回 nil。
+//
+// 功能说明:
+//   - 该方法会检查中间件名称是否已存在，避免重复注册。
+//   - 设置中间件的元数据，包括是否为内置中间件（设置为 false）和创建时间（设置为当前时间）。
+//   - 将中间件及其元数据存储到管理器的注册表中。
+//
+// 注意:
+//   - 该方法内部使用了互斥锁（mu）来保证并发安全。
 func (m *MiddlewareManager) RegisterCustom(name string, handler MiddlewareFunc, metadata MiddlewareMetadata) error {
 	m.registry.mu.Lock()
 	defer m.registry.mu.Unlock()
@@ -153,7 +222,21 @@ func (m *MiddlewareManager) RegisterCustom(name string, handler MiddlewareFunc, 
 	return nil
 }
 
-// UseBuiltin 使用内置中间件
+// UseBuiltin 注册一个内置中间件到指定的中间件层。
+//
+// 参数:
+//   - layer: 中间件层（如前置、后置等）。
+//   - name: 内置中间件的名称。
+//   - config: 中间件的配置参数。
+//   - priority: 中间件的优先级，数值越小优先级越高。
+//
+// 返回值:
+//   - error: 如果中间件未找到或注册失败，返回错误信息。
+//
+// 说明:
+//   - 该方法会先从注册表中查找指定的内置中间件工厂。
+//   - 如果找到，则通过工厂创建中间件实例并注册到管道中。
+//   - 如果未找到，返回错误。
 func (m *MiddlewareManager) UseBuiltin(layer MiddlewareLayer, name string, config any, priority int) error {
 	m.registry.mu.RLock()
 	factory, exists := m.registry.builtins[name]

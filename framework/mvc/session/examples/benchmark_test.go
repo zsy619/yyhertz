@@ -1,4 +1,4 @@
-// Package session 性能基准测试
+// Package main 性能基准测试
 //
 // 这个文件包含对比重构前后性能表现的基准测试，包括：
 // - Cookie操作性能测试
@@ -6,7 +6,7 @@
 // - 安全Cookie性能测试
 // - 代理层开销测试
 // - 内存分配测试
-package session
+package main
 
 import (
 	"testing"
@@ -15,12 +15,13 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/cloudwego/hertz/pkg/route"
-	
+
 	"github.com/zsy619/yyhertz/framework/mvc/cookie"
+	"github.com/zsy619/yyhertz/framework/mvc/session"
 )
 
 // 创建测试用的RequestContext
-func createTestRequestContext() *app.RequestContext {
+func createTestRequestContextExt() *app.RequestContext {
 	ctx := app.NewContext(10)
 	_ = route.NewEngine(config.NewOptions([]config.Option{}))
 	ctx.Request.SetRequestURI("http://localhost:8080/test")
@@ -35,7 +36,7 @@ func createTestRequestContext() *app.RequestContext {
 
 // BenchmarkBaseCookieGet 测试基础Cookie获取性能
 func BenchmarkBaseCookieGet(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	cookie := cookie.NewBaseCookie(ctx)
 
 	b.ResetTimer()
@@ -48,7 +49,7 @@ func BenchmarkBaseCookieGet(b *testing.B) {
 
 // BenchmarkBaseCookieSetPerf 测试基础Cookie设置性能
 func BenchmarkBaseCookieSetPerf(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	cookie := cookie.NewBaseCookie(ctx)
 
 	b.ResetTimer()
@@ -61,7 +62,7 @@ func BenchmarkBaseCookieSetPerf(b *testing.B) {
 
 // BenchmarkBaseCookieDelete 测试Cookie删除性能
 func BenchmarkBaseCookieDelete(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	cookie := cookie.NewBaseCookie(ctx)
 
 	// 预设一些cookie
@@ -79,7 +80,7 @@ func BenchmarkBaseCookieDelete(b *testing.B) {
 
 // BenchmarkBaseCookieGetAll 测试获取所有Cookie性能
 func BenchmarkBaseCookieGetAll(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	cookie := cookie.NewBaseCookie(ctx)
 
 	// 预设一些cookie
@@ -99,7 +100,7 @@ func BenchmarkBaseCookieGetAll(b *testing.B) {
 
 // BenchmarkSecureCookieSetPerf 测试安全Cookie设置性能
 func BenchmarkSecureCookieSetPerf(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	secureCookie := cookie.NewSecureCookie(ctx)
 	secret := "test-secret-key-for-hmac-256"
 
@@ -113,7 +114,7 @@ func BenchmarkSecureCookieSetPerf(b *testing.B) {
 
 // BenchmarkSecureCookieGet 测试安全Cookie获取性能
 func BenchmarkSecureCookieGet(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	secureCookie := cookie.NewSecureCookie(ctx)
 	secret := "test-secret-key-for-hmac-256"
 
@@ -130,7 +131,7 @@ func BenchmarkSecureCookieGet(b *testing.B) {
 
 // BenchmarkSecureCookieWithOptions 测试带选项的安全Cookie性能
 func BenchmarkSecureCookieWithOptions(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	secureCookie := cookie.NewSecureCookie(ctx)
 
 	options := cookie.CookieSecurityOptions{
@@ -152,8 +153,8 @@ func BenchmarkSecureCookieWithOptions(b *testing.B) {
 
 // BenchmarkSessionStart 测试Session启动性能
 func BenchmarkSessionStart(b *testing.B) {
-	ctx := createTestRequestContext()
-	extension := NewExtensionForHertzContext(ctx)
+	ctx := createTestRequestContextExt()
+	extension := session.NewExtensionForHertzContext(ctx)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -166,8 +167,8 @@ func BenchmarkSessionStart(b *testing.B) {
 
 // BenchmarkSessionSetGet 测试Session设置和获取性能
 func BenchmarkSessionSetGet(b *testing.B) {
-	ctx := createTestRequestContext()
-	extension := NewExtensionForHertzContext(ctx)
+	ctx := createTestRequestContextExt()
+	extension := session.NewExtensionForHertzContext(ctx)
 	adapter := extension.StartSession()
 
 	b.ResetTimer()
@@ -181,8 +182,8 @@ func BenchmarkSessionSetGet(b *testing.B) {
 
 // BenchmarkSessionBatchOperations 测试Session批量操作性能
 func BenchmarkSessionBatchOperations(b *testing.B) {
-	ctx := createTestRequestContext()
-	extension := NewExtensionForHertzContext(ctx)
+	ctx := createTestRequestContextExt()
+	extension := session.NewExtensionForHertzContext(ctx)
 	adapter := extension.StartSession()
 
 	b.ResetTimer()
@@ -208,34 +209,34 @@ func BenchmarkSessionBatchOperations(b *testing.B) {
 
 // BenchmarkContextExtensionCreation 测试Context扩展创建性能
 func BenchmarkContextExtensionCreation(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		ext := NewExtensionForHertzContext(ctx)
+		ext := session.NewExtensionForHertzContext(ctx)
 		_ = ext
 	}
 }
 
 // BenchmarkContextExtensionLazyInit 测试延迟初始化性能
 func BenchmarkContextExtensionLazyInit(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		ext := NewExtensionForHertzContext(ctx)
+		ext := session.NewExtensionForHertzContext(ctx)
 		_ = ext
 	}
 }
 
 // BenchmarkContextExtensionMixedOperations 测试混合操作性能
 func BenchmarkContextExtensionMixedOperations(b *testing.B) {
-	ctx := createTestRequestContext()
-	extension := NewExtensionForHertzContext(ctx)
+	ctx := createTestRequestContextExt()
+	extension := session.NewExtensionForHertzContext(ctx)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -260,12 +261,12 @@ func BenchmarkContextExtensionMixedOperations(b *testing.B) {
 // 模拟InputData结构和代理方法
 type BenchmarkInputData struct {
 	ctx       *app.RequestContext
-	extension *ContextExtension
+	extension *session.ContextExtension
 }
 
-func (i *BenchmarkInputData) getExtension() *ContextExtension {
+func (i *BenchmarkInputData) getExtension() *session.ContextExtension {
 	if i.extension == nil && i.ctx != nil {
-		i.extension = NewExtensionForHertzContext(i.ctx)
+		i.extension = session.NewExtensionForHertzContext(i.ctx)
 	}
 	return i.extension
 }
@@ -285,7 +286,7 @@ func (i *BenchmarkInputData) SetCookie(name, value string, others ...any) {
 
 // BenchmarkProxyLayerOverhead 测试代理层开销
 func BenchmarkProxyLayerOverhead(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 	inputData := &BenchmarkInputData{ctx: ctx}
 
 	b.ResetTimer()
@@ -299,10 +300,10 @@ func BenchmarkProxyLayerOverhead(b *testing.B) {
 
 // BenchmarkDirectVsProxy 对比直接调用vs代理调用性能
 func BenchmarkDirectVsProxy(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 
 	b.Run("Direct", func(b *testing.B) {
-		ext := NewExtensionForHertzContext(ctx)
+		ext := session.NewExtensionForHertzContext(ctx)
 		b.ResetTimer()
 		b.ReportAllocs()
 
@@ -328,7 +329,7 @@ func BenchmarkDirectVsProxy(b *testing.B) {
 
 // BenchmarkMemoryAllocation 测试内存分配模式
 func BenchmarkMemoryAllocation(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 
 	b.Run("Cookie_Operations", func(b *testing.B) {
 		b.ReportAllocs()
@@ -352,7 +353,7 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 	b.Run("Session_Operations", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			ext := NewExtensionForHertzContext(ctx)
+			ext := session.NewExtensionForHertzContext(ctx)
 			adapter := ext.StartSession()
 			_ = adapter.Set("mem_session", "mem_value")
 			_ = adapter.Get("mem_session")
@@ -364,8 +365,8 @@ func BenchmarkMemoryAllocation(b *testing.B) {
 
 // BenchmarkConcurrentCookieOperations 测试并发Cookie操作
 func BenchmarkConcurrentCookieOperations(b *testing.B) {
-	ctx := createTestRequestContext()
-	extension := NewExtensionForHertzContext(ctx)
+	ctx := createTestRequestContextExt()
+	extension := session.NewExtensionForHertzContext(ctx)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -389,8 +390,8 @@ func BenchmarkConcurrentSessionOperations(b *testing.B) {
 	b.SetParallelism(10)
 
 	b.RunParallel(func(pb *testing.PB) {
-		ctx := createTestRequestContext() // 每个goroutine一个独立context
-		extension := NewExtensionForHertzContext(ctx)
+		ctx := createTestRequestContextExt() // 每个goroutine一个独立context
+		extension := session.NewExtensionForHertzContext(ctx)
 		adapter := extension.StartSession()
 
 		i := 0
@@ -407,11 +408,11 @@ func BenchmarkConcurrentSessionOperations(b *testing.B) {
 
 // BenchmarkSuite 运行完整的性能测试套件
 func BenchmarkSuite(b *testing.B) {
-	ctx := createTestRequestContext()
+	ctx := createTestRequestContextExt()
 
 	// 这个基准测试用于CI/CD中的性能回归检测
 	b.Run("Critical_Path", func(b *testing.B) {
-		extension := NewExtensionForHertzContext(ctx)
+		extension := session.NewExtensionForHertzContext(ctx)
 
 		b.ResetTimer()
 		b.ReportAllocs()

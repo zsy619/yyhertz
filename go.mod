@@ -6,6 +6,7 @@ require (
 	github.com/cloudwego/hertz v0.10.2
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hertz-contrib/logger/logrus v1.0.1
 	github.com/hertz-contrib/websocket v0.2.0

@@ -19,7 +19,39 @@ import (
 
 // XMLSession XML支持的会话接口
 type XMLSession interface {
-	SimpleSession
+	// 继承SimpleSession的基础CRUD方法
+	SelectOne(ctx context.Context, sql string, args ...any) (any, error)
+	SelectList(ctx context.Context, sql string, args ...any) ([]any, error)
+	SelectPage(ctx context.Context, sql string, page PageRequest, args ...any) (*PageResult, error)
+	Insert(ctx context.Context, sql string, args ...any) (int64, error)
+	Update(ctx context.Context, sql string, args ...any) (int64, error)
+	Delete(ctx context.Context, sql string, args ...any) (int64, error)
+
+	// 批量操作方法
+	BatchInsert(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+	BatchUpdate(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+	BatchDelete(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+
+	// 存储过程调用方法
+	CallStoredProc(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error)
+	CallStoredProcWithMultiResults(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error)
+
+	// 配置方法 - 返回XMLSession类型以支持方法链
+	Debug(enabled bool) XMLSession
+	DryRun(enabled bool) XMLSession
+	AddBeforeHook(hook BeforeHook) XMLSession
+	AddAfterHook(hook AfterHook) XMLSession
+
+	// 缓存管理方法
+	EnableCache(config *CacheConfig) XMLSession
+	DisableCache() XMLSession
+	ClearCache() XMLSession
+	GetCacheStats() map[string]any
+
+	// 懒加载管理方法
+	EnableLazyLoading(config *LazyLoadConfiguration) XMLSession
+	DisableLazyLoading() XMLSession
+	RegisterAssociation(typeName string, mapping *AssociationMapping) XMLSession
 
 	// XML映射器管理
 	LoadMapperXML(xmlPath string) error
@@ -34,6 +66,11 @@ type XMLSession interface {
 	UpdateByID(ctx context.Context, statementId string, parameter any) (int64, error)
 	DeleteByID(ctx context.Context, statementId string, parameter any) (int64, error)
 
+	// 批量操作（基于语句ID）
+	BatchInsertByID(ctx context.Context, statementId string, parameters []any) (int64, error)
+	BatchUpdateByID(ctx context.Context, statementId string, parameters []any) (int64, error)
+	BatchDeleteByID(ctx context.Context, statementId string, parameters []any) (int64, error)
+
 	// Mapper信息查询
 	GetStatement(statementId string) *mapper.XMLMappedStatement
 	GetResultMap(resultMapId string) *mapper.XMLResultMap
@@ -44,26 +81,62 @@ type XMLSession interface {
 // xmlSession XML会话实现
 type xmlSession struct {
 	SimpleSession
-	parsers        map[string]*mapper.MapperXMLParser // namespace -> parser
-	dynamicBuilder *mapper.DynamicSqlBuilder
+	parsers           map[string]*mapper.MapperXMLParser // namespace -> parser
+	dynamicBuilder    *mapper.DynamicSqlBuilder
+	resultMapper      *mapper.ResultMapper // 新增的结果映射器
+	lazyLoadManager   *LazyLoadManager     // 懒加载管理器
+	lazyLoadExecutor  *LazyLoadingExecutor // 懒加载执行器
 }
 
 // NewXMLSession 创建支持XML的会话
 func NewXMLSession(db *gorm.DB) XMLSession {
-	return &xmlSession{
-		SimpleSession:  NewSimpleSession(db),
-		parsers:        make(map[string]*mapper.MapperXMLParser),
-		dynamicBuilder: mapper.NewDynamicSqlBuilder(),
+	simpleSession := NewSimpleSession(db)
+	lazyManager := NewLazyLoadManager(nil) // 使用默认配置
+	
+	session := &xmlSession{
+		SimpleSession:     simpleSession,
+		parsers:           make(map[string]*mapper.MapperXMLParser),
+		dynamicBuilder:    mapper.NewDynamicSqlBuilder(),
+		resultMapper:      mapper.NewResultMapper(), // 初始化结果映射器
+		lazyLoadManager:   lazyManager,
+		lazyLoadExecutor:  NewLazyLoadingExecutor(simpleSession, lazyManager),
 	}
+	
+	return session
 }
 
 // NewXMLSessionWithHooks 创建带钩子的XML会话
 func NewXMLSessionWithHooks(db *gorm.DB, enableDebug bool) XMLSession {
-	return &xmlSession{
-		SimpleSession:  NewSimpleWithHooks(db, enableDebug),
-		parsers:        make(map[string]*mapper.MapperXMLParser),
-		dynamicBuilder: mapper.NewDynamicSqlBuilder(),
+	simpleSession := NewSimpleSession(db)
+	lazyManager := NewLazyLoadManager(nil) // 使用默认配置
+	
+	session := &xmlSession{
+		SimpleSession:     simpleSession,
+		parsers:           make(map[string]*mapper.MapperXMLParser),
+		dynamicBuilder:    mapper.NewDynamicSqlBuilder(),
+		resultMapper:      mapper.NewResultMapper(), // 初始化结果映射器
+		lazyLoadManager:   lazyManager,
+		lazyLoadExecutor:  NewLazyLoadingExecutor(simpleSession, lazyManager),
 	}
+
+	// 配置调试模式和常用钩子
+	if enableDebug {
+		session = session.Debug(true).(*xmlSession)
+	}
+
+	// 添加常用钩子
+	session = session.AddBeforeHook(AuditHook()).(*xmlSession)
+
+	// 添加性能监控钩子（100ms慢查询阈值）
+	beforeHook, afterHook := PerformanceHook(100 * time.Millisecond)
+	session = session.AddBeforeHook(beforeHook).AddAfterHook(afterHook).(*xmlSession)
+
+	if enableDebug {
+		debugBefore, debugAfter := DebugHook()
+		session = session.AddBeforeHook(debugBefore).AddAfterHook(debugAfter).(*xmlSession)
+	}
+
+	return session
 }
 
 // LoadMapperXML 加载XML映射文件
@@ -141,9 +214,29 @@ func (xs *xmlSession) SelectOneByID(ctx context.Context, statementId string, par
 		return nil, err
 	}
 
+	// 如果没有结果，直接返回
+	if result == nil {
+		return nil, nil
+	}
+
 	// 应用ResultMap映射（如果有的话）
 	if stmt.ResultMap != "" {
-		return xs.applyResultMap(result, stmt.ResultMap)
+		mapped, err := xs.applyResultMap(result, stmt.ResultMap)
+		if err != nil {
+			return nil, err
+		}
+		result = mapped
+	}
+
+	// 处理懒加载（创建代理对象）
+	if xs.lazyLoadExecutor != nil {
+		processedResult, err := xs.lazyLoadExecutor.ProcessResult(ctx, result)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process lazy loading: %w", err)
+		}
+		if processedResult != nil {
+			return processedResult, nil
+		}
 	}
 
 	return result, nil
@@ -182,7 +275,20 @@ func (xs *xmlSession) SelectListByID(ctx context.Context, statementId string, pa
 			}
 			mappedResults[i] = mapped
 		}
-		return mappedResults, nil
+		results = mappedResults
+	}
+
+	// 处理懒加载（创建代理对象）
+	if xs.lazyLoadExecutor != nil {
+		processedResults, err := xs.lazyLoadExecutor.ProcessResult(ctx, results)
+		if err != nil {
+			return nil, fmt.Errorf("failed to process lazy loading: %w", err)
+		}
+		if processedResults != nil {
+			if processedSlice, ok := processedResults.([]any); ok {
+				return processedSlice, nil
+			}
+		}
 	}
 
 	return results, nil
@@ -469,36 +575,12 @@ func (xs *xmlSession) applyResultMap(result any, resultMapId string) (any, error
 		return result, nil // 如果没有找到ResultMap，直接返回原结果
 	}
 
-	// 简化实现：只处理基本的列映射
+	// 使用新的结果映射器处理单个结果
 	if resultData, ok := result.(map[string]any); ok {
-		mappedResult := make(map[string]any)
-
-		// 应用ID映射
-		for _, idMapping := range resultMap.IDMappings {
-			if value, exists := resultData[idMapping.Column]; exists {
-				mappedResult[idMapping.Property] = xs.convertValue(value, idMapping.TargetType)
-			}
-		}
-
-		// 应用结果映射
-		for _, mapping := range resultMap.ResultMappings {
-			if value, exists := resultData[mapping.Column]; exists {
-				mappedResult[mapping.Property] = xs.convertValue(value, mapping.TargetType)
-			}
-		}
-
-		// 如果启用了自动映射，复制未明确映射的字段
-		if resultMap.AutoMap {
-			for column, value := range resultData {
-				if _, exists := mappedResult[column]; !exists {
-					mappedResult[column] = value
-				}
-			}
-		}
-
-		return mappedResult, nil
+		return xs.resultMapper.MapResult(resultData, resultMap)
 	}
 
+	// 如果不是map格式的结果，保持原有逻辑
 	return result, nil
 }
 
@@ -557,4 +639,213 @@ func (xs *xmlSession) convertValue(value any, targetType string) any {
 	default:
 		return value
 	}
+}
+
+// XMLSession配置方法实现 - 返回XMLSession类型以支持方法链
+
+// Debug 设置调试模式
+func (xs *xmlSession) Debug(enabled bool) XMLSession {
+	xs.SimpleSession = xs.SimpleSession.Debug(enabled)
+	return xs
+}
+
+// DryRun 设置DryRun模式
+func (xs *xmlSession) DryRun(enabled bool) XMLSession {
+	xs.SimpleSession = xs.SimpleSession.DryRun(enabled)
+	return xs
+}
+
+// AddBeforeHook 添加执行前钩子
+func (xs *xmlSession) AddBeforeHook(hook BeforeHook) XMLSession {
+	xs.SimpleSession = xs.SimpleSession.AddBeforeHook(hook)
+	return xs
+}
+
+// AddAfterHook 添加执行后钩子
+func (xs *xmlSession) AddAfterHook(hook AfterHook) XMLSession {
+	xs.SimpleSession = xs.SimpleSession.AddAfterHook(hook)
+	return xs
+}
+
+// 批量操作方法实现 - 委托给SimpleSession
+
+// BatchInsert 批量插入记录
+func (xs *xmlSession) BatchInsert(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return xs.SimpleSession.BatchInsert(ctx, sql, batchArgs)
+}
+
+// BatchUpdate 批量更新记录
+func (xs *xmlSession) BatchUpdate(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return xs.SimpleSession.BatchUpdate(ctx, sql, batchArgs)
+}
+
+// BatchDelete 批量删除记录
+func (xs *xmlSession) BatchDelete(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return xs.SimpleSession.BatchDelete(ctx, sql, batchArgs)
+}
+
+// 基于ID的批量操作方法实现
+
+// BatchInsertByID 基于语句ID批量插入记录
+func (xs *xmlSession) BatchInsertByID(ctx context.Context, statementId string, parameters []any) (int64, error) {
+	return xs.executeBatchByID(ctx, statementId, parameters, "INSERT")
+}
+
+// BatchUpdateByID 基于语句ID批量更新记录
+func (xs *xmlSession) BatchUpdateByID(ctx context.Context, statementId string, parameters []any) (int64, error) {
+	return xs.executeBatchByID(ctx, statementId, parameters, "UPDATE")
+}
+
+// BatchDeleteByID 基于语句ID批量删除记录
+func (xs *xmlSession) BatchDeleteByID(ctx context.Context, statementId string, parameters []any) (int64, error) {
+	return xs.executeBatchByID(ctx, statementId, parameters, "DELETE")
+}
+
+// executeBatchByID 执行基于语句ID的批量操作
+func (xs *xmlSession) executeBatchByID(ctx context.Context, statementId string, parameters []any, operationType string) (int64, error) {
+	if len(parameters) == 0 {
+		return 0, nil
+	}
+
+	// 获取语句配置
+	statement := xs.GetStatement(statementId)
+	if statement == nil {
+		return 0, fmt.Errorf("statement not found: %s", statementId)
+	}
+
+	// 验证操作类型
+	if !strings.EqualFold(statement.StatementType.String(), operationType) {
+		return 0, fmt.Errorf("statement %s is of type %s, but expected %s", statementId, statement.StatementType.String(), operationType)
+	}
+
+	var totalAffectedRows int64
+	var err error
+
+	// 为每个参数构建SQL并收集批量参数
+	batchArgs := make([][]any, 0, len(parameters))
+	var finalSQL string
+
+	for i, param := range parameters {
+		// 构建动态SQL
+		sql, args, buildErr := xs.dynamicBuilder.Build(statement.SQL, param)
+		if buildErr != nil {
+			return 0, fmt.Errorf("failed to build SQL for parameter %d: %w", i, buildErr)
+		}
+
+		// 第一次构建时保存SQL模板
+		if i == 0 {
+			finalSQL = sql
+		} else if sql != finalSQL {
+			// 如果SQL不一致，则不能使用批量操作，需要逐个执行
+			log.Printf("Warning: SQL inconsistency detected for %s at parameter %d, falling back to individual execution", statementId, i)
+			return xs.executeBatchByIDIndividually(ctx, statement, parameters, operationType)
+		}
+
+		batchArgs = append(batchArgs, args)
+	}
+
+	// 使用批量操作
+	switch operationType {
+	case "INSERT":
+		totalAffectedRows, err = xs.BatchInsert(ctx, finalSQL, batchArgs)
+	case "UPDATE":
+		totalAffectedRows, err = xs.BatchUpdate(ctx, finalSQL, batchArgs)
+	case "DELETE":
+		totalAffectedRows, err = xs.BatchDelete(ctx, finalSQL, batchArgs)
+	default:
+		return 0, fmt.Errorf("unsupported operation type: %s", operationType)
+	}
+
+	return totalAffectedRows, err
+}
+
+// executeBatchByIDIndividually 当SQL不一致时逐个执行操作
+func (xs *xmlSession) executeBatchByIDIndividually(ctx context.Context, statement *mapper.XMLMappedStatement, parameters []any, operationType string) (int64, error) {
+	var totalAffectedRows int64
+
+	for i, param := range parameters {
+		var affectedRows int64
+		var err error
+
+		switch operationType {
+		case "INSERT":
+			affectedRows, err = xs.InsertByID(ctx, statement.ID, param)
+		case "UPDATE":
+			affectedRows, err = xs.UpdateByID(ctx, statement.ID, param)
+		case "DELETE":
+			affectedRows, err = xs.DeleteByID(ctx, statement.ID, param)
+		}
+
+		if err != nil {
+			return totalAffectedRows, fmt.Errorf("individual operation failed at parameter %d: %w", i, err)
+		}
+
+		totalAffectedRows += affectedRows
+	}
+
+	return totalAffectedRows, nil
+}
+
+// 存储过程调用方法实现 - 委托给SimpleSession
+
+// CallStoredProc 调用存储过程（单结果集）
+func (xs *xmlSession) CallStoredProc(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error) {
+	return xs.SimpleSession.CallStoredProc(ctx, procName, params)
+}
+
+// CallStoredProcWithMultiResults 调用存储过程（多结果集）
+func (xs *xmlSession) CallStoredProcWithMultiResults(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error) {
+	return xs.SimpleSession.CallStoredProcWithMultiResults(ctx, procName, params)
+}
+
+// 缓存管理方法实现 - 委托给SimpleSession
+
+// EnableCache 启用缓存
+func (xs *xmlSession) EnableCache(config *CacheConfig) XMLSession {
+	xs.SimpleSession = xs.SimpleSession.EnableCache(config)
+	return xs
+}
+
+// DisableCache 禁用缓存
+func (xs *xmlSession) DisableCache() XMLSession {
+	xs.SimpleSession = xs.SimpleSession.DisableCache()
+	return xs
+}
+
+// ClearCache 清空缓存
+func (xs *xmlSession) ClearCache() XMLSession {
+	xs.SimpleSession = xs.SimpleSession.ClearCache()
+	return xs
+}
+
+// GetCacheStats 获取缓存统计
+func (xs *xmlSession) GetCacheStats() map[string]any {
+	return xs.SimpleSession.GetCacheStats()
+}
+
+// 懒加载管理方法实现
+
+// EnableLazyLoading 启用懒加载
+func (xs *xmlSession) EnableLazyLoading(config *LazyLoadConfiguration) XMLSession {
+	if config == nil {
+		config = DefaultLazyLoadConfiguration()
+	}
+	xs.lazyLoadManager = NewLazyLoadManager(config)
+	xs.lazyLoadExecutor = NewLazyLoadingExecutor(xs.SimpleSession, xs.lazyLoadManager)
+	return xs
+}
+
+// DisableLazyLoading 禁用懒加载
+func (xs *xmlSession) DisableLazyLoading() XMLSession {
+	xs.lazyLoadManager = NewLazyLoadManager(&LazyLoadConfiguration{
+		LazyLoadingEnabled: false,
+	})
+	xs.lazyLoadExecutor = NewLazyLoadingExecutor(xs.SimpleSession, xs.lazyLoadManager)
+	return xs
+}
+
+// RegisterAssociation 注册关联映射
+func (xs *xmlSession) RegisterAssociation(typeName string, mapping *AssociationMapping) XMLSession {
+	xs.lazyLoadManager.RegisterAssociation(typeName, mapping)
+	return xs
 }

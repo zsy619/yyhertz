@@ -14,7 +14,12 @@ import (
 
 // 扩展的内置中间件 - 移植自 @framework/middleware 系统
 
-// registerExtendedBuiltinMiddlewares 注册扩展的内置中间件
+// registerExtendedBuiltinMiddlewares 注册所有从基础系统移植的扩展内置中间件。
+//
+// 这些中间件包括日志增强、恢复增强、CORS、速率限制、链路追踪、TLS支持、
+// 基础认证、请求ID、超时控制、安全防护和GZip压缩等功能。
+//
+// 该方法通常在服务启动时调用，用于初始化中间件链。
 func (m *MiddlewareManager) registerExtendedBuiltinMiddlewares() {
 	// 注册所有从基础系统移植的中间件
 	m.registerEnhancedLoggerMiddleware()
@@ -30,7 +35,32 @@ func (m *MiddlewareManager) registerExtendedBuiltinMiddlewares() {
 	m.registerGZipMiddleware()
 }
 
-// registerEnhancedLoggerMiddleware 注册增强的Logger中间件
+// registerEnhancedLoggerMiddleware 注册一个增强的日志记录中间件到中间件管理器中。
+//
+// 该中间件用于记录HTTP请求的详细信息，包括请求路径、状态码、延迟、客户端IP等。
+// 支持自定义日志输出目标、日志格式以及跳过特定路径的日志记录。
+//
+// 参数:
+//   - config: 可选的日志配置参数。如果为nil或非LoggerConfig类型，将使用默认配置。
+//     LoggerConfig包含以下字段：
+//   - SkipPaths: 需要跳过日志记录的路径列表。
+//   - Output: 日志输出目标，默认为os.Stdout。
+//   - Formatter: 日志格式化函数，默认为defaultLogFormatter。
+//
+// 返回值:
+//   - 无。中间件会通过MiddlewareManager的RegisterBuiltin方法注册。
+//
+// 功能说明:
+//   - 检查请求路径是否需要跳过日志记录。
+//   - 记录请求开始时间，并在请求完成后计算延迟。
+//   - 收集请求状态码、错误信息等数据。
+//   - 使用自定义或默认的格式化函数生成日志并输出。
+//
+// 元数据:
+//   - 名称: "enhanced-logger"
+//   - 版本: "2.0.0"
+//   - 描述: "Enhanced HTTP请求日志记录中间件 (from basic system)"
+//   - 作者: "YYHertz Team"
 func (m *MiddlewareManager) registerEnhancedLoggerMiddleware() {
 	m.RegisterBuiltin("enhanced-logger", func(config any) MiddlewareFunc {
 		// 配置解析
@@ -109,7 +139,30 @@ func (m *MiddlewareManager) registerEnhancedLoggerMiddleware() {
 	})
 }
 
-// registerEnhancedRecoveryMiddleware 注册增强的Recovery中间件
+// registerEnhancedRecoveryMiddleware 注册一个增强的 panic 恢复中间件。
+//
+// 该中间件用于捕获和处理请求处理过程中发生的 panic，记录详细的错误信息和堆栈跟踪，
+// 并返回一个 500 内部服务器错误的响应。
+//
+// 参数:
+//   - config: 可选的配置参数，支持传入一个 io.Writer 类型的对象，用于指定错误日志的输出位置。
+//     如果未提供配置，默认将错误日志输出到标准错误流 (os.Stderr)。
+//
+// 中间件行为:
+//   - 捕获 panic 并记录错误信息（包括时间戳、错误内容和堆栈跟踪）。
+//   - 将错误信息添加到上下文的错误列表中。
+//   - 返回一个 JSON 格式的 500 错误响应。
+//   - 终止当前请求的处理流程。
+//
+// 元数据:
+//   - Name: "enhanced-recovery"
+//   - Version: "2.0.0"
+//   - Description: "Enhanced Panic 恢复中间件 (from basic system)"
+//   - Author: "YYHertz Team"
+//
+// 注意:
+//   - 该中间件是内置的，通过 MiddlewareManager 的 RegisterBuiltin 方法注册。
+//   - 适用于需要高可靠性的 Web 服务场景。
 func (m *MiddlewareManager) registerEnhancedRecoveryMiddleware() {
 	m.RegisterBuiltin("enhanced-recovery", func(config any) MiddlewareFunc {
 		out := os.Stderr
@@ -148,7 +201,21 @@ func (m *MiddlewareManager) registerEnhancedRecoveryMiddleware() {
 	})
 }
 
-// registerCORSMiddleware 注册CORS中间件
+// registerCORSMiddleware 注册一个增强版的CORS中间件到中间件管理器中。
+//
+// 该中间件实现了跨域资源共享（CORS）功能，支持以下特性：
+// - 允许所有来源（Access-Control-Allow-Origin: *）
+// - 允许的HTTP方法包括 GET, POST, PUT, DELETE, OPTIONS
+// - 允许的请求头包括 Content-Type 和 Authorization
+// - 自动处理预检请求（OPTIONS 方法），返回 204 状态码并终止请求
+//
+// 中间件元数据：
+// - Name: "cors-extended" - 中间件名称
+// - Version: "2.0.0" - 版本号
+// - Description: "跨域资源共享中间件 (enhanced from basic system)" - 描述
+// - Author: "YYHertz Team" - 作者
+//
+// 注意：该中间件会设置必要的CORS头，并确保预检请求的正确处理。
 func (m *MiddlewareManager) registerCORSMiddleware() {
 	m.RegisterBuiltin("cors-extended", func(config any) MiddlewareFunc {
 		return func(ctx *mvcContext.Context) {
@@ -174,7 +241,23 @@ func (m *MiddlewareManager) registerCORSMiddleware() {
 	})
 }
 
-// registerRateLimitMiddleware 注册限流中间件
+// registerRateLimitMiddleware 注册一个限流中间件到中间件管理器中。
+//
+// 该中间件使用简化的限流实现，实际应用中建议替换为专业的限流算法（如令牌桶或滑动窗口）。
+// 当前实现仅为基础检查，后续需完善具体限流逻辑。
+//
+// 参数:
+//   - config: 中间件的配置参数，类型为任意（any）。
+//
+// 返回值:
+//   - MiddlewareFunc: 限流中间件的函数实现。
+//
+// 元数据:
+//   - Name: "ratelimit" - 中间件名称。
+//   - Version: "1.0.0" - 中间件版本。
+//   - Description: "请求限流中间件" - 中间件功能描述。
+//   - Author: "YYHertz Team" - 中间件作者。
+//   - Dependencies: ["logger"] - 中间件依赖的其他组件。
 func (m *MiddlewareManager) registerRateLimitMiddleware() {
 	m.RegisterBuiltin("ratelimit", func(config any) MiddlewareFunc {
 		// 简化的限流实现 - 实际应用中需要使用专业的限流算法
@@ -192,7 +275,27 @@ func (m *MiddlewareManager) registerRateLimitMiddleware() {
 	})
 }
 
-// registerTracingMiddleware 注册链路追踪中间件
+// registerTracingMiddleware 注册一个链路追踪中间件到中间件管理器。
+//
+// 该中间件的主要功能：
+// - 为每个请求生成唯一的 Trace ID。
+// - 将 Trace ID 存储到请求上下文中，并设置到响应头中（X-Trace-ID）。
+// - 预留了集成实际链路追踪系统（如 Jaeger、Zipkin）的扩展点。
+//
+// 参数：
+//   - config: 中间件的配置参数（当前未使用）。
+//
+// 返回值：
+//   - MiddlewareFunc: 一个中间件函数，用于处理请求链路追踪逻辑。
+//
+// 元数据：
+//   - Name: "tracing" - 中间件名称。
+//   - Version: "1.0.0" - 中间件版本。
+//   - Description: "分布式链路追踪中间件" - 中间件描述。
+//   - Author: "YYHertz Team" - 作者信息。
+//
+// 注意：
+// - 当前实现仅生成 Trace ID，实际链路追踪功能需后续集成。
 func (m *MiddlewareManager) registerTracingMiddleware() {
 	m.RegisterBuiltin("tracing", func(config any) MiddlewareFunc {
 		return func(ctx *mvcContext.Context) {
@@ -212,7 +315,25 @@ func (m *MiddlewareManager) registerTracingMiddleware() {
 	})
 }
 
-// registerTLSMiddleware 注册TLS中间件
+// registerTLSMiddleware 注册一个内置的TLS中间件到中间件管理器中。
+//
+// 该中间件用于处理TLS相关的请求，包括记录请求的客户端IP和路径信息。
+// 中间件会在请求处理链中调用 `ctx.Next()` 继续后续处理。
+//
+// 参数:
+//   - config: 中间件的配置参数（当前未使用，保留为扩展点）。
+//
+// 返回值:
+//   - MiddlewareFunc: 返回一个中间件函数，用于处理TLS请求。
+//
+// 元数据:
+//   - Name: "tls" - 中间件名称。
+//   - Version: "1.0.0" - 中间件版本。
+//   - Description: "TLS连接处理中间件" - 中间件功能描述。
+//   - Author: "YYHertz Team" - 中间件作者。
+//
+// 注意:
+//   - 当前实现为简化版本，实际应用中需要进一步检查协议和其他安全相关逻辑。
 func (m *MiddlewareManager) registerTLSMiddleware() {
 	m.RegisterBuiltin("tls", func(config any) MiddlewareFunc {
 		return func(ctx *mvcContext.Context) {

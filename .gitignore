@@ -273,3 +273,4 @@ framework/mvc/errors/conf
 framework/mvc/view/conf
 !example/test_reports
 framework/testing/conf
+framework/mvc/session/examples/conf

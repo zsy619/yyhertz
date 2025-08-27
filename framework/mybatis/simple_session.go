@@ -5,6 +5,7 @@ package mybatis
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
@@ -13,8 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// SimpleSession 简化版会话接口 - 只保留最核心的方法
+// SimpleSession 简化版会话接口 - 核心CRUD操作
 type SimpleSession interface {
+	// 基础CRUD方法
 	SelectOne(ctx context.Context, sql string, args ...any) (any, error)
 	SelectList(ctx context.Context, sql string, args ...any) ([]any, error)
 	SelectPage(ctx context.Context, sql string, page PageRequest, args ...any) (*PageResult, error)
@@ -22,13 +24,36 @@ type SimpleSession interface {
 	Update(ctx context.Context, sql string, args ...any) (int64, error)
 	Delete(ctx context.Context, sql string, args ...any) (int64, error)
 
-	// 钩子方法
+	// 批量操作方法
+	BatchInsert(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+	BatchUpdate(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+	BatchDelete(ctx context.Context, sql string, batchArgs [][]any) (int64, error)
+
+	// 存储过程调用方法
+	CallStoredProc(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error)
+	CallStoredProcWithMultiResults(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error)
+
+	// 配置方法 - 返回自身类型以支持方法链
+	Debug(enabled bool) SimpleSession
+	DryRun(enabled bool) SimpleSession
+
+	// 缓存管理方法
+	EnableCache(config *CacheConfig) SimpleSession
+	DisableCache() SimpleSession
+	ClearCache() SimpleSession
+	GetCacheStats() map[string]any
+
+	// 钩子方法 - 返回自身类型以支持方法链
 	AddBeforeHook(hook BeforeHook) SimpleSession
 	AddAfterHook(hook AfterHook) SimpleSession
-
-	// 配置方法
-	DryRun(enabled bool) SimpleSession
-	Debug(enabled bool) SimpleSession
+	
+	// 性能监控方法
+	EnablePerformanceMonitor(config *PerformanceConfig) SimpleSession
+	DisablePerformanceMonitor() SimpleSession
+	GetPerformanceStats() map[string]*SQLStats
+	GetSlowQueries(limit int) []*SlowQuery
+	GetPerformanceReport() *StatisticsReport
+	ClearPerformanceStats() SimpleSession
 }
 
 // SessionConfig 会话配置
@@ -40,10 +65,12 @@ type SessionConfig struct {
 
 // defaultSession 默认会话实现
 type defaultSession struct {
-	db          *gorm.DB
-	config      SessionConfig
-	beforeHooks []BeforeHook
-	afterHooks  []AfterHook
+	db               *gorm.DB
+	config           SessionConfig
+	beforeHooks      []BeforeHook
+	afterHooks       []AfterHook
+	cacheManager     *CacheManager
+	performanceMonitor *PerformanceMonitor // 性能监控器
 }
 
 // BeforeHook 执行前钩子
@@ -67,6 +94,20 @@ type PageResult struct {
 	TotalPages int   `json:"totalPages"` // 总页数
 }
 
+// StoredProcResult 存储过程执行结果
+type StoredProcResult struct {
+	OutputParams map[string]any   `json:"outputParams"` // 输出参数
+	ResultSets   [][]map[string]any `json:"resultSets"`   // 多结果集
+	RowsAffected int64              `json:"rowsAffected"` // 影响行数
+}
+
+// ProcParam 存储过程参数
+type ProcParam struct {
+	Name      string `json:"name"`      // 参数名
+	Value     any    `json:"value"`     // 参数值
+	Direction string `json:"direction"` // 参数方向: IN, OUT, INOUT
+}
+
 // NewSimpleSession 创建简化版会话
 func NewSimpleSession(db *gorm.DB) SimpleSession {
 	return &defaultSession{
@@ -74,8 +115,9 @@ func NewSimpleSession(db *gorm.DB) SimpleSession {
 		config: SessionConfig{
 			Logger: log.Default(),
 		},
-		beforeHooks: make([]BeforeHook, 0),
-		afterHooks:  make([]AfterHook, 0),
+		beforeHooks:  make([]BeforeHook, 0),
+		afterHooks:   make([]AfterHook, 0),
+		cacheManager: nil, // 默认不启用缓存
 	}
 }
 
@@ -125,6 +167,24 @@ func (s *defaultSession) SelectOne(ctx context.Context, sql string, args ...any)
 func (s *defaultSession) SelectList(ctx context.Context, sql string, args ...any) ([]any, error) {
 	startTime := time.Now()
 
+	// 检查缓存
+	if s.cacheManager != nil {
+		if cachedResult, found := s.cacheManager.Get(sql, args); found {
+			if s.config.Debug {
+				s.config.Logger.Printf("[Cache Hit] SQL: %s", sql)
+			}
+			
+			// 执行后钩子（缓存命中）
+			for _, hook := range s.afterHooks {
+				hook(ctx, cachedResult, time.Since(startTime), nil)
+			}
+			
+			if result, ok := cachedResult.([]any); ok {
+				return result, nil
+			}
+		}
+	}
+
 	// 执行前钩子
 	for _, hook := range s.beforeHooks {
 		if err := hook(ctx, sql, args); err != nil {
@@ -154,6 +214,14 @@ func (s *defaultSession) SelectList(ctx context.Context, sql string, args ...any
 			result = make([]any, len(rows))
 			for i, row := range rows {
 				result[i] = row
+			}
+			
+			// 将结果存入缓存（仅在成功时）
+			if s.cacheManager != nil {
+				s.cacheManager.Set(sql, args, result)
+				if s.config.Debug {
+					s.config.Logger.Printf("[Cache Set] SQL: %s", sql)
+				}
 			}
 		}
 	}
@@ -359,4 +427,443 @@ func (s *defaultSession) logSQL(prefix, sql string, args []any) {
 // logError 记录错误日志
 func (s *defaultSession) logError(message string, err error) {
 	s.config.Logger.Printf("ERROR: %s - %v", message, err)
+}
+
+// BatchInsert 批量插入记录
+func (s *defaultSession) BatchInsert(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return s.executeBatchUpdate(ctx, "BATCH_INSERT", sql, batchArgs)
+}
+
+// BatchUpdate 批量更新记录
+func (s *defaultSession) BatchUpdate(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return s.executeBatchUpdate(ctx, "BATCH_UPDATE", sql, batchArgs)
+}
+
+// BatchDelete 批量删除记录
+func (s *defaultSession) BatchDelete(ctx context.Context, sql string, batchArgs [][]any) (int64, error) {
+	return s.executeBatchUpdate(ctx, "BATCH_DELETE", sql, batchArgs)
+}
+
+// executeBatchUpdate 执行批量更新操作
+func (s *defaultSession) executeBatchUpdate(ctx context.Context, operation, sql string, batchArgs [][]any) (int64, error) {
+	if len(batchArgs) == 0 {
+		return 0, nil
+	}
+
+	startTime := time.Now()
+	
+	// 执行前钩子 - 对于批量操作，传递第一组参数作为示例
+	for _, hook := range s.beforeHooks {
+		if err := hook(ctx, fmt.Sprintf("%s (batch size: %d)", sql, len(batchArgs)), batchArgs[0]); err != nil {
+			return 0, fmt.Errorf("before hook error: %w", err)
+		}
+	}
+
+	var totalAffectedRows int64
+	var err error
+
+	if s.config.DryRun {
+		// DryRun模式：只打印SQL，不实际执行
+		s.logBatchSQL(fmt.Sprintf("[DryRun %s]", operation), sql, batchArgs)
+		totalAffectedRows = 0
+	} else {
+		// 实际执行批量操作
+		if s.config.Debug {
+			s.logBatchSQL(fmt.Sprintf("[Debug %s]", operation), sql, batchArgs)
+		}
+
+		// 在事务中执行批量操作以提升性能
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			for i, args := range batchArgs {
+				result := tx.Exec(sql, args...)
+				if result.Error != nil {
+					return fmt.Errorf("batch operation failed at index %d: %w", i, result.Error)
+				}
+				totalAffectedRows += result.RowsAffected
+			}
+			return nil
+		})
+
+		if err != nil {
+			s.logError(fmt.Sprintf("%s failed", operation), err)
+		}
+	}
+
+	duration := time.Since(startTime)
+
+	// 执行后钩子
+	for _, hook := range s.afterHooks {
+		hook(ctx, totalAffectedRows, duration, err)
+	}
+
+	return totalAffectedRows, err
+}
+
+// logBatchSQL 记录批量SQL日志
+func (s *defaultSession) logBatchSQL(prefix, sql string, batchArgs [][]any) {
+	if len(batchArgs) == 0 {
+		s.config.Logger.Printf("%s SQL: %s (empty batch)", prefix, sql)
+		return
+	}
+
+	// 只显示前3组参数，避免日志过长
+	displayCount := len(batchArgs)
+	if displayCount > 3 {
+		displayCount = 3
+	}
+
+	s.config.Logger.Printf("%s SQL: %s", prefix, sql)
+	s.config.Logger.Printf("Batch size: %d", len(batchArgs))
+	
+	for i := 0; i < displayCount; i++ {
+		s.config.Logger.Printf("  Args[%d]: %+v", i, batchArgs[i])
+	}
+	
+	if len(batchArgs) > 3 {
+		s.config.Logger.Printf("  ... and %d more entries", len(batchArgs)-3)
+	}
+}
+
+// CallStoredProc 调用存储过程（单结果集）
+func (s *defaultSession) CallStoredProc(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error) {
+	return s.executeStoredProc(ctx, procName, params, false)
+}
+
+// CallStoredProcWithMultiResults 调用存储过程（多结果集）
+func (s *defaultSession) CallStoredProcWithMultiResults(ctx context.Context, procName string, params []ProcParam) (*StoredProcResult, error) {
+	return s.executeStoredProc(ctx, procName, params, true)
+}
+
+// executeStoredProc 执行存储过程的核心实现
+func (s *defaultSession) executeStoredProc(ctx context.Context, procName string, params []ProcParam, multiResults bool) (*StoredProcResult, error) {
+	startTime := time.Now()
+
+	// 构建CALL语句和参数
+	callSQL, args, outputIndexes, err := s.buildStoredProcCall(procName, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build stored proc call: %w", err)
+	}
+
+	// 执行前钩子
+	for _, hook := range s.beforeHooks {
+		if err := hook(ctx, callSQL, args); err != nil {
+			return nil, fmt.Errorf("before hook error: %w", err)
+		}
+	}
+
+	var result *StoredProcResult
+	var execErr error
+
+	if s.config.DryRun {
+		// DryRun模式：只打印调用，不实际执行
+		s.logSQL("[DryRun CALL]", callSQL, args)
+		result = &StoredProcResult{
+			OutputParams: make(map[string]any),
+			ResultSets:   [][]map[string]any{},
+			RowsAffected: 0,
+		}
+	} else {
+		// 实际执行存储过程
+		if s.config.Debug {
+			s.logSQL("[Debug CALL]", callSQL, args)
+		}
+
+		if multiResults {
+			result, execErr = s.executeStoredProcWithMultiResults(ctx, callSQL, args, params, outputIndexes)
+		} else {
+			result, execErr = s.executeStoredProcSingleResult(ctx, callSQL, args, params, outputIndexes)
+		}
+
+		if execErr != nil {
+			s.logError("Stored procedure execution failed", execErr)
+		}
+	}
+
+	duration := time.Since(startTime)
+
+	// 执行后钩子
+	for _, hook := range s.afterHooks {
+		hook(ctx, result, duration, execErr)
+	}
+
+	return result, execErr
+}
+
+// buildStoredProcCall 构建存储过程调用SQL
+func (s *defaultSession) buildStoredProcCall(procName string, params []ProcParam) (string, []any, map[int]string, error) {
+	if len(params) == 0 {
+		return fmt.Sprintf("CALL %s()", procName), []any{}, map[int]string{}, nil
+	}
+
+	var placeholders []string
+	var args []any
+	outputIndexes := make(map[int]string)
+
+	for i, param := range params {
+		switch strings.ToUpper(param.Direction) {
+		case "IN":
+			placeholders = append(placeholders, "?")
+			args = append(args, param.Value)
+		case "OUT":
+			// 对于输出参数，根据数据库类型使用不同的占位符
+			placeholders = append(placeholders, "@"+param.Name)
+			outputIndexes[i] = param.Name
+		case "INOUT":
+			// 输入输出参数，先设置值，后面会读取输出
+			placeholders = append(placeholders, "?")
+			args = append(args, param.Value)
+			outputIndexes[i] = param.Name
+		default:
+			return "", nil, nil, fmt.Errorf("unsupported parameter direction: %s", param.Direction)
+		}
+	}
+
+	callSQL := fmt.Sprintf("CALL %s(%s)", procName, strings.Join(placeholders, ", "))
+	return callSQL, args, outputIndexes, nil
+}
+
+// executeStoredProcSingleResult 执行单结果集存储过程
+func (s *defaultSession) executeStoredProcSingleResult(ctx context.Context, callSQL string, args []any, params []ProcParam, outputIndexes map[int]string) (*StoredProcResult, error) {
+	result := &StoredProcResult{
+		OutputParams: make(map[string]any),
+		ResultSets:   [][]map[string]any{},
+		RowsAffected: 0,
+	}
+
+	// 在事务中执行以支持输出参数
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 执行存储过程
+		dbResult := tx.Exec(callSQL, args...)
+		if dbResult.Error != nil {
+			return dbResult.Error
+		}
+		result.RowsAffected = dbResult.RowsAffected
+
+		// 如果有输出参数，需要查询获取
+		if len(outputIndexes) > 0 {
+			outputParams, err := s.fetchOutputParams(tx, outputIndexes)
+			if err != nil {
+				return fmt.Errorf("failed to fetch output parameters: %w", err)
+			}
+			result.OutputParams = outputParams
+		}
+
+		// 尝试获取结果集（如果存储过程返回结果）
+		rows, err := tx.Raw("SELECT 1").Rows() // 占位查询检查是否有结果
+		if err == nil {
+			rows.Close()
+			
+			// 执行实际查询获取结果
+			var resultSet []map[string]any
+			err = tx.Raw(callSQL, args...).Scan(&resultSet).Error
+			if err == nil && len(resultSet) > 0 {
+				result.ResultSets = append(result.ResultSets, resultSet)
+			}
+		}
+
+		return nil
+	})
+
+	return result, err
+}
+
+// executeStoredProcWithMultiResults 执行多结果集存储过程
+func (s *defaultSession) executeStoredProcWithMultiResults(ctx context.Context, callSQL string, args []any, params []ProcParam, outputIndexes map[int]string) (*StoredProcResult, error) {
+	result := &StoredProcResult{
+		OutputParams: make(map[string]any),
+		ResultSets:   [][]map[string]any{},
+		RowsAffected: 0,
+	}
+
+	// 多结果集需要使用原生SQL连接
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	// 执行存储过程
+	rows, err := sqlDB.QueryContext(ctx, callSQL, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute stored procedure: %w", err)
+	}
+	defer rows.Close()
+
+	// 处理多个结果集
+	for {
+		// 获取列信息
+		columns, err := rows.Columns()
+		if err != nil {
+			break
+		}
+
+		var resultSet []map[string]any
+		
+		// 读取当前结果集的所有行
+		for rows.Next() {
+			// 创建扫描目标
+			values := make([]interface{}, len(columns))
+			valuePtrs := make([]interface{}, len(columns))
+			for i := range values {
+				valuePtrs[i] = &values[i]
+			}
+
+			// 扫描行数据
+			if err := rows.Scan(valuePtrs...); err != nil {
+				return nil, fmt.Errorf("failed to scan row: %w", err)
+			}
+
+			// 构建行映射
+			row := make(map[string]any)
+			for i, col := range columns {
+				val := values[i]
+				if b, ok := val.([]byte); ok {
+					row[col] = string(b)
+				} else {
+					row[col] = val
+				}
+			}
+			resultSet = append(resultSet, row)
+		}
+
+		// 将结果集添加到结果中
+		if len(resultSet) > 0 {
+			result.ResultSets = append(result.ResultSets, resultSet)
+		}
+
+		// 检查是否还有更多结果集
+		if !rows.NextResultSet() {
+			break
+		}
+	}
+
+	// 处理输出参数（如果有）
+	if len(outputIndexes) > 0 {
+		outputParams, err := s.fetchOutputParamsNative(sqlDB, ctx, outputIndexes)
+		if err != nil {
+			s.config.Logger.Printf("Warning: failed to fetch output parameters: %v", err)
+		} else {
+			result.OutputParams = outputParams
+		}
+	}
+
+	return result, rows.Err()
+}
+
+// fetchOutputParams 获取输出参数值（使用GORM）
+func (s *defaultSession) fetchOutputParams(tx *gorm.DB, outputIndexes map[int]string) (map[string]any, error) {
+	outputParams := make(map[string]any)
+	
+	for _, paramName := range outputIndexes {
+		var value interface{}
+		err := tx.Raw("SELECT @" + paramName).Scan(&value).Error
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch output parameter %s: %w", paramName, err)
+		}
+		outputParams[paramName] = value
+	}
+	
+	return outputParams, nil
+}
+
+// fetchOutputParamsNative 获取输出参数值（使用原生连接）
+func (s *defaultSession) fetchOutputParamsNative(db *sql.DB, ctx context.Context, outputIndexes map[int]string) (map[string]any, error) {
+	outputParams := make(map[string]any)
+	
+	for _, paramName := range outputIndexes {
+		var value interface{}
+		err := db.QueryRowContext(ctx, "SELECT @"+paramName).Scan(&value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch output parameter %s: %w", paramName, err)
+		}
+		outputParams[paramName] = value
+	}
+	
+	return outputParams, nil
+}
+
+// 缓存管理方法实现
+
+// EnableCache 启用缓存
+func (s *defaultSession) EnableCache(config *CacheConfig) SimpleSession {
+	if config == nil {
+		config = DefaultCacheConfig()
+	}
+	s.cacheManager = NewCacheManager(config)
+	return s
+}
+
+// DisableCache 禁用缓存
+func (s *defaultSession) DisableCache() SimpleSession {
+	if s.cacheManager != nil {
+		s.cacheManager.Stop()
+		s.cacheManager = nil
+	}
+	return s
+}
+
+// ClearCache 清空缓存
+func (s *defaultSession) ClearCache() SimpleSession {
+	if s.cacheManager != nil {
+		s.cacheManager.ClearAll()
+	}
+	return s
+}
+
+// GetCacheStats 获取缓存统计
+func (s *defaultSession) GetCacheStats() map[string]any {
+	if s.cacheManager != nil {
+		return s.cacheManager.GetStats()
+	}
+	return map[string]any{
+		"cache_enabled": false,
+	}
+}
+
+// 性能监控方法实现
+
+// EnablePerformanceMonitor 启用性能监控
+func (s *defaultSession) EnablePerformanceMonitor(config *PerformanceConfig) SimpleSession {
+	s.performanceMonitor = NewPerformanceMonitor(config)
+	return s
+}
+
+// DisablePerformanceMonitor 禁用性能监控
+func (s *defaultSession) DisablePerformanceMonitor() SimpleSession {
+	if s.performanceMonitor != nil {
+		s.performanceMonitor.Close()
+		s.performanceMonitor = nil
+	}
+	return s
+}
+
+// GetPerformanceStats 获取性能统计信息
+func (s *defaultSession) GetPerformanceStats() map[string]*SQLStats {
+	if s.performanceMonitor != nil {
+		return s.performanceMonitor.GetStatistics()
+	}
+	return make(map[string]*SQLStats)
+}
+
+// GetSlowQueries 获取慢查询记录
+func (s *defaultSession) GetSlowQueries(limit int) []*SlowQuery {
+	if s.performanceMonitor != nil {
+		return s.performanceMonitor.GetSlowQueries(limit)
+	}
+	return []*SlowQuery{}
+}
+
+// GetPerformanceReport 获取性能报告
+func (s *defaultSession) GetPerformanceReport() *StatisticsReport {
+	if s.performanceMonitor != nil {
+		return s.performanceMonitor.GetStatisticsReport()
+	}
+	return &StatisticsReport{}
+}
+
+// ClearPerformanceStats 清空性能统计
+func (s *defaultSession) ClearPerformanceStats() SimpleSession {
+	if s.performanceMonitor != nil {
+		s.performanceMonitor.ClearStatistics()
+	}
+	return s
 }

@@ -2,7 +2,7 @@ package session
 
 import (
 	"time"
-	
+
 	"github.com/zsy619/yyhertz/framework/config"
 )
 
@@ -23,7 +23,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Enabled:       true,
-		CookieName:    "session_id",
+		CookieName:    "yyhertz_session_id",
 		CookiePath:    "/",
 		CookieDomain:  "",
 		MaxAge:        3600, // 1小时
@@ -67,8 +67,8 @@ func LoadFromConfig() *Config {
 		CleanInterval: cleanInterval,
 	}
 
-	config.Infof("Session config loaded from session.yaml: enabled=%t, name=%s", 
+	config.Infof("Session config loaded from session.yaml: enabled=%t, name=%s",
 		sessionCfg.Enabled, sessionCfg.CookieName)
-	
+
 	return sessionCfg
 }

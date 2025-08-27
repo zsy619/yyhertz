@@ -7,24 +7,24 @@ import (
 // Adapter session接口适配器
 // 桥接YYHertz session.Store到标准MVC框架Store接口，实现100%兼容性
 type Adapter struct {
-	store   Store // YYHertz原生Store
-	context any   // 支持多种context类型
-	started bool  // session是否已启动
+	Store   Store // YYHertz原生Store，用于存储session数据
+	Context any   // 支持多种context类型
+	Started bool  // session是否已启动
 }
 
 // NewAdapter 创建session适配器
 // 支持多种context类型，提供统一的session接口
 func NewAdapter(store Store, ctx any) *Adapter {
 	return &Adapter{
-		store:   store,
-		context: ctx,
-		started: store != nil,
+		Store:   store,
+		Context: ctx,
+		Started: store != nil,
 	}
 }
 
 // Set 设置session值 (标准框架兼容接口)
 func (a *Adapter) Set(key, value any) error {
-	if a.store == nil {
+	if a.Store == nil {
 		return nil // 静默处理，兼容没有启动session的情况
 	}
 
@@ -36,13 +36,13 @@ func (a *Adapter) Set(key, value any) error {
 		keyStr = toString(key)
 	}
 
-	a.store.Set(keyStr, value)
+	a.Store.Set(keyStr, value)
 	return nil
 }
 
 // Get 获取session值 (标准框架兼容接口)
 func (a *Adapter) Get(key any) any {
-	if a.store == nil {
+	if a.Store == nil {
 		return nil
 	}
 
@@ -54,12 +54,12 @@ func (a *Adapter) Get(key any) any {
 		keyStr = toString(key)
 	}
 
-	return a.store.Get(keyStr)
+	return a.Store.Get(keyStr)
 }
 
 // Delete 删除session值 (标准框架兼容接口)
 func (a *Adapter) Delete(key any) error {
-	if a.store == nil {
+	if a.Store == nil {
 		return nil // 静默处理
 	}
 
@@ -71,31 +71,31 @@ func (a *Adapter) Delete(key any) error {
 		keyStr = toString(key)
 	}
 
-	a.store.Delete(keyStr)
+	a.Store.Delete(keyStr)
 	return nil
 }
 
 // SessionID 获取session ID (标准框架兼容接口)
 func (a *Adapter) SessionID() string {
-	if a.store == nil {
+	if a.Store == nil {
 		return ""
 	}
-	return a.store.GetID()
+	return a.Store.GetID()
 }
 
 // Release 释放session资源并保存 (标准框架兼容接口)
 func (a *Adapter) Release(w http.ResponseWriter) {
-	if a.store == nil {
+	if a.Store == nil {
 		return
 	}
 
 	// 保存session数据
-	if err := a.store.Save(); err != nil {
+	if err := a.Store.Save(); err != nil {
 		// 在生产环境中，这里应该记录错误日志
 		// 但为了兼容性，我们不抛出错误
 
 		// 记录session操作日志（可选）
-		if ctx, ok := a.context.(map[string]any); ok && ctx != nil {
+		if ctx, ok := a.Context.(map[string]any); ok && ctx != nil {
 			ctx["session_released"] = true
 		}
 
@@ -106,17 +106,17 @@ func (a *Adapter) Release(w http.ResponseWriter) {
 
 // ReleaseIfPresent 如果存在则释放session (标准框架高级接口)
 func (a *Adapter) ReleaseIfPresent(w http.ResponseWriter) {
-	if a.started {
+	if a.Started {
 		a.Release(w)
 	}
 }
 
 // Flush 清空所有session数据 (标准框架兼容接口)
 func (a *Adapter) Flush() error {
-	if a.store == nil {
+	if a.Store == nil {
 		return nil
 	}
-	a.store.Clear()
+	a.Store.Clear()
 	return nil
 }
 
@@ -124,27 +124,27 @@ func (a *Adapter) Flush() error {
 
 // GetStore 获取底层Store (增强功能)
 func (a *Adapter) GetStore() Store {
-	return a.store
+	return a.Store
 }
 
 // IsStarted 检查session是否已启动
 func (a *Adapter) IsStarted() bool {
-	return a.started && a.store != nil
+	return a.Started && a.Store != nil
 }
 
 // GetContext 获取关联的上下文
 func (a *Adapter) GetContext() any {
-	return a.context
+	return a.Context
 }
 
 // SetContext 设置关联的上下文
 func (a *Adapter) SetContext(ctx any) {
-	a.context = ctx
+	a.Context = ctx
 }
 
 // Exists 检查session key是否存在
 func (a *Adapter) Exists(key any) bool {
-	if a.store == nil {
+	if a.Store == nil {
 		return false
 	}
 
@@ -155,31 +155,31 @@ func (a *Adapter) Exists(key any) bool {
 		keyStr = toString(key)
 	}
 
-	return a.store.Exists(keyStr)
+	return a.Store.Exists(keyStr)
 }
 
 // GetAll 获取所有session数据
 func (a *Adapter) GetAll() map[string]any {
-	if a.store == nil {
+	if a.Store == nil {
 		return make(map[string]any)
 	}
-	return a.store.GetAll()
+	return a.Store.GetAll()
 }
 
 // Destroy 销毁session
 func (a *Adapter) Destroy() {
-	if a.store != nil {
-		a.store.Destroy()
-		a.started = false
+	if a.Store != nil {
+		a.Store.Destroy()
+		a.Started = false
 	}
 }
 
 // Save 保存session数据
 func (a *Adapter) Save() error {
-	if a.store == nil {
+	if a.Store == nil {
 		return nil
 	}
-	return a.store.Save()
+	return a.Store.Save()
 }
 
 // ============= SessionManager 会话管理器 =============

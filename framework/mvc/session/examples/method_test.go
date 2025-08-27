@@ -50,8 +50,8 @@ func TestInitializeMethods(t *testing.T) {
 		t.Error("OutputData.Initialize() 后 GetContext() 返回 nil")
 	}
 
-	if outCtx.Request == nil {
-		t.Error("OutputData.Initialize() 后 Context.Request 为 nil")
+	if outCtx.Request() == nil {
+		t.Error("OutputData.Initialize() 后 Context.Request() 为 nil")
 	}
 
 	if outCtx.Request() != hertzCtx {
@@ -137,7 +137,7 @@ func TestSessionOperations(t *testing.T) {
 }
 
 // TestBackwardCompatibility 测试向后兼容性
-func TestBackwardCompatibility(t *testing.T) {
+func TestBackwardCompatibilityExt(t *testing.T) {
 	hertzCtx := createTestRequestContext()
 
 	// 测试两种创建方式的兼容性

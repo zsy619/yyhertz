@@ -74,7 +74,7 @@ func (m *Manager) GetOrCreateSession(ctx *app.RequestContext) Store {
 	if sessionID == "" {
 		// 生成新的Session ID
 		sessionID = m.generateSessionID()
-		
+
 		// 设置Session Cookie
 		cookie := fmt.Sprintf("%s=%s; Max-Age=%d; Path=%s; HttpOnly=%t; SameSite=%s",
 			m.config.CookieName,
@@ -84,14 +84,14 @@ func (m *Manager) GetOrCreateSession(ctx *app.RequestContext) Store {
 			m.config.HttpOnly,
 			m.config.SameSite,
 		)
-		
+
 		if m.config.CookieDomain != "" {
 			cookie += "; Domain=" + m.config.CookieDomain
 		}
 		if m.config.Secure {
 			cookie += "; Secure"
 		}
-		
+
 		ctx.Header("Set-Cookie", cookie)
 	}
 
@@ -104,11 +104,11 @@ func (m *Manager) DestroySession(ctx *app.RequestContext) {
 	// 删除Session Cookie
 	cookie := fmt.Sprintf("%s=; Max-Age=-1; Path=%s",
 		m.config.CookieName, m.config.CookiePath)
-	
+
 	if m.config.CookieDomain != "" {
 		cookie += "; Domain=" + m.config.CookieDomain
 	}
-	
+
 	ctx.Header("Set-Cookie", cookie)
 }
 
@@ -138,12 +138,9 @@ func (m *Manager) StartCleanup() {
 	go func() {
 		ticker := time.NewTicker(m.config.CleanInterval)
 		defer ticker.Stop()
-		
-		for {
-			select {
-			case <-ticker.C:
-				m.cleanup()
-			}
+
+		for range ticker.C {
+			m.cleanup()
 		}
 	}()
 }
@@ -153,13 +150,13 @@ func (m *Manager) cleanup() {
 	if !m.IsEnabled() {
 		return
 	}
-	
+
 	// 使用配置的MaxAge作为清理标准
 	maxAge := time.Duration(m.config.MaxAge) * time.Second
 	if maxAge <= 0 {
 		maxAge = 24 * time.Hour // 默认24小时
 	}
-	
+
 	// 清理过期的Session存储
 	cleaned := GetSessionStorePool().Cleanup(maxAge)
 	if cleaned > 0 {

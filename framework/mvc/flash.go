@@ -86,6 +86,7 @@ func NewFlash() *FlashData {
 		Data: make(map[string]string),
 	}
 }
+
 // Set 设置自定义键的Flash消息
 //
 // 允许使用自定义键名设置Flash消息，支持格式化字符串。
@@ -245,13 +246,14 @@ func (fd *FlashData) Error(msg string, args ...any) {
 //   - c: *BaseController - 控制器实例，用于设置Cookie和Data
 //
 // 存储机制：
-//   1. 将消息数据设置到控制器的Data["flash"]中
-//   2. 将消息编码为特殊格式的字符串
-//   3. 对编码后的字符串进行URL编码
-//   4. 存储到名为FlashName的Cookie中
+//  1. 将消息数据设置到控制器的Data["flash"]中
+//  2. 将消息编码为特殊格式的字符串
+//  3. 对编码后的字符串进行URL编码
+//  4. 存储到名为FlashName的Cookie中
 //
 // 编码格式：
-//   每个键值对使用特殊字符分隔：\x00 + key + \x23# + value + \x00
+//
+//	每个键值对使用特殊字符分隔：\x00 + key + \x23# + value + \x00
 //
 // 使用示例：
 //
@@ -285,13 +287,13 @@ func (fd *FlashData) Store(c *BaseController) {
 //   - *FlashData: 包含所有Flash消息的数据结构
 //
 // 工作流程：
-//   1. 创建新的FlashData实例
-//   2. 尝试从Cookie中读取Flash消息
-//   3. 如果存在，则进行URL解码和字符串解析
-//   4. 解析出键值对并存储到FlashData中
-//   5. 立即删除Cookie（设置过期时间为-1）
-//   6. 将消息数据设置到控制器的Data["flash"]中
-//   7. 返回包含消息的FlashData实例
+//  1. 创建新的FlashData实例
+//  2. 尝试从Cookie中读取Flash消息
+//  3. 如果存在，则进行URL解码和字符串解析
+//  4. 解析出键值对并存储到FlashData中
+//  5. 立即删除Cookie（设置过期时间为-1）
+//  6. 将消息数据设置到控制器的Data["flash"]中
+//  7. 返回包含消息的FlashData实例
 //
 // 使用示例：
 //

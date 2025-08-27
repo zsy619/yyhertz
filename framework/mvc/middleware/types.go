@@ -26,7 +26,9 @@ type LoggerConfig struct {
 	Formatter LogFormatter
 }
 
-// LogFormatter 日志格式化函数
+// LogFormatter 是一个函数类型，用于定义日志的格式化逻辑。
+// 它接收一个 LogFormatterParams 参数，返回格式化后的日志字符串。
+// 通常用于自定义日志输出的格式，例如时间戳、日志级别、消息内容等。
 type LogFormatter func(param LogFormatterParams) string
 
 // LogFormatterParams 日志格式化参数
@@ -41,7 +43,10 @@ type LogFormatterParams struct {
 	ErrorMessage string
 }
 
-// DefaultBuiltinLoggerConfig 默认内置Logger配置
+// DefaultBuiltinLoggerConfig 返回一个默认的内置日志记录器配置。
+// 该配置包括标准输出作为日志输出目标，使用 RFC3339 时间格式，
+// 并且未设置格式化器（格式化器将在 builtin.go 中定义默认实现）。
+// 适用于需要快速初始化日志记录器的场景。
 func DefaultBuiltinLoggerConfig() LoggerConfig {
 	return LoggerConfig{
 		Output:     os.Stdout,

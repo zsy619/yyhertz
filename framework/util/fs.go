@@ -1,4 +1,4 @@
-// Package mvc 提供MVC框架的文件系统抽象功能
+// Package util 提供MVC框架的文件系统抽象功能
 //
 // 本文件提供了对http.FileSystem接口的扩展实现，主要用于：
 // - 文件系统抽象：提供统一的文件访问接口
@@ -17,7 +17,7 @@
 // - 文件索引构建
 // - 资源文件扫描
 // - 模板文件加载
-package mvc
+package util
 
 import (
 	"net/http"
@@ -63,7 +63,7 @@ type FileSystem struct{}
 // 使用示例：
 //
 //	fs := mvc.FileSystem{}
-//	
+//
 //	// 打开文件
 //	file, err := fs.Open("static/css/style.css")
 //	if err != nil {
@@ -100,7 +100,8 @@ func (d FileSystem) Open(name string) (http.File, error) {
 //   - error: 遍历过程中的错误，如果walkFn返回filepath.SkipDir则正常结束
 //
 // walkFn函数签名：
-//   func(path string, info os.FileInfo, err error) error
+//
+//	func(path string, info os.FileInfo, err error) error
 //
 // walkFn返回值处理：
 //   - nil: 继续遍历
@@ -110,22 +111,22 @@ func (d FileSystem) Open(name string) (http.File, error) {
 // 使用示例：
 //
 //	fs := mvc.FileSystem{}
-//	
+//
 //	err := mvc.Walk(fs, "static", func(path string, info os.FileInfo, err error) error {
 //		if err != nil {
 //			log.Printf("访问 %s 时出错: %v", path, err)
 //			return nil // 继续遍历其他文件
 //		}
-//		
+//
 //		if info.IsDir() {
 //			fmt.Printf("目录: %s\n", path)
 //		} else {
 //			fmt.Printf("文件: %s (大小: %d 字节)\n", path, info.Size())
 //		}
-//		
+//
 //		return nil
 //	})
-//	
+//
 //	if err != nil {
 //		log.Printf("遍历失败: %v", err)
 //	}
@@ -171,10 +172,10 @@ func Walk(fs http.FileSystem, root string, walkFn filepath.WalkFunc) error {
 //   - error: 遍历过程中的错误或walkFn返回的控制信号
 //
 // 遍历逻辑：
-//   1. 如果是文件，直接调用walkFn并返回结果
-//   2. 如果是目录，先调用walkFn处理目录本身
-//   3. 然后读取目录内容并递归处理每个子项
-//   4. 根据walkFn的返回值决定是否继续遍历
+//  1. 如果是文件，直接调用walkFn并返回结果
+//  2. 如果是目录，先调用walkFn处理目录本身
+//  3. 然后读取目录内容并递归处理每个子项
+//  4. 根据walkFn的返回值决定是否继续遍历
 //
 // 错误处理策略：
 //   - 无法打开目录：调用walkFn传递错误，根据其返回值决定后续行为
@@ -188,7 +189,7 @@ func Walk(fs http.FileSystem, root string, walkFn filepath.WalkFunc) error {
 //   - 深度优先遍历，内存占用相对稳定
 func walk(fs http.FileSystem, path string, info os.FileInfo, walkFn filepath.WalkFunc) error {
 	var err error
-	
+
 	// 如果是文件，直接处理并返回
 	if !info.IsDir() {
 		return walkFn(path, info, nil)
@@ -204,13 +205,13 @@ func walk(fs http.FileSystem, path string, info os.FileInfo, walkFn filepath.Wal
 		return err
 	}
 	defer dir.Close()
-	
+
 	// 读取目录中的所有条目
 	dirs, err := dir.Readdir(-1)
-	
+
 	// 先处理目录本身
 	err1 := walkFn(path, info, err)
-	
+
 	// 错误处理逻辑：
 	// - 如果目录读取失败(err != nil)，walk无法进入该目录
 	// - 如果walkFn返回错误(err1 != nil)，表示要跳过该目录或停止遍历
