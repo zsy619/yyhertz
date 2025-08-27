@@ -1,4 +1,4 @@
-package view
+package main
 
 import (
 	"fmt"
@@ -6,19 +6,20 @@ import (
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // TestCsrfTokenFieldAccess 测试CsrfToken字段的访问方式
 func TestCsrfTokenFieldAccess(t *testing.T) {
 	// 创建模板引擎
 	cfg := config.GlobalTemplate
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
 
 	// 测试数据
-	testData := &RenderData{
+	testData := &view.RenderData{
 		Data: map[string]interface{}{
 			"username": "testuser",
 		},
@@ -29,12 +30,12 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 	// 测试1: 直接访问 .CsrfToken 字段
 	t.Run("TestDirectCsrfTokenFieldAccess", func(t *testing.T) {
 		templateContent := `CSRF Token: {{.CsrfToken}}`
-		tmpl, err := engine.createInlineTemplate("csrf_field_test", templateContent)
+		tmpl, err := engine.CreateInlineTemplate("csrf_field_test", templateContent)
 		if err != nil {
 			t.Fatalf("创建内联模板失败: %v", err)
 		}
 
-		result, err := engine.executeTemplate(tmpl, testData)
+		result, err := engine.ExecuteTemplate(tmpl, testData)
 		if err != nil {
 			t.Errorf("执行模板失败: %v", err)
 		}
@@ -48,13 +49,13 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 	// 测试2: 验证prepareRenderData自动同步两个字段
 	t.Run("TestPrepareRenderDataSyncFields", func(t *testing.T) {
 		// 传入只有CSRF字段的数据
-		inputData := &RenderData{
+		inputData := &view.RenderData{
 			Data: "test data",
 			CSRF: "original-csrf-token",
 			// CsrfToken 留空
 		}
 
-		prepared := engine.prepareRenderData(inputData)
+		prepared := engine.PrepareRenderData(inputData)
 
 		if prepared.CSRF != prepared.CsrfToken {
 			t.Errorf("CSRF字段与CsrfToken字段不同步: CSRF=%s, CsrfToken=%s",
@@ -72,7 +73,7 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 			"username": "testuser",
 		}
 
-		prepared := engine.prepareRenderData(plainData)
+		prepared := engine.PrepareRenderData(plainData)
 
 		if prepared.CSRF != prepared.CsrfToken {
 			t.Errorf("从普通数据创建时CSRF字段不同步: CSRF=%s, CsrfToken=%s",
@@ -88,9 +89,9 @@ func TestCsrfTokenFieldAccess(t *testing.T) {
 // TestRealTemplateWithCsrfTokenField 测试真实模板中使用CsrfToken字段
 func TestRealTemplateWithCsrfTokenField(t *testing.T) {
 	cfg := config.GlobalTemplate
-	cfg.Paths.ViewPaths = []string{"./../views"}
+	cfg.Paths.ViewPaths = []string{"views"}
 
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
@@ -117,12 +118,12 @@ func TestRealTemplateWithCsrfTokenField(t *testing.T) {
 </body>
 </html>`
 
-	tmpl, err := engine.createInlineTemplate("csrf_field_real_test", testTemplateContent)
+	tmpl, err := engine.CreateInlineTemplate("csrf_field_real_test", testTemplateContent)
 	if err != nil {
 		t.Fatalf("创建模板失败: %v", err)
 	}
 
-	testData := &RenderData{
+	testData := &view.RenderData{
 		CSRF:      "real-csrf-token-789",
 		CsrfToken: "should-be-overridden", // 这应该被prepareRenderData同步
 		Data: map[string]interface{}{
@@ -131,9 +132,9 @@ func TestRealTemplateWithCsrfTokenField(t *testing.T) {
 	}
 
 	// 通过prepareRenderData处理数据
-	preparedData := engine.prepareRenderData(testData)
+	preparedData := engine.PrepareRenderData(testData)
 
-	result, err := engine.executeTemplate(tmpl, preparedData)
+	result, err := engine.ExecuteTemplate(tmpl, preparedData)
 	if err != nil {
 		t.Errorf("执行模板失败: %v", err)
 		return
@@ -160,7 +161,7 @@ func TestRealTemplateWithCsrfTokenField(t *testing.T) {
 // TestAllCsrfAccessMethods 测试所有CSRF访问方式的兼容性
 func TestAllCsrfAccessMethods(t *testing.T) {
 	cfg := config.GlobalTemplate
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
@@ -169,7 +170,7 @@ func TestAllCsrfAccessMethods(t *testing.T) {
 	plainData := map[string]interface{}{
 		"username": "testuser",
 	}
-	renderData := engine.prepareRenderData(plainData)
+	renderData := engine.PrepareRenderData(plainData)
 
 	// 测试各种访问方式
 	testCases := []struct {
@@ -188,7 +189,7 @@ func TestAllCsrfAccessMethods(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tmpl, err := engine.createInlineTemplate(tc.name, tc.template)
+			tmpl, err := engine.CreateInlineTemplate(tc.name, tc.template)
 			if err != nil {
 				if tc.shouldWork {
 					t.Errorf("创建模板失败: %v", err)
@@ -196,7 +197,7 @@ func TestAllCsrfAccessMethods(t *testing.T) {
 				return
 			}
 
-			result, err := engine.executeTemplate(tmpl, renderData)
+			result, err := engine.ExecuteTemplate(tmpl, renderData)
 			if err != nil {
 				if tc.shouldWork {
 					t.Errorf("执行模板失败 (%s): %v", tc.description, err)

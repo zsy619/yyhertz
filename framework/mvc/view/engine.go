@@ -630,7 +630,7 @@ func (e *TemplateEngine) CreateInlineTemplate(name, content string) (*template.T
 }
 
 // ExecuteTemplate 执行模板（用于测试）
-func (e *TemplateEngine) ExecuteTemplate(tmpl *template.Template, data interface{}) (string, error) {
+func (e *TemplateEngine) ExecuteTemplate(tmpl *template.Template, data any) (string, error) {
 	var buf strings.Builder
 	err := tmpl.Execute(&buf, data)
 	return buf.String(), err
@@ -642,7 +642,7 @@ func (e *TemplateEngine) createInlineTemplate(name, content string) (*template.T
 }
 
 // executeTemplate 执行模板（用于测试）- 内部方法兼容性
-func (e *TemplateEngine) executeTemplate(tmpl *template.Template, data interface{}) (string, error) {
+func (e *TemplateEngine) executeTemplate(tmpl *template.Template, data any) (string, error) {
 	return e.ExecuteTemplate(tmpl, data)
 }
 
@@ -723,7 +723,7 @@ func (e *TemplateEngine) watchFiles() {
 
 				if strings.HasSuffix(event.Name, e.extension) {
 					config.Debugf("Template file changed: %s", event.Name)
-					e.reloadTemplate(event.Name)
+					e.ReloadTemplate(event.Name)
 				}
 			}
 
@@ -736,8 +736,8 @@ func (e *TemplateEngine) watchFiles() {
 	}
 }
 
-// reloadTemplate 重新加载特定模板
-func (e *TemplateEngine) reloadTemplate(filePath string) {
+// ReloadTemplate 重新加载特定模板
+func (e *TemplateEngine) ReloadTemplate(filePath string) {
 	e.templateMutex.Lock()
 	defer e.templateMutex.Unlock()
 
@@ -764,14 +764,14 @@ func (e *TemplateEngine) ReloadAllTemplates() error {
 	e.templates = make(map[string]*template.Template)
 	e.layouts = make(map[string]*template.Template)
 	e.components = make(map[string]*template.Template)
-	
+
 	config.Infof("Reloading all templates with updated functions...")
-	
+
 	// 重新加载所有模板
 	if err := e.loadAllTemplates(); err != nil {
 		return fmt.Errorf("failed to reload templates: %w", err)
 	}
-	
+
 	config.Infof("Successfully reloaded all templates")
 	return nil
 }
@@ -1039,8 +1039,8 @@ func NewTemplateManager() (*TemplateManager, error) {
 	return manager, nil
 }
 
-// loadTemplateConfigFromFile 从配置文件加载模板配置
-func loadTemplateConfigFromFile() (*config.TemplateConfig, error) {
+// LoadTemplateConfigFromFile 从配置文件加载模板配置
+func LoadTemplateConfigFromFile() (*config.TemplateConfig, error) {
 	// 直接使用config包的LoadTemplateConfig
 	cfg := config.LoadTemplateConfig()
 
@@ -1140,7 +1140,7 @@ func (tm *TemplateManager) ReloadConfig() error {
 	defer tm.mutex.Unlock()
 
 	// 重新加载配置
-	newConfig, err := loadTemplateConfigFromFile()
+	newConfig, err := LoadTemplateConfigFromFile()
 	if err != nil {
 		return fmt.Errorf("failed to reload template config: %w", err)
 	}

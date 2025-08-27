@@ -274,3 +274,5 @@ framework/mvc/view/conf
 !example/test_reports
 framework/testing/conf
 framework/mvc/session/examples/conf
+framework/mvc/view/examples/conf
+framework/mvc/view/examples/logs

@@ -1,19 +1,21 @@
-package view
+package main
 
 import (
 	"testing"
+
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // TestLowercaseCsrfTokenAccess 测试小写的.csrf_token访问是否仍然有问题
 func TestLowercaseCsrfTokenAccess(t *testing.T) {
-	cfg := DefaultTemplateConfig()
-	engine, err := NewTemplateEngine(cfg)
+	cfg := view.DefaultTemplateConfig()
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
 
 	// 准备数据
-	testData := &RenderData{
+	testData := &view.RenderData{
 		CSRF:      "test-csrf-token-123",
 		CsrfToken: "test-csrf-token-456", // 不同值用于区分
 		Data:      "test data",
@@ -22,12 +24,12 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 	// 测试小写的 .csrf_token（这应该仍然不工作）
 	t.Run("TestLowercaseCsrfTokenStillFails", func(t *testing.T) {
 		templateContent := `{{.csrf_token}}` // 全小写
-		tmpl, err := engine.createInlineTemplate("lowercase_test", templateContent)
+		tmpl, err := engine.CreateInlineTemplate("lowercase_test", templateContent)
 		if err != nil {
 			t.Fatalf("创建模板失败: %v", err)
 		}
 
-		_, err = engine.executeTemplate(tmpl, testData)
+		_, err = engine.ExecuteTemplate(tmpl, testData)
 		if err == nil {
 			t.Error("期望 .csrf_token (全小写) 仍然会失败，但却成功了")
 		} else {
@@ -38,12 +40,12 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 	// 测试大写的 .CsrfToken（这应该工作）
 	t.Run("TestCamelCaseCsrfTokenWorks", func(t *testing.T) {
 		templateContent := `{{.CsrfToken}}` // 驼峰命名
-		tmpl, err := engine.createInlineTemplate("camelcase_test", templateContent)
+		tmpl, err := engine.CreateInlineTemplate("camelcase_test", templateContent)
 		if err != nil {
 			t.Fatalf("创建模板失败: %v", err)
 		}
 
-		result, err := engine.executeTemplate(tmpl, testData)
+		result, err := engine.ExecuteTemplate(tmpl, testData)
 		if err != nil {
 			t.Errorf("期望 .CsrfToken 成功，但失败了: %v", err)
 		} else {
@@ -70,7 +72,7 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 		}
 
 		for _, solution := range solutions {
-			tmpl, err := engine.createInlineTemplate(solution.name, solution.template)
+			tmpl, err := engine.CreateInlineTemplate(solution.name, solution.template)
 			if err != nil {
 				if solution.works {
 					t.Errorf("%s: 创建模板失败: %v", solution.name, err)
@@ -78,7 +80,7 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 				continue
 			}
 
-			result, err := engine.executeTemplate(tmpl, testData)
+			result, err := engine.ExecuteTemplate(tmpl, testData)
 			if solution.works {
 				if err != nil {
 					t.Errorf("%s: 期望成功但失败了: %v", solution.name, err)
@@ -98,8 +100,8 @@ func TestLowercaseCsrfTokenAccess(t *testing.T) {
 
 // TestPracticalUsageExample 演示实际使用场景
 func TestPracticalUsageExample(t *testing.T) {
-	cfg := DefaultTemplateConfig()
-	engine, err := NewTemplateEngine(cfg)
+	cfg := view.DefaultTemplateConfig()
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
@@ -122,14 +124,14 @@ func TestPracticalUsageExample(t *testing.T) {
 		}
 
 		// 通过prepareRenderData处理（这会自动设置CSRF token）
-		renderData := engine.prepareRenderData(plainData)
+		renderData := engine.PrepareRenderData(plainData)
 
-		tmpl, err := engine.createInlineTemplate("login_form", loginFormTemplate)
+		tmpl, err := engine.CreateInlineTemplate("login_form", loginFormTemplate)
 		if err != nil {
 			t.Fatalf("创建登录表单模板失败: %v", err)
 		}
 
-		result, err := engine.executeTemplate(tmpl, renderData)
+		result, err := engine.ExecuteTemplate(tmpl, renderData)
 		if err != nil {
 			t.Errorf("渲染登录表单失败: %v", err)
 		} else {

@@ -118,7 +118,7 @@ func (e *TemplateEngine) RenderWithLayout(templateName, layoutName string, data 
 		tmpl, err = e.getTemplateWithLayout(templateName, layoutName)
 	} else {
 		// 直接渲染模板
-		tmpl, err = e.getTemplate(templateName)
+		tmpl, err = e.GetTemplate(templateName)
 	}
 
 	if err != nil {
@@ -162,8 +162,8 @@ func (e *TemplateEngine) RenderComponent(componentName string, data any) (string
 	return buf.String(), nil
 }
 
-// getTemplate 获取模板
-func (e *TemplateEngine) getTemplate(templateName string) (*template.Template, error) {
+// GetTemplate 获取模板
+func (e *TemplateEngine) GetTemplate(templateName string) (*template.Template, error) {
 	// 从缓存获取
 	if e.enableCache {
 		if tmpl, exists := e.templates[templateName]; exists {
@@ -174,7 +174,7 @@ func (e *TemplateEngine) getTemplate(templateName string) (*template.Template, e
 
 	// 动态加载模板
 	config.Debugf("Template %s not in cache, loading from disk", templateName)
-	tmpl, err := e.loadTemplate(templateName)
+	tmpl, err := e.LoadTemplate(templateName)
 	if err != nil {
 		config.Errorf("Failed to load template %s: %v", templateName, err)
 		return nil, err
@@ -213,7 +213,7 @@ func (e *TemplateEngine) getTemplateWithLayout(templateName, layoutName string) 
 	}
 
 	// 加载并解析内容模板
-	contentPath, err := e.findTemplateFile(templateName)
+	contentPath, err := e.FindTemplateFile(templateName)
 	if err != nil {
 		return nil, err
 	}
@@ -230,9 +230,9 @@ func (e *TemplateEngine) getTemplateWithLayout(templateName, layoutName string) 
 	return tmpl, nil
 }
 
-// loadTemplate 动态加载模板
-func (e *TemplateEngine) loadTemplate(templateName string) (*template.Template, error) {
-	templatePath, err := e.findTemplateFile(templateName)
+// LoadTemplate 动态加载模板
+func (e *TemplateEngine) LoadTemplate(templateName string) (*template.Template, error) {
+	templatePath, err := e.FindTemplateFile(templateName)
 	if err != nil {
 		return nil, err
 	}
@@ -275,8 +275,8 @@ func (e *TemplateEngine) loadTemplate(templateName string) (*template.Template, 
 	return actualTemplate, nil
 }
 
-// findTemplateFile 查找模板文件
-func (e *TemplateEngine) findTemplateFile(templateName string) (string, error) {
+// FindTemplateFile 查找模板文件
+func (e *TemplateEngine) FindTemplateFile(templateName string) (string, error) {
 	// 确保模板名有扩展名
 	if !strings.HasSuffix(templateName, e.extension) {
 		templateName += e.extension

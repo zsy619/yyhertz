@@ -1,4 +1,4 @@
-package view
+package main
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // ============= 模板引擎示例 =============
@@ -20,7 +21,7 @@ func RunTemplateExample() error {
 	templateConfig.Reload.Enabled = true
 	templateConfig.Cache.EnableCache = true
 
-	engine, err := NewTemplateEngine(templateConfig)
+	engine, err := view.NewTemplateEngine(templateConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create template engine: %w", err)
 	}
@@ -55,15 +56,15 @@ func RunTemplateExample() error {
 	}
 
 	// 使用RenderData结构
-	renderData := &RenderData{
+	renderData := &view.RenderData{
 		Data: userData,
-		Meta: &MetaData{
+		Meta: &view.MetaData{
 			Title:       "用户信息页面",
 			Description: "查看用户详细信息",
 			Keywords:    "用户,个人资料,信息",
 		},
 		Theme: "default",
-		Request: &RequestData{
+		Request: &view.RequestData{
 			Method:    "GET",
 			Path:      "/user/profile",
 			Timestamp: time.Now().Unix(),
@@ -79,13 +80,13 @@ func RunTemplateExample() error {
 	config.Info("=== Layout Inheritance Example ===")
 
 	// 创建布局管理器
-	layoutManager := NewLayoutManager(engine)
-	if err := RegisterDefaultLayouts(layoutManager); err != nil {
+	layoutManager := view.NewLayoutManager(engine)
+	if err := view.RegisterDefaultLayouts(layoutManager); err != nil {
 		return fmt.Errorf("failed to register layouts: %w", err)
 	}
 
 	// 创建布局渲染器
-	_ = NewLayoutRenderer(layoutManager, engine)
+	_ = view.NewLayoutRenderer(layoutManager, engine)
 
 	// 渲染带布局的页面
 	pageData := map[string]any{
@@ -107,8 +108,8 @@ func RunTemplateExample() error {
 	config.Info("=== Component System Example ===")
 
 	// 创建组件管理器
-	componentManager := NewComponentManager(engine)
-	if err := RegisterDefaultComponents(componentManager); err != nil {
+	componentManager := view.NewComponentManager(engine)
+	if err := view.RegisterDefaultComponents(componentManager); err != nil {
 		return fmt.Errorf("failed to register components: %w", err)
 	}
 

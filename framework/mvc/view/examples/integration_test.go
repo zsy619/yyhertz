@@ -1,26 +1,27 @@
-package view
+package main
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // TestRealTemplateCSRFAccess 测试真实模板中的CSRF访问
 func TestRealTemplateCSRFAccess(t *testing.T) {
 	// 创建模板引擎
 	cfg := config.GlobalTemplate
-	cfg.Paths.ViewPaths = []string{"../../views"}
+	cfg.Paths.ViewPaths = []string{"views"}
 
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
 
 	// 测试使用带有CSRF token的LoginWithCSRF模板
 	t.Run("TestLoginWithCSRFTemplate", func(t *testing.T) {
-		testData := &RenderData{
+		testData := &view.RenderData{
 			Data: map[string]interface{}{
 				"username": "testuser",
 				"message":  "欢迎登录系统",
@@ -91,9 +92,9 @@ func TestRealTemplateCSRFAccess(t *testing.T) {
 // TestCSRFTokenErrorRecovery 测试CSRF token错误恢复
 func TestCSRFTokenErrorRecovery(t *testing.T) {
 	cfg := config.GlobalTemplate
-	cfg.Paths.ViewPaths = []string{"../../views"}
+	cfg.Paths.ViewPaths = []string{"views"}
 
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
@@ -121,7 +122,7 @@ func TestCSRFTokenErrorRecovery(t *testing.T) {
 
 	// 测试：当RenderData的CSRF为空时，系统应该填充占位符
 	t.Run("TestAutoRecoveryFromEmptyCSRF", func(t *testing.T) {
-		emptyCSRFData := &RenderData{
+		emptyCSRFData := &view.RenderData{
 			Data: map[string]interface{}{
 				"username": "testuser",
 			},

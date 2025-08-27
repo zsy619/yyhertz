@@ -56,10 +56,10 @@ var builtinTemplateFuncs = template.FuncMap{
 	"len":           Len,
 	"index":         Index,
 	"slice":         Slice,
-	
+
 	// CSRF Token 相关函数
-	"csrf":          GetCSRFTokenFromContext,
-	"csrf_token":    GetCSRFTokenFromContext,
+	"csrf":       GetCSRFTokenFromContext,
+	"csrf_token": GetCSRFTokenFromContext,
 }
 
 // ============= 访问接口 =============
@@ -104,12 +104,12 @@ func LoadTemplate(templatePath string, data map[string]any) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
-	
+
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
 		return "", fmt.Errorf("template execute error: %w", err)
 	}
-	
+
 	return buf.String(), nil
 }
 
@@ -119,12 +119,12 @@ func LoadTemplateWithLayout(layoutPath, templatePath string, data map[string]any
 	if err != nil {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
-	
+
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "layout", data); err != nil {
 		return "", fmt.Errorf("template execute error: %w", err)
 	}
-	
+
 	return buf.String(), nil
 }
 
@@ -137,11 +137,16 @@ func MakeSlice(args ...any) []any {
 
 // ConcatString 连接字符串
 func ConcatString(strs ...string) string {
-	var result strings.Builder
-	for _, str := range strs {
-		result.WriteString(str)
+	var totalLen int
+	for _, s := range strs {
+		totalLen += len(s)
 	}
-	return result.String()
+	var builder strings.Builder
+	builder.Grow(totalLen) // 预分配内存
+	for _, s := range strs {
+		builder.WriteString(s)
+	}
+	return builder.String()
 }
 
 // ContainString 检查字符串是否包含子字符串
@@ -158,19 +163,22 @@ func AuthContain(s string, in int) bool {
 
 // FmtByte 格式化字节
 func FmtByte(size int64) string {
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
 	if size < 1024 {
-		return fmt.Sprintf("%.2fB", float64(size))
-	} else if size < 1024*1024 {
-		return fmt.Sprintf("%.2fKB", float64(size)/1024)
-	} else if size < 1024*1024*1024 {
-		return fmt.Sprintf("%.2fMB", float64(size)/(1024*1024))
-	} else if size < 1024*1024*1024*1024 {
-		return fmt.Sprintf("%.2fGB", float64(size)/(1024*1024*1024))
-	} else if size < 1024*1024*1024*1024*1024 {
-		return fmt.Sprintf("%.2fTB", float64(size)/(1024*1024*1024*1024))
-	} else {
-		return fmt.Sprintf("%.2fPB", float64(size)/(1024*1024*1024*1024*1024))
+		return strconv.FormatInt(size, 10) + units[0]
 	}
+
+	div, exp := int64(1024), 0
+	for n := size / 1024; n >= 1024 && exp < len(units)-2; n /= 1024 {
+		div *= 1024
+		exp++
+	}
+
+	// 使用整数运算避免浮点精度问题
+	value := float64(size) / float64(div)
+
+	// 使用 strconv 而不是 fmt.Sprintf 以提高性能
+	return strconv.FormatFloat(value, 'f', 2, 64) + units[exp+1]
 }
 
 // FmtFloat 格式化浮点数
@@ -291,7 +299,22 @@ func Default(defaultValue, value any) any {
 
 // 类型转换函数
 func ToString(v any) string {
-	return fmt.Sprintf("%v", v)
+	switch val := v.(type) {
+	case string:
+		return val
+	case int:
+		return strconv.Itoa(val)
+	case int64:
+		return strconv.FormatInt(val, 10)
+	case float64:
+		return strconv.FormatFloat(val, 'g', -1, 64)
+	case bool:
+		return strconv.FormatBool(val)
+	case nil:
+		return ""
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 func ToInt(v any) int {

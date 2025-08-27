@@ -1,17 +1,18 @@
-package view
+package main
 
 import (
 	"bytes"
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // TestDebugTemplate 调试模板解析
 func TestDebugTemplate(t *testing.T) {
-	templatePath := "../../views/Login/Login.html"
+	templatePath := "views/Login/Login.html"
 
-	if err := DebugTemplate(templatePath); err != nil {
+	if err := view.DebugTemplate(templatePath); err != nil {
 		t.Fatalf("调试模板失败: %v", err)
 	}
 }
@@ -19,16 +20,16 @@ func TestDebugTemplate(t *testing.T) {
 // TestTemplateEngineDebug 调试模板引擎加载
 func TestTemplateEngineDebug(t *testing.T) {
 	cfg := config.GlobalTemplate
-	cfg.Paths.ViewPaths = []string{"../../views"}
+	cfg.Paths.ViewPaths = []string{"views"}
 	cfg.Cache.EnableCache = true // 启用缓存来测试修复效果
 
-	engine, err := NewTemplateEngine(cfg)
+	engine, err := view.NewTemplateEngine(cfg)
 	if err != nil {
 		t.Fatalf("创建模板引擎失败: %v", err)
 	}
 
 	// 加载模板
-	tmpl, err := engine.loadTemplate("Login/Login")
+	tmpl, err := engine.LoadTemplate("Login/Login")
 	if err != nil {
 		t.Fatalf("加载模板失败: %v", err)
 	}
@@ -40,7 +41,7 @@ func TestTemplateEngineDebug(t *testing.T) {
 	}
 
 	// 直接执行返回的模板
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"Data": "测试数据",
 	}
 
