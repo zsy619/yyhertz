@@ -1,0 +1,46 @@
+# ParamBinder 基础配置示例
+
+# 用于开发环境的基础参数绑定配置
+
+param_binder:
+  # 基础设置
+  cache_enabled: true                    # 启用缓存
+  cache_max_size: 1000                  # 最大缓存条目数
+  
+  # 性能设置
+  object_pool_enabled: true             # 启用对象池
+  object_pool_initial_size: 8           # 对象池初始大小
+  
+  # 转换器设置
+  converters:
+    string:
+      trim_spaces: true                 # 字符串转换时去除空格
+      max_length: 1000                  # 字符串最大长度限制
+    
+    numeric:
+      allow_empty_as_zero: true         # 空值转换为0
+      strict_mode: false                # 非严格模式，允许类型宽松转换
+    
+    slice:
+      separator: ","                    # 切片分隔符
+      trim_elements: true               # 去除元素空格
+      max_elements: 100                 # 最大元素数量
+  
+  # 错误处理
+  error_handling:
+    detailed_errors: true               # 提供详细错误信息
+    log_conversion_errors: false        # 记录转换错误
+  
+  # 验证设置
+  validation:
+    required_param_check: true          # 检查必需参数
+    type_validation: true               # 类型验证
+  
+# 日志配置
+logging:
+  level: "info"
+  format: "json"
+  
+# 示例使用说明
+# 这个配置文件展示了 ParamBinder 的基础配置选项
+# 适用于开发环境和小型项目

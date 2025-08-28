@@ -12,12 +12,14 @@ import (
 // generateErrorHTML 生成错误页面HTML
 func GenerateErrorHTML(errorCtx *ErrorContext, customTitle, supportEmail, supportPhone string, enableDebug bool) string {
 	// 获取状态对应的颜色和图标
-	statusClass := getStatusClass(errorCtx.StatusCode)
+	var statusClass string
+	statusClass = getStatusClass(errorCtx.StatusCode)
 	if statusClass == "" {
 		statusClass = "status-error"
 	}
 
-	statusIcon := getStatusIcon(errorCtx.StatusCode)
+	var statusIcon string
+	statusIcon = getStatusIcon(errorCtx.StatusCode)
 	if statusIcon == "" {
 		statusIcon = "❌"
 	}
@@ -35,41 +37,28 @@ func GenerateErrorHTML(errorCtx *ErrorContext, customTitle, supportEmail, suppor
 	debugInfoHTML := buildDebugInfoHTML(errorCtx, enableDebug)
 	errorPageTemplate := string(htmlData)
 
-	// 正确的参数传递顺序
-	fmt.Println(
-		suggestionsHTML,
-		debugInfoHTML,
-		getSupportInfo(supportEmail, supportPhone))
-	return fmt.Sprintf(errorPageTemplate, errorCtx.StatusCode, errorCtx.StatusCode, errorCtx.StatusCode)
-	// return fmt.Sprintf(errorPageTemplate,
-	// 	errorCtx.StatusCode,
-	// 	errorCtx.StatusCode,
-	// 	errorCtx.StatusCode,
-	// 	suggestionsHTML,
-	// 	debugInfoHTML,
-	// 	getSupportInfo(supportEmail, supportPhone),
-	// )
-	// return fmt.Sprintf(errorPageTemplate,
-	// 	customTitle,                    // 1. 页面标题
-	// 	"YYHertz Framework",            // 2. header h1
-	// 	statusClass,                    // 3. 状态CSS类
-	// 	statusIcon,                     // 4. 状态图标
-	// 	errorCtx.StatusCode,            // 5. 状态码
-	// 	errorCtx.StatusText,            // 6. 状态文本
-	// 	errorCtx.StatusText,            // 7. 简短状态描述
-	// 	errorCtx.ErrorMessage,          // 8. 详细错误消息
-	// 	errorCtx.RequestPath,           // 9. 请求路径
-	// 	errorCtx.RequestMethod,         // 10. 请求方法
-	// 	errorCtx.Timestamp.Format("2006-01-02 15:04:05"), // 11. 时间戳
-	// 	suggestionsHTML,                // 12. 建议列表
-	// 	debugInfoHTML,                  // 13. 调试信息
-	// 	getSupportInfo(supportEmail, supportPhone), // 14. 支持信息
-	// 	errorCtx.StatusCode,            // 15. JavaScript中的状态码1
-	// 	errorCtx.RequestPath,           // 16. JavaScript中的请求路径
-	// 	errorCtx.RequestMethod,         // 17. JavaScript中的请求方法
-	// 	errorCtx.StatusCode,            // 18. JavaScript中的状态码2
-	// 	errorCtx.StatusCode,            // 19. JavaScript中的状态码3
-	// )
+	// 使用完整的参数列表渲染模板，确保前面计算的变量被使用，避免无效写入警告
+	return fmt.Sprintf(errorPageTemplate,
+		customTitle,            // 1. 页面标题
+		"YYHertz Framework",    // 2. header h1
+		statusClass,            // 3. 状态CSS类
+		statusIcon,             // 4. 状态图标
+		errorCtx.StatusCode,    // 5. 状态码
+		errorCtx.StatusText,    // 6. 状态文本
+		errorCtx.StatusText,    // 7. 简短状态描述
+		errorCtx.ErrorMessage,  // 8. 详细错误消息
+		errorCtx.RequestPath,   // 9. 请求路径
+		errorCtx.RequestMethod, // 10. 请求方法
+		errorCtx.Timestamp.Format("2006-01-02 15:04:05"), // 11. 时间戳
+		suggestionsHTML, // 12. 建议列表
+		debugInfoHTML,   // 13. 调试信息
+		getSupportInfo(supportEmail, supportPhone), // 14. 支持信息
+		errorCtx.StatusCode,                        // 15. JavaScript中的状态码1
+		errorCtx.RequestPath,                       // 16. JavaScript中的请求路径
+		errorCtx.RequestMethod,                     // 17. JavaScript中的请求方法
+		errorCtx.StatusCode,                        // 18. JavaScript中的状态码2
+		errorCtx.StatusCode,                        // 19. JavaScript中的状态码3
+	)
 }
 
 // getStatusClass 获取状态对应的CSS类

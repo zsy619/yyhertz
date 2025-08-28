@@ -1,0 +1,217 @@
+version: '3.8'
+
+services:
+  # ParamBinder 测试环境
+  param-binder-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: param-binder-test
+    volumes:
+      - ../../../:/workspace
+      - go-mod-cache:/go/pkg/mod
+    working_dir: /workspace
+    environment:
+      - GO111MODULE=on
+      - GOPROXY=https://goproxy.cn,direct
+      - CGO_ENABLED=0
+    command: >
+      sh -c "
+        echo '🚀 开始运行 ParamBinder 测试套件' &&
+        echo '======================================' &&
+        go mod tidy &&
+        echo '✅ 依赖安装完成' &&
+        echo '' &&
+        echo '📋 运行单元测试...' &&
+        go test -v ./framework/mvc/routing/examples -run TestParamBinder &&
+        echo '' &&
+        echo '⚡ 运行性能基准测试...' &&
+        go test -bench=BenchmarkTypeConversions -benchmem ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '🔬 运行完整基准测试...' &&
+        go test -bench=. -benchmem ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '📊 生成性能报告...' &&
+        go test -bench=. -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '✅ 所有测试完成！'
+      "
+    networks:
+      - param-binder-network
+
+  # 压力测试环境
+  param-binder-stress:
+    build:
+      context: .
+      dockerfile: Dockerfile.stress
+    container_name: param-binder-stress
+    depends_on:
+      - param-binder-test
+    volumes:
+      - ../../../:/workspace
+      - go-mod-cache:/go/pkg/mod
+    working_dir: /workspace
+    environment:
+      - GO111MODULE=on
+      - GOMAXPROCS=4
+    command: >
+      sh -c "
+        echo '🔥 开始压力测试...' &&
+        echo '===================' &&
+        echo '🚀 并发性能测试...' &&
+        go test -bench=BenchmarkConcurrentOperations -benchtime=10s -benchmem ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '💾 内存使用测试...' &&
+        go test -bench=BenchmarkMemoryAllocation -benchtime=5s -benchmem ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '⏱️ 长期稳定性测试...' &&
+        go test -bench=BenchmarkLongTermStability -benchtime=30s ./framework/mvc/routing/examples &&
+        echo '' &&
+        echo '✅ 压力测试完成！'
+      "
+    networks:
+      - param-binder-network
+
+  # HTTP 服务示例环境
+  param-binder-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    container_name: param-binder-demo
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../../:/workspace
+      - go-mod-cache:/go/pkg/mod
+    working_dir: /workspace
+    environment:
+      - GO111MODULE=on
+      - GIN_MODE=release
+      - PORT=8080
+    command: >
+      sh -c "
+        echo '🌐 启动 ParamBinder HTTP 演示服务...' &&
+        echo '=====================================' &&
+        go mod tidy &&
+        echo '✅ 依赖准备完成' &&
+        echo '🚀 服务启动在 http://localhost:8080' &&
+        echo '' &&
+        echo '📡 可用端点:' &&
+        echo '  GET  /health              - 健康检查' &&
+        echo '  GET  /api/users/:id       - 获取用户' &&
+        echo '  POST /api/users           - 创建用户' &&
+        echo '  GET  /api/users/search    - 搜索用户' &&
+        echo '  GET  /api/products/search - 搜索商品' &&
+        echo '' &&
+        echo '💡 示例请求:' &&
+        echo '  curl http://localhost:8080/health' &&
+        echo '  curl http://localhost:8080/api/users/123?include_profile=true' &&
+        echo '  curl \"http://localhost:8080/api/users/search?keyword=john&page=1&size=10\"' &&
+        echo '' &&
+        go run ./framework/mvc/routing/examples/real_world_examples.go
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - param-binder-network
+
+  # 监控和指标收集
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: param-binder-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - param-binder-network
+
+  # Grafana 仪表板
+  grafana:
+    image: grafana/grafana:latest
+    container_name: param-binder-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - param-binder-network
+
+  # 测试数据生成器
+  test-data-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.data-gen
+    container_name: param-binder-data-gen
+    volumes:
+      - ../../../:/workspace
+      - test-data:/data
+    working_dir: /workspace
+    environment:
+      - DATA_SIZE=10000
+      - OUTPUT_DIR=/data
+    command: >
+      sh -c "
+        echo '📊 生成测试数据...' &&
+        echo '==================' &&
+        mkdir -p /data &&
+        echo '生成用户数据...' &&
+        go run -tags datagen ./framework/mvc/routing/examples/tools/data-generator.go -type=users -count=1000 -output=/data/users.json &&
+        echo '生成商品数据...' &&
+        go run -tags datagen ./framework/mvc/routing/examples/tools/data-generator.go -type=products -count=5000 -output=/data/products.json &&
+        echo '生成测试用例数据...' &&
+        go run -tags datagen ./framework/mvc/routing/examples/tools/data-generator.go -type=testcases -count=10000 -output=/data/testcases.json &&
+        echo '✅ 测试数据生成完成！' &&
+        ls -la /data/
+      "
+    networks:
+      - param-binder-network
+
+volumes:
+  go-mod-cache:
+    name: param-binder-go-mod-cache
+  prometheus-data:
+    name: param-binder-prometheus-data
+  grafana-data:
+    name: param-binder-grafana-data
+  test-data:
+    name: param-binder-test-data
+
+networks:
+  param-binder-network:
+    name: param-binder-network
+    driver: bridge
+
+# 自定义命令快捷方式
+x-custom-commands:
+  # 运行基础测试
+  test: &test-cmd
+    command: docker-compose run --rm param-binder-test
+  
+  # 运行压力测试  
+  stress: &stress-cmd
+    command: docker-compose run --rm param-binder-stress
+  
+  # 启动演示服务
+  demo: &demo-cmd
+    command: docker-compose up param-binder-demo
+  
+  # 完整测试环境
+  full: &full-cmd
+    command: docker-compose up -d

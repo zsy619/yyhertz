@@ -1,0 +1,104 @@
+# ParamBinder 开发环境配置示例
+
+# 用于开发环境的调试友好配置
+
+param_binder:
+  # 开发环境缓存设置
+  cache_enabled: true
+  cache_max_size: 100                   # 较小的缓存，便于测试缓存行为
+  cache_debug: true                     # 启用缓存调试
+  
+  # 性能设置（开发环境）
+  object_pool_enabled: true
+  object_pool_initial_size: 4           # 较小的池大小
+  object_pool_debug: true               # 对象池调试信息
+  
+  # 转换器设置（调试友好）
+  converters:
+    string:
+      trim_spaces: true
+      max_length: 500                   # 较小的限制，便于测试
+      debug_conversion: true            # 调试转换过程
+    
+    numeric:
+      allow_empty_as_zero: true
+      strict_mode: false                # 非严格模式，便于开发测试
+      debug_parsing: true               # 调试数值解析
+    
+    slice:
+      separator: ","
+      trim_elements: true
+      max_elements: 50                  # 较小的限制
+      debug_splitting: true             # 调试分割过程
+  
+  # 错误处理（开发环境）
+  error_handling:
+    detailed_errors: true               # 显示详细错误信息
+    log_conversion_errors: true         # 记录所有转换错误
+    stack_trace: true                   # 包含堆栈跟踪
+    error_samples: true                 # 保存错误样本
+  
+  # 验证设置
+  validation:
+    required_param_check: true
+    type_validation: true
+    validation_warnings: true           # 显示验证警告
+  
+  # 调试功能
+  debug:
+    enabled: true                       # 启用调试模式
+    trace_conversions: true             # 跟踪所有转换
+    trace_extractions: true             # 跟踪参数提取
+    performance_logging: true           # 记录性能数据
+    memory_profiling: true              # 内存分析
+  
+  # 开发工具
+  dev_tools:
+    auto_reload: true                   # 自动重载配置
+    test_data_generation: true          # 生成测试数据
+    mock_responses: true                # 启用Mock响应
+  
+  # 测试设置
+  testing:
+    mock_params: true                   # 启用参数模拟
+    test_cases_generation: true         # 自动生成测试用例
+    benchmark_on_startup: true          # 启动时运行基准测试
+  
+# 日志配置（开发环境）
+logging:
+  level: "debug"                        # 调试级别日志
+  format: "text"                        # 文本格式，便于阅读
+  output: "stdout"                      # 输出到控制台
+  colors: true                          # 彩色日志
+  
+  # 详细的日志类别
+  categories:
+    conversion: "debug"
+    validation: "debug"
+    cache: "debug"
+    performance: "info"
+    errors: "debug"
+
+# 开发服务器设置
+dev_server:
+  auto_restart: true                    # 代码更改时自动重启
+  hot_reload: true                      # 热重载
+  debug_endpoints: true                 # 启用调试端点
+  
+# 测试数据
+test_data:
+  generate_samples: true                # 生成测试样本
+  sample_size: 1000                     # 样本大小
+  include_edge_cases: true              # 包含边界情况
+  
+# 性能分析
+profiling:
+  enabled: true                         # 启用性能分析
+  cpu_profile: true                     # CPU分析
+  memory_profile: true                  # 内存分析
+  trace_profile: true                   # 追踪分析
+  
+# 示例使用说明
+# 这个配置文件专为开发环境设计
+# 包含大量调试功能和详细的日志输出
+# 有助于开发过程中的问题诊断和性能优化

@@ -1,0 +1,89 @@
+# ParamBinder 生产环境配置示例
+
+# 用于高并发生产环境的优化配置
+
+param_binder:
+  # 高性能缓存设置
+  cache_enabled: true
+  cache_max_size: 10000                 # 更大的缓存容量
+  cache_ttl: 3600                       # 缓存TTL（秒）
+  cache_cleanup_interval: 300           # 缓存清理间隔
+  
+  # 性能优化
+  object_pool_enabled: true
+  object_pool_initial_size: 16          # 更大的初始池大小
+  object_pool_max_size: 1000            # 池的最大大小
+  
+  # 内存管理
+  memory:
+    gc_percentage: 50                   # GC目标百分比
+    max_idle_conns: 100                 # 最大空闲连接数
+    conn_max_lifetime: 3600             # 连接最大生存时间
+  
+  # 并发设置
+  concurrency:
+    max_goroutines: 10000               # 最大协程数
+    worker_pool_size: 1000              # 工作池大小
+    queue_size: 50000                   # 队列大小
+  
+  # 转换器设置（生产环境优化）
+  converters:
+    string:
+      trim_spaces: false                # 生产环境关闭自动trim以提升性能
+      max_length: 10000                 # 更大的长度限制
+      encoding: "utf8"                  # 指定编码
+    
+    numeric:
+      allow_empty_as_zero: true
+      strict_mode: true                 # 严格模式，确保类型安全
+      overflow_check: true              # 检查数值溢出
+    
+    slice:
+      separator: ","
+      trim_elements: false              # 关闭元素trim
+      max_elements: 1000                # 更大的元素限制
+      prealloc_size: 16                 # 预分配切片大小
+  
+  # 错误处理（生产环境）
+  error_handling:
+    detailed_errors: false              # 生产环境不暴露详细错误
+    log_conversion_errors: true         # 记录错误用于监控
+    error_sampling_rate: 0.01           # 错误采样率（1%）
+  
+  # 验证设置
+  validation:
+    required_param_check: true
+    type_validation: true
+    custom_validators_enabled: true     # 启用自定义验证器
+  
+  # 监控和指标
+  monitoring:
+    metrics_enabled: true               # 启用指标收集
+    metrics_interval: 60                # 指标收集间隔（秒）
+    performance_tracking: true          # 性能跟踪
+    cache_hit_ratio_alert: 0.8          # 缓存命中率告警阈值
+  
+  # 限流设置
+  rate_limiting:
+    enabled: true
+    requests_per_second: 10000          # 每秒请求数限制
+    burst_size: 20000                   # 突发请求容量
+  
+# 日志配置（生产环境）
+logging:
+  level: "warn"                         # 生产环境使用warn级别
+  format: "json"
+  output: "/var/log/parambinder.log"
+  rotation:
+    max_size: 100                       # 日志文件最大大小（MB）
+    max_age: 7                          # 日志保留天数
+    max_backups: 30                     # 最大备份文件数
+  
+# 健康检查
+health_check:
+  endpoint: "/health"
+  timeout: 5                            # 健康检查超时（秒）
+  
+# 示例使用说明
+# 这个配置文件针对高并发生产环境进行了优化
+# 包含完整的监控、限流、错误处理等生产级特性
