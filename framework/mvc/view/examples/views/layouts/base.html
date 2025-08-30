@@ -1,0 +1,47 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="{{.lang | default "zh-CN"}}">
+<head>
+    <meta charset="{{.charset | default "UTF-8"}}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}{{.meta.title | default "默认标题"}}{{end}}</title>
+    
+    {{block "meta" .}}
+    <meta name="description" content="{{.meta.description}}">
+    <meta name="keywords" content="{{.meta.keywords}}">
+    {{end}}
+    
+    {{block "styles" .}}
+    <link rel="stylesheet" href="{{asset "css/bootstrap.min.css"}}">
+    <link rel="stylesheet" href="{{asset "css/app.css"}}">
+    {{end}}
+    
+    <style>
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            margin: 0; 
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        .header { background: #2c3e50; color: white; padding: 1rem 0; }
+        .header h1 { margin: 0; }
+        .nav { background: #34495e; padding: 0.5rem 0; }
+        .nav a { color: #ecf0f1; text-decoration: none; margin: 0 15px; padding: 5px 10px; }
+        .nav a:hover { background: #4a6078; border-radius: 3px; }
+        .main { min-height: 70vh; padding: 2rem 0; }
+        .footer { background: #2c3e50; color: white; text-align: center; padding: 1rem 0; margin-top: auto; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 1rem 0; }
+        .card-header { background: #f8f9fa; padding: 1rem; border-bottom: 1px solid #dee2e6; font-weight: bold; }
+        .card-body { padding: 1rem; }
+    </style>
+</head>
+<body>
+    {{block "content" .}}{{end}}
+    
+    {{block "scripts" .}}
+    <script src="{{asset "js/jquery.min.js"}}"></script>
+    <script src="{{asset "js/bootstrap.min.js"}}"></script>
+    <script src="{{asset "js/app.js"}}"></script>
+    {{end}}
+</body>
+</html>{{end}}

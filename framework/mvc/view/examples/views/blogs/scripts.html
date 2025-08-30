@@ -1,0 +1,244 @@
+<!-- 博客页面专用 JavaScript -->
+<script>
+    // 博客页面功能增强
+    (function() {
+        'use strict';
+        
+        // 页面统计和分析
+        const BlogAnalytics = {
+            init() {
+                this.trackPageView();
+                this.trackUserBehavior();
+                this.setupPerformanceMonitoring();
+            },
+            
+            trackPageView() {
+                console.log('📊 博客页面访问统计');
+                console.log('- 页面类型: 博客列表');
+                console.log('- 访问时间:', new Date().toLocaleString());
+                
+                // 简单的访问计数
+                let blogVisits = localStorage.getItem('blogVisits') || 0;
+                blogVisits++;
+                localStorage.setItem('blogVisits', blogVisits);
+                console.log('- 累计访问次数:', blogVisits);
+            },
+            
+            trackUserBehavior() {
+                // 文章卡片点击追踪
+                document.querySelectorAll('.article-card').forEach((card, index) => {
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.closest('.read-more')) return;
+                        console.log(`📖 文章点击: 第${index + 1}篇文章`);
+                    });
+                });
+                
+                // 标签点击追踪
+                document.querySelectorAll('.tag').forEach(tag => {
+                    tag.addEventListener('click', (e) => {
+                        console.log(`🏷️ 标签点击: ${tag.textContent}`);
+                    });
+                });
+            },
+            
+            setupPerformanceMonitoring() {
+                window.addEventListener('load', () => {
+                    // 页面加载性能
+                    const navigation = performance.getEntriesByType('navigation')[0];
+                    const loadTime = Math.round(navigation.loadEventEnd - navigation.fetchStart);
+                    console.log(`⚡ 页面加载时间: ${loadTime}ms`);
+                    
+                    // 资源加载统计
+                    const resources = performance.getEntriesByType('resource');
+                    console.log(`📦 资源加载数量: ${resources.length}`);
+                });
+            }
+        };
+        
+        // 博客界面交互功能
+        const BlogUI = {
+            init() {
+                this.setupArticleInteractions();
+                this.setupSidebarToggle();
+                this.setupSearchFunctionality();
+                this.setupThemeToggle();
+            },
+            
+            setupArticleInteractions() {
+                // 文章卡片悬停效果增强
+                document.querySelectorAll('.article-card').forEach(card => {
+                    card.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-5px)';
+                        this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                    });
+                    
+                    card.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                        this.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
+                    });
+                });
+            },
+            
+            setupSidebarToggle() {
+                // 移动端侧边栏切换（如果需要）
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.querySelector('.sidebar-area');
+                    if (sidebar) {
+                        sidebar.style.position = 'sticky';
+                        sidebar.style.top = '20px';
+                    }
+                }
+            },
+            
+            setupSearchFunctionality() {
+                // 简单的本地搜索功能
+                const searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.placeholder = '搜索文章...';
+                searchInput.style.cssText = `
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    margin-bottom: 1rem;
+                    font-size: 0.9rem;
+                `;
+                
+                const sidebar = document.querySelector('.sidebar-default');
+                if (sidebar) {
+                    sidebar.insertBefore(searchInput, sidebar.firstChild);
+                    
+                    searchInput.addEventListener('input', (e) => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        document.querySelectorAll('.article-card').forEach(card => {
+                            const title = card.querySelector('.article-title').textContent.toLowerCase();
+                            const summary = card.querySelector('.article-summary').textContent.toLowerCase();
+                            
+                            if (title.includes(searchTerm) || summary.includes(searchTerm)) {
+                                card.style.display = 'block';
+                            } else {
+                                card.style.display = searchTerm ? 'none' : 'block';
+                            }
+                        });
+                    });
+                }
+            },
+            
+            setupThemeToggle() {
+                // 简单的主题切换
+                const themeToggle = document.createElement('button');
+                themeToggle.innerHTML = '🌓 主题切换';
+                themeToggle.style.cssText = `
+                    background: #667eea;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 1rem;
+                    font-size: 0.9rem;
+                `;
+                
+                const sidebar = document.querySelector('.sidebar-default');
+                if (sidebar) {
+                    sidebar.appendChild(themeToggle);
+                    
+                    themeToggle.addEventListener('click', () => {
+                        document.body.classList.toggle('dark-theme');
+                        const isDark = document.body.classList.contains('dark-theme');
+                        localStorage.setItem('darkTheme', isDark);
+                        console.log(`🎨 主题切换: ${isDark ? '深色' : '浅色'} 模式`);
+                    });
+                    
+                    // 恢复主题设置
+                    if (localStorage.getItem('darkTheme') === 'true') {
+                        document.body.classList.add('dark-theme');
+                    }
+                }
+            }
+        };
+        
+        // 博客数据管理
+        const BlogData = {
+            init() {
+                this.cacheArticleData();
+                this.setupOfflineSupport();
+            },
+            
+            cacheArticleData() {
+                const articles = [];
+                document.querySelectorAll('.article-card').forEach(card => {
+                    articles.push({
+                        title: card.querySelector('.article-title').textContent,
+                        summary: card.querySelector('.article-summary').textContent,
+                        author: card.querySelector('.author').textContent,
+                        date: card.querySelector('.date').textContent
+                    });
+                });
+                
+                localStorage.setItem('cachedArticles', JSON.stringify(articles));
+                console.log('💾 文章数据已缓存');
+            },
+            
+            setupOfflineSupport() {
+                if ('serviceWorker' in navigator) {
+                    // Service Worker 注册（简化版）
+                    console.log('🔧 离线支持功能已准备');
+                }
+            }
+        };
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 博客页面脚本初始化开始');
+            
+            try {
+                BlogAnalytics.init();
+                BlogUI.init();
+                BlogData.init();
+                
+                console.log('✅ 博客页面功能全部加载完成');
+            } catch (error) {
+                console.error('❌ 博客页面初始化错误:', error);
+            }
+        });
+        
+        // 页面离开时的清理工作
+        window.addEventListener('beforeunload', function() {
+            console.log('👋 用户离开博客页面');
+        });
+        
+    })();
+</script>
+
+<!-- Google Analytics 或其他分析工具占位符 -->
+<script>
+    // 分析工具代码可以在这里添加
+    console.log('📈 分析工具已就绪');
+</script>
+
+<!-- 页面性能优化脚本 -->
+<script>
+    // 图片懒加载优化
+    if ('loading' in HTMLImageElement.prototype) {
+        // 原生懒加载支持
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+        });
+    }
+    
+    // 关键资源预加载
+    const preloadLinks = [
+        '/static/css/blog.css',
+        '/static/js/blog-utils.js'
+    ];
+    
+    preloadLinks.forEach(href => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = href;
+        link.as = href.endsWith('.css') ? 'style' : 'script';
+        document.head.appendChild(link);
+    });
+</script>

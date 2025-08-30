@@ -1,0 +1,16 @@
+<div class="main-content">
+    <h2>{{.PageTitle}}</h2>
+    <p>这是页面的主要内容。用户: <strong>{{.User}}</strong></p>
+    <p>当前时间: {{.Time}}</p>
+    
+    <div class="demo-info">
+        <h3>LayoutSections 演示说明</h3>
+        <ul>
+            <li>{{.HtmlHead}} - 在页面头部插入 CSS 样式和 meta 标签</li>
+            <li>{{.SideBar}} - 显示侧边栏内容</li>
+            <li>{{.Scripts}} - 在页面底部插入 JavaScript 代码</li>
+            <li>{{.Header}} - 页面顶部额外内容</li>
+            <li>{{.Footer}} - 页面底部内容</li>
+        </ul>
+    </div>
+</div>

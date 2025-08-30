@@ -1,0 +1,25 @@
+<nav class="navbar navbar-{{prop "theme" "light"}}" style="background: {{if eq (prop "theme") "dark"}}#343a40{{else}}#f8f9fa{{end}}; padding: 0.5rem 0; margin-bottom: 1rem;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        {{slot "brand"}}
+        <a href="/" style="text-decoration: none; font-size: 1.25rem; font-weight: bold; color: {{if eq (prop "theme") "dark"}}white{{else}}#212529{{end}};">
+            {{prop "brand" "Brand"}}
+        </a>
+        {{end}}
+        
+        <div class="navbar-nav" style="display: flex; gap: 1rem;">
+            {{slot "items"}}
+            {{range prop "items"}}
+            <a href="{{.url}}" style="text-decoration: none; color: {{if eq $.theme "dark"}}#adb5bd{{else}}#495057{{end}}; {{if .active}}font-weight: bold; color: {{if eq $.theme "dark"}}white{{else}}#007bff{{end}};{{end}}">
+                {{.name}}
+            </a>
+            {{end}}
+            {{end}}
+        </div>
+        
+        {{slot "actions"}}
+        <div class="navbar-actions">
+            <!-- 默认操作区域 -->
+        </div>
+        {{end}}
+    </div>
+</nav>

@@ -1,0 +1,85 @@
+<div class="table-wrapper">
+    {{slot "header"}}
+    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0;">{{prop "title" "数据表格"}}</h3>
+        {{if prop "showSearch"}}
+        <input type="text" placeholder="搜索..." style="padding: 0.25rem 0.5rem; border: 1px solid #ced4da; border-radius: 4px;">
+        {{end}}
+    </div>
+    {{end}}
+    
+    <div class="table-responsive">
+        <table class="table {{if prop "striped"}}table-striped{{end}} {{if prop "bordered"}}table-bordered{{end}}" style="width: 100%; border-collapse: collapse; background: white;">
+            <thead style="background: #f8f9fa;">
+                <tr>
+                    {{range prop "columns"}}
+                    <th style="{{if .width}}width: {{.width}};{{end}} text-align: {{.align | default "left"}}; padding: 0.75rem; border-bottom: 2px solid #dee2e6;">
+                        {{.title}}
+                        {{if .sortable}}
+                        <span style="cursor: pointer; color: #6c757d; margin-left: 0.25rem;">⇅</span>
+                        {{end}}
+                    </th>
+                    {{end}}
+                    {{if prop "actions"}}
+                    <th style="text-align: center; padding: 0.75rem; border-bottom: 2px solid #dee2e6;">操作</th>
+                    {{end}}
+                </tr>
+            </thead>
+            <tbody>
+                {{range prop "data"}}
+                <tr {{if .highlighted}}style="background-color: #fff3cd;"{{end}}>
+                    {{$row := .}}
+                    {{range $.columns}}
+                    <td style="text-align: {{.align | default "left"}}; padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                        {{if .formatter}}
+                        {{call .formatter (index $row .key)}}
+                        {{else}}
+                        {{index $row .key}}
+                        {{end}}
+                    </td>
+                    {{end}}
+                    {{if $.actions}}
+                    <td style="text-align: center; padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                        {{range $.actions}}
+                        <a href="{{.url}}{{$row.id}}" class="btn btn-{{.type | default "primary"}}" style="margin: 0 0.25rem; padding: 0.25rem 0.5rem; text-decoration: none; border-radius: 3px; background: #007bff; color: white; font-size: 0.875rem;">
+                            {{.label}}
+                        </a>
+                        {{end}}
+                    </td>
+                    {{end}}
+                </tr>
+                {{end}}
+                {{if not (prop "data")}}
+                <tr>
+                    <td colspan="{{add (len (prop "columns")) (if (prop "actions") 1 0)}}" style="text-align: center; padding: 2rem; color: #6c757d;">
+                        暂无数据
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    
+    {{if prop "pagination"}}
+    {{slot "pagination"}}
+    <div class="pagination-wrapper" style="display: flex; justify-content: between; align-items: center; margin-top: 1rem;">
+        <div>
+            显示 {{prop "pagination.start"}} - {{prop "pagination.end"}} 条，共 {{prop "pagination.total"}} 条记录
+        </div>
+        <div style="display: flex; gap: 0.25rem;">
+            {{if gt (prop "pagination.current") 1}}
+            <a href="?page={{sub (prop "pagination.current") 1}}" style="padding: 0.25rem 0.5rem; border: 1px solid #dee2e6; text-decoration: none; color: #007bff;">上一页</a>
+            {{end}}
+            
+            {{range (prop "pagination.pages")}}
+            <a href="?page={{.}}" style="padding: 0.25rem 0.5rem; border: 1px solid #dee2e6; text-decoration: none; {{if eq . $.pagination.current}}background: #007bff; color: white;{{else}}color: #007bff;{{end}}">{{.}}</a>
+            {{end}}
+            
+            {{if lt (prop "pagination.current") (prop "pagination.totalPages")}}
+            <a href="?page={{add (prop "pagination.current") 1}}" style="padding: 0.25rem 0.5rem; border: 1px solid #dee2e6; text-decoration: none; color: #007bff;">下一页</a>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    {{end}}
+</div>

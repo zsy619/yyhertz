@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: #f5f6fa;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px; 
+        }
+        .header h1 { 
+            font-size: 2rem; 
+            margin-bottom: 10px; 
+        }
+        .template-name { 
+            font-size: 1.2rem; 
+            opacity: 0.9; 
+        }
+        .info-section { 
+            padding: 30px; 
+            background: #f8f9fa; 
+            border-bottom: 1px solid #eee; 
+        }
+        .info-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+        }
+        .info-item { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border-left: 4px solid #3498db; 
+        }
+        .info-label { 
+            font-weight: bold; 
+            color: #2c3e50; 
+            margin-bottom: 5px; 
+        }
+        .info-value { 
+            color: #666; 
+        }
+        .content-section { 
+            padding: 30px; 
+        }
+        .content-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
+        .content-header h2 { 
+            color: #2c3e50; 
+        }
+        .btn-group { 
+            display: flex; 
+            gap: 10px; 
+        }
+        .btn { 
+            padding: 8px 16px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            text-decoration: none; 
+            display: inline-block; 
+            font-size: 14px; 
+            transition: all 0.3s ease; 
+        }
+        .btn-primary { 
+            background: #3498db; 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background: #2980b9; 
+        }
+        .btn-secondary { 
+            background: #95a5a6; 
+            color: white; 
+        }
+        .btn-secondary:hover { 
+            background: #7f8c8d; 
+        }
+        .btn-success { 
+            background: #27ae60; 
+            color: white; 
+        }
+        .btn-success:hover { 
+            background: #219a52; 
+        }
+        .code-container { 
+            position: relative; 
+            background: #2d3748; 
+            border-radius: 8px; 
+            overflow: hidden; 
+        }
+        .code-header { 
+            background: #1a202c; 
+            color: white; 
+            padding: 10px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 14px; 
+        }
+        .code-content { 
+            color: #e2e8f0; 
+            padding: 20px; 
+            font-family: 'Courier New', monospace; 
+            line-height: 1.6; 
+            white-space: pre-wrap; 
+            overflow-x: auto; 
+            max-height: 600px; 
+            overflow-y: auto; 
+        }
+        .copy-btn { 
+            background: #4a5568; 
+            color: white; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-size: 12px; 
+        }
+        .copy-btn:hover { 
+            background: #2d3748; 
+        }
+        .navigation { 
+            padding: 20px 30px; 
+            background: #f8f9fa; 
+            border-top: 1px solid #eee; 
+            text-align: center; 
+        }
+        .syntax-highlight .keyword { color: #ff6b6b; }
+        .syntax-highlight .string { color: #51cf66; }
+        .syntax-highlight .comment { color: #868e96; font-style: italic; }
+        .syntax-highlight .tag { color: #339af0; }
+        .syntax-highlight .attribute { color: #ffd43b; }
+        .line-numbers { 
+            background: #1a202c; 
+            color: #4a5568; 
+            padding: 20px 10px; 
+            font-family: 'Courier New', monospace; 
+            line-height: 1.6; 
+            white-space: pre; 
+            user-select: none; 
+            border-right: 1px solid #4a5568; 
+        }
+        .code-with-numbers { 
+            display: flex; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}}</h1>
+            <div class="template-name">📄 {{.TemplateName}}</div>
+        </div>
+        
+        <!-- 模板信息 -->
+        <div class="info-section">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">📁 模板名称</div>
+                    <div class="info-value">{{.TemplateName}}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">📏 文件大小</div>
+                    <div class="info-value">{{.TemplateSize}} 字节</div>
+                </div>
+                {{if .LastModified}}
+                <div class="info-item">
+                    <div class="info-label">🕒 最后修改</div>
+                    <div class="info-value">{{.LastModified}}</div>
+                </div>
+                {{end}}
+                <div class="info-item">
+                    <div class="info-label">🎨 模板类型</div>
+                    <div class="info-value">HTML 模板</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 模板内容 -->
+        <div class="content-section">
+            <div class="content-header">
+                <h2>📋 模板源码</h2>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="downloadTemplate()">💾 下载</button>
+                    <button class="btn btn-primary" onclick="previewTemplate()">👁️ 预览</button>
+                    <a href="/templates" class="btn btn-secondary">🔙 返回列表</a>
+                </div>
+            </div>
+            
+            <div class="code-container">
+                <div class="code-header">
+                    <span>{{.TemplateName}}</span>
+                    <button class="copy-btn" onclick="copyToClipboard()">📋 复制代码</button>
+                </div>
+                <div class="code-with-numbers">
+                    <div class="line-numbers" id="lineNumbers"></div>
+                    <div class="code-content syntax-highlight" id="templateContent">{{.TemplateContent}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <p>💡 提示：您可以下载、预览或编辑这个模板文件</p>
+            <p><small>最后查看时间: {{dateformat now "2006年01月02日 15:04:05"}}</small></p>
+        </div>
+    </div>
+
+    <script>
+        // 生成行号
+        function generateLineNumbers() {
+            const content = document.getElementById('templateContent').textContent;
+            const lines = content.split('\n');
+            const lineNumbers = lines.map((line, index) => (index + 1).toString().padStart(3, ' ')).join('\n');
+            document.getElementById('lineNumbers').textContent = lineNumbers;
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard() {
+            const content = document.getElementById('templateContent').textContent;
+            navigator.clipboard.writeText(content).then(function() {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                btn.style.background = '#27ae60';
+                setTimeout(function() {
+                    btn.textContent = originalText;
+                    btn.style.background = '#4a5568';
+                }, 2000);
+            }).catch(function(err) {
+                alert('复制失败，请手动复制');
+            });
+        }
+        
+        // 下载模板
+        function downloadTemplate() {
+            const content = document.getElementById('templateContent').textContent;
+            const fileName = '{{.TemplateName}}';
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        // 预览模板
+        function previewTemplate() {
+            const templateName = '{{.TemplateName}}';
+            const content = document.getElementById('templateContent').textContent;
+            
+            const formData = new FormData();
+            formData.append('template', templateName);
+            formData.append('content', content);
+            
+            fetch('/templates/preview', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const newWindow = window.open('', '_blank', 'width=800,height=600');
+                    newWindow.document.write(`
+                        <html>
+                            <head>
+                                <title>模板预览 - ${templateName}</title>
+                                <style>
+                                    body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 20px; }
+                                    .preview-header { background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; margin-bottom: 20px; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="preview-header">
+                                    <h3>📄 模板预览: ${templateName}</h3>
+                                    <p>预览时间: ${new Date().toLocaleString()}</p>
+                                </div>
+                                <div class="preview-content">
+                                    ${data.result}
+                                </div>
+                            </body>
+                        </html>
+                    `);
+                    newWindow.document.close();
+                } else {
+                    alert('预览失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('预览请求失败: ' + error.message);
+            });
+        }
+        
+        // 简单的语法高亮
+        function applySyntaxHighlight() {
+            const content = document.getElementById('templateContent');
+            let html = content.textContent;
+            
+            // 高亮HTML标签
+            html = html.replace(/(&lt;\/?\w+[^&gt;]*&gt;)/g, '<span class="tag">$1</span>');
+            // 高亮模板语法
+            html = html.replace(/(\{\{[^}]*\}\})/g, '<span class="keyword">$1</span>');
+            // 高亮注释
+            html = html.replace(/(&lt;!--.*?--&gt;)/g, '<span class="comment">$1</span>');
+            
+            content.innerHTML = html;
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            generateLineNumbers();
+            // applySyntaxHighlight(); // 暂时禁用，避免影响复制功能
+        });
+    </script>
+</body>
+</html>

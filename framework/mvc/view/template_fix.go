@@ -100,16 +100,29 @@ func (e *TemplateIncludeEngine) RenderTemplate(templateName string, data any) (s
 	// 查找模板
 	tmpl := e.masterTemplate.Lookup(templateKey)
 	if tmpl == nil {
-		// 尝试其他可能的名称
+		// 🔧 增强调试：收集所有尝试的键名
 		alternativeKeys := e.generateAlternativeKeys(templateName)
+		
+		// 尝试其他可能的名称
 		for _, key := range alternativeKeys {
 			if tmpl = e.masterTemplate.Lookup(key); tmpl != nil {
+				// 找到模板，记录成功匹配的键名（简化版本，不依赖config包）
 				break
 			}
 		}
 		
 		if tmpl == nil {
-			return "", fmt.Errorf("template '%s' not found (tried: %v)", templateName, append([]string{templateKey}, alternativeKeys...))
+			// 🔧 增强错误诊断：提供更详细的调试信息
+			availableTemplates := e.ListAvailableTemplates()
+			return "", fmt.Errorf("❌ 模板查找失败:\n  - 请求模板: %s\n  - 标准化键名: %s\n  - 尝试的键名: %v\n  - 可用模板 (前10个): %v\n  - 总可用模板数: %d", 
+				templateName, templateKey, append([]string{templateKey}, alternativeKeys...), 
+				func() []string {
+					if len(availableTemplates) > 10 {
+						return availableTemplates[:10]
+					}
+					return availableTemplates
+				}(),
+				len(availableTemplates))
 		}
 	}
 	
@@ -125,15 +138,24 @@ func (e *TemplateIncludeEngine) RenderTemplate(templateName string, data any) (s
 	return buf.String(), nil
 }
 
-// normalizeTemplateKey 标准化模板键名
+// normalizeTemplateKey 标准化模板键名 
+// 🔧 关键修复：优先使用文件名作为模板键，因为ParseFiles创建的模板名是文件basename
 func (e *TemplateIncludeEngine) normalizeTemplateKey(templateName string) string {
-	// 移除扩展名
-	key := strings.TrimSuffix(templateName, e.extension)
-	
 	// 标准化路径分隔符
-	key = strings.ReplaceAll(key, "\\", "/")
+	normalized := strings.ReplaceAll(templateName, "\\", "/")
 	
-	return key
+	// 🔧 优先返回文件basename（含扩展名），因为这与ParseFiles的行为一致
+	// ParseFiles会使用文件的basename作为模板名，如 "index.html"
+	if strings.Contains(normalized, "/") {
+		// 如果是路径形式（如 "template/index.html"），返回文件basename
+		result := filepath.Base(normalized)
+		fmt.Printf("🔧 normalizeTemplateKey: %s -> %s (using basename)\n", templateName, result)
+		return result
+	}
+	
+	// 如果已经是简单文件名，直接返回
+	fmt.Printf("🔧 normalizeTemplateKey: %s -> %s (simple name)\n", templateName, normalized)
+	return normalized
 }
 
 // generateAlternativeKeys 生成可能的模板键名
@@ -149,6 +171,7 @@ func (e *TemplateIncludeEngine) generateAlternativeKeys(templateName string) []s
 		keys = append(keys, nameWithoutExt)
 	}
 	
+	// 🔧 关键修复：处理路径形式的模板名，如 "template/index.html"
 	// 添加只有文件名的版本
 	baseName := strings.TrimSuffix(filepath.Base(templateName), e.extension)
 	baseNameWithExt := filepath.Base(templateName)
@@ -160,18 +183,51 @@ func (e *TemplateIncludeEngine) generateAlternativeKeys(templateName string) []s
 		keys = append(keys, baseNameWithExt)
 	}
 	
+	// 🔧 新增：特殊处理路径形式的模板名
+	// 当请求 "template/index.html" 时，尝试查找 "index.html"
+	if strings.Contains(templateName, "/") {
+		// 提取最后的文件名部分
+		fileName := filepath.Base(templateName)
+		fileNameWithoutExt := strings.TrimSuffix(fileName, e.extension)
+		
+		// 🔧 重要：由于template.ParseFiles()创建的模板名通常是文件的basename
+		// 我们需要优先尝试basename形式，将其添加到keys开头
+		if !contains(keys, fileNameWithoutExt) && fileNameWithoutExt != templateName {
+			// 将basename形式放在前面，提高匹配优先级
+			keys = append([]string{fileNameWithoutExt}, keys...)
+		}
+		
+		// 添加带扩展名的文件名
+		if !contains(keys, fileName) && fileName != templateName {
+			keys = append(keys, fileName)
+		}
+	}
+	
 	// 添加相对路径版本（移除views/前缀）
 	for _, viewPath := range e.viewPaths {
 		if strings.HasPrefix(templateName, viewPath+"/") {
 			relPath := strings.TrimPrefix(templateName, viewPath+"/")
-			if relPath != templateName {
+			if relPath != templateName && !contains(keys, relPath) {
 				keys = append(keys, relPath)
-				keys = append(keys, strings.TrimSuffix(relPath, e.extension))
+			}
+			relPathWithoutExt := strings.TrimSuffix(relPath, e.extension)
+			if !contains(keys, relPathWithoutExt) {
+				keys = append(keys, relPathWithoutExt)
 			}
 		}
 	}
 	
 	return keys
+}
+
+// contains 检查字符串切片是否包含特定值
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 // GetMasterTemplate 获取主模板实例

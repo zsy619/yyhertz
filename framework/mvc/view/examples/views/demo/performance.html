@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard { 
+            background: white; 
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
+        }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            padding: 30px; 
+        }
+        .stat-card { 
+            background: #f8f9fa; 
+            padding: 25px; 
+            border-radius: 8px; 
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+        }
+        .stat-card h3 { 
+            color: #2c3e50; 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .stat-item { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 8px 0; 
+            padding: 8px 0; 
+            border-bottom: 1px solid #eee; 
+        }
+        .stat-item:last-child { border-bottom: none; }
+        .stat-label { 
+            color: #666; 
+        }
+        .stat-value { 
+            font-weight: bold; 
+            color: #2c3e50; 
+        }
+        .health-status { 
+            padding: 30px; 
+            text-align: center; 
+            border-bottom: 1px solid #eee; 
+        }
+        .health-good { 
+            background: #d4edda; 
+            color: #155724; 
+            border: 1px solid #c3e6cb; 
+            padding: 15px; 
+            border-radius: 5px; 
+            display: inline-block; 
+        }
+        .health-bad { 
+            background: #f8d7da; 
+            color: #721c24; 
+            border: 1px solid #f5c6cb; 
+            padding: 15px; 
+            border-radius: 5px; 
+            display: inline-block; 
+        }
+        .global-stats { 
+            padding: 30px; 
+        }
+        .global-stats h2 { 
+            color: #2c3e50; 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        .stats-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+        }
+        .stats-table th, .stats-table td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+        }
+        .stats-table th { 
+            background: #f8f9fa; 
+            font-weight: bold; 
+            color: #2c3e50; 
+        }
+        .stats-table tr:hover { 
+            background: #f8f9fa; 
+        }
+        .timestamp { 
+            text-align: center; 
+            padding: 20px; 
+            background: #f8f9fa; 
+            color: #666; 
+            border-top: 1px solid #eee; 
+        }
+        .refresh-btn { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            margin: 10px; 
+        }
+        .refresh-btn:hover { 
+            background: #45a049; 
+        }
+        .metric-badge { 
+            display: inline-block; 
+            background: #e3f2fd; 
+            color: #1976d2; 
+            padding: 4px 8px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            margin: 2px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}}</h1>
+            <p>📊 YYHertz模板引擎性能监控面板</p>
+            <button class="refresh-btn" onclick="window.location.reload()">🔄 刷新数据</button>
+        </div>
+        
+        <div class="dashboard">
+            <!-- 健康状态 -->
+            <div class="health-status">
+                <h2>🏥 系统健康状态</h2>
+                {{if eq .HealthStatus "良好"}}
+                <div class="health-good">
+                    ✅ {{.HealthStatus}}
+                </div>
+                {{else}}
+                <div class="health-bad">
+                    ❌ {{.HealthStatus}}
+                </div>
+                {{end}}
+            </div>
+            
+            <!-- 性能统计 -->
+            <div class="stats-grid">
+                <!-- 缓存统计 -->
+                <div class="stat-card">
+                    <h3>💾 缓存统计</h3>
+                    {{if .CacheStats}}
+                        {{range $key, $value := .CacheStats}}
+                        <div class="stat-item">
+                            <span class="stat-label">{{$key}}:</span>
+                            <span class="stat-value">{{$value}}</span>
+                        </div>
+                        {{end}}
+                    {{else}}
+                        <div class="stat-item">
+                            <span class="stat-label">暂无缓存统计数据</span>
+                        </div>
+                    {{end}}
+                </div>
+                
+                <!-- 内存使用 -->
+                <div class="stat-card">
+                    <h3>🧠 内存使用情况</h3>
+                    {{if .MemStats}}
+                        {{range $key, $value := .MemStats}}
+                        <div class="stat-item">
+                            <span class="stat-label">{{$key}}:</span>
+                            <span class="stat-value">{{formatFileSize $value}}</span>
+                        </div>
+                        {{end}}
+                    {{else}}
+                        <div class="stat-item">
+                            <span class="stat-label">暂无内存统计数据</span>
+                        </div>
+                    {{end}}
+                </div>
+            </div>
+            
+            <!-- 全局统计信息 -->
+            <div class="global-stats">
+                <h2>📈 全局统计总览</h2>
+                {{if .GlobalStats}}
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>统计项</th>
+                            <th>数值</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range $key, $value := .GlobalStats}}
+                        <tr>
+                            <td><strong>{{$key}}</strong></td>
+                            <td>
+                                {{if eq (printf "%T" $value) "map[string]int"}}
+                                    {{range $subKey, $subVal := $value}}
+                                    <span class="metric-badge">{{$subKey}}: {{$subVal}}</span>
+                                    {{end}}
+                                {{else if eq (printf "%T" $value) "[]string"}}
+                                    {{range $value}}
+                                    <span class="metric-badge">{{.}}</span>
+                                    {{end}}
+                                {{else}}
+                                    {{$value}}
+                                {{end}}
+                            </td>
+                            <td>
+                                {{if eq $key "cache_stats"}}缓存相关统计信息
+                                {{else if eq $key "memory_stats"}}内存使用统计信息
+                                {{else if eq $key "template_stats"}}模板处理统计信息
+                                {{else if eq $key "function_stats"}}函数调用统计信息
+                                {{else}}系统统计信息{{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                {{else}}
+                <div class="stat-item">
+                    <span class="stat-label">暂无全局统计数据</span>
+                </div>
+                {{end}}
+            </div>
+            
+            <!-- 时间戳 -->
+            <div class="timestamp">
+                <p><strong>数据刷新时间:</strong> {{dateformat .Now "2006年01月02日 15:04:05"}}</p>
+                <p><small>定期刷新页面以获取最新的性能数据</small></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 自动刷新功能
+        let autoRefresh = false;
+        let refreshInterval;
+        
+        function toggleAutoRefresh() {
+            if (autoRefresh) {
+                clearInterval(refreshInterval);
+                autoRefresh = false;
+                document.getElementById('autoRefreshBtn').textContent = '🔄 开启自动刷新';
+            } else {
+                refreshInterval = setInterval(() => {
+                    window.location.reload();
+                }, 10000); // 每10秒刷新
+                autoRefresh = true;
+                document.getElementById('autoRefreshBtn').textContent = '⏸️ 停止自动刷新';
+            }
+        }
+        
+        // 添加自动刷新按钮
+        document.addEventListener('DOMContentLoaded', function() {
+            const header = document.querySelector('.header');
+            const autoRefreshBtn = document.createElement('button');
+            autoRefreshBtn.id = 'autoRefreshBtn';
+            autoRefreshBtn.className = 'refresh-btn';
+            autoRefreshBtn.textContent = '🔄 开启自动刷新';
+            autoRefreshBtn.onclick = toggleAutoRefresh;
+            header.appendChild(autoRefreshBtn);
+        });
+    </script>
+</body>
+</html>

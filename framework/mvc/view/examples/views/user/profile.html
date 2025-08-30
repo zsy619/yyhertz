@@ -1,0 +1,181 @@
+{{template "app" .}}
+
+{{define "title"}}用户资料 - {{.user.name}}{{end}}
+
+{{define "main"}}
+<div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+    <div class="col-md-4" style="min-width: 300px;">
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;">👤 基本信息</h4>
+            </div>
+            <div class="card-body" style="text-align: center;">
+                <img src="{{.user.avatar | default "/static/images/default-avatar.png"}}" 
+                     alt="{{.user.name}}" 
+                     style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem;">
+                
+                <h3 style="margin: 0.5rem 0;">{{.user.name}}</h3>
+                <p style="color: #6c757d; margin: 0.25rem 0;">{{.user.email}}</p>
+                
+                {{if .user.title}}
+                <p style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 12px; display: inline-block; font-size: 0.875rem; margin: 0.5rem 0;">
+                    {{.user.title}}
+                </p>
+                {{end}}
+                
+                <div style="margin: 1rem 0;">
+                    <span class="badge {{if .user.active}}badge-success{{else}}badge-secondary{{end}}" 
+                          style="background: {{if .user.active}}#28a745{{else}}#6c757d{{end}}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                        {{if .user.active}}活跃{{else}}非活跃{{end}}
+                    </span>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <a href="/users/{{.user.id}}/edit" class="btn btn-primary" style="background: #007bff; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 4px; margin: 0.25rem;">
+                        编辑资料
+                    </a>
+                    {{if .canManage}}
+                    <a href="/admin/users/{{.user.id}}" class="btn btn-secondary" style="background: #6c757d; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 4px; margin: 0.25rem;">
+                        管理设置
+                    </a>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+        
+        {{if .user.stats}}
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;">📊 统计信息</h4>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                    <div>
+                        <h3 style="margin: 0; color: #007bff;">{{.user.stats.posts | default 0}}</h3>
+                        <small style="color: #6c757d;">文章数</small>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #28a745;">{{.user.stats.comments | default 0}}</h3>
+                        <small style="color: #6c757d;">评论数</small>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #ffc107; color: #856404;">{{.user.stats.likes | default 0}}</h3>
+                        <small style="color: #6c757d;">获赞数</small>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #17a2b8;">{{.user.stats.views | default 0}}</h3>
+                        <small style="color: #6c757d;">浏览量</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    
+    <div class="col-md-8" style="flex: 1; min-width: 400px;">
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;">📝 详细信息</h4>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; align-items: start;">
+                    <strong>用户ID:</strong>
+                    <span>{{.user.id}}</span>
+                    
+                    <strong>用户名:</strong>
+                    <span>{{.user.username | default .user.name}}</span>
+                    
+                    <strong>邮箱:</strong>
+                    <span>{{.user.email}}</span>
+                    
+                    <strong>手机:</strong>
+                    <span>{{.user.phone | default "未设置"}}</span>
+                    
+                    <strong>注册时间:</strong>
+                    <span>{{dateformat .user.createdAt "2006-01-02 15:04:05"}}</span>
+                    
+                    <strong>最后登录:</strong>
+                    <span>
+                        {{if .user.lastLoginAt}}
+                        {{dateformat .user.lastLoginAt "2006-01-02 15:04:05"}} 
+                        <small style="color: #6c757d;">({{timeago .user.lastLoginAt}})</small>
+                        {{else}}
+                        从未登录
+                        {{end}}
+                    </span>
+                    
+                    <strong>用户角色:</strong>
+                    <span>
+                        {{range .user.roles | default (slice)}}
+                        <span class="badge badge-info" style="background: #17a2b8; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-right: 0.25rem;">
+                            {{.name}}
+                        </span>
+                        {{end}}
+                    </span>
+                    
+                    {{if .user.location}}
+                    <strong>位置:</strong>
+                    <span>🌍 {{.user.location}}</span>
+                    {{end}}
+                    
+                    {{if .user.website}}
+                    <strong>网站:</strong>
+                    <span><a href="{{.user.website}}" target="_blank" style="color: #007bff;">{{.user.website}}</a></span>
+                    {{end}}
+                    
+                    {{if .user.bio}}
+                    <strong>个人简介:</strong>
+                    <span>{{.user.bio}}</span>
+                    {{end}}
+                    
+                    <strong>账户余额:</strong>
+                    <span style="color: #28a745; font-weight: bold;">
+                        {{currency .user.balance "CNY" | default "¥0.00"}}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        {{if .user.preferences}}
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;">⚙️ 偏好设置</h4>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; align-items: center;">
+                    <strong>语言:</strong>
+                    <span>{{.user.preferences.language | default "zh-CN"}}</span>
+                    
+                    <strong>时区:</strong>
+                    <span>{{.user.preferences.timezone | default "Asia/Shanghai"}}</span>
+                    
+                    <strong>主题:</strong>
+                    <span>{{.user.preferences.theme | default "light"}}</span>
+                    
+                    <strong>邮件通知:</strong>
+                    <span>{{if .user.preferences.emailNotifications}}✅ 已开启{{else}}❌ 已关闭{{end}}</span>
+                    
+                    <strong>短信通知:</strong>
+                    <span>{{if .user.preferences.smsNotifications}}✅ 已开启{{else}}❌ 已关闭{{end}}</span>
+                </div>
+            </div>
+        </div>
+        {{end}}
+        
+        {{if .user.tags}}
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin: 0;">🏷️ 用户标签</h4>
+            </div>
+            <div class="card-body">
+                {{range .user.tags}}
+                <span class="badge badge-secondary" style="background: #6c757d; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin: 0.125rem 0.25rem 0.125rem 0;">
+                    {{.}}
+                </span>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

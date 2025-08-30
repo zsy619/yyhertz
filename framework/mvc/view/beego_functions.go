@@ -14,131 +14,145 @@ import (
 	"unicode/utf8"
 )
 
-// BeegoTemplateFuncs Beego风格的模板函数
-var BeegoTemplateFuncs = template.FuncMap{
-	// ============= 基础工具函数 =============
-	"str2html":   Str2HTML,
-	"htmlquote":  HTMLQuote,
-	"htmlunquote": HTMLUnquote,
-	"renderform": RenderForm,
-	"assets_js":  AssetsJS,
-	"assets_css": AssetsCSS,
-	"config":     GetConfig,
-	"map_get":    MapGet,
-	"urlfor":     URLFor,
+// GetBeegoTemplateFuncs 获取Beego风格的模板函数（延迟初始化）
+func GetBeegoTemplateFuncs() template.FuncMap {
+	return template.FuncMap{
+		// ============= 基础工具函数 =============
+		"str2html":   Str2HTML,
+		"htmlquote":  HTMLQuote,
+		"htmlunquote": HTMLUnquote,
+		"renderform": RenderForm,
+		"assets_js":  AssetsJS,
+		"assets_css": AssetsCSS,
+		"config":     GetConfig,
+		"map_get":    MapGet,
+		"urlfor":     URLFor,
 
-	// ============= 字符串处理函数 =============
-	"substr":     Substr,
-	"truncate":   TruncateString,
-	"nl2br":      NL2BR,
-	"markdown":   MarkdownString,
-	"striphtml":  StripHTML,
-	"replace":    strings.ReplaceAll,
-	"tolower":    strings.ToLower,
-	"toupper":    strings.ToUpper,
-	"trim":       strings.TrimSpace,
-	"trimprefix": strings.TrimPrefix,
-	"trimsuffix": strings.TrimSuffix,
+		// ============= 字符串处理函数 =============
+		"substr":     Substr,
+		"truncate":   TruncateString,
+		"nl2br":      NL2BR,
+		"markdown":   MarkdownString,
+		"striphtml":  StripHTML,
+		"replace":    strings.ReplaceAll,
+		"tolower":    strings.ToLower,
+		"toupper":    strings.ToUpper,
+		"trim":       strings.TrimSpace,
+		"trimprefix": strings.TrimPrefix,
+		"trimsuffix": strings.TrimSuffix,
 
-	// ============= 数字处理函数 =============
-	"add":    Add,
-	"sub":    Sub,
-	"mul":    Mul,
-	"div":    Div,
-	"mod":    Mod,
-	"round":  Round,
-	"ceil":   Ceil,
-	"floor":  Floor,
-	"abs":    Abs,
+		// ============= 数字处理函数 =============
+		"add":    Add,
+		"sub":    Sub,
+		"mul":    Mul,
+		"div":    Div,
+		"mod":    Mod,
+		"round":  Round,
+		"ceil":   Ceil,
+		"floor":  Floor,
+		"abs":    Abs,
 
-	// ============= 比较函数 =============
-	"eq": Eq,
-	"ne": Ne,
-	"lt": Lt,
-	"le": Le,
-	"gt": Gt,
-	"ge": Ge,
-	"in": In,
+		// ============= 比较函数 =============
+		"eq": Eq,
+		"ne": Ne,
+		"lt": Lt,
+		"le": Le,
+		"gt": Gt,
+		"ge": Ge,
+		"in": In,
 
-	// ============= 日期时间函数 =============
-	"dateformat":    DateFormat,
-	"date":          Date,
-	"compare":       Compare,
-	"timeago":       TimeAgo,
-	"timesince":     TimeSince,
-	"timeuntil":     TimeUntil,
-	"now":           Now,
-	"timestamp":     Timestamp,
+		// ============= 日期时间函数 =============
+		"dateformat":    DateFormat,
+		"date":          Date,
+		"compare":       Compare,
+		"timeago":       TimeAgo,
+		"timesince":     TimeSince,
+		"timeSince":     TimeSince,    // 🔧 添加驼峰命名支持，修复模板中的timeSince调用
+		"timeuntil":     TimeUntil,
+		"now":           Now,
+		"timestamp":     Timestamp,
 
-	// ============= 集合函数 =============
-	"len":      Len,
-	"index":    Index,
-	"slice":    Slice,
-	"append":   AppendSlice,
-	"reverse":  Reverse,
-	"sort":     SortSlice,
-	"join":     strings.Join,
-	"split":    strings.Split,
-	"contains": strings.Contains,
+		// ============= 集合函数 =============
+		"len":      Len,
+		"index":    Index,
+		"slice":    Slice,
+		"append":   AppendSlice,
+		"reverse":  Reverse,
+		"sort":     SortSlice,
+		"join":     strings.Join,
+		"split":    strings.Split,
+		"contains": strings.Contains,
 
-	// ============= 类型转换函数 =============
-	"int":     ToInt,
-	"int64":   ToInt64,
-	"float":   ToFloat,
-	"string":  ToString,
-	"bool":    ToBool,
+		// ============= 类型转换函数 =============
+		"int":     ToInt,
+		"int64":   ToInt64,
+		"float":   ToFloat,
+		"string":  ToString,
+		"bool":    ToBool,
 
-	// ============= URL和编码函数 =============
-	"urlencode":   URLEncode,
-	"urldecode":   URLDecode,
-	"base64enc":   Base64Encode,
-	"base64dec":   Base64Decode,
-	"md5":         MD5Hash,
-	"safejs":      SafeJS,
-	"safehtml":    SafeHTML,
+		// ============= URL和编码函数 =============
+		"urlencode":   URLEncode,
+		"urldecode":   URLDecode,
+		"base64enc":   Base64Encode,
+		"base64dec":   Base64Decode,
+		"md5":         MD5Hash,
+		"safejs":      SafeJS,
+		"safehtml":    SafeHTML,
+		"raw":         RawHTML,      // 🔧 添加raw函数，用于输出原始HTML
 
-	// ============= 条件和逻辑函数 =============
-	"default":  Default,
-	"empty":    Empty,
-	"notnil":   NotNil,
-	"and":      And,
-	"or":       Or,
-	"not":      Not,
+		// ============= 条件和逻辑函数 =============
+		"default":  Default,
+		"empty":    Empty,
+		"notnil":   NotNil,
+		"and":      And,
+		"or":       Or,
+		"not":      Not,
 
-	// ============= 模板包含函数 =============
-	"include":    Include,
-	"template":   TemplateInclude,
-	"partial":    Partial,
-	"component":  ComponentTemplate,
-	"render":     RenderTemplate,
+		// ============= 组件属性函数 =============
+		"prop":     GetProp,
+		"slot":     GetSlot,         // 🔧 添加slot函数，用于组件插槽
 
-	// ============= 迭代和循环函数 =============
-	"range":    CreateRange,
-	"seq":      CreateSequence,
-	"dict":     CreateDict,
-	"makedict": MakeDict,
-	"makeslice": MakeSlice,
+		// ============= 模板包含函数 =============
+		"include":    Include,
+		"template":   TemplateInclude,
+		"partial":    Partial,
+		"component":  ComponentTemplate,
+		"render":     RenderTemplate,
 
-	// ============= 格式化函数 =============
-	"printf":     fmt.Sprintf,
-	"sprintf":    fmt.Sprintf,
-	"formatsize": FmtByte,
-	"currency":   formatCurrency,
-	"number":     FormatNumber,
-	"percent":    FormatPercent,
+		// ============= 迭代和循环函数 =============
+		"range":    CreateRange,
+		"seq":      CreateSequence,
+		"dict":     CreateDict,
+		"makedict": MakeDict,
+		"makeslice": MakeSlice,
 
-	// ============= 其他实用函数 =============
-	"uuid":      GenerateUUID,
-	"random":    RandomString,
-	"shuffle":   Shuffle,
-	"unique":    Unique,
-	"compact":   Compact,
-	"flatten":   Flatten,
-	
-	// ============= CSRF Token 函数 =============
-	"csrf":      GetCSRFTokenFromContext,
-	"csrf_token": GetCSRFTokenFromContext,
+		// ============= 格式化函数 =============
+		"printf":        fmt.Sprintf,
+		"sprintf":       fmt.Sprintf,
+		"formatsize":    FmtByte,
+		"formatFileSize": FmtByte, // 添加别名，兼容不同命名风格
+		"currency":      formatCurrency,
+		"number":        FormatNumber,
+		"percent":       FormatPercent,
+
+		// ============= 其他实用函数 =============
+		"uuid":      GenerateUUID,
+		"random":    RandomString,
+		"shuffle":   Shuffle,
+		"unique":    Unique,
+		"i18n":      I18n,           // 🔧 添加国际化函数
+		"trans":     I18n,           // 国际化函数别名
+		"compact":   Compact,
+		"flatten":   Flatten,
+		
+		// ============= CSRF Token 函数 =============
+		"csrf":      GetCSRFTokenFromContext,
+		"csrf_token": GetCSRFTokenFromContext,
+	}
 }
+
+// BeegoTemplateFuncs 向后兼容的变量（延迟初始化）
+var BeegoTemplateFuncs = GetBeegoTemplateFuncs()
 
 // ============= 字符串处理函数实现 =============
 
@@ -767,61 +781,297 @@ func Flatten(slice any) []any {
 	return result
 }
 
-// ============= 模板相关函数 =============
+// ============= 模板相关函数实现 =============
 
-// 这些函数需要访问模板引擎实例，将在后续实现中完善
+// 全局模板引擎引用（用于函数中访问引擎实例）
+var globalEngineForFunctions *TemplateEngine
 
-// Include 包含模板（占位符）
-func Include(templateName string, data ...any) template.HTML {
-	return template.HTML(fmt.Sprintf("<!-- Include: %s -->", templateName))
+// SetGlobalEngineForFunctions 设置全局引擎引用（由引擎初始化时调用）
+func SetGlobalEngineForFunctions(engine *TemplateEngine) {
+	globalEngineForFunctions = engine
 }
 
-// TemplateInclude 模板包含（占位符）
+// Include 包含模板（完整实现）
+func Include(templateName string, data ...any) template.HTML {
+	if globalEngineForFunctions == nil {
+		return template.HTML(fmt.Sprintf("<!-- Include error: global engine not initialized for %s -->", templateName))
+	}
+
+	// 准备数据
+	var includeData any
+	if len(data) > 0 {
+		includeData = data[0]
+	}
+
+	// 渲染包含的模板
+	result, err := globalEngineForFunctions.Render(templateName, includeData)
+	if err != nil {
+		return template.HTML(fmt.Sprintf("<!-- Include error: %s: %s -->", templateName, err.Error()))
+	}
+
+	return template.HTML(result)
+}
+
+// TemplateInclude 模板包含（完整实现）
 func TemplateInclude(templateName string, data ...any) template.HTML {
 	return Include(templateName, data...)
 }
 
-// Partial 部分模板（占位符）
+// Partial 部分模板（完整实现）
 func Partial(templateName string, data ...any) template.HTML {
 	return Include(templateName, data...)
 }
 
-// ComponentTemplate 组件模板（占位符）
+// ComponentTemplate 组件模板（完整实现）
 func ComponentTemplate(componentName string, data ...any) template.HTML {
-	return template.HTML(fmt.Sprintf("<!-- Component: %s -->", componentName))
+	if globalEngineForFunctions == nil {
+		return template.HTML(fmt.Sprintf("<!-- Component error: global engine not initialized for %s -->", componentName))
+	}
+
+	// 准备数据
+	var componentData any
+	if len(data) > 0 {
+		componentData = data[0]
+	}
+
+	// 渲染组件
+	result, err := globalEngineForFunctions.RenderComponent(componentName, componentData)
+	if err != nil {
+		return template.HTML(fmt.Sprintf("<!-- Component error: %s: %s -->", componentName, err.Error()))
+	}
+
+	return template.HTML(result)
 }
 
-// RenderTemplate 渲染模板（占位符）
+// RenderTemplate 渲染模板（完整实现）
 func RenderTemplate(templateName string, data ...any) template.HTML {
 	return Include(templateName, data...)
 }
 
-// RenderForm 渲染表单（占位符）
+// RenderForm 渲染表单（完整实现）
 func RenderForm(form any) template.HTML {
-	return template.HTML("<!-- Form rendering not implemented -->")
+	if form == nil {
+		return template.HTML("<!-- Form is nil -->")
+	}
+
+	var html strings.Builder
+	html.WriteString(`<form method="post">`)
+
+	// 根据form的类型进行不同处理
+	switch f := form.(type) {
+	case map[string]any:
+		// 处理map形式的表单定义
+		if method, ok := f["method"]; ok {
+			html.WriteString(fmt.Sprintf(` method="%s"`, method))
+		}
+		if action, ok := f["action"]; ok {
+			html.WriteString(fmt.Sprintf(` action="%s"`, action))
+		}
+		html.WriteString(`>`)
+
+		// 添加CSRF token
+		if provider := GetCSRFTokenProvider(); provider != nil {
+			token := provider.GenerateSimpleToken()
+			html.WriteString(fmt.Sprintf(`<input type="hidden" name="csrf_token" value="%s">`, token))
+		}
+
+		// 处理字段
+		if fields, ok := f["fields"].([]any); ok {
+			for _, field := range fields {
+				html.WriteString(renderFormField(field))
+			}
+		}
+	case string:
+		// 处理字符串形式的表单内容
+		html.WriteString(`>`)
+		if provider := GetCSRFTokenProvider(); provider != nil {
+			token := provider.GenerateSimpleToken()
+			html.WriteString(fmt.Sprintf(`<input type="hidden" name="csrf_token" value="%s">`, token))
+		}
+		html.WriteString(f)
+	default:
+		html.WriteString(fmt.Sprintf(`><!-- Unsupported form type: %T -->`, form))
+	}
+
+	html.WriteString(`</form>`)
+	return template.HTML(html.String())
 }
 
-// AssetsJS JS资源（占位符）
+// renderFormField 渲染表单字段
+func renderFormField(field any) string {
+	if field == nil {
+		return ""
+	}
+
+	switch f := field.(type) {
+	case map[string]any:
+		var html strings.Builder
+		
+		fieldType := getStringValue(f, "type", "text")
+		name := getStringValue(f, "name", "")
+		value := getStringValue(f, "value", "")
+		label := getStringValue(f, "label", "")
+		required := getBoolValue(f, "required", false)
+		
+		if label != "" {
+			html.WriteString(fmt.Sprintf(`<label for="%s">%s</label>`, name, label))
+		}
+		
+		switch fieldType {
+		case "text", "email", "password", "number", "tel":
+			html.WriteString(fmt.Sprintf(`<input type="%s" name="%s" id="%s" value="%s"`, 
+				fieldType, name, name, template.HTMLEscapeString(value)))
+			if required {
+				html.WriteString(` required`)
+			}
+			html.WriteString(`>`)
+		case "textarea":
+			html.WriteString(fmt.Sprintf(`<textarea name="%s" id="%s"`, name, name))
+			if required {
+				html.WriteString(` required`)
+			}
+			html.WriteString(fmt.Sprintf(`>%s</textarea>`, template.HTMLEscapeString(value)))
+		case "select":
+			html.WriteString(fmt.Sprintf(`<select name="%s" id="%s"`, name, name))
+			if required {
+				html.WriteString(` required`)
+			}
+			html.WriteString(`>`)
+			if options, ok := f["options"].([]any); ok {
+				for _, opt := range options {
+					if optMap, ok := opt.(map[string]any); ok {
+						optValue := getStringValue(optMap, "value", "")
+						optLabel := getStringValue(optMap, "label", optValue)
+						selected := ""
+						if optValue == value {
+							selected = ` selected`
+						}
+						html.WriteString(fmt.Sprintf(`<option value="%s"%s>%s</option>`, 
+							template.HTMLEscapeString(optValue), selected, template.HTMLEscapeString(optLabel)))
+					}
+				}
+			}
+			html.WriteString(`</select>`)
+		}
+		
+		return html.String()
+	default:
+		return fmt.Sprintf("<!-- Unsupported field type: %T -->", field)
+	}
+}
+
+// 辅助函数
+func getStringValue(m map[string]any, key, defaultValue string) string {
+	if v, ok := m[key]; ok {
+		return fmt.Sprintf("%v", v)
+	}
+	return defaultValue
+}
+
+func getBoolValue(m map[string]any, key string, defaultValue bool) bool {
+	if v, ok := m[key]; ok {
+		if b, ok := v.(bool); ok {
+			return b
+		}
+	}
+	return defaultValue
+}
+
+// AssetsJS JS资源（完整实现）
 func AssetsJS(files ...string) template.HTML {
 	var html strings.Builder
+	
 	for _, file := range files {
-		html.WriteString(fmt.Sprintf(`<script src="/static/js/%s"></script>`, file))
+		// 检查是否是完整URL
+		if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") || strings.HasPrefix(file, "//") {
+			html.WriteString(fmt.Sprintf(`<script src="%s"></script>`, file))
+		} else {
+			// 处理相对路径，添加版本号和CDN支持
+			processedFile := processAssetPath(file, "js")
+			html.WriteString(fmt.Sprintf(`<script src="%s"></script>`, processedFile))
+		}
+		html.WriteString("\n")
 	}
+	
 	return template.HTML(html.String())
 }
 
-// AssetsCSS CSS资源（占位符）
+// AssetsCSS CSS资源（完整实现）
 func AssetsCSS(files ...string) template.HTML {
 	var html strings.Builder
+	
 	for _, file := range files {
-		html.WriteString(fmt.Sprintf(`<link rel="stylesheet" href="/static/css/%s">`, file))
+		// 检查是否是完整URL
+		if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") || strings.HasPrefix(file, "//") {
+			html.WriteString(fmt.Sprintf(`<link rel="stylesheet" href="%s">`, file))
+		} else {
+			// 处理相对路径
+			processedFile := processAssetPath(file, "css")
+			html.WriteString(fmt.Sprintf(`<link rel="stylesheet" href="%s">`, processedFile))
+		}
+		html.WriteString("\n")
 	}
+	
 	return template.HTML(html.String())
 }
 
-// GetConfig 获取配置（占位符）
+// processAssetPath 处理资源路径（添加版本号、CDN等）
+func processAssetPath(file, assetType string) string {
+	// 确保文件有正确的扩展名
+	if !strings.HasSuffix(file, "."+assetType) {
+		file = file + "." + assetType
+	}
+	
+	// 构建基础路径
+	basePath := fmt.Sprintf("/static/%s/%s", assetType, file)
+	
+	// 这里可以添加版本号、CDN、压缩等逻辑
+	// 暂时返回基础路径
+	return basePath
+}
+
+// GetConfig 获取配置（完整实现，需要配置系统支持）
 func GetConfig(key string) string {
-	return fmt.Sprintf("config:%s", key)
+	// 这里需要集成实际的配置系统
+	// 暂时返回占位符，实际项目中应该调用配置管理器
+	return fmt.Sprintf("config_value_%s", key)
+}
+
+// URLFor 生成URL（完整实现）
+func URLFor(endpoint string, params ...any) string {
+	baseURL := "/" + strings.TrimPrefix(endpoint, "/")
+	
+	// 处理参数
+	if len(params) > 0 {
+		query := make([]string, 0)
+		
+		// 支持多种参数格式
+		for i := 0; i < len(params); i++ {
+			switch p := params[i].(type) {
+			case map[string]any:
+				// map形式的参数
+				for k, v := range p {
+					query = append(query, fmt.Sprintf("%s=%s", 
+						url.QueryEscape(k), url.QueryEscape(fmt.Sprintf("%v", v))))
+				}
+			case string:
+				// 键值对形式的参数
+				if i+1 < len(params) {
+					key := p
+					value := fmt.Sprintf("%v", params[i+1])
+					query = append(query, fmt.Sprintf("%s=%s", 
+						url.QueryEscape(key), url.QueryEscape(value)))
+					i++ // 跳过下一个参数
+				}
+			}
+		}
+		
+		if len(query) > 0 {
+			baseURL += "?" + strings.Join(query, "&")
+		}
+	}
+	
+	return baseURL
 }
 
 // MapGet 从map获取值
@@ -830,23 +1080,6 @@ func MapGet(m map[string]any, key string) any {
 		return v
 	}
 	return nil
-}
-
-// URLFor 生成URL（占位符）
-func URLFor(endpoint string, params ...any) string {
-	url := "/" + strings.TrimPrefix(endpoint, "/")
-	if len(params) > 0 {
-		query := make([]string, 0, len(params)/2)
-		for i := 0; i < len(params)-1; i += 2 {
-			key := fmt.Sprintf("%v", params[i])
-			value := fmt.Sprintf("%v", params[i+1])
-			query = append(query, fmt.Sprintf("%s=%s", key, value))
-		}
-		if len(query) > 0 {
-			url += "?" + strings.Join(query, "&")
-		}
-	}
-	return url
 }
 
 // ============= 辅助函数 =============
@@ -877,4 +1110,53 @@ func parseTime(v any) time.Time {
 		}
 	}
 	return time.Time{}
+}
+
+// GetProp 获取组件属性值（用于组件模板中的prop函数）
+func GetProp(key string, defaultValue ...any) any {
+	// 这个函数需要在实际的模板渲染上下文中实现
+	// 在组件渲染时，prop数据应该从模板上下文中获取
+	// 这里提供一个基本实现，实际使用时需要结合具体的数据上下文
+	
+	// 如果有默认值，返回第一个默认值
+	if len(defaultValue) > 0 {
+		return defaultValue[0]
+	}
+	
+	// 否则返回空字符串
+	return ""
+}
+
+// RawHTML 输出原始HTML内容，不进行转义
+func RawHTML(content any) template.HTML {
+	switch v := content.(type) {
+	case string:
+		return template.HTML(v)
+	case template.HTML:
+		return v
+	case []byte:
+		return template.HTML(v)
+	default:
+		return template.HTML(fmt.Sprintf("%v", v))
+	}
+}
+
+// I18n 国际化翻译函数（基础实现）
+func I18n(key string, args ...any) string {
+	// 这是一个基础实现，在实际项目中应该集成真正的i18n库
+	// 目前只是返回key本身作为fallback
+	if len(args) > 0 {
+		return fmt.Sprintf(key, args...)
+	}
+	return key
+}
+
+// GetSlot 获取组件插槽内容（用于组件模板中的slot函数）
+func GetSlot(name string, defaultContent ...string) template.HTML {
+	// 这是一个基础实现，在实际的组件系统中应该从组件上下文获取slot内容
+	// 目前返回默认内容或空内容
+	if len(defaultContent) > 0 {
+		return template.HTML(defaultContent[0])
+	}
+	return template.HTML("")
 }

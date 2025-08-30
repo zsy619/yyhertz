@@ -345,7 +345,7 @@ func simulateComponentRender(componentName string, props map[string]any, slots m
 }
 
 // simulateTemplateFunctions 模拟模板函数使用
-func simulateTemplateFunctions(data map[string]any) string {
+func simulateTemplateFunctions(_ map[string]any) string {
 	// 模拟使用各种模板函数的HTML输出
 	html := `<!DOCTYPE html>
 <html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header { 
+            background: #2c3e50; 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .header h1 { 
+            font-size: 2.5rem; 
+            margin-bottom: 10px; 
+        }
+        .stats { 
+            background: #34495e; 
+            color: white; 
+            padding: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 20px; 
+        }
+        .stat-item { 
+            text-align: center; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 8px; 
+        }
+        .stat-number { 
+            font-size: 2rem; 
+            font-weight: bold; 
+            color: #3498db; 
+        }
+        .stat-label { 
+            font-size: 0.9rem; 
+            opacity: 0.8; 
+            margin-top: 5px; 
+        }
+        .templates { 
+            padding: 30px; 
+        }
+        .templates h2 { 
+            color: #2c3e50; 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        .template-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+        }
+        .template-card { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            border-radius: 8px; 
+            padding: 20px; 
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .template-card:hover { 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            transform: translateY(-3px); 
+        }
+        .template-name { 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .template-type { 
+            display: inline-block; 
+            padding: 3px 8px; 
+            border-radius: 12px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+        }
+        .type-layout { 
+            background: #e3f2fd; 
+            color: #1976d2; 
+        }
+        .type-component { 
+            background: #f3e5f5; 
+            color: #7b1fa2; 
+        }
+        .type-page { 
+            background: #e8f5e8; 
+            color: #388e3c; 
+        }
+        .template-info { 
+            color: #666; 
+            font-size: 0.9rem; 
+            margin: 5px 0; 
+        }
+        .template-size { 
+            color: #888; 
+            font-size: 0.8rem; 
+        }
+        .template-actions { 
+            margin-top: 15px; 
+            display: flex; 
+            gap: 10px; 
+        }
+        .btn { 
+            padding: 6px 12px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+            text-decoration: none; 
+            display: inline-block; 
+            transition: all 0.3s ease; 
+        }
+        .btn-primary { 
+            background: #3498db; 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background: #2980b9; 
+        }
+        .btn-secondary { 
+            background: #95a5a6; 
+            color: white; 
+        }
+        .btn-secondary:hover { 
+            background: #7f8c8d; 
+        }
+        .empty-state { 
+            text-align: center; 
+            color: #666; 
+            font-style: italic; 
+            padding: 40px; 
+        }
+        .search-box { 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        .search-input { 
+            padding: 10px 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 25px; 
+            width: 300px; 
+            max-width: 100%; 
+            font-size: 14px; 
+        }
+        .filter-tabs { 
+            display: flex; 
+            justify-content: center; 
+            margin-bottom: 20px; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+        }
+        .filter-tab { 
+            padding: 8px 16px; 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+        .filter-tab.active { 
+            background: #3498db; 
+            color: white; 
+            border-color: #3498db; 
+        }
+        .footer { 
+            background: #f8f9fa; 
+            text-align: center; 
+            padding: 20px; 
+            color: #666; 
+            border-top: 1px solid #eee; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}}</h1>
+            <p>📝 管理和预览YYHertz模板文件</p>
+        </div>
+        
+        <!-- 统计信息 -->
+        {{if .Stats}}
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">{{.Stats.total}}</div>
+                <div class="stat-label">总模板数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{.Stats.layouts}}</div>
+                <div class="stat-label">布局模板</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{.Stats.components}}</div>
+                <div class="stat-label">组件模板</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{.Stats.pages}}</div>
+                <div class="stat-label">页面模板</div>
+            </div>
+        </div>
+        {{end}}
+        
+        <div class="templates">
+            <h2>📋 模板文件列表</h2>
+            
+            <!-- 搜索和过滤 -->
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索模板文件..." onkeyup="filterTemplates()">
+            </div>
+            
+            <div class="filter-tabs">
+                <div class="filter-tab active" onclick="filterByType('all')">全部</div>
+                <div class="filter-tab" onclick="filterByType('layout')">布局模板</div>
+                <div class="filter-tab" onclick="filterByType('component')">组件模板</div>
+                <div class="filter-tab" onclick="filterByType('page')">页面模板</div>
+            </div>
+            
+            <!-- 模板列表 -->
+            {{if .Templates}}
+            <div class="template-grid" id="templateGrid">
+                {{range .Templates}}
+                <div class="template-card" data-type="{{.type}}" data-name="{{.name}}">
+                    <div class="template-name">
+                        📄 {{.name}}
+                        <span class="template-type type-{{.type}}">{{.type}}</span>
+                    </div>
+                    <div class="template-info">
+                        📍 路径: {{.path}}
+                    </div>
+                    <div class="template-info">
+                        🕒 修改时间: {{.modified}}
+                    </div>
+                    <div class="template-size">
+                        📏 文件大小: {{formatFileSize .size}} bytes
+                    </div>
+                    <div class="template-actions">
+                        <a href="/templates/{{.name}}" class="btn btn-primary">👁️ 查看</a>
+                        <button class="btn btn-secondary" onclick="previewTemplate('{{.name}}')">🔍 预览</button>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <div class="empty-state">
+                <p>📭 没有找到模板文件</p>
+                <p>请检查views目录是否存在模板文件</p>
+            </div>
+            {{end}}
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2024 YYHertz 模板管理系统 | 最后更新: {{dateformat now "2006-01-02 15:04:05"}}</p>
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        
+        function filterByType(type) {
+            currentFilter = type;
+            
+            // 更新选中状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            applyFilters();
+        }
+        
+        function filterTemplates() {
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.template-card');
+            
+            cards.forEach(card => {
+                const type = card.dataset.type;
+                const name = card.dataset.name.toLowerCase();
+                
+                const matchesType = currentFilter === 'all' || type === currentFilter;
+                const matchesSearch = searchTerm === '' || name.includes(searchTerm);
+                
+                if (matchesType && matchesSearch) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        function previewTemplate(templateName) {
+            // 简单的模板预览功能
+            const demoData = {
+                template: templateName,
+                content: `{{define "${templateName}"}}\n<h1>{{.Title}}</h1>\n<p>{{.Content}}</p>\n{{end}}`
+            };
+            
+            fetch('/templates/preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(demoData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(data.result);
+                    newWindow.document.close();
+                } else {
+                    alert('预览失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('预览请求失败: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

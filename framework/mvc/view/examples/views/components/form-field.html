@@ -1,0 +1,114 @@
+<div class="form-group" style="margin-bottom: 1rem;">
+    {{if prop "label"}}
+    <label for="{{prop "id"}}" style="display: block; margin-bottom: 0.25rem; font-weight: 500; color: #495057;">
+        {{prop "label"}}
+        {{if prop "required"}}<span style="color: #dc3545;">*</span>{{end}}
+    </label>
+    {{end}}
+    
+    {{$type := prop "type" "text"}}
+    {{$classes := "form-control"}}
+    {{if prop "error"}}{{$classes = printf "%s is-invalid" $classes}}{{end}}
+    {{if prop "large"}}{{$classes = printf "%s form-control-lg" $classes}}{{end}}
+    {{if prop "small"}}{{$classes = printf "%s form-control-sm" $classes}}{{end}}
+    
+    {{if eq $type "textarea"}}
+    <textarea
+        id="{{prop "id"}}"
+        name="{{prop "name"}}"
+        class="{{$classes}}"
+        style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid {{if prop "error"}}#dc3545{{else}}#ced4da{{end}}; border-radius: 0.375rem; font-size: 1rem; line-height: 1.5;"
+        {{if prop "placeholder"}}placeholder="{{prop "placeholder"}}"{{end}}
+        {{if prop "required"}}required{{end}}
+        {{if prop "readonly"}}readonly{{end}}
+        {{if prop "disabled"}}disabled{{end}}
+        {{if prop "rows"}}rows="{{prop "rows"}}"{{else}}rows="3"{{end}}
+    >{{prop "value"}}</textarea>
+    
+    {{else if eq $type "select"}}
+    <select
+        id="{{prop "id"}}"
+        name="{{prop "name"}}"
+        class="{{$classes}}"
+        style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid {{if prop "error"}}#dc3545{{else}}#ced4da{{end}}; border-radius: 0.375rem; font-size: 1rem; line-height: 1.5; background: white;"
+        {{if prop "required"}}required{{end}}
+        {{if prop "disabled"}}disabled{{end}}
+        {{if prop "multiple"}}multiple{{end}}
+    >
+        {{if not (prop "multiple")}}
+        <option value="">{{prop "placeholder" "请选择..."}}</option>
+        {{end}}
+        {{range prop "options"}}
+        <option value="{{.value}}" {{if eq .value $.value}}selected{{end}} {{if .disabled}}disabled{{end}}>
+            {{.label}}
+        </option>
+        {{end}}
+    </select>
+    
+    {{else if eq $type "checkbox"}}
+    <div class="form-check">
+        <input
+            type="checkbox"
+            id="{{prop "id"}}"
+            name="{{prop "name"}}"
+            value="{{prop "checkValue" "1"}}"
+            class="form-check-input"
+            style="margin-right: 0.5rem;"
+            {{if prop "checked"}}checked{{end}}
+            {{if prop "required"}}required{{end}}
+            {{if prop "disabled"}}disabled{{end}}
+        />
+        <label for="{{prop "id"}}" class="form-check-label" style="color: #495057;">
+            {{prop "checkLabel" "选中此项"}}
+        </label>
+    </div>
+    
+    {{else if eq $type "radio"}}
+    {{range prop "options"}}
+    <div class="form-check" style="margin-bottom: 0.5rem;">
+        <input
+            type="radio"
+            id="{{$.id}}_{{.value}}"
+            name="{{$.name}}"
+            value="{{.value}}"
+            class="form-check-input"
+            style="margin-right: 0.5rem;"
+            {{if eq .value $.value}}checked{{end}}
+            {{if $.required}}required{{end}}
+            {{if $.disabled}}disabled{{end}}
+        />
+        <label for="{{$.id}}_{{.value}}" class="form-check-label" style="color: #495057;">
+            {{.label}}
+        </label>
+    </div>
+    {{end}}
+    
+    {{else}}
+    <input
+        type="{{$type}}"
+        id="{{prop "id"}}"
+        name="{{prop "name"}}"
+        value="{{prop "value"}}"
+        class="{{$classes}}"
+        style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid {{if prop "error"}}#dc3545{{else}}#ced4da{{end}}; border-radius: 0.375rem; font-size: 1rem; line-height: 1.5;"
+        {{if prop "placeholder"}}placeholder="{{prop "placeholder"}}"{{end}}
+        {{if prop "required"}}required{{end}}
+        {{if prop "readonly"}}readonly{{end}}
+        {{if prop "disabled"}}disabled{{end}}
+        {{if prop "min"}}min="{{prop "min"}}"{{end}}
+        {{if prop "max"}}max="{{prop "max"}}"{{end}}
+        {{if prop "step"}}step="{{prop "step"}}"{{end}}
+        {{if prop "pattern"}}pattern="{{prop "pattern"}}"{{end}}
+    />
+    {{end}}
+    
+    {{if prop "help"}}
+    <small style="display: block; margin-top: 0.25rem; color: #6c757d;">{{prop "help"}}</small>
+    {{end}}
+    
+    {{if prop "error"}}
+    <div style="display: block; margin-top: 0.25rem; color: #dc3545; font-size: 0.875rem;">
+        {{prop "error"}}
+    </div>
+    {{end}}
+</div>

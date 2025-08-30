@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+    <!-- HTML头部区块 -->
+    {{.HtmlHead}}
+</head>
+<body>
+    <header>
+        <h1>LayoutSections 简单演示</h1>
+        <!-- 头部区块 -->
+        {{.Header}}
+    </header>
+    
+    <div class="container">
+        <div class="sidebar">
+            <!-- 侧边栏区块 -->
+            {{.SideBar}}
+        </div>
+        
+        <div class="content">
+            <!-- 主要内容 -->
+            {{.LayoutContent}}
+        </div>
+    </div>
+    
+    <footer>
+        <!-- 页脚区块 -->
+        {{.Footer}}
+    </footer>
+    
+    <!-- 脚本区块 -->
+    {{.Scripts}}
+</body>
+</html>

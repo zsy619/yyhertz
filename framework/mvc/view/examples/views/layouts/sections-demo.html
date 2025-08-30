@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title | default "LayoutSections 演示"}}</title>
+    
+    <!-- 基础样式 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- 自定义HTML头部内容区块 -->
+    {{.HtmlHead}}
+    
+    <!-- 页面特定样式区块 -->
+    {{.Styles}}
+    
+    <style>
+        .sections-demo { min-height: 100vh; display: flex; flex-direction: column; }
+        .main-content { flex: 1; }
+        .sidebar-demo { background: #f8f9fa; border-left: 3px solid #007bff; padding: 1rem; }
+        .section-placeholder { 
+            border: 2px dashed #dee2e6; 
+            padding: 1rem; 
+            margin: 0.5rem 0; 
+            background: #f8f9fa; 
+            text-align: center; 
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body class="sections-demo">
+    <!-- 顶部导航栏区块 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">LayoutSections 演示</a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link text-light">区块化布局系统</span>
+            </div>
+            <!-- 导航区块 -->
+            {{.Navigation}}
+        </div>
+    </nav>
+    
+    <!-- 面包屑导航区块 -->
+    <div class="container mt-2">
+        {{.Breadcrumb}}
+    </div>
+    
+    <!-- 主要内容区域 -->
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- 左侧边栏区块 -->
+            <div class="col-md-3">
+                {{if .SideBar}}
+                    {{.SideBar}}
+                {{else if .Sidebar}}
+                    {{.Sidebar}}
+                {{else}}
+                    <div class="section-placeholder">
+                        <small>侧边栏区块 ({{.SideBar}} 或 {{.Sidebar}})</small>
+                    </div>
+                {{end}}
+            </div>
+            
+            <!-- 主内容区域 -->
+            <div class="col-md-9">
+                <!-- 页面头部区块 -->
+                <div class="mb-3">
+                    {{.Header}}
+                </div>
+                
+                <!-- 警告/消息区块 -->
+                {{.Alert}}
+                
+                <!-- 主要内容 -->
+                <div class="card">
+                    <div class="card-body">
+                        {{.LayoutContent}}
+                    </div>
+                </div>
+                
+                <!-- 页面底部操作区块 -->
+                <div class="mt-3">
+                    {{.Footer}}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚区块 -->
+    <footer class="bg-dark text-white text-center py-3 mt-auto">
+        <div class="container">
+            <p class="mb-0">&copy; 2024 YYHertz 模板引擎 - LayoutSections 演示</p>
+            <!-- 自定义页脚内容区块 -->
+            {{.FooterContent}}
+        </div>
+    </footer>
+    
+    <!-- 基础JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 页面脚本区块 -->
+    {{.Scripts}}
+    
+    <!-- 模态框区块 -->
+    {{.Modal}}
+    
+    <!-- 调试信息（仅在开发模式显示）-->
+    {{if .Debug}}
+    <div class="position-fixed bottom-0 end-0 m-3">
+        <div class="alert alert-info" style="font-size: 0.8rem;">
+            <strong>布局区块状态:</strong><br>
+            HtmlHead: {{if .HtmlHead}}✓{{else}}✗{{end}} | 
+            SideBar: {{if .SideBar}}✓{{else}}✗{{end}} | 
+            Scripts: {{if .Scripts}}✓{{else}}✗{{end}} | 
+            Modal: {{if .Modal}}✓{{else}}✗{{end}}
+        </div>
+    </div>
+    {{end}}
+    
+    <script>
+        // 页面加载完成提示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 LayoutSections 演示页面已加载');
+            
+            // 显示已加载的区块信息
+            const sections = ['HtmlHead', 'SideBar', 'Scripts', 'Styles', 'Navigation', 'Modal'];
+            const loadedSections = [];
+            
+            sections.forEach(section => {
+                // 简单检查区块是否有内容
+                if (document.body.innerHTML.includes(`{{.${section}}}`)) {
+                    // 占位符未被替换，说明区块为空
+                } else {
+                    loadedSections.push(section);
+                }
+            });
+            
+            if (loadedSections.length > 0) {
+                console.log('✓ 已加载的布局区块:', loadedSections.join(', '));
+            }
+        });
+    </script>
+</body>
+</html>

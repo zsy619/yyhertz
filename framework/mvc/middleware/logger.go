@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/sirupsen/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
 	"github.com/zsy619/yyhertz/framework/util"
@@ -112,7 +113,8 @@ func LoggerMiddlewareWithConfig(logConfig *MiddlewareLoggerConfig) Middleware {
 			}
 		}
 
-		config.WithFields(fields).Info("Request started")
+		// 安全地记录请求开始日志
+		safeLogRequest(fields)
 
 		// 继续处理请求
 		ctx.Next(c)
@@ -144,13 +146,138 @@ func LoggerMiddlewareWithConfig(logConfig *MiddlewareLoggerConfig) Middleware {
 		}
 
 		// 根据状态码选择日志级别使用单例日志系统
-		if statusCode >= 500 {
-			config.WithFields(responseFields).Error("Request completed with server error")
-		} else if statusCode >= 400 {
-			config.WithFields(responseFields).Warn("Request completed with client error")
-		} else {
-			config.WithFields(responseFields).Info("Request completed successfully")
+		// 使用安全的日志记录方式，防止panic
+		safeLogWithFields(responseFields, statusCode)
+	}
+}
+
+// safeLogWithFields 安全地记录带字段的日志，防止panic
+func safeLogWithFields(fields map[string]any, statusCode int) {
+	defer func() {
+		if r := recover(); r != nil {
+			// 如果发生panic，使用基础日志记录
+			config.Errorf("Logger middleware panic recovered: %v, status: %d", r, statusCode)
 		}
+	}()
+
+	// 验证和清理字段
+	safeFields := make(map[string]any)
+	for k, v := range fields {
+		if k == "" {
+			continue // 跳过空键名
+		}
+		
+		// 处理可能有问题的值
+		switch val := v.(type) {
+		case nil:
+			safeFields[k] = "<nil>"
+		case string:
+			// 限制字符串长度防止日志过大
+			if len(val) > 10000 {
+				safeFields[k] = val[:10000] + "...[truncated]"
+			} else {
+				safeFields[k] = val
+			}
+		case []byte:
+			// 将字节数组转换为安全的字符串
+			if len(val) > 1000 {
+				safeFields[k] = string(val[:1000]) + "...[truncated]"
+			} else {
+				safeFields[k] = string(val)
+			}
+		default:
+			// 其他类型直接使用，但如果出问题会被recover捕获
+			safeFields[k] = val
+		}
+	}
+
+	// 根据状态码选择日志级别
+	message := getLogMessage(statusCode)
+	
+	// 尝试使用WithFields，如果失败则使用fallback
+	if logEntry := safeCreateLogEntry(safeFields); logEntry != nil {
+		if statusCode >= 500 {
+			logEntry.Error(message)
+		} else if statusCode >= 400 {
+			logEntry.Warn(message)
+		} else {
+			logEntry.Info(message)
+		}
+	} else {
+		// Fallback: 使用简单的日志记录
+		config.Infof("%s (status: %d)", message, statusCode)
+	}
+}
+
+// safeCreateLogEntry 安全地创建带字段的日志条目
+func safeCreateLogEntry(fields map[string]any) *logrus.Entry {
+	defer func() {
+		if recover() != nil {
+			// 如果创建日志条目时发生panic，返回nil让调用方使用fallback
+		}
+	}()
+	
+	// 尝试创建带字段的日志条目
+	return config.WithFields(fields)
+}
+
+// getLogMessage 根据状态码获取日志消息
+func getLogMessage(statusCode int) string {
+	if statusCode >= 500 {
+		return "Request completed with server error"
+	} else if statusCode >= 400 {
+		return "Request completed with client error"
+	} else {
+		return "Request completed successfully"
+	}
+}
+
+// safeLogRequest 安全地记录请求开始日志
+func safeLogRequest(fields map[string]any) {
+	defer func() {
+		if r := recover(); r != nil {
+			// 如果发生panic，使用基础日志记录
+			config.Errorf("Logger middleware panic recovered in request start: %v", r)
+		}
+	}()
+
+	// 验证和清理字段
+	safeFields := make(map[string]any)
+	for k, v := range fields {
+		if k == "" {
+			continue // 跳过空键名
+		}
+		
+		// 处理可能有问题的值
+		switch val := v.(type) {
+		case nil:
+			safeFields[k] = "<nil>"
+		case string:
+			// 限制字符串长度防止日志过大
+			if len(val) > 10000 {
+				safeFields[k] = val[:10000] + "...[truncated]"
+			} else {
+				safeFields[k] = val
+			}
+		case []byte:
+			// 将字节数组转换为安全的字符串
+			if len(val) > 1000 {
+				safeFields[k] = string(val[:1000]) + "...[truncated]"
+			} else {
+				safeFields[k] = string(val)
+			}
+		default:
+			// 其他类型直接使用，但如果出问题会被recover捕获
+			safeFields[k] = val
+		}
+	}
+
+	// 尝试使用WithFields，如果失败则使用fallback
+	if logEntry := safeCreateLogEntry(safeFields); logEntry != nil {
+		logEntry.Info("Request started")
+	} else {
+		// Fallback: 使用简单的日志记录
+		config.Info("Request started")
 	}
 }
 

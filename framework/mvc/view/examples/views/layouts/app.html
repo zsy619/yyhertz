@@ -1,0 +1,68 @@
+{{define "app"}}
+{{template "base" .}}
+
+{{define "content"}}
+<div class="app-layout">
+    {{block "header" .}}
+    <div class="header">
+        <div class="container">
+            <h1>{{.meta.title | default "YYHertz 应用"}}</h1>
+            {{if .user}}
+            <div style="float: right; margin-top: 5px;">
+                欢迎, {{.user.name}} | <a href="/logout" style="color: #ecf0f1;">登出</a>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    
+    {{block "navigation" .}}
+    <div class="nav">
+        <div class="container">
+            {{range .navigation | default (slice)}}
+            <a href="{{.url}}" {{if .active}}style="background: #4a6078;"{{end}}>{{.name}}</a>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    
+    <div class="main">
+        <div class="container">
+            {{block "breadcrumb" .}}
+            {{if .breadcrumb}}
+            <nav style="margin-bottom: 1rem;">
+                {{range $i, $crumb := .breadcrumb}}
+                {{if ne $i 0}} > {{end}}
+                {{if .url}}<a href="{{.url}}">{{.name}}</a>{{else}}{{.name}}{{end}}
+                {{end}}
+            </nav>
+            {{end}}
+            {{end}}
+            
+            {{block "alerts" .}}
+            {{if .alerts}}
+            {{range .alerts}}
+            <div class="alert alert-{{.type}}" style="padding: 0.75rem; margin: 1rem 0; border-radius: 5px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724;">
+                {{.message}}
+            </div>
+            {{end}}
+            {{end}}
+            {{end}}
+            
+            <div class="content-wrapper">
+                {{block "main" .}}{{end}}
+            </div>
+        </div>
+    </div>
+    
+    {{block "footer" .}}
+    <div class="footer">
+        <div class="container">
+            <p>&copy; {{dateformat .now "2006"}} YYHertz Framework. 保留所有权利.</p>
+            <p><small>页面生成时间: {{dateformat .now "2006-01-02 15:04:05"}} | 版本: {{.version | default "1.0.0"}}</small></p>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+{{end}}

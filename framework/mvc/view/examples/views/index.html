@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header { 
+            background: #2c3e50; 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .features { 
+            padding: 40px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+        }
+        .feature-card { 
+            background: #f8f9fa; 
+            padding: 25px; 
+            border-radius: 8px; 
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        .feature-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
+        }
+        .feature-card h3 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .feature-card p { 
+            color: #666; 
+            line-height: 1.6; 
+            margin-bottom: 15px; 
+        }
+        .feature-link { 
+            display: inline-block; 
+            color: #3498db; 
+            text-decoration: none; 
+            font-weight: bold; 
+            padding: 8px 16px; 
+            border: 2px solid #3498db; 
+            border-radius: 5px; 
+            transition: all 0.3s ease; 
+        }
+        .feature-link:hover { 
+            background: #3498db; 
+            color: white; 
+        }
+        .footer { 
+            background: #34495e; 
+            color: white; 
+            text-align: center; 
+            padding: 20px; 
+        }
+        .timestamp { 
+            background: #ecf0f1; 
+            padding: 15px; 
+            text-align: center; 
+            color: #7f8c8d; 
+            font-size: 0.9rem; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}} - ✅ 路径修复完成！🚀 热重载测试</h1>
+            <p>{{.Description}} (热重载测试时间: {{dateformat .Now "15:04:05"}})</p>
+        </div>
+        
+        <div class="features">
+            {{range .Features}}
+            <div class="feature-card">
+                <h3>{{.icon}} {{.title}}</h3>
+                <p>{{.description}}</p>
+                <a href="{{.url}}" class="feature-link">立即体验</a>
+            </div>
+            {{end}}
+        </div>
+        
+        <div class="timestamp">
+            <p>页面生成时间: {{dateformat .Now "2006年01月02日 15:04:05"}}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2024 YYHertz 模板引擎演示 | 基于CloudWeGo/Hertz构建</p>
+        </div>
+    </div>
+</body>
+</html>

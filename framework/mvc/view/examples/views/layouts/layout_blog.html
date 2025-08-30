@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - YYHertz 技术博客</title>
+    
+    <!-- 基础样式 -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", "PingFang SC", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f6fa;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+        .content-area {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 2rem;
+        }
+        .sidebar-area {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            height: fit-content;
+        }
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+    </style>
+    
+    <!-- LayoutSections: HtmlHead 区块 -->
+    {{.HtmlHead}}
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>🚀 YYHertz 技术博客</h1>
+            <p>{{.Description}}</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-layout">
+            <main class="content-area">
+                <!-- 主要内容区域 -->
+                {{.LayoutContent}}
+            </main>
+            
+            <aside class="sidebar-area">
+                <!-- LayoutSections: Sidebar 区块 -->
+                {{.Sidebar}}
+                
+                <!-- 默认侧边栏内容 -->
+                <div class="sidebar-default">
+                    <h3>📋 文章分类</h3>
+                    <ul style="list-style: none; padding: 0; margin: 1rem 0;">
+                        <li style="padding: 0.5rem 0;"><a href="#" style="color: #667eea; text-decoration: none;">框架教程</a></li>
+                        <li style="padding: 0.5rem 0;"><a href="#" style="color: #667eea; text-decoration: none;">性能优化</a></li>
+                        <li style="padding: 0.5rem 0;"><a href="#" style="color: #667eea; text-decoration: none;">最佳实践</a></li>
+                        <li style="padding: 0.5rem 0;"><a href="#" style="color: #667eea; text-decoration: none;">开发技巧</a></li>
+                    </ul>
+                    
+                    <h3>🔥 热门标签</h3>
+                    <div style="margin: 1rem 0;">
+                        <span class="tag">Go</span>
+                        <span class="tag">框架</span>
+                        <span class="tag">模板</span>
+                        <span class="tag">性能</span>
+                    </div>
+                    
+                    <style>
+                        .tag {
+                            display: inline-block;
+                            background: #e3f2fd;
+                            color: #1976d2;
+                            padding: 0.3rem 0.8rem;
+                            border-radius: 15px;
+                            font-size: 0.9rem;
+                            margin: 0.2rem;
+                            text-decoration: none;
+                        }
+                        .tag:hover {
+                            background: #bbdefb;
+                        }
+                    </style>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 YYHertz 框架 | 技术博客演示</p>
+            <p><small>高性能 Go Web 框架 • MVC 架构 • 模板引擎</small></p>
+        </div>
+    </footer>
+
+    <!-- LayoutSections: Scripts 区块 -->
+    {{.Scripts}}
+    
+    <!-- 默认脚本 -->
+    <script>
+        // 页面加载完成提示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📖 YYHertz 博客页面加载完成');
+        });
+    </script>
+</body>
+</html>

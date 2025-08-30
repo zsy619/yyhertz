@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .section { 
+            padding: 25px; 
+            border-bottom: 1px solid #eee; 
+        }
+        .section:last-child { border-bottom: none; }
+        .section h2 { 
+            color: #2c3e50; 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .demo-box { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+            border-left: 4px solid #3498db; 
+        }
+        .code { 
+            background: #2d3748; 
+            color: #e2e8f0; 
+            padding: 15px; 
+            border-radius: 5px; 
+            font-family: 'Courier New', monospace; 
+            margin: 10px 0; 
+            white-space: pre-wrap;
+        }
+        .item-list { 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+        }
+        .item { 
+            padding: 10px 15px; 
+            border-bottom: 1px solid #eee; 
+            display: flex; 
+            justify-content: space-between; 
+        }
+        .item:last-child { border-bottom: none; }
+        .price { 
+            font-weight: bold; 
+            color: #e74c3c; 
+        }
+        .price.cheap { color: #27ae60; }
+        .alert-box { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 10px; 
+            border: 1px solid #f5c6cb; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}}</h1>
+            <p>体验丰富的Beego风格模板函数库</p>
+        </div>
+        
+        <!-- 日期时间函数 -->
+        <div class="section">
+            <h2>📅 日期时间函数</h2>
+            <div class="demo-box">
+                <strong>当前时间:</strong> {{dateformat .Now "2006-01-02 15:04:05"}}<br>
+                <strong>过去时间:</strong> {{dateformat .Past "2006-01-02 15:04:05"}}<br>
+                <strong>时间差:</strong> {{timeago .Past}}<br>
+                <strong>中文格式:</strong> {{dateformat .Now "2006年01月02日 15时04分"}}
+            </div>
+        </div>
+        
+        <!-- 字符串处理函数 -->
+        <div class="section">
+            <h2>📝 字符串处理函数</h2>
+            <div class="demo-box">
+                <strong>原文:</strong> "{{.Text}}"<br>
+                <strong>截断:</strong> "{{truncate .Text 30}}..."<br>
+                <strong>大写:</strong> "{{toupper "hello world"}}"<br>
+                <strong>小写:</strong> "{{tolower "HELLO WORLD"}}"
+            </div>
+            <div class="alert-box">
+                <strong>HTML转义演示:</strong><br>
+                原始内容: {{.HTML}}<br>
+                转义后: {{htmlquote .HTML}}
+            </div>
+        </div>
+        
+        <!-- 数学计算函数 -->
+        <div class="section">
+            <h2>🧮 数学计算函数</h2>
+            <div class="demo-box">
+                <strong>基础运算:</strong><br>
+                10 + 5 = {{add 10 5}}<br>
+                20 - 8 = {{sub 20 8}}<br>
+                6 × 7 = {{mul 6 7}}<br>
+                15 ÷ 3 = {{div 15 3}}<br><br>
+                
+                <strong>比较运算:</strong><br>
+                10 > 5: {{gt 10 5}}<br>
+                10 == 10: {{eq 10 10}}<br>
+                5 < 3: {{lt 5 3}}<br><br>
+                
+                <strong>价格格式化:</strong><br>
+                价格: ¥{{.Price}}
+            </div>
+        </div>
+        
+        <!-- 集合处理函数 -->
+        <div class="section">
+            <h2>📋 集合处理函数</h2>
+            <div class="demo-box">
+                <strong>商品列表 (共{{len .Items}}件):</strong>
+            </div>
+            <div class="item-list">
+                {{range .Items}}
+                <div class="item">
+                    <span>{{.name}}</span>
+                    <span class="price {{if lt .price 100}}cheap{{end}}">
+                        ¥{{.price}} {{if gt .price 100}}💰{{else}}💸{{end}}
+                    </span>
+                </div>
+                {{end}}
+            </div>
+            <div class="demo-box">
+                <strong>数字范围:</strong> {{range createRange 1 6}}{{.}} {{end}}
+            </div>
+        </div>
+        
+        <div class="section" style="text-align: center; background: #f8f9fa; color: #666;">
+            <p>页面生成时间: {{dateformat .Now "2006年01月02日 15:04:05"}}</p>
+            <p><small>YYHertz 模板引擎 | Beego风格函数库演示</small></p>
+        </div>
+    </div>
+</body>
+</html>

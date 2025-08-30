@@ -210,10 +210,23 @@ func SetGlobalTemplateEngine(engine *view.TemplateEngine) {
 // initializeTemplateEngine 初始化模板引擎（内部使用）
 func initializeTemplateEngine() {
 	if !templateInitialized {
-		// 使用view包中已有的单例
-		templateManager := view.GetTemplateManager()
-		globalTemplateEngine = templateManager.GetEngine()
-		templateInitialized = true
+		// 【重要修复】使用统一的模板引擎实例，避免多实例冲突
+		globalTemplateEngine = view.GetUnifiedEngine()
+		if globalTemplateEngine == nil {
+			config.Errorf("Failed to get unified template engine, falling back to template manager")
+			// 备选方案：使用模板管理器
+			templateManager := view.GetTemplateManager()
+			if templateManager != nil {
+				globalTemplateEngine = templateManager.GetEngine()
+			}
+		}
+		
+		if globalTemplateEngine != nil {
+			templateInitialized = true
+			config.Infof("✅ Global template engine initialized with unified instance")
+		} else {
+			config.Errorf("❌ Failed to initialize global template engine")
+		}
 	}
 }
 

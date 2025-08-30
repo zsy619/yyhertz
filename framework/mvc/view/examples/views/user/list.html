@@ -1,0 +1,157 @@
+{{template "app" .}}
+
+{{define "title"}}用户列表{{end}}
+
+{{define "main"}}
+<div class="page-header" style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #dee2e6;">
+    <div>
+        <h2 style="margin: 0;">👥 用户管理</h2>
+        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">管理系统中的所有用户账户</p>
+    </div>
+    <div>
+        <a href="/users/new" class="btn btn-primary" style="background: #007bff; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 4px;">
+            ➕ 添加用户
+        </a>
+    </div>
+</div>
+
+{{if .stats}}
+<div class="stats-overview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-card card">
+        <div class="card-body">
+            <h5 style="margin: 0 0 0.5rem 0; color: #495057;">📊 总用户数</h5>
+            <h2 style="margin: 0; color: #007bff;">{{.stats.total}}</h2>
+            <small style="color: #28a745;">+{{.stats.newThisMonth}} 本月新增</small>
+        </div>
+    </div>
+    <div class="stat-card card">
+        <div class="card-body">
+            <h5 style="margin: 0 0 0.5rem 0; color: #495057;">✅ 活跃用户</h5>
+            <h2 style="margin: 0; color: #28a745;">{{.stats.active}}</h2>
+            <small style="color: #6c757d;">{{fmtFloat2 (mul (div .stats.active .stats.total) 100)}}% 活跃率</small>
+        </div>
+    </div>
+    <div class="stat-card card">
+        <div class="card-body">
+            <h5 style="margin: 0 0 0.5rem 0; color: #495057;">⏸️ 未激活</h5>
+            <h2 style="margin: 0; color: #ffc107; color: #856404;">{{.stats.inactive}}</h2>
+            <small style="color: #dc3545;">需要关注</small>
+        </div>
+    </div>
+    <div class="stat-card card">
+        <div class="card-body">
+            <h5 style="margin: 0 0 0.5rem 0; color: #495057;">🛡️ 管理员</h5>
+            <h2 style="margin: 0; color: #dc3545;">{{.stats.admins}}</h2>
+            <small style="color: #6c757d;">系统管理员</small>
+        </div>
+    </div>
+</div>
+{{end}}
+
+<div class="filters-section card" style="margin-bottom: 1rem;">
+    <div class="card-body" style="padding: 1rem;">
+        <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">搜索用户</label>
+                <input type="text" name="search" value="{{.filters.search}}" placeholder="用户名或邮箱..." 
+                       style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.375rem;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">状态</label>
+                <select name="status" style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.375rem;">
+                    <option value="">所有状态</option>
+                    <option value="active" {{if eq .filters.status "active"}}selected{{end}}>活跃</option>
+                    <option value="inactive" {{if eq .filters.status "inactive"}}selected{{end}}>非活跃</option>
+                    <option value="pending" {{if eq .filters.status "pending"}}selected{{end}}>待激活</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">角色</label>
+                <select name="role" style="width: 100%; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.375rem;">
+                    <option value="">所有角色</option>
+                    {{range .roles}}
+                    <option value="{{.value}}" {{if eq $.filters.role .value}}selected{{end}}>{{.label}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary" style="background: #007bff; color: white; padding: 0.375rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer;">
+                    🔍 搜索
+                </button>
+                <a href="/users" style="margin-left: 0.5rem; color: #6c757d; text-decoration: none;">重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{template "table" dict
+    "title" "用户列表"
+    "striped" true
+    "bordered" false
+    "showSearch" false
+    "columns" (slice
+        (dict "key" "avatar" "title" "头像" "width" "60px" "align" "center")
+        (dict "key" "name" "title" "姓名" "sortable" true)
+        (dict "key" "email" "title" "邮箱" "sortable" true)
+        (dict "key" "role" "title" "角色" "align" "center")
+        (dict "key" "status" "title" "状态" "align" "center")
+        (dict "key" "lastLogin" "title" "最后登录" "sortable" true)
+        (dict "key" "createdAt" "title" "注册时间" "sortable" true)
+    )
+    "data" .users
+    "actions" (slice
+        (dict "label" "查看" "type" "info" "url" "/users/")
+        (dict "label" "编辑" "type" "primary" "url" "/users/")
+        (dict "label" "删除" "type" "danger" "url" "/users/delete/")
+    )
+    "pagination" .pagination
+}}
+
+{{if gt (len .users) 0}}
+<div class="bulk-actions card" style="margin-top: 1rem;">
+    <div class="card-body" style="padding: 1rem;">
+        <form method="POST" action="/users/bulk" style="display: flex; align-items: center; gap: 1rem;">
+            <input type="hidden" name="csrf_token" value="{{csrf}}">
+            <label style="font-weight: 500; color: #495057;">批量操作:</label>
+            <select name="action" style="padding: 0.25rem 0.5rem; border: 1px solid #ced4da; border-radius: 0.375rem;">
+                <option value="">选择操作...</option>
+                <option value="activate">激活用户</option>
+                <option value="deactivate">禁用用户</option>
+                <option value="delete">删除用户</option>
+            </select>
+            <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; padding: 0.25rem 0.75rem; border: none; border-radius: 0.375rem; cursor: pointer;">
+                执行
+            </button>
+            <small style="color: #6c757d;">选择用户后执行批量操作</small>
+        </form>
+    </div>
+</div>
+{{end}}
+
+{{if eq (len .users) 0}}
+<div class="empty-state" style="text-align: center; padding: 4rem 2rem; color: #6c757d;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">👥</div>
+    <h3 style="margin: 0 0 1rem 0;">没有找到用户</h3>
+    <p style="margin: 0 0 2rem 0;">{{if .filters.search}}没有找到匹配"{{.filters.search}}"的用户。{{else}}系统中还没有任何用户。{{end}}</p>
+    <a href="/users/new" class="btn btn-primary" style="background: #007bff; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 0.375rem;">
+        创建第一个用户
+    </a>
+</div>
+{{end}}
+
+<script>
+// 全选/取消全选功能
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.querySelector('#select-all');
+    const checkboxes = document.querySelectorAll('input[name="selected[]"]');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+});
+</script>
+{{end}}

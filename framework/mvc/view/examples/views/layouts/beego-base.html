@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}YYHertz Beego 模板引擎{{end}}</title>
+    
+    {{block "meta" .}}
+    <meta name="description" content="YYHertz Beego模板引擎演示">
+    <meta name="author" content="YYHertz Team">
+    {{end}}
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- 自定义样式 -->
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .beego-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .beego-navbar {
+            background: var(--dark-color);
+        }
+        
+        .beego-navbar .nav-link {
+            color: white !important;
+            transition: color 0.3s ease;
+        }
+        
+        .beego-navbar .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+        
+        .beego-main {
+            min-height: calc(100vh - 200px);
+            padding: 2rem 0;
+        }
+        
+        .beego-footer {
+            background: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: auto;
+        }
+        
+        .beego-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .beego-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+        
+        .beego-btn {
+            border-radius: 25px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .beego-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .stats-badge {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .engine-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        {{block "styles" .}}{{end}}
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    
+    {{block "header" .}}
+    <header class="beego-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-rocket"></i>
+                        YYHertz Beego Engine
+                    </h1>
+                    <p class="mb-0 opacity-75">高性能模板引擎演示</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="stats-badge">
+                        引擎状态: <span class="fw-bold">{{.EngineStatus | default "运行中"}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    {{end}}
+    
+    {{block "navbar" .}}
+    <nav class="navbar navbar-expand-lg beego-navbar">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home"></i> 首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/beego"><i class="fas fa-cogs"></i> Beego演示</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/beego/layout-demo"><i class="fas fa-layer-group"></i> 布局继承</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/beego/advanced"><i class="fas fa-star"></i> 高级功能</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/beego/performance"><i class="fas fa-chart-line"></i> 性能监控</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-tools"></i> 工具
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="clearCache()">清除缓存</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="reloadTemplates()">重载模板</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleDevMode()">切换开发模式</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/beego/stats" target="_blank">
+                            <i class="fas fa-chart-bar"></i> API文档
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {{end}}
+    
+    <main class="beego-main flex-grow-1">
+        <div class="container">
+            {{block "breadcrumb" .}}
+            {{if .Breadcrumb}}
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    {{range .Breadcrumb}}
+                    <li class="breadcrumb-item {{if .Active}}active{{end}}">
+                        {{if .Active}}
+                            {{.Title}}
+                        {{else}}
+                            <a href="{{.URL}}">{{.Title}}</a>
+                        {{end}}
+                    </li>
+                    {{end}}
+                </ol>
+            </nav>
+            {{end}}
+            {{end}}
+            
+            {{block "alerts" .}}
+            {{if .SuccessMessage}}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> {{.SuccessMessage}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {{end}}
+            
+            {{if .ErrorMessage}}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> {{.ErrorMessage}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {{end}}
+            
+            {{if .WarningMessage}}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> {{.WarningMessage}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {{end}}
+            
+            {{if .InfoMessage}}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="fas fa-info-circle"></i> {{.InfoMessage}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {{end}}
+            {{end}}
+            
+            <div class="row">
+                <div class="{{block "content_class" .}}col-md-12{{end}}">
+                    {{block "content" .}}
+                    <div class="text-center py-5">
+                        <h2>欢迎使用 YYHertz Beego 模板引擎</h2>
+                        <p class="lead">请在子模板中定义具体的内容</p>
+                        <a href="/beego" class="btn btn-primary beego-btn">
+                            <i class="fas fa-arrow-right"></i> 开始演示
+                        </a>
+                    </div>
+                    {{end}}
+                </div>
+                
+                {{block "sidebar" .}}{{end}}
+            </div>
+        </div>
+    </main>
+    
+    {{block "footer" .}}
+    <footer class="beego-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>YYHertz Beego Template Engine</h5>
+                    <p class="mb-0">高性能、功能丰富的Go模板引擎</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1">
+                        <small>
+                            渲染时间: {{.RenderTime | default "N/A"}}ms | 
+                            模板版本: {{.TemplateVersion | default "1.0.0"}} |
+                            当前时间: {{.CurrentTime | date "15:04:05"}}
+                        </small>
+                    </p>
+                    <p class="mb-0">
+                        <small>&copy; 2024 YYHertz Team. All rights reserved.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    {{end}}
+    
+    <!-- 引擎状态指示器 -->
+    <div class="engine-status" id="engine-status">
+        <i class="fas fa-circle text-success"></i>
+        <span id="status-text">{{.RunMode | default "production"}} 模式</span>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    
+    <!-- 通用脚本 -->
+    <script>
+        // 全局工具函数
+        function clearCache() {
+            fetch('/api/beego/clear-cache', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('success', '缓存已清除', data.message);
+            })
+            .catch(error => {
+                showNotification('danger', '操作失败', error.message);
+            });
+        }
+        
+        function reloadTemplates() {
+            fetch('/api/beego/reload-templates', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('success', '模板已重载', data.message);
+                setTimeout(() => location.reload(), 1000);
+            })
+            .catch(error => {
+                showNotification('danger', '操作失败', error.message);
+            });
+        }
+        
+        function toggleDevMode() {
+            fetch('/api/beego/toggle-dev-mode', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('info', '开发模式已切换', data.message);
+                setTimeout(() => location.reload(), 1500);
+            })
+            .catch(error => {
+                showNotification('danger', '操作失败', error.message);
+            });
+        }
+        
+        function showNotification(type, title, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            
+            alertDiv.innerHTML = `
+                <strong>${title}</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+        
+        // 状态监控
+        setInterval(() => {
+            fetch('/api/beego/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusElement = document.getElementById('status-text');
+                    const statusIcon = document.querySelector('#engine-status .fas');
+                    
+                    if (data.status === 'running') {
+                        statusIcon.className = 'fas fa-circle text-success';
+                        statusElement.textContent = `${data.mode} 模式 - 运行正常`;
+                    } else {
+                        statusIcon.className = 'fas fa-circle text-danger';
+                        statusElement.textContent = `${data.mode} 模式 - 状态异常`;
+                    }
+                })
+                .catch(() => {
+                    const statusIcon = document.querySelector('#engine-status .fas');
+                    statusIcon.className = 'fas fa-circle text-warning';
+                });
+        }, 30000); // 每30秒检查一次状态
+    </script>
+    
+    {{block "scripts" .}}{{end}}
+</body>
+</html>

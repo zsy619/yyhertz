@@ -283,7 +283,7 @@ func (c *BaseController) renderTemplate() error {
 			}
 		} else {
 			// 直接渲染模板
-			if content, err := c.templateEngine.Render(viewPath, c.Data); err != nil {
+			if content, err := c.templateEngine.Render(tplName, c.Data); err != nil {
 				return err
 			} else {
 				c.SetHeader("Content-Type", "text/html; charset=utf-8")

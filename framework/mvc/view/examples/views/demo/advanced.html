@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: "Microsoft YaHei", Arial, sans-serif; 
+            background: #f4f7fc;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .content { 
+            background: white; 
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
+        }
+        .section { 
+            padding: 30px; 
+            border-bottom: 1px solid #eee; 
+        }
+        .section:last-child { border-bottom: none; }
+        .section h2 { 
+            color: #2c3e50; 
+            margin-bottom: 20px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .csrf-form { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #dee2e6; 
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #555; 
+        }
+        .form-group input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 14px; 
+        }
+        .btn { 
+            background: #3498db; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 14px; 
+        }
+        .btn:hover { background: #2980b9; }
+        .info-box { 
+            background: #e8f4f8; 
+            border-left: 4px solid #3498db; 
+            padding: 15px; 
+            margin: 15px 0; 
+        }
+        .candidate-list { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+        }
+        .candidate-list ol { 
+            margin-left: 20px; 
+        }
+        .candidate-list li { 
+            margin: 5px 0; 
+            font-family: 'Courier New', monospace; 
+            background: #fff; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+        }
+        .convention-demo { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 15px; 
+        }
+        .convention-card { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            border-left: 4px solid #e74c3c; 
+        }
+        .convention-card h4 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .convention-card .input { 
+            color: #666; 
+            font-family: 'Courier New', monospace; 
+        }
+        .convention-card .output { 
+            color: #e74c3c; 
+            font-family: 'Courier New', monospace; 
+            font-weight: bold; 
+        }
+        .filesize-demo { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
+        }
+        .filesize-card { 
+            text-align: center; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+        }
+        .filesize-card .size { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            color: #3498db; 
+        }
+        .ajax-demo { 
+            background: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 15px 0; 
+        }
+        .test-form { 
+            display: grid; 
+            grid-template-columns: 1fr auto; 
+            gap: 10px; 
+            align-items: end; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{.Title}}</h1>
+            <p>🚀 探索YYHertz模板引擎的高级功能特性</p>
+        </div>
+        
+        <div class="content">
+            <!-- CSRF Token演示 -->
+            <div class="section">
+                <h2>🔒 CSRF Token安全防护</h2>
+                <div class="csrf-form">
+                    <form method="post" action="/csrf-test" onsubmit="return testCsrf(event)">
+                        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                        <div class="form-group">
+                            <label for="username">用户名:</label>
+                            <input type="text" name="username" id="username" placeholder="输入用户名" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">密码:</label>
+                            <input type="password" name="password" id="password" placeholder="输入密码" required>
+                        </div>
+                        <button type="submit" class="btn">提交 (受CSRF保护)</button>
+                    </form>
+                </div>
+                <div class="info-box">
+                    <strong>CSRF Token信息:</strong><br>
+                    当前Token: <code>{{.CSRFToken}}</code><br>
+                    通过模板函数获取: <code>{{csrf_token}}</code>
+                </div>
+                <div class="ajax-demo">
+                    <strong>AJAX测试:</strong>
+                    <div class="test-form">
+                        <input type="text" id="testUsername" placeholder="测试用户名">
+                        <button onclick="testCsrfAjax()" class="btn">AJAX测试</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 模板路径推导演示 -->
+            <div class="section">
+                <h2>🎯 自动模板路径推导</h2>
+                <p>根据控制器和方法名自动推导模板路径，支持多种命名规则:</p>
+                <div class="candidate-list">
+                    <strong>UserController.Profile 推导结果:</strong>
+                    <ol>
+                        {{range .TemplateCandidates}}
+                        <li>{{.}}</li>
+                        {{end}}
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- 命名约定演示 -->
+            <div class="section">
+                <h2>📝 命名约定系统</h2>
+                <p>支持多种命名约定，灵活适配不同的项目风格:</p>
+                <div class="convention-demo">
+                    {{range .NamingConventions}}
+                    <div class="convention-card">
+                        <h4>{{.name}}</h4>
+                        <div class="input">输入: {{.input}}</div>
+                        <div class="output">输出: {{.output}}</div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            
+            <!-- 自定义函数演示 -->
+            <div class="section">
+                <h2>🔧 自定义模板函数</h2>
+                <p>支持动态注册自定义模板函数，扩展模板功能:</p>
+                <div class="filesize-demo">
+                    <div class="filesize-card">
+                        <div>小文件</div>
+                        <div class="size">{{formatFileSize .FileSizeData.small}}</div>
+                    </div>
+                    <div class="filesize-card">
+                        <div>中等文件</div>
+                        <div class="size">{{formatFileSize .FileSizeData.medium}}</div>
+                    </div>
+                    <div class="filesize-card">
+                        <div>大文件</div>
+                        <div class="size">{{formatFileSize .FileSizeData.large}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testCsrf(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            fetch('/csrf-test', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('CSRF测试结果: ' + JSON.stringify(data, null, 2));
+            })
+            .catch(error => {
+                alert('请求失败: ' + error.message);
+            });
+            
+            return false;
+        }
+        
+        function testCsrfAjax() {
+            const username = document.getElementById('testUsername').value;
+            if (!username) {
+                alert('请输入用户名');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('csrf_token', '{{.CSRFToken}}');
+            
+            fetch('/csrf-test', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('AJAX CSRF测试成功: ' + JSON.stringify(data, null, 2));
+            })
+            .catch(error => {
+                alert('AJAX请求失败: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

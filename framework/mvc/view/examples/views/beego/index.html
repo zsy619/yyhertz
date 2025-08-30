@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beego模板引擎演示</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2c3e50; }
+        .demo-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .feature-box { background: #ecf0f1; padding: 15px; margin: 10px 0; border-left: 4px solid #3498db; }
+        .code-block { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; overflow-x: auto; }
+        .stats-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .stats-table th, .stats-table td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        .stats-table th { background: #3498db; color: white; }
+        .btn { padding: 10px 15px; margin: 5px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .btn:hover { background: #2980b9; }
+        .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .nav { display: flex; gap: 10px; margin: 20px 0; }
+        .nav a { padding: 10px 15px; background: #34495e; color: white; text-decoration: none; border-radius: 3px; }
+        .nav a:hover { background: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 YYHertz Beego模板引擎演示</h1>
+        
+        <div class="alert alert-info">
+            <strong>欢迎使用Beego模板引擎!</strong> 本页面展示了完整的Beego风格模板功能，包括缓存、热重载、性能优化等特性。
+        </div>
+
+        <div class="nav">
+            <a href="/">首页</a>
+            <a href="/beego/basic">基础功能</a>
+            <a href="/beego/layout">布局继承</a>
+            <a href="/beego/advanced">高级功能</a>
+            <a href="/beego/performance">性能监控</a>
+        </div>
+
+        <!-- 引擎状态 -->
+        <div class="demo-section">
+            <h2>📊 引擎状态</h2>
+            <div class="stats-table">
+                <table class="stats-table">
+                    <tr>
+                        <th>属性</th>
+                        <th>值</th>
+                        <th>说明</th>
+                    </tr>
+                    <tr>
+                        <td>引擎类型</td>
+                        <td>{{.EngineType}}</td>
+                        <td>当前使用的模板引擎</td>
+                    </tr>
+                    <tr>
+                        <td>运行模式</td>
+                        <td><span style="color: {{if eq .RunMode "dev"}}#e74c3c{{else}}#27ae60{{end}}">{{.RunMode}}</span></td>
+                        <td>开发模式或生产模式</td>
+                    </tr>
+                    <tr>
+                        <td>缓存状态</td>
+                        <td>{{if .CacheEnabled}}✅ 已启用{{else}}❌ 已禁用{{end}}</td>
+                        <td>模板缓存功能</td>
+                    </tr>
+                    <tr>
+                        <td>热重载</td>
+                        <td>{{if .HotReloadEnabled}}✅ 已启用{{else}}❌ 已禁用{{end}}</td>
+                        <td>文件变更自动重载</td>
+                    </tr>
+                    <tr>
+                        <td>Gzip压缩</td>
+                        <td>{{if .GzipEnabled}}✅ 已启用{{else}}❌ 已禁用{{end}}</td>
+                        <td>模板输出压缩</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- 基础模板功能 -->
+        <div class="demo-section">
+            <h2>🔧 基础模板功能</h2>
+            
+            <div class="feature-box">
+                <h3>变量渲染</h3>
+                <p>当前用户：<strong>{{.UserName}}</strong></p>
+                <p>当前时间：{{.CurrentTime}}</p>
+                <p>页面访问次数：{{.ViewCount}}</p>
+            </div>
+
+            <div class="feature-box">
+                <h3>条件渲染</h3>
+                {{if .IsLoggedIn}}
+                <div class="alert alert-success">
+                    ✅ 用户已登录：{{.UserName}}
+                </div>
+                {{else}}
+                <div class="alert alert-info">
+                    ℹ️ 用户未登录，请先登录
+                </div>
+                {{end}}
+            </div>
+
+            <div class="feature-box">
+                <h3>循环渲染</h3>
+                <h4>用户列表：</h4>
+                <ul>
+                {{range .Users}}
+                    <li>
+                        <strong>{{.Name}}</strong> - {{.Email}} 
+                        <span style="color: {{if .IsActive}}#27ae60{{else}}#e74c3c{{end}}">
+                            {{if .IsActive}}在线{{else}}离线{{end}}
+                        </span>
+                    </li>
+                {{end}}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Beego函数演示 -->
+        <div class="demo-section">
+            <h2>🛠️ Beego内置函数</h2>
+            
+            <div class="feature-box">
+                <h3>字符串处理</h3>
+                <p>原始文本：{{.SampleText}}</p>
+                <p>大写转换：{{.SampleText | upper}}</p>
+                <p>小写转换：{{.SampleText | lower}}</p>
+                <p>首字母大写：{{.SampleText | title}}</p>
+            </div>
+
+            <div class="feature-box">
+                <h3>数字格式化</h3>
+                <p>原始数字：{{.SampleNumber}}</p>
+                <p>格式化：{{.SampleNumber | printf "%.2f"}}</p>
+                <p>货币格式：¥ {{.SampleNumber | printf "%.2f"}}</p>
+            </div>
+
+            <div class="feature-box">
+                <h3>时间格式化</h3>
+                <p>默认格式：{{.CurrentTime}}</p>
+                <p>自定义格式：{{.CurrentTime | date "2006-01-02 15:04:05"}}</p>
+                <p>相对时间：{{.CurrentTime | timeSince}}</p>
+            </div>
+        </div>
+
+        <!-- 性能统计 -->
+        <div class="demo-section">
+            <h2>📈 性能统计</h2>
+            
+            <div class="stats-table">
+                <table class="stats-table">
+                    <tr>
+                        <th>指标</th>
+                        <th>数值</th>
+                        <th>单位</th>
+                    </tr>
+                    <tr>
+                        <td>模板渲染次数</td>
+                        <td>{{.Stats.RenderCount}}</td>
+                        <td>次</td>
+                    </tr>
+                    <tr>
+                        <td>平均渲染时间</td>
+                        <td>{{.Stats.AverageRenderTime}}</td>
+                        <td>毫秒</td>
+                    </tr>
+                    <tr>
+                        <td>缓存命中率</td>
+                        <td>{{.Stats.CacheHitRate}}</td>
+                        <td>%</td>
+                    </tr>
+                    <tr>
+                        <td>缓存模板数量</td>
+                        <td>{{.Stats.CachedTemplates}}</td>
+                        <td>个</td>
+                    </tr>
+                    <tr>
+                        <td>错误次数</td>
+                        <td>{{.Stats.ErrorCount}}</td>
+                        <td>次</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- 高级功能演示 -->
+        <div class="demo-section">
+            <h2>🎯 高级功能</h2>
+            
+            <div class="feature-box">
+                <h3>模板组件</h3>
+                <p>以下是通过组件渲染的导航栏：</p>
+                {{template "navbar" .NavData}}
+            </div>
+
+            <div class="feature-box">
+                <h3>安全功能</h3>
+                <p>HTML转义：{{.UnsafeContent}}</p>
+                <p>原始HTML：{{.UnsafeContent | raw}}</p>
+                <p>CSRF Token：{{.CSRFToken}}</p>
+            </div>
+
+            <div class="feature-box">
+                <h3>国际化支持</h3>
+                <p>当前语言：{{.Language}}</p>
+                <p>欢迎消息：{{i18n "welcome"}}</p>
+                <p>用户数量：{{i18n "user_count" .UserCount}}</p>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="demo-section">
+            <h2>🎮 操作演示</h2>
+            
+            <button class="btn" onclick="clearCache()">清除缓存</button>
+            <button class="btn" onclick="reloadTemplates()">重载模板</button>
+            <button class="btn" onclick="toggleDevMode()">切换开发模式</button>
+            <button class="btn" onclick="refreshStats()">刷新统计</button>
+            
+            <div id="operation-result" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- 代码示例 -->
+        <div class="demo-section">
+            <h2>💻 代码示例</h2>
+            
+            <h3>控制器代码：</h3>
+            <div class="code-block">
+package controllers
+
+func (c *BeegoController) Index() error {
+    data := map[string]any{
+        "UserName": "张三",
+        "IsLoggedIn": true,
+        "Users": []User{
+            {Name: "李四", Email: "lisi@example.com", IsActive: true},
+            {Name: "王五", Email: "wangwu@example.com", IsActive: false},
+        },
+        "Stats": c.GetPerformanceStats(),
+    }
+    
+    return c.RenderTemplate("beego/index", data)
+}
+            </div>
+
+            <h3>模板渲染：</h3>
+            <div class="code-block">
+// 使用统一API
+result, err := view.UnifiedRender("beego/index", data)
+
+// 使用Beego引擎
+result, err := view.GetBeegoEngine().RenderTemplate("beego/index", data)
+
+// 使用布局
+result, err := view.UnifiedRenderWithLayout("beego/index", "layouts/app", data)
+            </div>
+        </div>
+
+        <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
+            <p>🚀 Powered by YYHertz Beego Template Engine</p>
+            <p>渲染时间: {{.RenderTime}}ms | 模板版本: {{.TemplateVersion}}</p>
+        </footer>
+    </div>
+
+    <script>
+        function clearCache() {
+            fetch('/api/template/clear-cache', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('operation-result').innerHTML = 
+                        `<div class="alert alert-success">缓存已清除: ${JSON.stringify(data)}</div>`;
+                });
+        }
+
+        function reloadTemplates() {
+            fetch('/api/template/reload', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('operation-result').innerHTML = 
+                        `<div class="alert alert-success">模板已重载: ${JSON.stringify(data)}</div>`;
+                });
+        }
+
+        function toggleDevMode() {
+            fetch('/api/template/toggle-dev-mode', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('operation-result').innerHTML = 
+                        `<div class="alert alert-success">开发模式已切换: ${JSON.stringify(data)}</div>`;
+                    setTimeout(() => location.reload(), 1000);
+                });
+        }
+
+        function refreshStats() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

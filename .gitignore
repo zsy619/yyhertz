@@ -279,3 +279,4 @@ framework/mvc/view/examples/logs
 framework/mvc/routing/examples/conf
 framework/mvc/routing/conf/
 framework/mvc/routing/examples/basic_examples/conf/
+!framework/mvc/view/examples/controllers/demo_controller.go

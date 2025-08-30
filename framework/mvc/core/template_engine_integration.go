@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/zsy619/yyhertz/framework/mvc/view"
 )
@@ -10,6 +9,12 @@ import (
 // initializeEnhancedTemplateEngine 初始化增强的模板引擎
 func (c *BaseController) initializeEnhancedTemplateEngine() {
 	if c.templateEngine == nil {
+		// 🔧 临时修复：直接使用统一引擎实例，绕过有问题的TemplateIncludeEngine
+		// 原因：TemplateIncludeEngine在解析模板时遇到大量缺失的函数定义
+		c.templateEngine = view.GetUnifiedEngine()
+		
+		// 注释掉有问题的TemplateIncludeEngine创建过程
+		/* 
 		// 尝试使用增强的模板引擎
 		cfg := view.DefaultTemplateConfig()
 		if c.ViewPath != "" {
@@ -31,9 +36,10 @@ func (c *BaseController) initializeEnhancedTemplateEngine() {
 			// 添加应用级别的全局模板函数
 			c.addGlobalTemplateFunctions()
 		} else {
-			// 降级到标准模板引擎
-			c.templateEngine = view.GetTemplateManager().GetEngine()
+			// 降级到标准模板引擎 - 使用统一引擎实例
+			c.templateEngine = view.GetUnifiedEngine()
 		}
+		*/
 	}
 }
 

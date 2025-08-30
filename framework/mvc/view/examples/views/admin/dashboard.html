@@ -1,0 +1,206 @@
+{{template "admin" .}}
+
+{{define "title"}}系统仪表板{{end}}
+
+{{define "admin-main"}}
+<div class="dashboard">
+    <div class="welcome-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h2 style="margin: 0 0 0.5rem 0;">👋 欢迎回来, {{.admin.name}}</h2>
+        <p style="margin: 0; opacity: 0.9;">今天是 {{dateformat .now "2006年01月02日 星期一"}}，这里是系统运行概况。</p>
+    </div>
+    
+    <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="metric-card card" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52);">
+            <div class="card-body" style="color: white; text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👥</div>
+                <h3 style="margin: 0 0 0.5rem 0;">{{.metrics.users.total}}</h3>
+                <p style="margin: 0; opacity: 0.9;">总用户数</p>
+                <small style="opacity: 0.8;">+{{.metrics.users.newToday}} 今日新增</small>
+            </div>
+        </div>
+        
+        <div class="metric-card card" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);">
+            <div class="card-body" style="color: white; text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+                <h3 style="margin: 0 0 0.5rem 0;">{{.metrics.content.total}}</h3>
+                <p style="margin: 0; opacity: 0.9;">内容总数</p>
+                <small style="opacity: 0.8;">{{.metrics.content.published}} 已发布</small>
+            </div>
+        </div>
+        
+        <div class="metric-card card" style="background: linear-gradient(135deg, #45b7d1, #3498db);">
+            <div class="card-body" style="color: white; text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📈</div>
+                <h3 style="margin: 0 0 0.5rem 0;">{{.metrics.traffic.todayViews}}</h3>
+                <p style="margin: 0; opacity: 0.9;">今日访问</p>
+                <small style="opacity: 0.8;">{{if gt .metrics.traffic.growthRate 0}}📈{{else}}📉{{end}} {{.metrics.traffic.growthRate}}%</small>
+            </div>
+        </div>
+        
+        <div class="metric-card card" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+            <div class="card-body" style="color: white; text-align: center; padding: 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💰</div>
+                <h3 style="margin: 0 0 0.5rem 0;">{{currency .metrics.revenue.total "CNY"}}</h3>
+                <p style="margin: 0; opacity: 0.9;">总收入</p>
+                <small style="opacity: 0.8;">{{currency .metrics.revenue.thisMonth "CNY"}} 本月</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="content-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div class="chart-section">
+            <div class="card">
+                <div class="card-header">
+                    <h4 style="margin: 0;">📈 访问统计趋势</h4>
+                </div>
+                <div class="card-body">
+                    <div class="chart-placeholder" style="height: 300px; background: #f8f9fa; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                            <p>访问趋势图表</p>
+                            <small>最近30天访问数据</small>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-summary" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem; text-align: center;">
+                        <div>
+                            <h6 style="margin: 0; color: #6c757d;">今日</h6>
+                            <strong style="color: #007bff;">{{.metrics.traffic.todayViews}}</strong>
+                        </div>
+                        <div>
+                            <h6 style="margin: 0; color: #6c757d;">昨日</h6>
+                            <strong style="color: #6c757d;">{{.metrics.traffic.yesterdayViews}}</strong>
+                        </div>
+                        <div>
+                            <h6 style="margin: 0; color: #6c757d;">本周</h6>
+                            <strong style="color: #28a745;">{{.metrics.traffic.weekViews}}</strong>
+                        </div>
+                        <div>
+                            <h6 style="margin: 0; color: #6c757d;">本月</h6>
+                            <strong style="color: #ffc107; color: #856404;">{{.metrics.traffic.monthViews}}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <div class="card">
+                <div class="card-header">
+                    <h4 style="margin: 0;">⚡ 快速操作</h4>
+                </div>
+                <div class="card-body">
+                    <div class="action-list">
+                        <a href="/admin/users/new" class="action-item" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; text-decoration: none; color: #495057; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.25rem;">➕</span>
+                                <div>
+                                    <strong>添加用户</strong>
+                                    <br><small style="color: #6c757d;">创建新用户账户</small>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="/admin/content/new" class="action-item" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; text-decoration: none; color: #495057; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.25rem;">📝</span>
+                                <div>
+                                    <strong>发布内容</strong>
+                                    <br><small style="color: #6c757d;">创建新文章或页面</small>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="/admin/settings" class="action-item" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; text-decoration: none; color: #495057; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.25rem;">⚙️</span>
+                                <div>
+                                    <strong>系统设置</strong>
+                                    <br><small style="color: #6c757d;">配置系统参数</small>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <a href="/admin/backup" class="action-item" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; text-decoration: none; color: #495057; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.25rem;">💾</span>
+                                <div>
+                                    <strong>数据备份</strong>
+                                    <br><small style="color: #6c757d;">备份系统数据</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="content-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div class="recent-users card">
+            <div class="card-header">
+                <h4 style="margin: 0;">👥 最新注册用户</h4>
+            </div>
+            <div class="card-body">
+                {{if .recentUsers}}
+                <div class="user-list">
+                    {{range .recentUsers}}
+                    <div class="user-item" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f8f9fa;">
+                        <img src="{{.avatar | default "/static/images/default-avatar.png"}}" 
+                             alt="{{.name}}" 
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <div style="flex: 1;">
+                            <strong>{{.name}}</strong>
+                            <br><small style="color: #6c757d;">{{.email}}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <small style="color: #6c757d;">{{timeago .createdAt}}</small>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="/admin/users" style="color: #007bff; text-decoration: none; font-size: 0.875rem;">查看所有用户 →</a>
+                </div>
+                {{else}}
+                <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+                    <p style="margin: 0;">暂无新用户注册</p>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        
+        <div class="recent-activity card">
+            <div class="card-header">
+                <h4 style="margin: 0;">📋 最近活动</h4>
+            </div>
+            <div class="card-body">
+                {{if .recentActivity}}
+                <div class="activity-list">
+                    {{range .recentActivity}}
+                    <div class="activity-item" style="display: flex; align-items: start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid #f8f9fa;">
+                        <div class="activity-icon" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; background: {{.iconColor | default "#e3f2fd"}}; color: {{.textColor | default "#1976d2"}};">
+                            {{.icon}}
+                        </div>
+                        <div style="flex: 1; font-size: 0.875rem;">
+                            <p style="margin: 0 0 0.25rem 0;">{{.description}}</p>
+                            <small style="color: #6c757d;">{{timeago .createdAt}}</small>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="/admin/activity" style="color: #007bff; text-decoration: none; font-size: 0.875rem;">查看所有活动 →</a>
+                </div>
+                {{else}}
+                <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+                    <p style="margin: 0;">暂无活动记录</p>
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
