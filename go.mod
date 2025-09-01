@@ -17,6 +17,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
 	github.com/yuin/goldmark v1.7.13
+	github.com/zsy619/tools v0.0.0-20250901022110-0b854016eade
 	go.opentelemetry.io/otel/trace v1.38.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v2 v2.4.0
@@ -26,7 +27,6 @@ require (
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/driver/sqlserver v1.6.1
 	gorm.io/gorm v1.30.1
-	haedu.gov.cn/tools v1.0.0
 )
 
 require (
@@ -67,7 +67,7 @@ require (
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect
-	github.com/spf13/pflag v1.0.7 // indirect
+	github.com/spf13/pflag v1.0.8 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -83,5 +83,3 @@ require (
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 )
-
-replace haedu.gov.cn/tools => ../河南省大中专学生智慧就业平台/教育部API对接/tools

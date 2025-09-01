@@ -1,6 +1,6 @@
 package core
 
-import "haedu.gov.cn/tools/xgeneric"
+import "github.com/zsy619/tools/xgeneric"
 
 func (c *BaseController) GetIntTuple2(key1, key2 string) (cnt xgeneric.Tuple2[int, int]) {
 	cnt.A = c.GetInt(key1)

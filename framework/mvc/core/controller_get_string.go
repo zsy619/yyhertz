@@ -3,8 +3,8 @@ package core
 import (
 	"strings"
 
-	"haedu.gov.cn/tools/xgeneric"
-	"haedu.gov.cn/tools/xstring"
+	"github.com/zsy619/tools/xgeneric"
+	"github.com/zsy619/tools/xstring"
 )
 
 func (c *BaseController) GetStringTrim(key string, def ...string) string {
