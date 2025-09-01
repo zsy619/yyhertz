@@ -1,6 +1,6 @@
 package core
 
-import "haedu.gov.cn/tools/xgeneric"
+import "github.com/zsy619/tools/xgeneric"
 
 // GetFloatTuple2 从请求参数中获取两个浮点数值，并返回一个包含这两个值的 Tuple2 结构体。
 // 参数 key1 和 key2 分别对应需要获取的浮点数值的键名。
