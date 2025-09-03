@@ -157,8 +157,8 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 	// 强制为每个控制器分配独立的路径空间，防止路径冲突
 	ctrlName := controllerName
 	for suffix := range ControllerNameSuffixReserved {
-		if strings.HasSuffix(controllerName, suffix) {
-			ctrlName = strings.TrimSuffix(controllerName, suffix)
+		if strings.HasSuffix(ctrlName, suffix) {
+			ctrlName = strings.TrimSuffix(ctrlName, suffix)
 			break
 		}
 	}
@@ -187,59 +187,67 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 		switch {
 		case strings.HasPrefix(methodName, "Get"):
 			httpMethod = "GET"
-			if methodName == "Get" || methodName == "Index" {
-				actionName = "" // 特殊处理Get和Index方法
-			} else {
+			switch methodName {
+			case "Get", "GET":
+				actionName = ""
+			// case "Index":
+			// 	actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Get")
 			}
 		case strings.HasPrefix(methodName, "Post"):
 			httpMethod = "POST"
-			if methodName == "Post" || methodName == "Index" {
-				actionName = "" // 特殊处理Post和Index方法
-			} else {
+			switch methodName {
+			case "Post":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Post")
 			}
 		case strings.HasPrefix(methodName, "Put"):
 			httpMethod = "PUT"
-			if methodName == "Put" || methodName == "Index" {
-				actionName = "" // 特殊处理Put和Index方法
-			} else {
+			switch methodName {
+			case "Put":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Put")
 			}
 		case strings.HasPrefix(methodName, "Delete"):
 			httpMethod = "DELETE"
-			if methodName == "Delete" || methodName == "Index" {
-				actionName = "" // 特殊处理Delete和Index方法
-			} else {
+			switch methodName {
+			case "Delete":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Delete")
 			}
 		case strings.HasPrefix(methodName, "Patch"):
 			httpMethod = "PATCH"
-			if methodName == "Patch" || methodName == "Index" {
-				actionName = "" // 特殊处理Patch和Index方法
-			} else {
+			switch methodName {
+			case "Patch":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Patch")
 			}
 		case strings.HasPrefix(methodName, "Head"):
 			httpMethod = "HEAD"
-			if methodName == "Head" || methodName == "Index" {
-				actionName = "" // 特殊处理Head和Index方法
-			} else {
+			switch methodName {
+			case "Head":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Head")
 			}
 		case strings.HasPrefix(methodName, "Options"):
 			httpMethod = "OPTIONS"
-			if methodName == "Options" || methodName == "Index" {
-				actionName = "" // 特殊处理Options和Index方法
-			} else {
+			switch methodName {
+			case "Options":
+				actionName = ""
+			default:
 				actionName = strings.TrimPrefix(methodName, "Options")
 			}
 		}
 
 		// 构建路由路径
 		routePath := basePath
-		// 路由注册时保持原始大小写，匹配时再处理
-		actionPath := actionName
+		actionPath := strings.ToTitle(actionName)
 		routePath = path.Join("/", routePath, actionPath)
 
 		// 清理路径，移除重复的斜杠
