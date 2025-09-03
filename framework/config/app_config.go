@@ -30,6 +30,24 @@ type AppConfig struct {
 		Timezone    string `mapstructure:"timezone" yaml:"timezone" json:"timezone"`
 	} `mapstructure:"app" yaml:"app" json:"app"`
 
+	// 站点信息配置
+	Site struct {
+		Name        string   `mapstructure:"name" yaml:"name" json:"name"`               // 站点名称
+		Version     string   `mapstructure:"version" yaml:"version" json:"version"`      // 站点版本号
+		Title       string   `mapstructure:"title" yaml:"title" json:"title"`            // 站点标题
+		Description string   `mapstructure:"description" yaml:"description" json:"description"` // 站点描述
+		Keywords    []string `mapstructure:"keywords" yaml:"keywords" json:"keywords"`   // 关键词
+		Domain      string   `mapstructure:"domain" yaml:"domain" json:"domain"`         // 主域名
+		URL         string   `mapstructure:"url" yaml:"url" json:"url"`                  // 完整URL
+		Language    string   `mapstructure:"language" yaml:"language" json:"language"`   // 语言设置
+		Locale      string   `mapstructure:"locale" yaml:"locale" json:"locale"`         // 区域设置
+		Favicon     string   `mapstructure:"favicon" yaml:"favicon" json:"favicon"`      // 网站图标路径
+		Logo        string   `mapstructure:"logo" yaml:"logo" json:"logo"`               // 网站Logo路径
+		Copyright   string   `mapstructure:"copyright" yaml:"copyright" json:"copyright"` // 版权信息
+		ICP         string   `mapstructure:"icp" yaml:"icp" json:"icp"`                  // ICP备案号
+		Analytics   string   `mapstructure:"analytics" yaml:"analytics" json:"analytics"` // 统计代码
+	} `mapstructure:"site" yaml:"site" json:"site"`
+
 	// 日志配置
 	Log LogConfig `mapstructure:"log" yaml:"log" json:"log"`
 
@@ -123,6 +141,22 @@ func (c AppConfig) SetDefaults(v *viper.Viper) {
 	v.SetDefault("app.host", "0.0.0.0")
 	v.SetDefault("app.timezone", "Asia/Shanghai")
 
+	// 站点默认配置
+	v.SetDefault("site.name", "YYHertz站点")
+	v.SetDefault("site.version", "1.0.0")
+	v.SetDefault("site.title", "YYHertz - 高性能Go Web框架")
+	v.SetDefault("site.description", "YYHertz是一个基于Go语言的高性能Web开发框架")
+	v.SetDefault("site.keywords", []string{"Go", "Web框架", "高性能", "YYHertz"})
+	v.SetDefault("site.domain", "localhost")
+	v.SetDefault("site.url", "http://localhost:8888")
+	v.SetDefault("site.language", "zh-CN")
+	v.SetDefault("site.locale", "zh_CN")
+	v.SetDefault("site.favicon", "/static/favicon.ico")
+	v.SetDefault("site.logo", "/static/logo.png")
+	v.SetDefault("site.copyright", "© 2024 YYHertz. All rights reserved.")
+	v.SetDefault("site.icp", "")
+	v.SetDefault("site.analytics", "")
+
 	// 日志默认配置
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
@@ -176,6 +210,26 @@ app:
   host: "0.0.0.0"
   timezone: "Asia/Shanghai"
 
+# 站点信息配置
+site:
+  name: "YYHertz站点"          # 站点名称，用于页面标题等
+  version: "1.0.0"            # 站点版本号，用于版本管理和缓存控制
+  title: "YYHertz - 高性能Go Web框架"  # 完整的站点标题
+  description: "YYHertz是一个基于Go语言的高性能Web开发框架"  # 站点描述，用于SEO
+  keywords:                   # SEO关键词列表
+    - "Go"
+    - "Web框架"
+    - "高性能"
+    - "YYHertz"
+  domain: "localhost"         # 主域名，用于生成绝对链接
+  url: "http://localhost:8888"  # 完整的站点URL
+  language: "zh-CN"           # 语言设置，用于国际化
+  locale: "zh_CN"             # 区域设置，更具体的本地化
+  favicon: "/static/favicon.ico"  # 网站图标文件路径
+  logo: "/static/logo.png"    # 网站Logo文件路径
+  copyright: "© 2024 YYHertz. All rights reserved."  # 版权信息
+  icp: ""                     # ICP备案号，中国网站必需
+  analytics: ""               # 统计代码，如Google Analytics
 
 # 日志配置
 log:

@@ -44,15 +44,15 @@ func (e *TemplateEngine) GetTemplate(templateName string) (*template.Template, e
 	config.Debugf("🔄 Template %s not in cache, loading from disk (key: %s)", templateName, cacheKey)
 	config.Debugf("📋 Available template functions: %d", len(e.funcMap))
 
-	// 检查关键函数是否存在
-	criticalFuncs := []string{"formatFileSize", "dateformat", "now"}
-	for _, funcName := range criticalFuncs {
-		if _, exists := e.funcMap[funcName]; exists {
-			config.Debugf("✅ Critical function '%s' is available", funcName)
-		} else {
-			config.Warnf("⚠️ Critical function '%s' is missing", funcName)
-		}
-	}
+	// // 检查关键函数是否存在
+	// criticalFuncs := []string{"formatFileSize", "dateformat", "now"}
+	// for _, funcName := range criticalFuncs {
+	// 	if _, exists := e.funcMap[funcName]; exists {
+	// 		config.Debugf("✅ Critical function '%s' is available", funcName)
+	// 	} else {
+	// 		config.Warnf("⚠️ Critical function '%s' is missing", funcName)
+	// 	}
+	// }
 	tmpl, err := e.LoadTemplate(templateName)
 	if err != nil {
 		config.Errorf("Failed to load template %s: %v", templateName, err)
@@ -170,8 +170,11 @@ func (e *TemplateEngine) FindTemplateFile(templateName string) (string, error) {
 	config.Debugf("🔍 查找模板文件: %s，在路径: %v", templateName, e.viewPaths)
 
 	// 获取当前工作目录用于调试
-	wd, _ := os.Getwd()
-	config.Debugf("  当前工作目录: %s", wd)
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("获取当前工作目录失败: %w", err)
+	}
+	config.Debugf("  [FindTemplateFile]当前工作目录: %s", wd)
 
 	// 在所有视图路径中搜索
 	for _, viewPath := range e.viewPaths {
@@ -180,10 +183,10 @@ func (e *TemplateEngine) FindTemplateFile(templateName string) (string, error) {
 		if !filepath.IsAbs(viewPath) {
 			// 如果是相对路径，尝试不同的基准目录
 			possibleBases := []string{
-				wd,                            // 当前工作目录
-				filepath.Join(wd, "examples"), // examples子目录
-				filepath.Dir(wd),              // 上级目录
-				filepath.Join(filepath.Dir(wd), "examples"), // 上级目录下的examples
+				wd,                             // 当前工作目录
+				filepath.Join(wd, "templates"), // templates子目录
+				filepath.Dir(wd),               // 上级目录
+				filepath.Join(filepath.Dir(wd), "templates"), // 上级目录下的templates
 			}
 
 			for _, base := range possibleBases {
@@ -213,9 +216,9 @@ func (e *TemplateEngine) FindTemplateFile(templateName string) (string, error) {
 		// 对每个可能的基准目录进行递归搜索
 		possibleBases := []string{
 			wd,
-			filepath.Join(wd, "examples"),
+			filepath.Join(wd, "templates"),
 			filepath.Dir(wd),
-			filepath.Join(filepath.Dir(wd), "examples"),
+			filepath.Join(filepath.Dir(wd), "templates"),
 		}
 
 		for _, base := range possibleBases {

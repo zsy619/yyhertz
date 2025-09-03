@@ -115,7 +115,7 @@ func (m *Manager) initialize() {
 			if globalManager := getGlobalSessionManager(); globalManager != nil {
 				m.sessionManager = globalManager
 			} else {
-				m.sessionManager = session.NewManager(session.DefaultConfig())
+				m.sessionManager = session.NewManager(session.LoadFromConfig())
 			}
 		}
 

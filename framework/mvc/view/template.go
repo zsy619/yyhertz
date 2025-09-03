@@ -2,13 +2,51 @@ package view
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var (
+	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparison     = errors.New("incompatible types for comparison")
+	errNoComparison      = errors.New("missing argument for comparison")
+)
+
+type kind int
+
+const (
+	invalidKind kind = iota
+	boolKind
+	complexKind
+	intKind
+	floatKind
+	stringKind
+	uintKind
+)
+
+func basicKind(v reflect.Value) (kind, error) {
+	switch v.Kind() {
+	case reflect.Bool:
+		return boolKind, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return intKind, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return uintKind, nil
+	case reflect.Float32, reflect.Float64:
+		return floatKind, nil
+	case reflect.Complex64, reflect.Complex128:
+		return complexKind, nil
+	case reflect.String:
+		return stringKind, nil
+	}
+	return invalidKind, errBadComparisonType
+}
 
 // builtinTemplateFuncs 内置模板函数映射（私有）
 var builtinTemplateFuncs = template.FuncMap{
@@ -112,15 +150,15 @@ func LoadTemplateWithLayout(layoutPath, templatePath string, data map[string]any
 
 // TemplateLoadOptions 模板加载选项
 type TemplateLoadOptions struct {
-	LayoutPath     string                 // 布局文件路径
-	EnableCache    bool                   // 启用缓存（默认true）
-	CustomFuncs    template.FuncMap       // 自定义函数
-	DelimLeft      string                 // 左分隔符（默认{{）
-	DelimRight     string                 // 右分隔符（默认}}）
-	StrictMode     bool                   // 严格模式（错误时停止）
-	ContextData    map[string]any         // 上下文数据
-	Theme          string                 // 主题名称
-	Debug          bool                   // 调试模式
+	LayoutPath  string           // 布局文件路径
+	EnableCache bool             // 启用缓存（默认true）
+	CustomFuncs template.FuncMap // 自定义函数
+	DelimLeft   string           // 左分隔符（默认{{）
+	DelimRight  string           // 右分隔符（默认}}）
+	StrictMode  bool             // 严格模式（错误时停止）
+	ContextData map[string]any   // 上下文数据
+	Theme       string           // 主题名称
+	Debug       bool             // 调试模式
 }
 
 // LoadTemplateWithOptions 带选项的模板加载（核心实现）
@@ -142,7 +180,7 @@ func LoadTemplateWithOptions(templatePath string, data map[string]any, options *
 
 	// 获取统一的函数管理器
 	manager := GetGlobalFunctionManager()
-	
+
 	// 合并函数映射：内置函数 + 全局函数 + 自定义函数
 	mergedFuncs := manager.GetMergedFunctions(options.CustomFuncs)
 
@@ -173,7 +211,7 @@ func LoadTemplateWithOptions(templatePath string, data map[string]any, options *
 		if options.StrictMode {
 			return "", fmt.Errorf("template execution failed for %s: %w", templatePath, err)
 		}
-		
+
 		// 非严格模式下，返回错误信息但不中断
 		if options.Debug {
 			return fmt.Sprintf("<!-- Template execution error: %s -->", err.Error()), nil
@@ -182,10 +220,10 @@ func LoadTemplateWithOptions(templatePath string, data map[string]any, options *
 	}
 
 	result := buf.String()
-	
+
 	// 调试信息
 	if options.Debug {
-		debugInfo := fmt.Sprintf("<!-- Template: %s, Layout: %s, Theme: %s -->", 
+		debugInfo := fmt.Sprintf("<!-- Template: %s, Layout: %s, Theme: %s -->",
 			templatePath, options.LayoutPath, options.Theme)
 		result = debugInfo + "\n" + result
 	}
@@ -196,7 +234,7 @@ func LoadTemplateWithOptions(templatePath string, data map[string]any, options *
 // createSingleTemplate 创建单个模板
 func createSingleTemplate(templatePath string, funcs template.FuncMap, options *TemplateLoadOptions) (*template.Template, error) {
 	templateName := filepath.Base(templatePath)
-	
+
 	tmpl := template.New(templateName).
 		Delims(options.DelimLeft, options.DelimRight).
 		Funcs(funcs)
@@ -316,7 +354,7 @@ func QuickRender(templatePath string, data any) (string, error) {
 			dataMap = map[string]any{"data": data}
 		}
 	}
-	
+
 	return LoadTemplate(templatePath, dataMap)
 }
 
@@ -331,7 +369,7 @@ func QuickRenderWithLayout(templatePath, layoutPath string, data any) (string, e
 			dataMap = map[string]any{"data": data}
 		}
 	}
-	
+
 	return LoadTemplateWithLayout(layoutPath, templatePath, dataMap)
 }
 
@@ -340,7 +378,7 @@ func RenderWithEngine(engine *TemplateEngine, templateName string, data any) (st
 	if engine == nil {
 		engine = GetDefaultEngine()
 	}
-	
+
 	return engine.Render(templateName, data)
 }
 
@@ -349,7 +387,7 @@ func RenderWithLayoutAndEngine(engine *TemplateEngine, templateName, layoutName 
 	if engine == nil {
 		engine = GetDefaultEngine()
 	}
-	
+
 	return engine.RenderWithLayout(templateName, layoutName, data)
 }
 
@@ -357,7 +395,7 @@ func RenderWithLayoutAndEngine(engine *TemplateEngine, templateName, layoutName 
 func BatchRender(templates []string, data map[string]any) (map[string]string, error) {
 	results := make(map[string]string)
 	errors := make([]string, 0)
-	
+
 	for _, templatePath := range templates {
 		result, err := LoadTemplate(templatePath, data)
 		if err != nil {
@@ -366,11 +404,11 @@ func BatchRender(templates []string, data map[string]any) (map[string]string, er
 		}
 		results[templatePath] = result
 	}
-	
+
 	if len(errors) > 0 {
 		return results, fmt.Errorf("batch render errors: %s", strings.Join(errors, "; "))
 	}
-	
+
 	return results, nil
 }
 
@@ -395,7 +433,7 @@ func CompileTemplate(templatePath string, options *TemplateLoadOptions) (*templa
 func ValidateTemplate(templatePath string) error {
 	_, err := CompileTemplate(templatePath, &TemplateLoadOptions{
 		StrictMode: true,
-		Debug: true,
+		Debug:      true,
 	})
 	return err
 }
@@ -404,7 +442,7 @@ func ValidateTemplate(templatePath string) error {
 func ValidateTemplateString(templateContent string) error {
 	manager := GetGlobalFunctionManager()
 	mergedFuncs := manager.GetMergedFunctions(nil)
-	
+
 	tmpl := template.New("validation").Funcs(mergedFuncs)
 	_, err := tmpl.Parse(templateContent)
 	return err
@@ -416,19 +454,19 @@ func GetTemplateInfo(templatePath string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	info := map[string]any{
 		"name":      tmpl.Name(),
 		"templates": make([]string, 0),
 	}
-	
+
 	// 获取模板中定义的所有子模板
 	for _, t := range tmpl.Templates() {
 		if t.Name() != "" {
 			info["templates"] = append(info["templates"].([]string), t.Name())
 		}
 	}
-	
+
 	return info, nil
 }
 
@@ -556,28 +594,133 @@ func Mod(a, b any) any {
 }
 
 // 比较函数
-func Eq(a, b any) bool {
-	return a == b
+func Eq(arg1 any, arg2 ...any) (bool, error) {
+	v1 := reflect.ValueOf(arg1)
+	k1, err := basicKind(v1)
+	if err != nil {
+		return false, err
+	}
+	if len(arg2) == 0 {
+		return false, errNoComparison
+	}
+	for _, arg := range arg2 {
+		v2 := reflect.ValueOf(arg)
+		k2, err := basicKind(v2)
+		if err != nil {
+			return false, err
+		}
+		truth := false
+		if k1 != k2 {
+			// Special case: Can compare integer values regardless of type's sign.
+			switch {
+			case k1 == intKind && k2 == uintKind:
+				truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
+			case k1 == uintKind && k2 == intKind:
+				truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
+			default:
+				return false, errBadComparison
+			}
+			if truth {
+				return true, nil
+			} else {
+				return false, nil
+			}
+		}
+		switch k1 {
+		case boolKind:
+			truth = v1.Bool() == v2.Bool()
+		case complexKind:
+			truth = v1.Complex() == v2.Complex()
+		case floatKind:
+			truth = v1.Float() == v2.Float()
+		case intKind:
+			truth = v1.Int() == v2.Int()
+		case stringKind:
+			truth = v1.String() == v2.String()
+		case uintKind:
+			truth = v1.Uint() == v2.Uint()
+		default:
+			panic("invalid kind")
+		}
+		if truth {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
-func Ne(a, b any) bool {
-	return a != b
+func Ne(arg1, arg2 any) (bool, error) {
+	// != is the inverse of ==.
+	equal, err := Eq(arg1, arg2)
+	return !equal, err
 }
 
-func Lt(a, b any) bool {
-	return toFloat64(a) < toFloat64(b)
+func Lt(arg1, arg2 any) (bool, error) {
+	v1 := reflect.ValueOf(arg1)
+	k1, err := basicKind(v1)
+	if err != nil {
+		return false, err
+	}
+	v2 := reflect.ValueOf(arg2)
+	k2, err := basicKind(v2)
+	if err != nil {
+		return false, err
+	}
+	truth := false
+	if k1 != k2 {
+		// Special case: Can compare integer values regardless of type's sign.
+		switch {
+		case k1 == intKind && k2 == uintKind:
+			truth = v1.Int() < 0 || uint64(v1.Int()) < v2.Uint()
+		case k1 == uintKind && k2 == intKind:
+			truth = v2.Int() >= 0 && v1.Uint() < uint64(v2.Int())
+		default:
+			return false, errBadComparison
+		}
+	} else {
+		switch k1 {
+		case boolKind, complexKind:
+			return false, errBadComparisonType
+		case floatKind:
+			truth = v1.Float() < v2.Float()
+		case intKind:
+			truth = v1.Int() < v2.Int()
+		case stringKind:
+			truth = v1.String() < v2.String()
+		case uintKind:
+			truth = v1.Uint() < v2.Uint()
+		default:
+			return false, errBadComparisonType
+		}
+	}
+	return truth, nil
 }
 
-func Le(a, b any) bool {
-	return toFloat64(a) <= toFloat64(b)
+func Le(arg1, arg2 any) (bool, error) {
+	// <= is < or ==.
+	lessThan, err := Lt(arg1, arg2)
+	if lessThan || err != nil {
+		return lessThan, err
+	}
+	return Eq(arg1, arg2)
 }
 
-func Gt(a, b any) bool {
-	return toFloat64(a) > toFloat64(b)
+func Gt(arg1, arg2 any) (bool, error) {
+	// > is the inverse of <=.
+	lessOrEqual, err := Le(arg1, arg2)
+	if err != nil {
+		return false, err
+	}
+	return !lessOrEqual, nil
 }
 
-func Ge(a, b any) bool {
-	return toFloat64(a) >= toFloat64(b)
+func Ge(arg1, arg2 any) (bool, error) {
+	// >= is the inverse of <.
+	lessThan, err := Lt(arg1, arg2)
+	if err != nil {
+		return false, err
+	}
+	return !lessThan, nil
 }
 
 // 逻辑函数
@@ -634,7 +777,7 @@ func ToTitleCase(s string) string {
 	if s == "" {
 		return s
 	}
-	
+
 	words := strings.Fields(s)
 	for i, word := range words {
 		if len(word) > 0 {

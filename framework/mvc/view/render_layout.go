@@ -15,19 +15,26 @@ func (e *TemplateEngine) GetTemplateWithLayout(templateName, layoutName string) 
 	// 【关键修复】标准化布局名称，去除可能的.html扩展名
 	// 确保布局名称与注册时的名称一致
 	normalizedLayoutName := layoutName
-	if strings.HasSuffix(layoutName, e.extension) {
-		normalizedLayoutName = strings.TrimSuffix(layoutName, e.extension)
+	if strings.HasSuffix(normalizedLayoutName, e.extension) {
+		normalizedLayoutName = strings.TrimSuffix(normalizedLayoutName, e.extension)
 		config.Debugf("Normalized layout name from '%s' to '%s'", layoutName, normalizedLayoutName)
+	}
+
+	normalizedTemplateName := templateName
+	if strings.HasSuffix(normalizedTemplateName, e.extension) {
+		normalizedTemplateName = strings.TrimSuffix(normalizedTemplateName, e.extension)
+		config.Debugf("Normalized template name from '%s' to '%s'", templateName, normalizedTemplateName)
 	}
 
 	// 【关键修复】：基于Beego机制生成正确的缓存键
 	// 先获取模板的基础名称，然后生成匹配的缓存键
-	contentPath, err := e.FindTemplateFile(normalizedLayoutName)
+	contentPath, err := e.FindTemplateFile(normalizedTemplateName)
 	if err != nil {
 		return nil, fmt.Errorf("content template '%s' not found: %w", normalizedLayoutName, err)
 	}
 
 	templateBaseName := e.getTemplateBaseName(contentPath)
+	// templateBaseName := e.getTemplateBaseName(normalizedTemplateName)
 	// 将布局名称中的斜杠替换为下划线，保持与实际模板名一致
 	safeLayoutName := strings.ReplaceAll(normalizedLayoutName, "/", "_")
 	combinedTemplateName := fmt.Sprintf("%s_with_%s", templateBaseName, safeLayoutName)
@@ -59,13 +66,22 @@ func (e *TemplateEngine) GetTemplateWithLayout(templateName, layoutName string) 
 	config.Debugf("Creating new template with layout %s@%s (cache key: %s)", templateName, normalizedLayoutName, cacheKey)
 
 	// 检查布局是否存在
-	if _, exists := e.layouts[normalizedLayoutName]; !exists {
-		// 获取可用布局列表（避免调用GetLayoutList导致死锁）
-		availableLayouts := make([]string, 0, len(e.layouts))
-		for name := range e.layouts {
-			availableLayouts = append(availableLayouts, name)
+	if len(e.layouts) > 0 {
+		prefix := ""
+		if parts := strings.Split(e.layoutPath, "/"); len(parts) > 0 {
+			prefix = parts[len(parts)-1]
 		}
-		return nil, fmt.Errorf("layout '%s' not found, available layouts: %v", normalizedLayoutName, availableLayouts)
+		if prefix != "" && !strings.HasPrefix(normalizedLayoutName, prefix) {
+			normalizedLayoutName = prefix + "/" + normalizedLayoutName
+		}
+		if _, exists := e.layouts[normalizedLayoutName]; !exists {
+			// 获取可用布局列表（避免调用GetLayoutList导致死锁）
+			availableLayouts := make([]string, 0, len(e.layouts))
+			for name := range e.layouts {
+				availableLayouts = append(availableLayouts, name)
+			}
+			return nil, fmt.Errorf("layout '%s' not found, available layouts: %v", normalizedLayoutName, availableLayouts)
+		}
 	}
 
 	// 优先使用基于Beego机制的布局组合
@@ -222,8 +238,10 @@ func (e *TemplateEngine) createTemplateWithLayoutInheritance(templateName, layou
 // createOptimizedTemplateWithLayout 创建优化的模板+布局组合（基于Beego机制）
 func (e *TemplateEngine) createOptimizedTemplateWithLayout(templateName, layoutName string) (*template.Template, error) {
 	// 检查布局是否存在
-	if _, exists := e.layouts[layoutName]; !exists {
-		return nil, fmt.Errorf("layout '%s' not found", layoutName)
+	if Len(e.layouts) > 0 {
+		if _, exists := e.layouts[layoutName]; !exists {
+			return nil, fmt.Errorf("layout '%s' not found", layoutName)
+		}
 	}
 
 	// 动态获取最新的合并函数
@@ -288,38 +306,69 @@ func (e *TemplateEngine) createOptimizedTemplateWithLayout(templateName, layoutN
 
 // getTemplateBaseName 获取模板的基础名称（用于缓存键）
 func (e *TemplateEngine) getTemplateBaseName(templatePath string) string {
-	// 移除路径和扩展名，获取纯文件名
-	baseName := filepath.Base(templatePath)
+	// 获取当前工作目录用于调试
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	// 移除路径和扩展名，获取文件名
+	baseName := strings.TrimPrefix(templatePath, wd)
 	ext := filepath.Ext(baseName)
 	if ext != "" {
 		baseName = strings.TrimSuffix(baseName, ext)
 	}
+	baseName = strings.TrimPrefix(baseName, string(os.PathSeparator))
+	baseName = strings.ReplaceAll(baseName, "\\", "_")
+	baseName = strings.ReplaceAll(baseName, "/", "_")
 	return baseName
 }
 
 // getLayoutContent 获取布局模板的内容
 func (e *TemplateEngine) getLayoutContent(layoutName string) (string, error) {
-	// 处理布局名称，如果已经包含目录前缀，需要去掉基础目录部分
 	layoutFileName := layoutName
-	if strings.HasPrefix(layoutName, "layouts/") {
-		layoutFileName = strings.TrimPrefix(layoutName, "layouts/")
+	// 确保模板名有扩展名
+	layoutFileName = strings.TrimSuffix(layoutFileName, e.extension)
+
+	// 获取当前工作目录用于调试
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("获取当前工作目录失败: %w", err)
 	}
+	config.Debugf("  [getLayoutContent]当前工作目录: %s", wd)
 
 	// 尝试在布局路径中搜索文件
 	layoutDir := e.layoutPath
+	if parts := strings.Split(e.layoutPath, "/"); len(parts) > 0 {
+		prefix := parts[len(parts)-1]
+		if prefix != "" {
+			layoutFileName = strings.TrimPrefix(layoutName, prefix)
+		}
+	}
 	if layoutDir != "" {
-		possiblePath := filepath.Join(layoutDir, layoutFileName+".html")
+		possiblePath := ""
+		baseLayoutPath := filepath.Join(layoutDir, layoutFileName)
+		isAbs := filepath.IsAbs(baseLayoutPath)
+		if !isAbs {
+			possiblePath = filepath.Join(wd, baseLayoutPath+e.extension)
+		} else {
+			possiblePath = baseLayoutPath + e.extension
+		}
 		if _, err := os.Stat(possiblePath); err == nil {
 			contentBytes, err := os.ReadFile(possiblePath)
 			if err != nil {
-				return "", fmt.Errorf("failed to read layout file '%s': %w", possiblePath, err)
+				return "", fmt.Errorf("failed to read layout file '%s': %w", baseLayoutPath, err)
 			}
 			return e.processLayoutContent(string(contentBytes)), nil
 		}
 
 		// 尝试其他扩展名
 		for _, ext := range []string{".tpl", ".gohtml", ".tmpl"} {
-			possiblePath = filepath.Join(layoutDir, layoutFileName+ext)
+			if !isAbs {
+				possiblePath = filepath.Join(wd, baseLayoutPath+ext)
+			} else {
+				possiblePath = baseLayoutPath + ext
+			}
 			if _, err := os.Stat(possiblePath); err == nil {
 				contentBytes, err := os.ReadFile(possiblePath)
 				if err != nil {
@@ -330,28 +379,44 @@ func (e *TemplateEngine) getLayoutContent(layoutName string) (string, error) {
 		}
 	}
 
+	layoutsDirs := []string{
+		filepath.Join("layout"),
+		filepath.Join("layouts"),
+	}
 	// 如果layoutPath为空或未找到，尝试在所有视图路径中搜索
 	for _, viewDir := range e.viewPaths {
 		// 检查 layouts 子目录
-		layoutsDir := filepath.Join(viewDir, "layouts")
-		possiblePath := filepath.Join(layoutsDir, layoutName+".html")
-		if _, err := os.Stat(possiblePath); err == nil {
-			contentBytes, err := os.ReadFile(possiblePath)
-			if err != nil {
-				return "", fmt.Errorf("failed to read layout file '%s': %w", possiblePath, err)
+		for _, dir := range layoutsDirs {
+			possiblePath := ""
+			layoutsDir := filepath.Join(viewDir, dir)
+			isAbs := filepath.IsAbs(layoutsDir)
+			if !isAbs {
+				possiblePath = filepath.Join(wd, layoutsDir, layoutFileName+e.extension)
+			} else {
+				possiblePath = filepath.Join(layoutsDir, layoutFileName+e.extension)
 			}
-			return e.processLayoutContent(string(contentBytes)), nil
-		}
-
-		// 尝试其他扩展名
-		for _, ext := range []string{".tpl", ".gohtml", ".tmpl"} {
-			possiblePath = filepath.Join(layoutsDir, layoutName+ext)
 			if _, err := os.Stat(possiblePath); err == nil {
 				contentBytes, err := os.ReadFile(possiblePath)
 				if err != nil {
 					return "", fmt.Errorf("failed to read layout file '%s': %w", possiblePath, err)
 				}
 				return e.processLayoutContent(string(contentBytes)), nil
+			}
+
+			// 尝试其他扩展名
+			for _, ext := range []string{".tpl", ".gohtml", ".tmpl"} {
+				if !isAbs {
+					possiblePath = filepath.Join(wd, layoutsDir, layoutFileName+ext)
+				} else {
+					possiblePath = filepath.Join(layoutsDir, layoutFileName+ext)
+				}
+				if _, err := os.Stat(possiblePath); err == nil {
+					contentBytes, err := os.ReadFile(possiblePath)
+					if err != nil {
+						return "", fmt.Errorf("failed to read layout file '%s': %w", possiblePath, err)
+					}
+					return e.processLayoutContent(string(contentBytes)), nil
+				}
 			}
 		}
 	}
@@ -363,13 +428,16 @@ func (e *TemplateEngine) getLayoutContent(layoutName string) (string, error) {
 func (e *TemplateEngine) processLayoutContent(layoutContent string) string {
 	// 支持多种布局内容占位符格式，兼容不同的模板引擎风格
 	contentPlaceholders := []string{
-		"{{.LayoutContent}}",             // 主要格式
-		"{{.Content}}",                   // 通用格式
-		"{{ .LayoutContent }}",           // 带空格格式
-		"{{ .Content }}",                 // 带空格通用格式
-		"{{template \"content\" .}}",     // Beego 风格
-		"{{yield}}",                      // Rails 风格
-		"{{block \"content\" .}}{{end}}", // Go 标准模板 block 格式
+		fmt.Sprintf("%s.LayoutContent%s", e.delimLeft, e.delimRight),           // 主要格式
+		fmt.Sprintf("%s .LayoutContent %s ", e.delimLeft, e.delimRight),        // 带空格格式
+		fmt.Sprintf("%s.Content%s", e.delimLeft, e.delimRight),                 // 通用格式
+		fmt.Sprintf("%s .Content %s ", e.delimLeft, e.delimRight),              // 带空格通用格式
+		fmt.Sprintf("%stemplate \"content\" .%s", e.delimLeft, e.delimRight),   // Beego 风格
+		fmt.Sprintf("%s template \"content\" .%s ", e.delimLeft, e.delimRight), // Beego 风格
+		fmt.Sprintf("%syield%s", e.delimLeft, e.delimRight),                    // Rails 风格
+		fmt.Sprintf("%s yield%s ", e.delimLeft, e.delimRight),                  // Rails 风格
+		fmt.Sprintf("%sblock \"content\" .%s", e.delimLeft, e.delimRight),      // Go 标准模板 block 格式
+		fmt.Sprintf("%s block \"content\" .%s ", e.delimLeft, e.delimRight),    // Go 标准模板 block 格式
 	}
 
 	// 为每种占位符格式添加标记，以便在渲染时识别和替换
@@ -390,13 +458,16 @@ func (e *TemplateEngine) processLayoutContent(layoutContent string) string {
 func (e *TemplateEngine) embedContentInLayout(layoutContent, contentTemplate, templateBaseName string) (string, error) {
 	// 支持多种布局内容占位符格式
 	contentPlaceholders := []string{
-		"{{.LayoutContent}}",             // 主要格式
-		"{{.Content}}",                   // 通用格式
-		"{{ .LayoutContent }}",           // 带空格格式
-		"{{ .Content }}",                 // 带空格通用格式
-		"{{template \"content\" .}}",     // Beego 风格
-		"{{yield}}",                      // Rails 风格
-		"{{block \"content\" .}}{{end}}", // Go 标准模板 block 格式
+		fmt.Sprintf("%s.LayoutContent%s", e.delimLeft, e.delimRight),           // 主要格式
+		fmt.Sprintf("%s .LayoutContent %s ", e.delimLeft, e.delimRight),        // 带空格格式
+		fmt.Sprintf("%s.Content%s", e.delimLeft, e.delimRight),                 // 通用格式
+		fmt.Sprintf("%s .Content %s ", e.delimLeft, e.delimRight),              // 带空格通用格式
+		fmt.Sprintf("%stemplate \"content\" .%s", e.delimLeft, e.delimRight),   // Beego 风格
+		fmt.Sprintf("%s template \"content\" .%s ", e.delimLeft, e.delimRight), // Beego 风格
+		fmt.Sprintf("%syield%s", e.delimLeft, e.delimRight),                    // Rails 风格
+		fmt.Sprintf("%s yield%s ", e.delimLeft, e.delimRight),                  // Rails 风格
+		fmt.Sprintf("%sblock \"content\" .%s", e.delimLeft, e.delimRight),      // Go 标准模板 block 格式
+		fmt.Sprintf("%s block \"content\" .%s ", e.delimLeft, e.delimRight),    // Go 标准模板 block 格式
 	}
 
 	finalContent := layoutContent
@@ -467,7 +538,7 @@ func (e *TemplateEngine) embedContentInLayout(layoutContent, contentTemplate, te
 
 // processLayoutSections 处理布局区块，支持 {{.HtmlHead}}、{{.SideBar}}、{{.Scripts}} 等
 func (e *TemplateEngine) processLayoutSections(layoutContent string, layoutSections map[string]string) string {
-	if layoutSections == nil || len(layoutSections) == 0 {
+	if len(layoutSections) == 0 {
 		return layoutContent
 	}
 
@@ -484,11 +555,11 @@ func (e *TemplateEngine) processLayoutSections(layoutContent string, layoutSecti
 	for sectionName, sectionContent := range layoutSections {
 		// 支持多种占位符格式
 		placeholderFormats := []string{
-			fmt.Sprintf("{{.%s}}", sectionName),                                    // {{.HtmlHead}}
-			fmt.Sprintf("{{ .%s }}", sectionName),                                  // {{ .HtmlHead }}
-			fmt.Sprintf("{{.%s | safehtml}}", sectionName),                         // {{.HtmlHead | safehtml}}
-			fmt.Sprintf("{{template \"%s\" .}}", strings.ToLower(sectionName)),     // {{template "htmlhead" .}}
-			fmt.Sprintf("{{block \"%s\" .}}{{end}}", strings.ToLower(sectionName)), // {{block "htmlhead" .}}{{end}}
+			fmt.Sprintf("%s.%s%s", e.delimLeft, sectionName, e.delimRight),                                // {{.HtmlHead}}
+			fmt.Sprintf("%s .%s %s", e.delimLeft, sectionName, e.delimRight),                              // {{ .HtmlHead }}
+			fmt.Sprintf("%s.%s | safehtml%s", e.delimLeft, sectionName, e.delimRight),                     // {{.HtmlHead | safehtml}}
+			fmt.Sprintf("%stemplate \"%s\" .%s", e.delimLeft, strings.ToLower(sectionName), e.delimRight), // {{template "htmlhead" .}}
+			fmt.Sprintf("%sblock \"%s\" .%s", e.delimLeft, strings.ToLower(sectionName), e.delimRight),    // {{block "htmlhead" .}}{{end}}
 		}
 
 		for _, placeholder := range placeholderFormats {
@@ -508,8 +579,8 @@ func (e *TemplateEngine) processLayoutSections(layoutContent string, layoutSecti
 		}
 
 		emptyPlaceholders := []string{
-			fmt.Sprintf("{{.%s}}", sectionName),
-			fmt.Sprintf("{{ .%s }}", sectionName),
+			fmt.Sprintf("%s.%s%s", e.delimLeft, sectionName, e.delimRight),
+			fmt.Sprintf("%s .%s %s", e.delimLeft, sectionName, e.delimRight),
 		}
 
 		for _, placeholder := range emptyPlaceholders {

@@ -21,15 +21,16 @@ type Config struct {
 
 // DefaultConfig 默认Session配置
 func DefaultConfig() *Config {
+	sessionConfig := config.GlobalSession
 	return &Config{
 		Enabled:       true,
-		CookieName:    "yyhertz_session_id",
-		CookiePath:    "/",
-		CookieDomain:  "",
-		MaxAge:        3600, // 1小时
-		Secure:        false,
-		HttpOnly:      true,
-		SameSite:      "Lax",
+		CookieName:    sessionConfig.Session.Name,
+		CookiePath:    sessionConfig.Session.Cookie.Path,
+		CookieDomain:  sessionConfig.Session.Cookie.Domain,
+		MaxAge:        sessionConfig.Session.MaxAge,
+		Secure:        sessionConfig.Session.Cookie.Secure,
+		HttpOnly:      sessionConfig.Session.Cookie.HttpOnly,
+		SameSite:      sessionConfig.Session.Cookie.SameSite,
 		CleanInterval: 10 * time.Minute,
 	}
 }
@@ -56,7 +57,7 @@ func LoadFromConfig() *Config {
 	}
 
 	sessionCfg := &Config{
-		Enabled:       sessionConfig.Middleware.Session.Enable,
+		Enabled:       true,
 		CookieName:    sessionConfig.Session.Name,
 		CookiePath:    sessionConfig.Session.Cookie.Path,
 		CookieDomain:  sessionConfig.Session.Cookie.Domain,

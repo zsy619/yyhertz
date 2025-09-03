@@ -7,29 +7,34 @@ import (
 	"html/template"
 	"math"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/zsy619/yyhertz/framework/config"
 )
 
 // GetBeegoTemplateFuncs 获取Beego风格的模板函数（延迟初始化）
 func GetBeegoTemplateFuncs() template.FuncMap {
 	return template.FuncMap{
 		// ============= 基础工具函数 =============
-		"str2html":   Str2HTML,
-		"htmlquote":  HTMLQuote,
+		"html2str":    HTML2str,
+		"str2html":    Str2HTML,
+		"htmlquote":   HTMLQuote,
 		"htmlunquote": HTMLUnquote,
-		"renderform": RenderForm,
-		"assets_js":  AssetsJS,
-		"assets_css": AssetsCSS,
-		"config":     GetConfig,
-		"map_get":    MapGet,
-		"urlfor":     URLFor,
+		"renderform":  RenderForm,
+		"assets_js":   AssetsJS,
+		"assets_css":  AssetsCSS,
+		"config":      GetConfig,
+		"map_get":     MapGet,
+		"urlfor":      URLFor,
 
 		// ============= 字符串处理函数 =============
 		"substr":     Substr,
+		"substr_ext": SubstrExt,
 		"truncate":   TruncateString,
 		"nl2br":      NL2BR,
 		"markdown":   MarkdownString,
@@ -42,15 +47,15 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"trimsuffix": strings.TrimSuffix,
 
 		// ============= 数字处理函数 =============
-		"add":    Add,
-		"sub":    Sub,
-		"mul":    Mul,
-		"div":    Div,
-		"mod":    Mod,
-		"round":  Round,
-		"ceil":   Ceil,
-		"floor":  Floor,
-		"abs":    Abs,
+		"add":   Add,
+		"sub":   Sub,
+		"mul":   Mul,
+		"div":   Div,
+		"mod":   Mod,
+		"round": Round,
+		"ceil":  Ceil,
+		"floor": Floor,
+		"abs":   Abs,
 
 		// ============= 比较函数 =============
 		"eq": Eq,
@@ -62,15 +67,19 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"in": In,
 
 		// ============= 日期时间函数 =============
-		"dateformat":    DateFormat,
-		"date":          Date,
-		"compare":       Compare,
-		"timeago":       TimeAgo,
-		"timesince":     TimeSince,
-		"timeSince":     TimeSince,    // 🔧 添加驼峰命名支持，修复模板中的timeSince调用
-		"timeuntil":     TimeUntil,
-		"now":           Now,
-		"timestamp":     Timestamp,
+		"dateformat": DateFormat,
+		"date":       Date,
+		"compare":    Compare,
+		"comparenot": CompareNot,
+		"compareNot": CompareNot,
+		"timeago":    TimeAgo,
+		"timeAgo":    TimeAgo,
+		"timesince":  TimeSince,
+		"timeSince":  TimeSince, // 🔧 添加驼峰命名支持，修复模板中的timeSince调用
+		"timeuntil":  TimeUntil,
+		"timeUntil":  TimeUntil,
+		"now":        Now,
+		"timestamp":  Timestamp,
 
 		// ============= 集合函数 =============
 		"len":      Len,
@@ -84,69 +93,83 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"contains": strings.Contains,
 
 		// ============= 类型转换函数 =============
-		"int":     ToInt,
-		"int64":   ToInt64,
-		"float":   ToFloat,
-		"string":  ToString,
-		"bool":    ToBool,
+		"int":    ToInt,
+		"int64":  ToInt64,
+		"float":  ToFloat,
+		"string": ToString,
+		"bool":   ToBool,
 
 		// ============= URL和编码函数 =============
-		"urlencode":   URLEncode,
-		"urldecode":   URLDecode,
-		"base64enc":   Base64Encode,
-		"base64dec":   Base64Decode,
-		"md5":         MD5Hash,
-		"safejs":      SafeJS,
-		"safehtml":    SafeHTML,
-		"raw":         RawHTML,      // 🔧 添加raw函数，用于输出原始HTML
+		"urlencode": URLEncode,
+		"urlEncode": URLEncode,
+		"urldecode": URLDecode,
+		"urlDecode": URLDecode,
+		"base64enc": Base64Encode,
+		"base64Enc": Base64Encode,
+		"base64dec": Base64Decode,
+		"base64Dec": Base64Decode,
+		"md5":       MD5Hash,
+		"safejs":    SafeJS,
+		"safeJs":    SafeJS,
+		"safehtml":  SafeHTML,
+		"safeHtml":  SafeHTML,
+		"raw":       RawHTML, // 🔧 添加raw函数，用于输出原始HTML
 
 		// ============= 条件和逻辑函数 =============
-		"default":  Default,
-		"empty":    Empty,
-		"notnil":   NotNil,
-		"and":      And,
-		"or":       Or,
-		"not":      Not,
+		"default": Default,
+		"empty":   Empty,
+		"notnil":  NotNil,
+		"notNil":  NotNil,
+		"notnull": NotNil,
+		"notNull": NotNil,
+		"and":     And,
+		"or":      Or,
+		"not":     Not,
 
 		// ============= 组件属性函数 =============
-		"prop":     GetProp,
-		"slot":     GetSlot,         // 🔧 添加slot函数，用于组件插槽
+		"prop": GetProp,
+		"slot": GetSlot, // 🔧 添加slot函数，用于组件插槽
 
 		// ============= 模板包含函数 =============
-		"include":    Include,
-		"template":   TemplateInclude,
-		"partial":    Partial,
-		"component":  ComponentTemplate,
-		"render":     RenderTemplate,
+		"include":   Include,
+		"template":  TemplateInclude,
+		"partial":   Partial,
+		"component": ComponentTemplate,
+		"render":    RenderTemplate,
 
 		// ============= 迭代和循环函数 =============
-		"range":    CreateRange,
-		"seq":      CreateSequence,
-		"dict":     CreateDict,
-		"makedict": MakeDict,
+		"makerange": CreateRange,
+		"makeRange": CreateRange,
+		"makeseq":   CreateSequence,
+		"makeSeq":   CreateSequence,
+		"makedict":  MakeDict,
+		"makeDict":  MakeDict,
 		"makeslice": MakeSlice,
+		"makeSlice": MakeSlice,
 
 		// ============= 格式化函数 =============
-		"printf":        fmt.Sprintf,
-		"sprintf":       fmt.Sprintf,
-		"formatsize":    FmtByte,
+		"printf":         fmt.Sprintf,
+		"sprintf":        fmt.Sprintf,
+		"formatsize":     FmtByte,
+		"formatSize":     FmtByte,
+		"formatfilesize": FmtByte, // 添加别名，兼容不同命名风格
 		"formatFileSize": FmtByte, // 添加别名，兼容不同命名风格
-		"currency":      formatCurrency,
-		"number":        FormatNumber,
-		"percent":       FormatPercent,
+		"currency":       formatCurrency,
+		"number":         FormatNumber,
+		"percent":        FormatPercent,
 
 		// ============= 其他实用函数 =============
-		"uuid":      GenerateUUID,
-		"random":    RandomString,
-		"shuffle":   Shuffle,
-		"unique":    Unique,
-		"i18n":      I18n,           // 🔧 添加国际化函数
-		"trans":     I18n,           // 国际化函数别名
-		"compact":   Compact,
-		"flatten":   Flatten,
-		
+		"uuid":    GenerateUUID,
+		"random":  RandomString,
+		"shuffle": Shuffle,
+		"unique":  Unique,
+		"i18n":    I18n, // 🔧 添加国际化函数
+		"trans":   I18n, // 国际化函数别名
+		"compact": Compact,
+		"flatten": Flatten,
+
 		// ============= CSRF Token 函数 =============
-		"csrf":      GetCSRFTokenFromContext,
+		"csrf":       GetCSRFTokenFromContext,
 		"csrf_token": GetCSRFTokenFromContext,
 	}
 }
@@ -155,6 +178,28 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 var BeegoTemplateFuncs = GetBeegoTemplateFuncs()
 
 // ============= 字符串处理函数实现 =============
+
+// HTML2str returns escaping text convert from html.
+func HTML2str(html string) string {
+	re := regexp.MustCompile(`\<[\S\s]+?\>`)
+	html = re.ReplaceAllStringFunc(html, strings.ToLower)
+
+	// remove STYLE
+	re = regexp.MustCompile(`\<style[\S\s]+?\</style\>`)
+	html = re.ReplaceAllString(html, "")
+
+	// remove SCRIPT
+	re = regexp.MustCompile(`\<script[\S\s]+?\</script\>`)
+	html = re.ReplaceAllString(html, "")
+
+	re = regexp.MustCompile(`\<[\S\s]+?\>`)
+	html = re.ReplaceAllString(html, "\n")
+
+	re = regexp.MustCompile(`\s{2,}`)
+	html = re.ReplaceAllString(html, "\n")
+
+	return strings.TrimSpace(html)
+}
 
 // Str2HTML 转换字符串为HTML
 func Str2HTML(str string) template.HTML {
@@ -171,8 +216,26 @@ func HTMLUnquote(str string) string {
 	return template.HTMLEscapeString(str) // 简化实现
 }
 
+// Substr returns the substr from start to length.
+func Substr(s string, start, length int) string {
+	bt := []rune(s)
+	if start < 0 {
+		start = 0
+	}
+	if start > len(bt) {
+		start = start % len(bt)
+	}
+	var end int
+	if (start + length) > (len(bt) - 1) {
+		end = len(bt)
+	} else {
+		end = start + length
+	}
+	return string(bt[start:end])
+}
+
 // Substr 字符串截取
-func Substr(str string, start, length int) string {
+func SubstrExt(str string, start, length int) string {
 	runes := []rune(str)
 	if start < 0 || start >= len(runes) {
 		return ""
@@ -202,22 +265,22 @@ func NL2BR(str string) template.HTML {
 func MarkdownString(str string) template.HTML {
 	// 简化的Markdown实现
 	html := template.HTMLEscapeString(str)
-	
+
 	// 处理粗体
 	re := regexp.MustCompile(`\*\*(.*?)\*\*`)
 	html = re.ReplaceAllString(html, "<strong>$1</strong>")
-	
+
 	// 处理斜体
 	re = regexp.MustCompile(`\*(.*?)\*`)
 	html = re.ReplaceAllString(html, "<em>$1</em>")
-	
+
 	// 处理链接
 	re = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	html = re.ReplaceAllString(html, `<a href="$2">$1</a>`)
-	
+
 	// 处理换行
 	html = strings.ReplaceAll(html, "\n", "<br>")
-	
+
 	return template.HTML(html)
 }
 
@@ -284,7 +347,7 @@ func In(item any, slice any) bool {
 // DateFormat 格式化日期
 func DateFormat(date any, layout string) string {
 	var t time.Time
-	
+
 	switch v := date.(type) {
 	case time.Time:
 		t = v
@@ -317,7 +380,7 @@ func DateFormat(date any, layout string) string {
 	default:
 		return fmt.Sprintf("%v", date)
 	}
-	
+
 	return t.Format(layout)
 }
 
@@ -327,10 +390,10 @@ func Date(layout string) string {
 }
 
 // Compare 比较日期
-func Compare(date1, date2 any) int {
+func CompareDate(date1, date2 any) int {
 	t1 := parseTime(date1)
 	t2 := parseTime(date2)
-	
+
 	if t1.Before(t2) {
 		return -1
 	} else if t1.After(t2) {
@@ -345,9 +408,9 @@ func TimeAgo(date any) string {
 	if t.IsZero() {
 		return ""
 	}
-	
+
 	duration := time.Since(t)
-	
+
 	if duration < time.Minute {
 		return "刚刚"
 	} else if duration < time.Hour {
@@ -374,12 +437,12 @@ func TimeUntil(date any) string {
 	if t.IsZero() {
 		return ""
 	}
-	
+
 	duration := time.Until(t)
 	if duration < 0 {
 		return TimeAgo(date)
 	}
-	
+
 	if duration < time.Minute {
 		return "即将"
 	} else if duration < time.Hour {
@@ -406,7 +469,7 @@ func Timestamp() int64 {
 // AppendSlice 追加到切片
 func AppendSlice(slice any, items ...any) []any {
 	result := make([]any, 0)
-	
+
 	// 转换现有切片
 	switch s := slice.(type) {
 	case []any:
@@ -424,7 +487,7 @@ func AppendSlice(slice any, items ...any) []any {
 			result = append(result, slice)
 		}
 	}
-	
+
 	// 追加新项目
 	result = append(result, items...)
 	return result
@@ -571,7 +634,7 @@ func Empty(v any) bool {
 	if v == nil {
 		return true
 	}
-	
+
 	switch val := v.(type) {
 	case string:
 		return val == ""
@@ -591,9 +654,24 @@ func Empty(v any) bool {
 	return false
 }
 
-// NotNil 检查是否不为nil
-func NotNil(v any) bool {
-	return v != nil
+// Compare is a quick and dirty comparison function. It will convert whatever you give it to strings and see if the two values are equal.
+// Whitespace is trimmed. Used by the template parser as "eq".
+func Compare(a, b any) (equal bool) {
+	equal = false
+	if strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b)) {
+		equal = true
+	}
+	return
+}
+
+// CompareNot !Compare
+func CompareNot(a, b any) (equal bool) {
+	return !Compare(a, b)
+}
+
+// NotNil the same as CompareNot
+func NotNil(a any) (isNil bool) {
+	return CompareNot(a, nil)
 }
 
 // ============= 迭代和循环函数实现 =============
@@ -603,7 +681,7 @@ func CreateRange(start, end int) []int {
 	if start > end {
 		return []int{}
 	}
-	
+
 	result := make([]int, end-start+1)
 	for i := 0; i < len(result); i++ {
 		result[i] = start + i
@@ -652,7 +730,7 @@ func FormatPercent(number any, decimals int) string {
 // formatCurrency 格式化货币
 func formatCurrency(amount any, currency string) string {
 	var value float64
-	
+
 	switch v := amount.(type) {
 	case float64:
 		value = v
@@ -665,7 +743,7 @@ func formatCurrency(amount any, currency string) string {
 	default:
 		return fmt.Sprintf("%v", amount)
 	}
-	
+
 	switch currency {
 	case "CNY", "RMB", "¥":
 		return fmt.Sprintf("¥%.2f", value)
@@ -706,7 +784,7 @@ func Shuffle(slice any) []any {
 func Unique(slice any) []any {
 	seen := make(map[any]bool)
 	result := make([]any, 0)
-	
+
 	switch s := slice.(type) {
 	case []any:
 		for _, v := range s {
@@ -736,7 +814,7 @@ func Unique(slice any) []any {
 // Compact 移除空值
 func Compact(slice any) []any {
 	result := make([]any, 0)
-	
+
 	switch s := slice.(type) {
 	case []any:
 		for _, v := range s {
@@ -763,7 +841,7 @@ func Compact(slice any) []any {
 // Flatten 扁平化嵌套切片
 func Flatten(slice any) []any {
 	result := make([]any, 0)
-	
+
 	switch s := slice.(type) {
 	case []any:
 		for _, v := range s {
@@ -906,20 +984,20 @@ func renderFormField(field any) string {
 	switch f := field.(type) {
 	case map[string]any:
 		var html strings.Builder
-		
+
 		fieldType := getStringValue(f, "type", "text")
 		name := getStringValue(f, "name", "")
 		value := getStringValue(f, "value", "")
 		label := getStringValue(f, "label", "")
 		required := getBoolValue(f, "required", false)
-		
+
 		if label != "" {
 			html.WriteString(fmt.Sprintf(`<label for="%s">%s</label>`, name, label))
 		}
-		
+
 		switch fieldType {
 		case "text", "email", "password", "number", "tel":
-			html.WriteString(fmt.Sprintf(`<input type="%s" name="%s" id="%s" value="%s"`, 
+			html.WriteString(fmt.Sprintf(`<input type="%s" name="%s" id="%s" value="%s"`,
 				fieldType, name, name, template.HTMLEscapeString(value)))
 			if required {
 				html.WriteString(` required`)
@@ -946,14 +1024,14 @@ func renderFormField(field any) string {
 						if optValue == value {
 							selected = ` selected`
 						}
-						html.WriteString(fmt.Sprintf(`<option value="%s"%s>%s</option>`, 
+						html.WriteString(fmt.Sprintf(`<option value="%s"%s>%s</option>`,
 							template.HTMLEscapeString(optValue), selected, template.HTMLEscapeString(optLabel)))
 					}
 				}
 			}
 			html.WriteString(`</select>`)
 		}
-		
+
 		return html.String()
 	default:
 		return fmt.Sprintf("<!-- Unsupported field type: %T -->", field)
@@ -980,7 +1058,7 @@ func getBoolValue(m map[string]any, key string, defaultValue bool) bool {
 // AssetsJS JS资源（完整实现）
 func AssetsJS(files ...string) template.HTML {
 	var html strings.Builder
-	
+
 	for _, file := range files {
 		// 检查是否是完整URL
 		if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") || strings.HasPrefix(file, "//") {
@@ -992,14 +1070,14 @@ func AssetsJS(files ...string) template.HTML {
 		}
 		html.WriteString("\n")
 	}
-	
+
 	return template.HTML(html.String())
 }
 
 // AssetsCSS CSS资源（完整实现）
 func AssetsCSS(files ...string) template.HTML {
 	var html strings.Builder
-	
+
 	for _, file := range files {
 		// 检查是否是完整URL
 		if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") || strings.HasPrefix(file, "//") {
@@ -1011,7 +1089,7 @@ func AssetsCSS(files ...string) template.HTML {
 		}
 		html.WriteString("\n")
 	}
-	
+
 	return template.HTML(html.String())
 }
 
@@ -1021,37 +1099,69 @@ func processAssetPath(file, assetType string) string {
 	if !strings.HasSuffix(file, "."+assetType) {
 		file = file + "." + assetType
 	}
-	
+
 	// 构建基础路径
 	basePath := fmt.Sprintf("/static/%s/%s", assetType, file)
-	
+
 	// 这里可以添加版本号、CDN、压缩等逻辑
 	// 暂时返回基础路径
 	return basePath
 }
 
 // GetConfig 获取配置（完整实现，需要配置系统支持）
-func GetConfig(key string) string {
-	// 这里需要集成实际的配置系统
-	// 暂时返回占位符，实际项目中应该调用配置管理器
-	return fmt.Sprintf("config_value_%s", key)
+
+func GetConfig(returnType, key string, defaultVal any) (value any) {
+	switch returnType {
+	case "String":
+		value = config.GetAppConfigString(key)
+	case "Bool":
+		value = config.GetAppConfigBool(key)
+	case "Int":
+		value = config.GetAppConfigInt(key)
+	case "Int64":
+		value = config.GetAppConfigInt64(key)
+	case "Float64":
+		value = config.GetAppConfigFloat64(key)
+	case "Float32":
+		value = config.GetAppConfigFloat32(key)
+	default:
+		fmt.Println("errors")
+	}
+
+	// if err != nil {
+	// 	if reflect.TypeOf(returnType) != reflect.TypeOf(defaultVal) {
+	// 		err = errors.New("defaultVal type does not match returnType")
+	// 	} else {
+	// 		value, err = defaultVal, nil
+	// 	}
+	// } else if reflect.TypeOf(value).Kind() == reflect.String {
+	// 	if value == "" {
+	// 		if reflect.TypeOf(defaultVal).Kind() != reflect.String {
+	// 			err = errors.New("defaultVal type must be a String if the returnType is a String")
+	// 		} else {
+	// 			value = defaultVal.(string)
+	// 		}
+	// 	}
+	// }
+
+	return
 }
 
 // URLFor 生成URL（完整实现）
 func URLFor(endpoint string, params ...any) string {
 	baseURL := "/" + strings.TrimPrefix(endpoint, "/")
-	
+
 	// 处理参数
 	if len(params) > 0 {
 		query := make([]string, 0)
-		
+
 		// 支持多种参数格式
 		for i := 0; i < len(params); i++ {
 			switch p := params[i].(type) {
 			case map[string]any:
 				// map形式的参数
 				for k, v := range p {
-					query = append(query, fmt.Sprintf("%s=%s", 
+					query = append(query, fmt.Sprintf("%s=%s",
 						url.QueryEscape(k), url.QueryEscape(fmt.Sprintf("%v", v))))
 				}
 			case string:
@@ -1059,27 +1169,95 @@ func URLFor(endpoint string, params ...any) string {
 				if i+1 < len(params) {
 					key := p
 					value := fmt.Sprintf("%v", params[i+1])
-					query = append(query, fmt.Sprintf("%s=%s", 
+					query = append(query, fmt.Sprintf("%s=%s",
 						url.QueryEscape(key), url.QueryEscape(value)))
 					i++ // 跳过下一个参数
 				}
 			}
 		}
-		
+
 		if len(query) > 0 {
 			baseURL += "?" + strings.Join(query, "&")
 		}
 	}
-	
+
 	return baseURL
 }
 
-// MapGet 从map获取值
-func MapGet(m map[string]any, key string) any {
-	if v, ok := m[key]; ok {
-		return v
+// MapGet getting value from map by keys
+// usage:
+//
+//	Data["m"] = M{
+//	    "a": 1,
+//	    "1": map[string]float64{
+//	        "c": 4,
+//	    },
+//	}
+//
+// {{ map_get m "a" }} // return 1
+// {{ map_get m 1 "c" }} // return 4
+func MapGet(arg1 any, arg2 ...any) (any, error) {
+	arg1Type := reflect.TypeOf(arg1)
+	arg1Val := reflect.ValueOf(arg1)
+
+	if arg1Type.Kind() == reflect.Map && len(arg2) > 0 {
+		// check whether arg2[0] type equals to arg1 key type
+		// if they are different, make conversion
+		arg2Val := reflect.ValueOf(arg2[0])
+		arg2Type := reflect.TypeOf(arg2[0])
+		if arg2Type.Kind() != arg1Type.Key().Kind() {
+			// convert arg2Value to string
+			var arg2ConvertedVal any
+			arg2String := fmt.Sprintf("%v", arg2[0])
+
+			// convert string representation to any other type
+			switch arg1Type.Key().Kind() {
+			case reflect.Bool:
+				arg2ConvertedVal, _ = strconv.ParseBool(arg2String)
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				arg2ConvertedVal, _ = strconv.ParseInt(arg2String, 0, 64)
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+				arg2ConvertedVal, _ = strconv.ParseUint(arg2String, 0, 64)
+			case reflect.Float32, reflect.Float64:
+				arg2ConvertedVal, _ = strconv.ParseFloat(arg2String, 64)
+			case reflect.String:
+				arg2ConvertedVal = arg2String
+			default:
+				arg2ConvertedVal = arg2Val.Interface()
+			}
+			arg2Val = reflect.ValueOf(arg2ConvertedVal)
+		}
+
+		storedVal := arg1Val.MapIndex(arg2Val)
+
+		if storedVal.IsValid() {
+			var result any
+
+			switch arg1Type.Elem().Kind() {
+			case reflect.Bool:
+				result = storedVal.Bool()
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				result = storedVal.Int()
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+				result = storedVal.Uint()
+			case reflect.Float32, reflect.Float64:
+				result = storedVal.Float()
+			case reflect.String:
+				result = storedVal.String()
+			default:
+				result = storedVal.Interface()
+			}
+
+			// if there is more keys, handle this recursively
+			if len(arg2) > 1 {
+				return MapGet(result, arg2[1:]...)
+			}
+			return result, nil
+		}
+		return nil, nil
+
 	}
-	return nil
+	return nil, nil
 }
 
 // ============= 辅助函数 =============
@@ -1117,12 +1295,12 @@ func GetProp(key string, defaultValue ...any) any {
 	// 这个函数需要在实际的模板渲染上下文中实现
 	// 在组件渲染时，prop数据应该从模板上下文中获取
 	// 这里提供一个基本实现，实际使用时需要结合具体的数据上下文
-	
+
 	// 如果有默认值，返回第一个默认值
 	if len(defaultValue) > 0 {
 		return defaultValue[0]
 	}
-	
+
 	// 否则返回空字符串
 	return ""
 }

@@ -209,25 +209,25 @@ func BenchmarkMathFunctions(b *testing.B) {
 func BenchmarkComparisonFunctions(b *testing.B) {
 	b.Run("Eq", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = view.Eq(5, 5)
+			_, _ = view.Eq(5, 5)
 		}
 	})
 
 	b.Run("Ne", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = view.Ne(5, 3)
+			_, _ = view.Ne(5, 3)
 		}
 	})
 
 	b.Run("Lt", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = view.Lt(3, 5)
+			_, _ = view.Lt(3, 5)
 		}
 	})
 
 	b.Run("Gt", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = view.Gt(5, 3)
+			_, _ = view.Gt(5, 3)
 		}
 	})
 }
