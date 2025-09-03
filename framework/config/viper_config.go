@@ -241,6 +241,26 @@ func (gcm *ViperConfigManager[T]) GetInt(key string) int {
 	return gcm.viper.GetInt(key)
 }
 
+// GetInt64 获取整数配置值
+func (gcm *ViperConfigManager[T]) GetInt64(key string) int64 {
+	gcm.ensureInitialized()
+
+	gcm.mu.RLock()
+	defer gcm.mu.RUnlock()
+
+	return gcm.viper.GetInt64(key)
+}
+
+// GetInt64 获取整数配置值
+func (gcm *ViperConfigManager[T]) GetIntFloat64(key string) float64 {
+	gcm.ensureInitialized()
+
+	gcm.mu.RLock()
+	defer gcm.mu.RUnlock()
+
+	return gcm.viper.GetFloat64(key)
+}
+
 // GetIntSlice 获取整数数组配置值
 func (cm *ViperConfigManager[T]) GetIntSlice(key string) []int {
 	cm.ensureInitialized()

@@ -460,6 +460,33 @@ func GetConfigInt[T ConfigInterface](config T, key string, defaults ...int) int 
 	return value
 }
 
+func GetConfigInt64[T ConfigInterface](config T, key string, defaults ...int64) int64 {
+	manager := GetViperConfigManager(config)
+	value := manager.GetInt64(key)
+	if value == 0 && len(defaults) > 0 {
+		return defaults[0]
+	}
+	return value
+}
+
+func GetConfigFloat32[T ConfigInterface](config T, key string, defaults ...float32) float32 {
+	manager := GetViperConfigManager(config)
+	value := manager.GetFloat64(key)
+	if value == 0 && len(defaults) > 0 {
+		return defaults[0]
+	}
+	return float32(value)
+}
+
+func GetConfigFloat64[T ConfigInterface](config T, key string, defaults ...float64) float64 {
+	manager := GetViperConfigManager(config)
+	value := manager.GetFloat64(key)
+	if value == 0 && len(defaults) > 0 {
+		return defaults[0]
+	}
+	return value
+}
+
 // GetConfigBool 获取指定配置的布尔值（泛型版本）
 func GetConfigBool[T ConfigInterface](config T, key string, defaults ...bool) bool {
 	manager := GetViperConfigManager(config)
@@ -553,43 +580,55 @@ func WatchConfig[T ConfigInterface](config T) {
 // 便捷的特定配置类型函数
 
 // GetAppConfigInt 获取应用配置的整数值
-func GetAppConfigInt(key string) int {
-	return GetConfigInt(AppConfig{}, key)
+func GetAppConfigInt(key string, defaults ...int) int {
+	return GetConfigInt(AppConfig{}, key, defaults...)
+}
+
+func GetAppConfigInt64(key string, defaults ...int64) int64 {
+	return GetConfigInt64(AppConfig{}, key, defaults...)
+}
+
+func GetAppConfigFloat32(key string, defaults ...float32) float32 {
+	return GetConfigFloat32(AppConfig{}, key, defaults...)
+}
+
+func GetAppConfigFloat64(key string, defaults ...float64) float64 {
+	return GetConfigFloat64(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigString 获取应用配置的字符串值
-func GetAppConfigString(key string) string {
-	return GetConfigString(AppConfig{}, key)
+func GetAppConfigString(key string, defaults ...string) string {
+	return GetConfigString(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigBool 获取应用配置的布尔值
-func GetAppConfigBool(key string) bool {
-	return GetConfigBool(AppConfig{}, key)
+func GetAppConfigBool(key string, defaults ...bool) bool {
+	return GetConfigBool(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigStringSlice 获取应用配置的字符串切片值
-func GetAppConfigStringSlice(key string) []string {
-	return GetConfigStringSlice(AppConfig{}, key)
+func GetAppConfigStringSlice(key string, defaults ...[]string) []string {
+	return GetConfigStringSlice(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigIntSlice 获取应用配置的整数切片值
-func GetAppConfigIntSlice(key string) []int {
-	return GetConfigIntSlice(AppConfig{}, key)
+func GetAppConfigIntSlice(key string, defaults ...[]int) []int {
+	return GetConfigIntSlice(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigBoolSlice 获取应用配置的布尔切片值
-func GetAppConfigBoolSlice(key string) []bool {
-	return GetConfigBoolSlice(AppConfig{}, key)
+func GetAppConfigBoolSlice(key string, defaults ...[]bool) []bool {
+	return GetConfigBoolSlice(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigFloat64Slice 获取应用配置的浮点数切片值
-func GetAppConfigFloat64Slice(key string) []float64 {
-	return GetConfigFloat64Slice(AppConfig{}, key)
+func GetAppConfigFloat64Slice(key string, defaults ...[]float64) []float64 {
+	return GetConfigFloat64Slice(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigDurationSlice 获取应用配置的时间间隔切片值
-func GetAppConfigDurationSlice(key string) []time.Duration {
-	return GetConfigDurationSlice(AppConfig{}, key)
+func GetAppConfigDurationSlice(key string, defaults ...[]time.Duration) []time.Duration {
+	return GetConfigDurationSlice(AppConfig{}, key, defaults...)
 }
 
 // GetAppConfigTimeSlice 获取应用配置的时间切片值
@@ -598,8 +637,8 @@ func GetAppConfigTimeSlice(key string) []time.Time {
 }
 
 // GetLogConfigString 获取日志配置的字符串值
-func GetLogConfigString(key string) string {
-	return GetConfigString(LogConfig{}, key)
+func GetLogConfigString(key string, defaults ...string) string {
+	return GetConfigString(LogConfig{}, key, defaults...)
 }
 
 // GetLogConfigInt 获取日志配置的整数值
@@ -608,13 +647,13 @@ func GetLogConfigInt(key string) int {
 }
 
 // GetLogConfigBool 获取日志配置的布尔值
-func GetLogConfigBool(key string) bool {
-	return GetConfigBool(LogConfig{}, key)
+func GetLogConfigBool(key string, defaults ...bool) bool {
+	return GetConfigBool(LogConfig{}, key, defaults...)
 }
 
 // GetLogConfigStringSlice 获取日志配置的字符串切片值
-func GetLogConfigStringSlice(key string) []string {
-	return GetConfigStringSlice(LogConfig{}, key)
+func GetLogConfigStringSlice(key string, defaults ...[]string) []string {
+	return GetConfigStringSlice(LogConfig{}, key, defaults...)
 }
 
 // 基于反射的新获取方式 - 支持默认值

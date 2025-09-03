@@ -3,7 +3,7 @@
 
 # ========== 基础路径配置 ==========
 paths:
-  view_paths: ["/Volumes/E/JYW/YYHertz/framework/mvc/view/examples/views"]  # 视图文件搜索路径
+  view_paths: ["views"]  # 视图文件搜索路径
   layout_path: "views/layouts"        # 布局文件路径
   component_path: "views/components"  # 组件文件路径
   extension: ".html"                  # 模板文件扩展名

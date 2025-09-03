@@ -11,6 +11,26 @@ app:
   host: "0.0.0.0"
   timezone: "Asia/Shanghai"
 
+# 站点信息配置
+site:
+  name: "YYHertz"          # 站点名称，用于页面标题等
+  version: "1.0.0"            # 站点版本号，用于版本管理和缓存控制
+  title: "YYHertz - 高性能Go Web框架"  # 完整的站点标题
+  description: "YYHertz是一个基于Go语言的高性能Web开发框架"  # 站点描述，用于SEO
+  keywords:                   # SEO关键词列表
+    - "Go"
+    - "Web框架"
+    - "高性能"
+    - "YYHertz"
+  domain: "localhost"         # 主域名，用于生成绝对链接
+  url: "http://localhost:6060"  # 完整的站点URL
+  language: "zh-CN"           # 语言设置，用于国际化
+  locale: "zh_CN"             # 区域设置，更具体的本地化
+  favicon: "/static/favicon.ico"  # 网站图标文件路径
+  logo: "/static/logo.png"    # 网站Logo文件路径
+  copyright: "© 2025 YYHertz. All rights reserved."  # 版权信息
+  icp: ""                     # ICP备案号，中国网站必需
+  analytics: ""               # 统计代码，如Google Analytics
 
 # 日志配置
 log:
