@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/zsy619/yyhertz/framework/config"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // GetBeegoTemplateFuncs 获取Beego风格的模板函数（延迟初始化）
@@ -33,8 +34,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"urlfor":      URLFor,
 
 		// ============= 字符串处理函数 =============
-		"substr":     Substr,
-		"substr_ext": SubstrExt,
+		"substr":     util.Substr,
+		"Substring":  util.Substr,
 		"truncate":   TruncateString,
 		"nl2br":      NL2BR,
 		"markdown":   MarkdownString,
@@ -42,6 +43,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"replace":    strings.ReplaceAll,
 		"tolower":    strings.ToLower,
 		"toupper":    strings.ToUpper,
+		"totitle":    strings.ToTitle,
+		"tocapital":  util.CapitalizeFirst,
 		"trim":       strings.TrimSpace,
 		"trimprefix": strings.TrimPrefix,
 		"trimsuffix": strings.TrimSuffix,
@@ -91,6 +94,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"join":     strings.Join,
 		"split":    strings.Split,
 		"contains": strings.Contains,
+		"first":    First,  // 🔧 添加first函数，获取集合的第一个元素
+		"last":     Last,   // 🔧 添加last函数，获取集合的最后一个元素
 
 		// ============= 类型转换函数 =============
 		"int":    ToInt,
@@ -131,11 +136,13 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"slot": GetSlot, // 🔧 添加slot函数，用于组件插槽
 
 		// ============= 模板包含函数 =============
-		"include":   Include,
-		"template":  TemplateInclude,
-		"partial":   Partial,
-		"component": ComponentTemplate,
-		"render":    RenderTemplate,
+		"include":         Include,
+		"template":        TemplateInclude,
+		"templateinclude": TemplateInclude, // 🔧 添加小写版本的templateinclude函数映射
+		"unescaped":       RawHTML,         // 🔧 添加unescaped函数，用于输出原始HTML（不转义）
+		"partial":         Partial,
+		"component":       ComponentTemplate,
+		"render":          RenderTemplate,
 
 		// ============= 迭代和循环函数 =============
 		"makerange": CreateRange,
@@ -234,8 +241,8 @@ func Substr(s string, start, length int) string {
 	return string(bt[start:end])
 }
 
-// Substr 字符串截取
-func SubstrExt(str string, start, length int) string {
+// Substring 字符串截取
+func Substring(str string, start, length int) string {
 	runes := []rune(str)
 	if start < 0 || start >= len(runes) {
 		return ""
@@ -465,6 +472,46 @@ func Timestamp() int64 {
 }
 
 // ============= 集合函数实现 =============
+
+// ============= 集合函数实现 =============
+
+// First 获取集合的第一个元素
+func First(slice any) any {
+	switch s := slice.(type) {
+	case []any:
+		if len(s) > 0 {
+			return s[0]
+		}
+	case []string:
+		if len(s) > 0 {
+			return s[0]
+		}
+	case []int:
+		if len(s) > 0 {
+			return s[0]
+		}
+	}
+	return nil
+}
+
+// Last 获取集合的最后一个元素  
+func Last(slice any) any {
+	switch s := slice.(type) {
+	case []any:
+		if len(s) > 0 {
+			return s[len(s)-1]
+		}
+	case []string:
+		if len(s) > 0 {
+			return s[len(s)-1]
+		}
+	case []int:
+		if len(s) > 0 {
+			return s[len(s)-1]
+		}
+	}
+	return nil
+}
 
 // AppendSlice 追加到切片
 func AppendSlice(slice any, items ...any) []any {

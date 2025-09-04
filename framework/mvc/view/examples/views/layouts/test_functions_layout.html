@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - YYHertz 模板函数测试</title>
+    
+    <!-- 基础样式 -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-layout-container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .test-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .test-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .test-header .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        .test-nav {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .test-nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        .test-nav a {
+            text-decoration: none;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            background: rgba(102,126,234,0.1);
+        }
+        .test-nav a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .test-main-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+        }
+        .test-content-area {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .test-sidebar-area {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 25px;
+            height: fit-content;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .test-footer {
+            background: rgba(44,62,80,0.9);
+            backdrop-filter: blur(10px);
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .function-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #e74c3c, #f39c12);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 2px;
+        }
+        .layout-info-panel {
+            background: rgba(231,76,60,0.1);
+            border: 1px solid rgba(231,76,60,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .layout-info-panel h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .test-main-layout {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .test-header h1 {
+                font-size: 2rem;
+            }
+            .test-nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+    
+    <!-- 自定义头部内容 -->
+    {{.HtmlHead}}
+</head>
+<body>
+    <!-- 测试专用顶部导航 -->
+    <div class="test-layout-container">
+        <header class="test-header">
+            <h1>🧪 {{.Title}}</h1>
+            <p class="subtitle">{{.Description | default "YYHertz 框架模板函数测试平台"}}</p>
+        </header>
+
+        <!-- 导航栏 -->
+        <nav class="test-nav">
+            <ul>
+                <li><a href="/test/beego-functions">🏠 测试首页</a></li>
+                <li><a href="/test/beego-functions/include_layout">📄 Include + Layout</a></li>
+                <li><a href="/test/beego-functions/templateinclude_layout">📋 TemplateInclude + Layout</a></li>
+                <li><a href="/test/beego-functions/partial_layout">🧩 Partial + Layout</a></li>
+                <li><a href="/test/beego-functions/componenttemplate_layout">⚙️ Component + Layout</a></li>
+                <li><a href="/test/beego-functions/rendertemplate_layout">🎨 Render + Layout</a></li>
+            </ul>
+        </nav>
+
+        <div class="test-main-layout">
+            <!-- 主要内容区域 -->
+            <main class="test-content-area">
+                <!-- Layout信息面板 -->
+                <div class="layout-info-panel">
+                    <h4>📐 Layout 模板信息</h4>
+                    <p><strong>Layout文件：</strong> test_functions_layout.html</p>
+                    <p><strong>当前测试：</strong> {{.TestType | default "模板函数测试"}}</p>
+                    <p><strong>渲染时间：</strong> {{dateformat now "2006-01-02 15:04:05"}}</p>
+                    <div style="margin-top: 10px;">
+                        <span class="function-badge">Include</span>
+                        <span class="function-badge">TemplateInclude</span>
+                        <span class="function-badge">Partial</span>
+                        <span class="function-badge">Component</span>
+                        <span class="function-badge">RenderTemplate</span>
+                    </div>
+                </div>
+
+                <!-- 主要内容区域 - 这里会插入具体的测试内容 -->
+                {{.LayoutContent}}
+            </main>
+            
+            <!-- 侧边栏 -->
+            <aside class="test-sidebar-area">
+                <!-- 自定义侧边栏内容 -->
+                {{str2html .Sidebar | default ""}}
+                
+                <!-- 默认侧边栏内容 -->
+                <div class="sidebar-default">
+                    <h3>🔧 测试工具</h3>
+                    <ul style="list-style: none; padding: 0; margin: 1rem 0;">
+                        <li style="padding: 0.5rem 0;">
+                            <a href="/test/beego-functions/all-functions" style="color: #667eea; text-decoration: none;">
+                                📊 综合测试
+                            </a>
+                        </li>
+                        <li style="padding: 0.5rem 0;">
+                            <a href="/test/beego-functions/error-handling" style="color: #667eea; text-decoration: none;">
+                                🚨 错误处理
+                            </a>
+                        </li>
+                        <li style="padding: 0.5rem 0;">
+                            <a href="/test/beego-functions/nested-includes" style="color: #667eea; text-decoration: none;">
+                                🌀 嵌套测试
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <h3>📈 性能统计</h3>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 1rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>模板函数数量</span>
+                            <strong style="color: #28a745;">176</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Layout渲染</span>
+                            <strong style="color: #007bff;">启用</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>模板缓存</span>
+                            <strong style="color: #ffc107;">{{if .CacheEnabled}}启用{{else}}禁用{{end}}</strong>
+                        </div>
+                    </div>
+
+                    <h3>🎯 快捷操作</h3>
+                    <div style="margin: 1rem 0;">
+                        <button onclick="window.location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin: 3px;">
+                            🔄 刷新测试
+                        </button>
+                        <button onclick="window.open('/test/beego-functions')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin: 3px;">
+                            🚀 Demo页面
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="test-footer">
+        <div class="test-layout-container">
+            <p>&copy; 2024 YYHertz 框架 | 模板函数测试平台</p>
+            <p><small>高性能 Go Web 框架 • Layout 模板系统 • 176个模板函数</small></p>
+        </div>
+    </footer>
+
+    <!-- 自定义脚本内容 -->
+    {{.Scripts}}
+    
+    <!-- 默认脚本 -->
+    <script>
+        // 页面加载完成提示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 YYHertz 模板函数测试页面 (Layout版) 加载完成');
+            console.log('📐 当前Layout: test_functions_layout.html');
+            console.log('🔧 可用模板函数: 176个');
+        });
+
+        // 添加一些测试相关的交互功能
+        function showTestInfo() {
+            alert('当前正在使用 YYHertz Layout 模板系统进行模板函数测试');
+        }
+        
+        // 在页面上添加测试标记
+        const testMark = document.createElement('div');
+        testMark.innerHTML = '🧪 Layout测试模式';
+        testMark.style.cssText = `
+            position: fixed; top: 10px; right: 10px; 
+            background: rgba(102,126,234,0.9); color: white; 
+            padding: 5px 10px; border-radius: 15px; 
+            font-size: 12px; z-index: 1000;
+            backdrop-filter: blur(10px);
+        `;
+        document.body.appendChild(testMark);
+    </script>
+</body>
+</html>

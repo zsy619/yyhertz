@@ -1,0 +1,52 @@
+<div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <div style="background: #f8f9fa; padding: 20px; border-bottom: 1px solid #dee2e6;">
+        <h5 style="margin: 0; color: #495057; display: flex; align-items: center; gap: 10px;">
+            📚 文章列表
+            <span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em;">
+                {{len .articles}} 篇文章
+            </span>
+        </h5>
+    </div>
+    
+    <div style="padding: 0;">
+        {{range $index, $article := .articles}}
+        <div style="padding: 20px; border-bottom: 1px solid #e9ecef; transition: background 0.2s ease;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                <div style="flex: 1;">
+                    <h6 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 1.1em; font-weight: 600;">
+                        {{add $index 1}}. {{$article.title}}
+                    </h6>
+                    <p style="color: #6c757d; margin: 0 0 15px 0; line-height: 1.6;">
+                        {{$article.summary}}
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 15px; font-size: 0.9em; color: #8e9ba7;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            👤 {{$article.author}}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            📅 {{$article.date}}
+                        </div>
+                    </div>
+                </div>
+                <div style="flex-shrink: 0;">
+                    <a href="#" style="
+                        background: linear-gradient(135deg, #007bff, #0056b3); 
+                        color: white; 
+                        text-decoration: none; 
+                        padding: 8px 16px; 
+                        border-radius: 20px; 
+                        font-size: 0.85em;
+                        transition: transform 0.2s ease;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        阅读更多
+                    </a>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    
+    <div style="padding: 15px 20px; background: #f8f9fa; font-size: 0.9em; color: #6c757d;">
+        ✅ 文章列表通过 <code>render "test/partials/article_list.html"</code> 渲染
+    </div>
+</div>

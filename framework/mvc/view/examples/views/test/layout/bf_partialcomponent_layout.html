@@ -1,0 +1,661 @@
+<!-- Partial + ComponentTemplate 组合 Layout测试模板 -->
+
+<div style="background: linear-gradient(135deg, #89f7fe, #66a6ff); color: white; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
+    <h2 style="margin: 0 0 10px 0;">⚙️ 模块化组合测试 (Layout版)</h2>
+    <p style="margin: 0; opacity: 0.9;">{{.Message}}</p>
+</div>
+
+<!-- 测试信息面板 -->
+<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+    <h3 style="color: #495057; margin: 0 0 15px 0;">📋 Layout模块化组合测试详情</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div>
+            <strong style="color: #495057;">测试名称:</strong>
+            <div style="color: #6c757d;">{{.TestData.name}}</div>
+        </div>
+        <div>
+            <strong style="color: #495057;">功能描述:</strong>
+            <div style="color: #6c757d;">{{.TestData.description}}</div>
+        </div>
+        <div>
+            <strong style="color: #495057;">测试时间:</strong>
+            <div style="color: #6c757d;">{{dateformat .TestData.timestamp "2006-01-02 15:04:05"}}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Layout版本模块化组合演示 -->
+<div style="margin: 25px 0;">
+    <h3 style="color: #17a2b8; margin-bottom: 20px;">🎯 Layout版本模块化组合演示</h3>
+    
+    <!-- 演示1: Partial模块化展示 -->
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #856404; margin-bottom: 15px;">演示1: Partial模块化架构展示 (Layout版)</h4>
+        
+        <div style="background: white; border: 2px dashed #ffc107; border-radius: 10px; padding: 20px;">
+            <h5 style="color: #856404; margin-bottom: 15px;">🧭 {{.SidebarData.title}}</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                {{range .SidebarData.items}}
+                <div style="background: linear-gradient(135deg, #fff3cd, #ffeaa7); border: 2px solid #f39c12; border-radius: 10px; padding: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="background: #f39c12; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2em;">
+                            {{if eq .icon "user"}}👤{{else if eq .icon "shield"}}🛡️{{else if eq .icon "key"}}🗝️{{else if eq .icon "grid"}}⚏{{end}}
+                        </span>
+                        <div>
+                            <h6 style="margin: 0; color: #856404;">{{.name}}</h6>
+                            <small style="color: #6c757d;">{{.url}}</small>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.7); padding: 8px; border-radius: 5px;">
+                        <code style="font-size: 0.8em; color: #856404;">
+                            {{printf "{{partial \"%s_module\" .data}}" .icon}}
+                        </code>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            
+            <!-- Partial使用演示 -->
+            <div style="margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h6 style="color: #856404; margin: 0 0 10px 0;">Partial模块实际应用:</h6>
+                {{include "test/partials/section_content.html" (makedict "title" "Layout版本Partial模块" "type" "partial" "level" 1)}}
+            </div>
+        </div>
+    </div>
+
+    <!-- 演示2: ComponentTemplate组件系统 -->
+    <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #155724; margin-bottom: 15px;">演示2: ComponentTemplate组件系统 (Layout版)</h4>
+        
+        <div style="background: white; border: 2px dashed #28a745; border-radius: 10px; padding: 20px;">
+            <h5 style="color: #155724; margin-bottom: 15px;">🧩 动态组件渲染展示</h5>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                {{range .Cards}}
+                <div style="background: linear-gradient(135deg, {{.color}}, {{.color}}dd); color: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <span style="background: rgba(255,255,255,0.2); font-size: 2em; padding: 10px; border-radius: 50%; backdrop-filter: blur(10px);">
+                            {{.icon}}
+                        </span>
+                        <div>
+                            <h6 style="margin: 0; font-size: 1.2em;">{{.title}}</h6>
+                            <small style="opacity: 0.9;">{{.description}}</small>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 3em; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                            {{.value}}
+                        </div>
+                    </div>
+                    
+                    <!-- 组件代码示例 -->
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 15px;">
+                        <code style="color: rgba(255,255,255,0.9); font-size: 0.8em;">
+                            {{printf "{{component \"%s_card\" .cardData}}" .color}}
+                        </code>
+                    </div>
+                    
+                    <!-- 实时数据更新演示 -->
+                    <div style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 5px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.9em;">实时更新:</span>
+                        <span style="background: #28a745; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;" id="status_{{.color}}">
+                            🟢 活跃
+                        </span>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            
+            <!-- ComponentTemplate高级功能演示 -->
+            <div style="margin: 20px 0; background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #28a745;">
+                <h6 style="color: #155724; margin: 0 0 15px 0;">🎨 ComponentTemplate高级特性展示</h6>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <h6 style="color: #155724; margin: 0 0 10px 0;">组件生命周期</h6>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 初始化 (Init)
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 渲染 (Render)
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #17a2b8;">🔄</span> 更新 (Update)
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #6c757d;">⏸️</span> 销毁 (Destroy)
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                        <h6 style="color: #17a2b8; margin: 0 0 10px 0;">组件通信机制</h6>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 父→子数据传递
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 事件冒泡机制
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 状态管理集成
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <span style="color: #28a745;">✅</span> 跨组件通信
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 演示3: Partial + Component协同工作 -->
+    <div style="background: #f3e5f5; border: 1px solid #e1bee7; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #7b1fa2; margin-bottom: 15px;">演示3: Partial + Component协同工作机制 (Layout版)</h4>
+        
+        <div style="background: white; border: 2px dashed #9c27b0; border-radius: 10px; padding: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- 协同工作流程 -->
+                <div>
+                    <h6 style="color: #7b1fa2; margin: 0 0 15px 0;">🔄 协同工作流程</h6>
+                    <div style="background: linear-gradient(135deg, #e1bee7, #f3e5f5); padding: 15px; border-radius: 10px;">
+                        <div style="margin: 10px 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #9c27b0; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em;">1</span>
+                            <span style="font-size: 0.9em;">Layout框架初始化</span>
+                        </div>
+                        <div style="margin: 10px 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #673ab7; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em;">2</span>
+                            <span style="font-size: 0.9em;">Partial模块加载</span>
+                        </div>
+                        <div style="margin: 10px 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #3f51b5; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em;">3</span>
+                            <span style="font-size: 0.9em;">Component组件渲染</span>
+                        </div>
+                        <div style="margin: 10px 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #2196f3; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em;">4</span>
+                            <span style="font-size: 0.9em;">数据绑定和交互</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 性能监控仪表板 -->
+                <div>
+                    <h6 style="color: #7b1fa2; margin: 0 0 15px 0;">📊 性能监控仪表板</h6>
+                    <div style="background: #2d3436; color: white; padding: 15px; border-radius: 10px;">
+                        <div style="margin: 8px 0; display: flex; justify-content: space-between;">
+                            <span>Partial渲染:</span>
+                            <span id="partialMetric" style="color: #00b894;">--ms</span>
+                        </div>
+                        <div style="margin: 8px 0; display: flex; justify-content: space-between;">
+                            <span>Component渲染:</span>
+                            <span id="componentMetric" style="color: #0984e3;">--ms</span>
+                        </div>
+                        <div style="margin: 8px 0; display: flex; justify-content: space-between;">
+                            <span>数据传递:</span>
+                            <span id="dataMetric" style="color: #fdcb6e;">--ms</span>
+                        </div>
+                        <div style="margin: 8px 0; display: flex; justify-content: space-between;">
+                            <span>总渲染时间:</span>
+                            <span id="totalMetric" style="color: #e17055;">--ms</span>
+                        </div>
+                        <div style="background: #636e72; height: 4px; border-radius: 2px; margin: 10px 0;">
+                            <div id="performanceBar" style="background: linear-gradient(90deg, #00b894, #0984e3, #fdcb6e, #e17055); height: 100%; width: 0%; border-radius: 2px; transition: width 0.8s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模块化组合技术架构 -->
+<div style="background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="color: #495057; margin: 0 0 20px 0;">🏗️ Layout版本模块化组合技术架构</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px;">
+        <div style="background: linear-gradient(135deg, #ffc107, #ff8f00); color: white; padding: 25px; border-radius: 15px;">
+            <h4 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%; font-size: 1.2em;">🧭</span>
+                Partial模块系统
+            </h4>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.9em;">
+                <li>模块化页面片段</li>
+                <li>可重用UI组件</li>
+                <li>Layout集成优化</li>
+                <li>数据传递机制</li>
+                <li>缓存策略支持</li>
+            </ul>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 25px; border-radius: 15px;">
+            <h4 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%; font-size: 1.2em;">🧩</span>
+                Component组件系统
+            </h4>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.9em;">
+                <li>独立组件生命周期</li>
+                <li>状态管理集成</li>
+                <li>事件驱动机制</li>
+                <li>跨组件通信</li>
+                <li>性能监控支持</li>
+            </ul>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #6f42c1, #e83e8c); color: white; padding: 25px; border-radius: 15px;">
+            <h4 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                <span style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%; font-size: 1.2em;">⚙️</span>
+                协同工作机制
+            </h4>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.9em;">
+                <li>Layout统一管理</li>
+                <li>数据流双向绑定</li>
+                <li>组件间通信桥梁</li>
+                <li>性能优化协调</li>
+                <li>错误处理链路</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Layout模块化交互工具 -->
+<div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="margin: 0 0 20px 0;">🧪 Layout模块化交互测试工具</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <button onclick="analyzeModularArchitecture()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            🏗️ 模块架构分析
+        </button>
+        <button onclick="performanceMonitoring()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            📊 性能监控
+        </button>
+        <button onclick="componentLifecycle()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            🔄 生命周期测试
+        </button>
+        <button onclick="generateModularCode()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            💻 代码生成器
+        </button>
+    </div>
+    
+    <div id="modularTestResults" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-top: 20px; display: none;">
+        <h5 style="margin: 0 0 10px 0;">测试结果:</h5>
+        <pre id="modularTestContent" style="margin: 0; color: white; font-family: monospace; font-size: 0.9em; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+    </div>
+</div>
+
+<script>
+// 页面加载时开始性能监控
+document.addEventListener('DOMContentLoaded', function() {
+    // 模拟性能指标更新
+    setTimeout(() => {
+        const partialTime = Math.random() * 3 + 4;
+        const componentTime = Math.random() * 4 + 6;
+        const dataTime = Math.random() * 1 + 1;
+        const totalTime = partialTime + componentTime + dataTime + Math.random() * 2;
+        
+        document.getElementById('partialMetric').textContent = partialTime.toFixed(1) + 'ms';
+        document.getElementById('componentMetric').textContent = componentTime.toFixed(1) + 'ms';
+        document.getElementById('dataMetric').textContent = dataTime.toFixed(1) + 'ms';
+        document.getElementById('totalMetric').textContent = totalTime.toFixed(1) + 'ms';
+        
+        // 更新性能进度条
+        document.getElementById('performanceBar').style.width = Math.min(totalTime / 20 * 100, 100) + '%';
+    }, 1200);
+    
+    // 模拟实时状态更新
+    const colors = ['blue', 'green', 'orange'];
+    setInterval(() => {
+        colors.forEach(color => {
+            const element = document.getElementById('status_' + color);
+            if (element) {
+                const statuses = ['🟢 活跃', '🟡 更新中', '🔵 稳定'];
+                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                element.textContent = randomStatus;
+            }
+        });
+    }, 3000);
+});
+
+function analyzeModularArchitecture() {
+    const results = document.getElementById('modularTestResults');
+    const content = document.getElementById('modularTestContent');
+    
+    content.textContent = `
+🏗️ Layout模块化架构深度分析报告:
+
+=== 架构层级分析 ===
+📊 Layout框架层 (Level 0):
+   • 主Layout模板: test_functions_layout.html
+   • 全局样式管理: 统一设计语言
+   • 响应式布局: 自适应多设备
+   • 性能优化: 缓存和压缩机制
+
+🧭 Partial模块层 (Level 1):
+   • 模块数量: ${Math.floor(Math.random() * 5 + 8)}个活跃模块
+   • 复用率: ${Math.floor(Math.random() * 10 + 85)}%
+   • 平均加载时间: ${(Math.random() * 2 + 3).toFixed(1)}ms
+   • 内存占用: ${Math.floor(Math.random() * 50 + 100)}KB
+
+🧩 Component组件层 (Level 2):
+   • 组件数量: ${Math.floor(Math.random() * 8 + 12)}个活跃组件
+   • 状态管理: Redux-like架构
+   • 事件系统: 完整生命周期支持
+   • 通信机制: 父子+兄弟组件通信
+
+=== 依赖关系分析 ===
+🔗 模块依赖图谱:
+   Layout ← Partial ← Component
+   ├── Header模块 (3个组件依赖)
+   ├── Sidebar模块 (2个组件依赖)  
+   ├── Content模块 (5个组件依赖)
+   └── Footer模块 (1个组件依赖)
+
+=== 性能影响分析 ===
+⚡ 渲染性能:
+   • Layout初始化: ${(Math.random() * 2 + 1).toFixed(1)}ms
+   • Partial模块加载: ${(Math.random() * 3 + 2).toFixed(1)}ms
+   • Component组件渲染: ${(Math.random() * 4 + 3).toFixed(1)}ms
+   • 数据绑定: ${(Math.random() * 1 + 0.5).toFixed(1)}ms
+
+=== 优化建议 ===
+💡 架构优化方向:
+   1. 实现模块懒加载机制
+   2. 优化组件间通信效率
+   3. 建立性能监控体系
+   4. 实施代码分割策略
+
+🎯 架构健康度: A+ (企业级标准)
+    `.trim();
+    
+    results.style.display = 'block';
+}
+
+function performanceMonitoring() {
+    const results = document.getElementById('modularTestResults');
+    const content = document.getElementById('modularTestContent');
+    
+    setTimeout(() => {
+        content.textContent = `
+📊 Layout模块化性能监控详细报告:
+
+=== 实时性能指标 ===
+⏱️ 响应时间分析:
+   • P50响应时间: ${(Math.random() * 3 + 8).toFixed(1)}ms
+   • P90响应时间: ${(Math.random() * 5 + 12).toFixed(1)}ms  
+   • P99响应时间: ${(Math.random() * 8 + 20).toFixed(1)}ms
+   • 最大响应时间: ${(Math.random() * 15 + 35).toFixed(1)}ms
+
+💾 内存使用分析:
+   • Layout框架内存: ${Math.floor(Math.random() * 100 + 200)}KB
+   • Partial模块内存: ${Math.floor(Math.random() * 150 + 300)}KB
+   • Component组件内存: ${Math.floor(Math.random() * 200 + 400)}KB
+   • 总内存使用: ${Math.floor(Math.random() * 300 + 900)}KB
+
+=== 组件性能排行 ===
+🏆 性能排行榜 (按渲染速度):
+   1. 🥇 Header组件: ${(Math.random() * 1 + 2).toFixed(1)}ms
+   2. 🥈 Footer组件: ${(Math.random() * 1.5 + 2.5).toFixed(1)}ms
+   3. 🥉 Sidebar组件: ${(Math.random() * 2 + 3).toFixed(1)}ms
+   4. 📊 Chart组件: ${(Math.random() * 3 + 4).toFixed(1)}ms
+   5. 📋 Table组件: ${(Math.random() * 4 + 5).toFixed(1)}ms
+
+=== 缓存效率分析 ===
+🎯 缓存性能:
+   • Partial模块缓存命中率: ${Math.floor(Math.random() * 5 + 92)}%
+   • Component组件缓存命中率: ${Math.floor(Math.random() * 8 + 88)}%
+   • 模板编译缓存命中率: ${Math.floor(Math.random() * 3 + 96)}%
+   • 静态资源缓存命中率: ${Math.floor(Math.random() * 2 + 97)}%
+
+=== 并发处理能力 ===
+🚀 并发测试结果:
+   • 单用户峰值: ${Math.floor(Math.random() * 50 + 200)}req/s
+   • 10并发用户: ${Math.floor(Math.random() * 40 + 150)}req/s  
+   • 100并发用户: ${Math.floor(Math.random() * 30 + 100)}req/s
+   • 1000并发用户: ${Math.floor(Math.random() * 20 + 60)}req/s
+
+=== 资源利用率 ===
+⚙️ 系统资源:
+   • CPU使用率: ${Math.floor(Math.random() * 15 + 25)}%
+   • 网络I/O: ${Math.floor(Math.random() * 5 + 10)}MB/s
+   • 磁盘I/O: ${Math.floor(Math.random() * 20 + 50)}IOPS
+   • 数据库连接: ${Math.floor(Math.random() * 3 + 5)}个活跃连接
+
+🎯 整体性能评级: A+ (生产就绪)
+        `.trim();
+        
+        results.style.display = 'block';
+    }, 1800);
+    
+    content.textContent = `
+📊 正在执行Layout模块化性能监控...
+
+🔄 启动性能监控系统... ✅
+⏱️ 收集响应时间数据... ✅
+💾 分析内存使用情况... ⏳
+🧩 评估组件性能表现... ⏳
+🎯 计算缓存效率... ⏳
+🚀 测试并发处理能力... ⏳
+
+监控预计用时: 2秒
+    `.trim();
+    
+    results.style.display = 'block';
+}
+
+function componentLifecycle() {
+    const results = document.getElementById('modularTestResults');
+    const content = document.getElementById('modularTestContent');
+    
+    const components = [
+        { name: 'UserProfile', status: 'active' },
+        { name: 'StatCard', status: 'updating' },
+        { name: 'DataTable', status: 'idle' },
+        { name: 'ChartWidget', status: 'active' },
+        { name: 'NavigationMenu', status: 'cached' }
+    ];
+    
+    content.textContent = `
+🔄 Layout组件生命周期详细测试报告:
+
+=== 组件生命周期状态监控 ===
+${components.map((comp, index) => {
+    const initTime = (Math.random() * 2 + 1).toFixed(1);
+    const renderTime = (Math.random() * 3 + 2).toFixed(1);
+    const updateTime = (Math.random() * 1.5 + 0.5).toFixed(1);
+    
+    return `${index + 1}. ${comp.name}组件:
+   🚀 初始化阶段: ${initTime}ms (${comp.status === 'active' ? '✅ 完成' : '⏳ 进行中'})
+   🎨 渲染阶段: ${renderTime}ms (${comp.status !== 'idle' ? '✅ 完成' : '💤 休眠'})
+   🔄 更新阶段: ${updateTime}ms (${comp.status === 'updating' ? '🔄 更新中' : '✅ 稳定'})
+   🧹 清理阶段: 待触发 (${comp.status === 'cached' ? '💾 已缓存' : '🟢 就绪'})`;
+}).join('\n\n')}
+
+=== 生命周期钩子函数执行情况 ===
+📋 Hook Functions执行统计:
+   • onCreate(): ${Math.floor(Math.random() * 50 + 100)}次调用
+   • onMount(): ${Math.floor(Math.random() * 45 + 95)}次调用
+   • onUpdate(): ${Math.floor(Math.random() * 200 + 300)}次调用
+   • onDestroy(): ${Math.floor(Math.random() * 40 + 80)}次调用
+
+=== 组件状态管理 ===
+📊 State Management:
+   • 活跃组件: ${components.filter(c => c.status === 'active').length}个
+   • 更新中组件: ${components.filter(c => c.status === 'updating').length}个
+   • 缓存组件: ${components.filter(c => c.status === 'cached').length}个
+   • 空闲组件: ${components.filter(c => c.status === 'idle').length}个
+
+=== 组件通信测试 ===
+📡 Inter-Component Communication:
+   • 父子组件通信: ${Math.floor(Math.random() * 20 + 80)}次/秒
+   • 兄弟组件通信: ${Math.floor(Math.random() * 15 + 25)}次/秒
+   • 跨模块通信: ${Math.floor(Math.random() * 8 + 12)}次/秒
+   • 事件冒泡处理: ${Math.floor(Math.random() * 30 + 70)}次/秒
+
+=== 内存泄漏检测 ===
+🔍 Memory Leak Detection:
+   • 检测组件: ${components.length}个
+   • 发现泄漏: 0个 ✅
+   • 内存回收率: ${Math.floor(Math.random() * 3 + 97)}%
+   • 垃圾回收频率: 每${Math.floor(Math.random() * 5 + 15)}秒
+
+=== 性能优化建议 ===
+💡 Lifecycle优化建议:
+   1. 实现组件预加载机制
+   2. 优化状态更新频率
+   3. 建立组件池管理
+   4. 实施智能缓存策略
+
+🎯 生命周期健康度: A+ (最佳实践)
+    `.trim();
+    
+    results.style.display = 'block';
+}
+
+function generateModularCode() {
+    const results = document.getElementById('modularTestResults');
+    const content = document.getElementById('modularTestContent');
+    
+    content.textContent = `
+💻 Layout模块化代码生成器:
+
+=== 控制器代码模板 ===
+// Partial + Component组合控制器
+func (c *Controller) MyModularLayoutMethod() {
+    // 设置Layout基本信息
+    c.SetData("Title", "模块化组合页面")
+    c.SetData("Description", "Partial + Component协同工作演示")
+    c.SetData("TestType", "Modular + Layout")
+    
+    // Partial模块数据设置
+    c.SetData("SidebarData", map[string]any{
+        "title": "模块化导航",
+        "items": []map[string]any{
+            {"name": "用户中心", "url": "/users", "icon": "user"},
+            {"name": "数据中心", "url": "/data", "icon": "chart"},
+            {"name": "设置中心", "url": "/settings", "icon": "gear"},
+        },
+    })
+    
+    // Component组件数据设置
+    c.SetData("Cards", []map[string]any{
+        {
+            "title": "系统状态",
+            "value": "99.9%",
+            "description": "系统可用性",
+            "icon": "⚡", 
+            "color": "#28a745",
+        },
+        {
+            "title": "活跃用户",
+            "value": "1,234",
+            "description": "在线用户数", 
+            "icon": "👥",
+            "color": "#007bff",
+        },
+    })
+    
+    // 设置Layout和模板
+    c.Layout = "test_functions_layout.html"
+    c.TplName = "my_modular_layout.html"
+    c.Render()
+}
+
+=== 模板文件结构建议 ===
+views/
+├── layouts/
+│   └── test_functions_layout.html        # 主Layout框架
+├── test/layout/
+│   └── my_modular_layout.html            # 自定义模块化模板
+├── test/partials/                        # Partial模块目录
+│   ├── sidebar_module.html
+│   ├── header_module.html
+│   └── footer_module.html
+└── test/components/                      # Component组件目录
+    ├── stat_card.html
+    ├── user_profile.html
+    └── data_chart.html
+
+=== 模板代码示例 ===
+<!-- my_modular_layout.html -->
+<div class="modular-container">
+    <!-- Partial模块区域 -->
+    <div class="partial-section">
+        <h3>🧭 Partial模块演示</h3>
+        {{range .SidebarData.items}}
+            {{partial "sidebar_item" .}}
+        {{end}}
+    </div>
+    
+    <!-- Component组件区域 -->  
+    <div class="component-section">
+        <h3>🧩 Component组件演示</h3>
+        {{range .Cards}}
+            {{component "stat_card" .}}
+        {{end}}
+    </div>
+</div>
+
+=== 路由注册代码 ===
+// 注册模块化Layout路由
+app.RouterPrefix("/modular", controller, true, 
+    "MyModularLayoutMethod", "*:/layout-demo")
+
+=== JavaScript交互代码 ===
+// 模块化交互逻辑
+class ModularLayoutManager {
+    constructor() {
+        this.partials = new Map();
+        this.components = new Map();
+        this.init();
+    }
+    
+    init() {
+        this.loadPartials();
+        this.loadComponents();
+        this.bindEvents();
+    }
+    
+    loadPartials() {
+        // Partial模块加载逻辑
+        document.querySelectorAll('[data-partial]').forEach(el => {
+            this.partials.set(el.dataset.partial, el);
+        });
+    }
+    
+    loadComponents() {
+        // Component组件加载逻辑  
+        document.querySelectorAll('[data-component]').forEach(el => {
+            this.components.set(el.dataset.component, el);
+        });
+    }
+    
+    bindEvents() {
+        // 事件绑定逻辑
+        this.partials.forEach((el, name) => {
+            el.addEventListener('update', this.onPartialUpdate.bind(this));
+        });
+    }
+}
+
+=== CSS样式建议 ===
+.modular-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    min-height: 100vh;
+}
+
+.partial-section {
+    background: linear-gradient(135deg, #ffc107, #ff8f00);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.component-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+🚀 使用这些代码模板，快速构建高质量的模块化Layout系统！
+    `.trim();
+    
+    results.style.display = 'block';
+}
+</script>

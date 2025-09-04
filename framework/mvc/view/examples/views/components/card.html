@@ -1,0 +1,36 @@
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3); margin: 10px 0;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <h4 style="margin: 0; font-size: 1.3em; font-weight: 600;">
+            🎯 {{.cardTitle | default "默认标题"}}
+        </h4>
+        <div style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            💎
+        </div>
+    </div>
+    
+    <p style="margin: 0 0 20px 0; line-height: 1.6; opacity: 0.9;">
+        {{.cardContent | default "默认内容描述"}}
+    </p>
+    
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <a href="{{.buttonUrl | default '#'}}" style="
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            text-decoration: none; 
+            padding: 12px 20px; 
+            border-radius: 25px; 
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            {{.buttonText | default "了解更多"}}
+        </a>
+        <div style="font-size: 0.85em; opacity: 0.7;">
+            ✨ 组件渲染
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.9em;">
+        ✅ 此卡片通过 <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">component "card"</code> 组件渲染
+    </div>
+</div>

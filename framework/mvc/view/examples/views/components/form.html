@@ -1,0 +1,72 @@
+<div style="background: white; border: 1px solid #e0e6ed; border-radius: 10px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+    <form action="{{.action | default '/submit'}}" method="{{.method | default 'post'}}" style="margin: 0;">
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h5 style="color: #2c3e50; margin: 0 0 10px 0; font-size: 1.2em;">📝 动态表单组件</h5>
+            <p style="color: #7f8c8d; margin: 0; font-size: 0.9em;">通过ComponentTemplate渲染的可复用表单</p>
+        </div>
+        
+        {{range .fields}}
+        <div style="margin-bottom: 20px;">
+            <label for="{{.name}}" style="display: block; color: #495057; font-weight: 500; margin-bottom: 8px;">
+                {{.label}}{{if .required}}<span style="color: #e74c3c;">*</span>{{end}}
+            </label>
+            
+            {{if eq .type "textarea"}}
+                <textarea 
+                    name="{{.name}}" 
+                    id="{{.name}}" 
+                    {{if .required}}required{{end}}
+                    style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-family: inherit; font-size: 0.95em; transition: border-color 0.2s ease;"
+                    rows="4"
+                    placeholder="请输入{{.label}}"
+                    onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 0 2px rgba(0,123,255,0.25)'"
+                    onblur="this.style.borderColor='#ced4da'; this.style.boxShadow='none'"
+                ></textarea>
+            {{else}}
+                <input 
+                    type="{{.type}}" 
+                    name="{{.name}}" 
+                    id="{{.name}}" 
+                    {{if .required}}required{{end}}
+                    style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-family: inherit; font-size: 0.95em; transition: border-color 0.2s ease;"
+                    placeholder="请输入{{.label}}"
+                    onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 0 2px rgba(0,123,255,0.25)'"
+                    onblur="this.style.borderColor='#ced4da'; this.style.boxShadow='none'"
+                >
+            {{end}}
+        </div>
+        {{end}}
+        
+        <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 25px;">
+            <button type="submit" style="
+                background: linear-gradient(135deg, #007bff, #0056b3); 
+                color: white; 
+                border: none; 
+                padding: 12px 25px; 
+                border-radius: 6px; 
+                font-weight: 500; 
+                cursor: pointer;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(0,123,255,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                📤 提交表单
+            </button>
+            
+            <button type="reset" style="
+                background: #6c757d; 
+                color: white; 
+                border: none; 
+                padding: 12px 25px; 
+                border-radius: 6px; 
+                font-weight: 500; 
+                cursor: pointer;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                🔄 重置
+            </button>
+        </div>
+    </form>
+    
+    <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff; font-size: 0.9em; color: #6c757d;">
+        ✅ 此表单通过 <code>component "form"</code> 组件渲染，包含 {{len .fields}} 个字段
+    </div>
+</div>

@@ -300,3 +300,14 @@ func Wordwrap(str string, width int, breakStr string, cut bool) string {
 
 	return result.String()
 }
+
+// 首字母大写（处理Unicode字符）
+func CapitalizeFirst(str string) string {
+	if str == "" {
+		return ""
+	}
+
+	runes := []rune(str)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}

@@ -1,0 +1,19 @@
+<div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e0e6ed; margin-top: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div style="width: 8px; height: 8px; background: {{if eq .type "include"}}#3498db{{else}}#8e44ad{{end}}; border-radius: 50%;"></div>
+        <span style="font-weight: 500; color: #495057;">内容详情</span>
+    </div>
+    
+    <p style="margin: 0 0 12px 0; color: #6c757d; line-height: 1.5;">
+        这是 <strong>{{.title}}</strong> 的详细内容。通过{{if eq .type "include"}}Include{{else}}TemplateInclude{{end}}函数进行渲染。
+    </p>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85em;">
+        <span style="color: #8e9ba7;">
+            内容类型: <strong style="color: {{if eq .type "include"}}#3498db{{else}}#8e44ad{{end}};">{{.type}}</strong>
+        </span>
+        <span style="color: #8e9ba7;">
+            渲染时间: {{dateformat now "15:04:05"}}
+        </span>
+    </div>
+</div>
