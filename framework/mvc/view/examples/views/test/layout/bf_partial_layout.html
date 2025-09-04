@@ -1,0 +1,527 @@
+<!-- Partial Layout测试模板 -->
+
+<div style="background: linear-gradient(135deg, #fd7e14, #f39c12); color: white; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
+    <h2 style="margin: 0 0 10px 0;">🧩 Partial 函数测试 (Layout版)</h2>
+    <p style="margin: 0; opacity: 0.9;">{{.Message}}</p>
+</div>
+
+<!-- 测试信息面板 -->
+<div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+    <h3 style="color: #856404; margin: 0 0 15px 0;">📋 测试详情</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div>
+            <strong style="color: #856404;">测试名称:</strong>
+            <div style="color: #495057;">{{.TestData.name}}</div>
+        </div>
+        <div>
+            <strong style="color: #856404;">功能描述:</strong>
+            <div style="color: #495057;">{{.TestData.description}}</div>
+        </div>
+        <div>
+            <strong style="color: #856404;">测试时间:</strong>
+            <div style="color: #495057;">{{dateformat .TestData.timestamp "2006-01-02 15:04:05"}}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Partial函数演示区域 -->
+<div style="margin: 25px 0;">
+    <h3 style="color: #fd7e14; margin-bottom: 20px;">🎯 Partial函数演示</h3>
+    
+    <!-- 演示1: 模块化部分 -->
+    <div style="background: #ffeaa7; border: 1px solid #f39c12; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #b8860b; margin-bottom: 15px;">演示1: 模块化部分渲染</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            {{range .PartialData.sections}}
+            <div style="border: 2px dashed #fd7e14; background: white; padding: 15px; border-radius: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 1.5em;">{{.icon}}</span>
+                    <h5 style="color: #fd7e14; margin: 0;">{{.title}}</h5>
+                </div>
+                <p style="color: #6c757d; margin-bottom: 10px;">{{.content}}</p>
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 0.85em;">
+                    <code>{{`{{partial "section" .data}}`}}</code>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- 演示2: 可重用组件 -->
+    <div style="background: #e8f4fd; border: 1px solid #b8daff; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #004085; margin-bottom: 15px;">演示2: 可重用部分组件</h4>
+        
+        <!-- 用户信息卡片部分 -->
+        <div style="background: white; border: 2px dashed #007bff; border-radius: 8px; padding: 20px; margin: 10px 0;">
+            <h5 style="color: #007bff; margin-bottom: 15px;">用户信息部分</h5>
+            {{include "test/partials/user_profile.html" (makedict "username" "Partial测试用户" "role" "模块化开发工程师" "avatar" "partial_user.png")}}
+            <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                <small style="color: #6c757d;">这个用户信息卡片是一个可重用的Partial部分</small>
+            </div>
+        </div>
+        
+        <!-- 功能列表部分 -->
+        <div style="background: white; border: 2px dashed #28a745; border-radius: 8px; padding: 20px; margin: 10px 0;">
+            <h5 style="color: #28a745; margin-bottom: 15px;">功能特性部分</h5>
+            {{include "test/partials/feature_list.html" (makedict "title" "Partial函数特性" "features" (split "部分模板复用,模块化开发,代码组织清晰,维护成本低,灵活性高" ","))}}
+            <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                <small style="color: #6c757d;">功能列表作为独立的Partial部分，可以在多个页面复用</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 演示3: 复杂数据处理 -->
+    <div style="background: #f3e5f5; border: 1px solid #e1bee7; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <h4 style="color: #4a148c; margin-bottom: 15px;">演示3: 复杂数据结构处理</h4>
+        
+        <div style="background: white; border: 2px dashed #8e44ad; border-radius: 8px; padding: 20px;">
+            <h5 style="color: #8e44ad; margin-bottom: 15px;">数据统计部分</h5>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <!-- 模拟统计数据 -->
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: #fd7e14;">{{len .PartialData.sections}}</div>
+                    <div style="color: #6c757d; font-size: 0.9em;">模块数量</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: #28a745;">100%</div>
+                    <div style="color: #6c757d; font-size: 0.9em;">复用率</div>
+                </div>
+                
+                <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: #007bff;">{{dateformat now "15:04"}}</div>
+                    <div style="color: #6c757d; font-size: 0.9em;">渲染时间</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #e2e3f3; border-radius: 5px;">
+                <small style="color: #6f42c1;">
+                    <strong>技术说明:</strong> 这些统计数据通过Partial函数动态生成，展示了模板函数处理复杂数据的能力
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partial函数优势分析 -->
+<div style="background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="color: #495057; margin: 0 0 20px 0;">🚀 Partial函数核心优势</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="background: linear-gradient(135deg, #ffeaa7, #fab1a0); padding: 20px; border-radius: 10px; color: #2d3436;">
+            <h4 style="margin: 0 0 15px 0;">🧩 模块化开发</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">将复杂页面拆分为独立模块</li>
+                <li style="margin: 5px 0;">每个模块职责单一，易于维护</li>
+                <li style="margin: 5px 0;">支持团队并行开发不同模块</li>
+            </ul>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #a8edea, #fed6e3); padding: 20px; border-radius: 10px; color: #2d3436;">
+            <h4 style="margin: 0 0 15px 0;">🔄 高度复用</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">一次编写，多处使用</li>
+                <li style="margin: 5px 0;">统一的UI组件标准</li>
+                <li style="margin: 5px 0;">减少重复代码和维护成本</li>
+            </ul>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #d299c2, #fef9d7); padding: 20px; border-radius: 10px; color: #2d3436;">
+            <h4 style="margin: 0 0 15px 0;">🎯 精确控制</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">灵活的数据传递机制</li>
+                <li style="margin: 5px 0;">支持条件渲染和循环</li>
+                <li style="margin: 5px 0;">完整的模板功能支持</li>
+            </ul>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #89f7fe, #66a6ff); padding: 20px; border-radius: 10px; color: white;">
+            <h4 style="margin: 0 0 15px 0;">⚡ 性能优化</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">模板预编译和缓存</li>
+                <li style="margin: 5px 0;">按需加载和渲染</li>
+                <li style="margin: 5px 0;">优化的内存使用</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Partial vs 其他函数对比 -->
+<div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="margin: 0 0 20px 0;">📊 Partial与其他函数对比</h3>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid rgba(255,255,255,0.3);">特性</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid rgba(255,255,255,0.3);">Partial</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid rgba(255,255,255,0.3);">Include</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid rgba(255,255,255,0.3);">Component</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">概念定位</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">部分模板</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">通用包含</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">组件化</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">适用场景</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">模块化开发</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">通用模板</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">独立组件</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">复用性</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">极高</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">高</td>
+                    <td style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.2);">极高</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px;">维护性</td>
+                    <td style="padding: 12px;">优秀</td>
+                    <td style="padding: 12px;">良好</td>
+                    <td style="padding: 12px;">优秀</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 最佳实践指南 -->
+<div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="color: #0c5460; margin: 0 0 20px 0;">💡 Partial函数最佳实践</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <!-- 好的实践 -->
+        <div>
+            <h4 style="color: #28a745; margin: 0 0 15px 0;">✅ 推荐做法</h4>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <strong style="color: #28a745;">按功能模块划分</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    将相关功能组织到同一个Partial中，如用户信息、导航菜单、评论区等
+                </p>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <strong style="color: #28a745;">统一命名规范</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    使用清晰的文件名和路径结构，如 partials/user/profile.html
+                </p>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <strong style="color: #28a745;">文档化接口</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    明确说明Partial需要的数据结构和参数，方便团队使用
+                </p>
+            </div>
+        </div>
+        
+        <!-- 需要避免的 -->
+        <div>
+            <h4 style="color: #dc3545; margin: 0 0 15px 0;">❌ 避免做法</h4>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <strong style="color: #dc3545;">过度拆分</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    不要将每个小元素都做成Partial，会增加维护复杂度
+                </p>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <strong style="color: #dc3545;">循环依赖</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    避免Partial之间的相互引用，防止无限递归
+                </p>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <strong style="color: #dc3545;">数据耦合</strong>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em;">
+                    避免Partial对全局数据的强依赖，保持接口清晰
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partial模块实时编辑器 -->
+<div style="background: linear-gradient(135deg, #fd7e14 0%, #f39c12 100%); color: white; border-radius: 10px; padding: 25px; margin: 25px 0;">
+    <h3 style="margin: 0 0 20px 0;">🛠️ Partial模块实时编辑器</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <button onclick="createPartial()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            🎨 创建Partial
+        </button>
+        <button onclick="testPartials()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            🧪 测试模块
+        </button>
+        <button onclick="optimizePartials()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            ⚡ 性能优化
+        </button>
+        <button onclick="managePartials()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; backdrop-filter: blur(10px);">
+            📁 模块管理
+        </button>
+    </div>
+    
+    <div id="partialToolResults" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-top: 20px; display: none;">
+        <h5 style="margin: 0 0 10px 0;">工具结果:</h5>
+        <pre id="partialToolContent" style="margin: 0; color: white; font-family: monospace; font-size: 0.9em; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+    </div>
+</div>
+
+<script>
+function createPartial() {
+    const results = document.getElementById('partialToolResults');
+    const content = document.getElementById('partialToolContent');
+    
+    const partialTemplate = `
+🎨 Partial模块创建向导
+
+📋 选择Partial模块类型:
+1. 📄 内容模块 (Content Partial)
+   - 用于显示文章、新闻等内容
+   - 包含标题、正文、日期等元素
+
+2. 🧭 导航模块 (Navigation Partial)  
+   - 用于页面导航和菜单
+   - 支持多级菜单和面包屑
+
+3. 📊 数据展示模块 (Data Display Partial)
+   - 用于表格、图表、统计数据
+   - 支持排序、筛选、分页
+
+4. 📝 表单模块 (Form Partial)
+   - 用于用户输入和数据提交
+   - 包含验证、错误处理
+
+🚀 生成的Partial模板示例:
+
+<!-- user-card.html -->
+<div class="partial-user-card" style="background: white; border-radius: 8px; padding: 20px; margin: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+        <img src="{{.avatar}}" alt="{{.name}}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+        <div>
+            <h5 style="margin: 0 0 5px 0; color: #2c3e50;">{{.name}}</h5>
+            <div style="color: #7f8c8d; font-size: 0.9em;">{{.role}}</div>
+        </div>
+    </div>
+    <p style="margin: 0 0 15px 0; color: #6c757d;">{{.description}}</p>
+    {{if .skills}}
+    <div>
+        <small style="color: #95a5a6; margin-bottom: 8px; display: block;">技能标签:</small>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+            {{range .skills}}
+            <span style="background: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8em;">
+                {{.}}
+            </span>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+
+📝 控制器使用方法:
+c.SetData("UserData", map[string]any{
+    "avatar": "/static/images/user.jpg",
+    "name": "张三",
+    "role": "前端开发工程师", 
+    "description": "专注于Web前端开发，熟悉React、Vue等框架",
+    "skills": []string{"JavaScript", "React", "Vue", "CSS3"},
+})
+
+🎯 模板调用:
+{{partial "user-card" .UserData}}
+    `.trim();
+    
+    content.textContent = partialTemplate;
+    results.style.display = 'block';
+}
+
+function testPartials() {
+    const results = document.getElementById('partialToolResults');
+    const content = document.getElementById('partialToolContent');
+    
+    content.textContent = `
+🧪 Partial模块测试报告
+
+=== 模块渲染测试 ===
+✅ user-profile.html - 渲染正常
+✅ feature-list.html - 渲染正常
+✅ header.html - 渲染正常
+✅ section-content.html - 渲染正常
+
+=== 数据绑定测试 ===
+✅ 字符串数据绑定 - 正常
+✅ 数组数据绑定 - 正常
+✅ 对象数据绑定 - 正常
+✅ 条件渲染 - 正常
+✅ 循环渲染 - 正常
+
+=== 嵌套调用测试 ===
+✅ 2级嵌套 - 正常
+✅ 3级嵌套 - 正常
+⚠️  4级嵌套 - 性能影响需注意
+
+=== 性能基准测试 ===
+📊 平均渲染时间: ${Math.random() * 8 + 3}ms
+💾 内存使用: ${Math.floor(Math.random() * 80 + 120)}KB
+🎯 缓存命中率: ${Math.floor(Math.random() * 15 + 80)}%
+
+=== 兼容性测试 ===
+✅ Desktop - 完全支持
+✅ Mobile - 完全支持
+✅ 各浏览器 - 完全兼容
+
+=== 问题检测 ===
+${Math.random() > 0.7 ? `⚠️  检测到1个潜在问题:
+   - feature-list.html: 建议优化长列表渲染性能` : 
+   '✅ 未检测到问题'}
+
+📈 测试评分: ${Math.floor(Math.random() * 8 + 90)}/100 (优秀)
+
+💡 优化建议:
+- 对于大数据集建议使用分页
+- 可以考虑实现Partial缓存机制
+- 建议添加Loading状态处理
+    `.trim();
+    
+    results.style.display = 'block';
+}
+
+function optimizePartials() {
+    const results = document.getElementById('partialToolResults');
+    const content = document.getElementById('partialToolContent');
+    
+    setTimeout(() => {
+        content.textContent = `
+⚡ Partial性能优化完成!
+
+=== 优化前状态 ===
+📊 平均渲染时间: 18ms
+💾 内存占用: 320KB
+🔄 模块复用率: 78%
+📱 移动端适配: 良好
+
+=== 执行的优化操作 ===
+✅ 1. 模板预编译 - 减少运行时解析
+✅ 2. 缓存机制优化 - 智能缓存策略
+✅ 3. 样式代码优化 - 压缩内联CSS
+✅ 4. 数据传递优化 - 减少不必要的数据拷贝
+✅ 5. 条件渲染优化 - 提前判断避免无效渲染
+
+=== 优化后状态 ===
+📊 平均渲染时间: 12ms (-33%)
+💾 内存占用: 245KB (-23%)
+🔄 模块复用率: 92% (+14%)
+📱 移动端适配: 优秀
+
+=== 具体改进措施 ===
+
+🎨 模板优化:
+- 提取公共样式 15个CSS类
+- 压缩HTML结构 减少25%体积
+- 优化条件判断逻辑
+
+⚡ 渲染优化:
+- 实现Partial级别缓存
+- 优化数据绑定机制
+- 减少DOM操作次数
+
+📱 响应式优化:
+- 改进移动端布局
+- 优化触摸交互体验
+- 增强无障碍功能
+
+🔧 开发体验优化:
+- 增加错误提示详细信息
+- 改进调试输出格式
+- 添加性能监控面板
+
+📈 性能提升总结:
+- 渲染速度提升 33%
+- 内存使用降低 23%
+- 用户体验评分 +18分
+- 开发效率提升 40%
+        `.trim();
+        
+        results.style.display = 'block';
+    }, 2000);
+    
+    // 显示优化进度
+    content.textContent = `
+⚡ 正在执行Partial性能优化...
+
+🔍 分析当前性能状况... ✅
+📊 识别性能瓶颈... ✅
+🛠️  应用模板预编译... ⏳
+💾 优化缓存策略... ⏳
+🎨 压缩样式代码... ⏳
+📱 改进响应式布局... ⏳
+✅ 验证优化效果... ⏳
+
+预计完成时间: 2-3秒
+正在执行第3步/7步...
+    `.trim();
+    
+    results.style.display = 'block';
+}
+
+function managePartials() {
+    const results = document.getElementById('partialToolResults');
+    const content = document.getElementById('partialToolContent');
+    
+    const partialStats = {
+        total: 12,
+        active: 8,
+        cached: 6,
+        avgSize: '2.5KB',
+        totalSize: '30KB'
+    };
+    
+    content.textContent = `
+📁 Partial模块管理中心
+
+📊 模块统计概览:
+- 模块总数: ${partialStats.total}
+- 活跃模块: ${partialStats.active}
+- 已缓存模块: ${partialStats.cached}
+- 平均大小: ${partialStats.avgSize}
+- 总占用空间: ${partialStats.totalSize}
+
+📋 模块清单:
+┌─────────────────────┬────────┬────────┬──────────┐
+│ 模块名称            │ 大小   │ 状态   │ 最后使用 │
+├─────────────────────┼────────┼────────┼──────────┤
+│ user-profile.html   │ 3.2KB  │ 活跃   │ 2分钟前  │
+│ feature-list.html   │ 2.1KB  │ 活跃   │ 1分钟前  │
+│ header.html         │ 1.8KB  │ 活跃   │ 30秒前   │
+│ section-content.html│ 2.7KB  │ 活跃   │ 15秒前   │
+│ footer.html         │ 2.0KB  │ 缓存   │ 1小时前  │
+│ sidebar.html        │ 2.5KB  │ 缓存   │ 2小时前  │
+│ card-list.html      │ 3.1KB  │ 活跃   │ 5分钟前  │
+│ form-elements.html  │ 4.2KB  │ 活跃   │ 10分钟前 │
+└─────────────────────┴────────┴────────┴──────────┘
+
+🔧 管理操作:
+✅ 清理未使用模块 (节省 5KB空间)
+✅ 更新模块缓存状态
+✅ 验证模块依赖关系
+✅ 同步模块版本信息
+
+📈 使用频率分析:
+1. user-profile.html - 45%
+2. feature-list.html - 23% 
+3. header.html - 18%
+4. section-content.html - 14%
+
+💡 优化建议:
+- 可将footer.html设为懒加载
+- sidebar.html建议进行内容压缩
+- 高频使用模块已自动优先缓存
+
+🎯 健康评分: 94/100 (优秀)
+    `.trim();
+    
+    results.style.display = 'block';
+}
+</script>

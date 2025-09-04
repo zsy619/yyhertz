@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6; background: #f8f9fa; color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { 
+            background: white; padding: 30px; margin-bottom: 30px; border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;
+        }
+        .header h1 { color: #e67e22; margin-bottom: 10px; }
+        .content-section { 
+            background: white; padding: 30px; margin-bottom: 20px; border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-info { 
+            background: #fdf2e9; border-left: 4px solid #e67e22; 
+            padding: 20px; margin: 20px 0; border-radius: 5px;
+        }
+        .included-content { 
+            border: 2px dashed #e67e22; background: #fefcf9; 
+            padding: 20px; margin: 20px 0; border-radius: 8px;
+        }
+        .function-demo { 
+            background: #f1f2f6; padding: 15px; border-radius: 5px; 
+            font-family: 'Courier New', monospace; margin: 10px 0;
+        }
+        .back-link { 
+            display: inline-block; padding: 10px 20px; background: #e67e22; 
+            color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;
+        }
+        .back-link:hover { background: #d35400; }
+        .demo-layout { 
+            display: grid; grid-template-columns: 250px 1fr; gap: 20px; 
+            min-height: 400px; margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 页面头部 -->
+        <div class="header">
+            <h1>📃 {{.Title}}</h1>
+            <p>{{.Message}}</p>
+            <div class="function-demo">
+                <strong>函数语法：</strong> {{`{{partial "template_name" .data}}`}}
+            </div>
+        </div>
+
+        <!-- 测试信息 -->
+        <div class="content-section">
+            <div class="test-info">
+                <h3>📋 测试信息</h3>
+                <p><strong>函数名：</strong> Partial</p>
+                <p><strong>功能：</strong> {{.TestData.description}}</p>
+                <p><strong>测试用户：</strong> {{.TestData.name}}</p>
+                <p><strong>测试时间：</strong> {{dateformat .TestData.timestamp "2006-01-02 15:04:05"}}</p>
+            </div>
+
+            <h3>🎯 Partial函数演示</h3>
+            <p>Partial函数专门用于包含页面部分片段，常用于侧边栏、页脚、菜单等可重用组件：</p>
+
+            <!-- 演示1：侧边栏布局 -->
+            <div class="included-content">
+                <h4>演示1：典型的侧边栏布局</h4>
+                <div class="demo-layout">
+                    <div>
+                        {{partial "test/partials/sidebar.html" .SidebarItems}}
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
+                        <h5>主要内容区域</h5>
+                        <p>这里是主要内容，左侧的侧边栏通过 <code>partial</code> 函数引入。</p>
+                        <p>Partial函数特别适合这种布局场景，可以保持代码的整洁和可维护性。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 演示2：数据表格部分 -->
+            <div class="included-content">
+                <h4>演示2：数据表格部分</h4>
+                {{partial "test/partials/data_table.html" .TableData}}
+            </div>
+
+            <!-- 演示3：多个部分模板组合 -->
+            <div class="included-content">
+                <h4>演示3：多个部分模板的组合使用</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    {{partial "test/partials/stats_card.html" (makedict "title" "用户统计" "value" "1,234" "icon" "👥" "color" "#3498db" "change" "+12%")}}
+                    {{partial "test/partials/stats_card.html" (makedict "title" "访问量" "value" "98,765" "icon" "👁️" "color" "#e74c3c" "change" "+5.4%")}}
+                    {{partial "test/partials/stats_card.html" (makedict "title" "转化率" "value" "23.5%" "icon" "📈" "color" "#2ecc71" "change" "+8.1%")}}
+                </div>
+            </div>
+        </div>
+
+        <!-- 返回链接 -->
+        <a href="/test/beego-functions" class="back-link">← 返回测试首页</a>
+        
+        <!-- 其他测试链接 -->
+        <div class="content-section">
+            <h3>🔗 相关测试</h3>
+            <p>
+                <a href="/test/beego-functions/include" style="margin-right: 15px;">Include测试</a>
+                <a href="/test/beego-functions/componenttemplate" style="margin-right: 15px;">ComponentTemplate测试</a>
+                <a href="/test/beego-functions/partial-component">组合测试</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

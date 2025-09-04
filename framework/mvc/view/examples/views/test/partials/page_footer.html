@@ -1,0 +1,29 @@
+<div style="background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 10px; margin: 10px 0; text-align: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="flex: 1; min-width: 200px;">
+            <h6 style="margin: 0 0 10px 0; color: white; font-size: 1em;">
+                🎨 RenderTemplate 演示
+            </h6>
+            <p style="margin: 0; opacity: 0.8; font-size: 0.9em; line-height: 1.5;">
+                这是一个通过RenderTemplate函数渲染的页脚组件，展示了模板函数的灵活性。
+            </p>
+        </div>
+        
+        <div style="text-align: right;">
+            <div style="font-size: 0.85em; opacity: 0.7; margin-bottom: 8px;">
+                语言: {{.language | default "zh-CN"}}
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 15px; font-size: 0.8em;">
+                主题: {{.theme | default "默认主题"}}
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.9em;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div>✅ 页脚组件</div>
+            <div>📅 {{dateformat now "2006年"}}</div>
+            <div>🔧 RenderTemplate 渲染</div>
+        </div>
+    </div>
+</div>

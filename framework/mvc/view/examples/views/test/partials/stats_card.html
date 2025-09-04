@@ -1,0 +1,27 @@
+<div style="background: white; border: 1px solid #e0e6ed; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+        <div style="background: {{.color}}; color: white; width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">
+            {{.icon}}
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 0.9em; color: {{.color}}; font-weight: 600; margin-bottom: 5px;">
+                {{.change}}
+            </div>
+            <div style="font-size: 0.8em; color: #6c757d;">
+                vs 上月
+            </div>
+        </div>
+    </div>
+    
+    <h3 style="color: #2c3e50; margin: 0 0 8px 0; font-size: 2.2em; font-weight: 700;">
+        {{.value}}
+    </h3>
+    
+    <p style="color: #7f8c8d; margin: 0; font-size: 0.95em; font-weight: 500;">
+        {{.title}}
+    </p>
+    
+    <div style="margin-top: 15px; padding: 8px 10px; background: #f8f9fa; border-radius: 5px; font-size: 0.8em; color: #6c757d; border-left: 3px solid {{.color}};">
+        ✅ 通过 <code>partial</code> 渲染的统计卡片
+    </div>
+</div>

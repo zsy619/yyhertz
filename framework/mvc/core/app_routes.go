@@ -8,10 +8,11 @@ import (
 	"strings"
 	"sync"
 
-	hertzapp "github.com/cloudwego/hertz/pkg/app"
+	hertzApp "github.com/cloudwego/hertz/pkg/app"
 
-	contextenhanced "github.com/zsy619/yyhertz/framework/mvc/context"
+	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/define"
+	"github.com/zsy619/yyhertz/framework/util"
 )
 
 // ============= 路由冲突检测 =============
@@ -247,7 +248,7 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 
 		// 构建路由路径
 		routePath := basePath
-		actionPath := strings.ToTitle(actionName)
+		actionPath := util.CapitalizeFirst(actionName)
 		routePath = path.Join("/", routePath, actionPath)
 
 		// 清理路径，移除重复的斜杠
@@ -488,7 +489,7 @@ func (app *App) createControllerHandler(controller IController, method reflect.M
 		}
 
 		// 初始化增强上下文
-		enhancedCtx := contextenhanced.NewContext(c)
+		enhancedCtx := mvcContext.NewContext(c)
 
 		// 执行 BeforeStatic 过滤器
 		app.ExecuteFilters(enhancedCtx, BeforeStatic)
@@ -564,7 +565,7 @@ func (app *App) createMethodHandler(controller IController, methodName string) d
 			}
 		}()
 		// 初始化增强上下文
-		enhancedCtx := contextenhanced.NewContext(c)
+		enhancedCtx := mvcContext.NewContext(c)
 
 		// 执行 BeforeStatic 过滤器
 		app.ExecuteFilters(enhancedCtx, BeforeStatic)
@@ -624,7 +625,7 @@ func (app *App) createMethodHandler(controller IController, methodName string) d
 // setControllerContext 设置控制器上下文（重构后版本）
 func (app *App) setControllerContext(controller IController, ctx *define.RequestContext) {
 	// 创建增强的Context
-	enhancedCtx := contextenhanced.NewContext(ctx)
+	enhancedCtx := mvcContext.NewContext(ctx)
 
 	// 使用反射设置控制器的Ctx字段
 	reflectVal := reflect.ValueOf(controller)
@@ -866,12 +867,6 @@ func (app *App) generateRouteVariantsMap(path string) map[string]string {
 		return variants
 	}
 
-	// // 分割路径段
-	// segments := strings.Split(pathTrimmed, "/")
-
-	// // 添加原始路径
-	// variants[path] = "original"
-
 	// 根据路径长度应用不同策略
 	variants = GeneratePathVariants(pathTrimmed)
 
@@ -881,13 +876,13 @@ func (app *App) generateRouteVariantsMap(path string) map[string]string {
 // ============= 特殊路由处理器（类似Beego） =============
 
 // NoRoute 设置处理未找到路由的处理器（类似Beego风格）
-func (app *App) NoRoute(handlers ...func(*contextenhanced.Context, *define.RequestContext)) {
+func (app *App) NoRoute(handlers ...func(*mvcContext.Context, *define.RequestContext)) {
 	// 将我们的处理器转换为Hertz的HandlerFunc类型
-	hertzHandlers := make([]hertzapp.HandlerFunc, len(handlers))
+	hertzHandlers := make([]hertzApp.HandlerFunc, len(handlers))
 	for i, handler := range handlers {
-		hertzHandlers[i] = hertzapp.HandlerFunc(func(ctx context.Context, c *hertzapp.RequestContext) {
+		hertzHandlers[i] = hertzApp.HandlerFunc(func(ctx context.Context, c *hertzApp.RequestContext) {
 			// 创建增强上下文并调用处理器
-			enhancedCtx := contextenhanced.NewContext((*define.RequestContext)(c))
+			enhancedCtx := mvcContext.NewContext((*define.RequestContext)(c))
 			handler(enhancedCtx, (*define.RequestContext)(c))
 		})
 	}
@@ -897,13 +892,13 @@ func (app *App) NoRoute(handlers ...func(*contextenhanced.Context, *define.Reque
 }
 
 // NoMethod 设置处理方法不允许的处理器（类似Beego风格）
-func (app *App) NoMethod(handlers ...func(*contextenhanced.Context, *define.RequestContext)) {
+func (app *App) NoMethod(handlers ...func(*mvcContext.Context, *define.RequestContext)) {
 	// 将我们的处理器转换为Hertz的HandlerFunc类型
-	hertzHandlers := make([]hertzapp.HandlerFunc, len(handlers))
+	hertzHandlers := make([]hertzApp.HandlerFunc, len(handlers))
 	for i, handler := range handlers {
-		hertzHandlers[i] = hertzapp.HandlerFunc(func(ctx context.Context, c *hertzapp.RequestContext) {
+		hertzHandlers[i] = hertzApp.HandlerFunc(func(ctx context.Context, c *hertzApp.RequestContext) {
 			// 创建增强上下文并调用处理器
-			enhancedCtx := contextenhanced.NewContext((*define.RequestContext)(c))
+			enhancedCtx := mvcContext.NewContext((*define.RequestContext)(c))
 			handler(enhancedCtx, (*define.RequestContext)(c))
 		})
 	}

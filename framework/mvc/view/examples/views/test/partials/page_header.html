@@ -1,0 +1,23 @@
+<div style="background: linear-gradient(135deg, #1abc9c, #16a085); color: white; padding: 25px; border-radius: 10px; margin: 10px 0;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <h3 style="margin: 0 0 8px 0; font-size: 1.5em; font-weight: 600;">
+                🌟 {{.title | default "页面标题"}}
+            </h3>
+            <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">
+                {{.description | default "页面描述信息"}}
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <div style="background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 20px; font-size: 0.85em; margin-bottom: 5px;">
+                版本 {{.version | default "1.0.0"}}
+            </div>
+            <div style="font-size: 0.8em; opacity: 0.8;">
+                主题: {{.theme | default "default"}}
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; font-size: 0.9em;">
+        ✅ 页面头部通过 <code>render "test/partials/page_header.html"</code> 渲染
+    </div>
+</div>

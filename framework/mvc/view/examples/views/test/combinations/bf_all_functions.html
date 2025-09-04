@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6; background: #f8f9fa; color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { 
+            background: white; padding: 30px; margin-bottom: 30px; border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;
+        }
+        .header h1 { color: #6f42c1; margin-bottom: 10px; }
+        .content-section { 
+            background: white; padding: 30px; margin-bottom: 20px; border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-info { 
+            background: #e2e3f3; border-left: 4px solid #6f42c1; 
+            padding: 20px; margin: 20px 0; border-radius: 5px;
+        }
+        .function-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 20px; margin: 20px 0;
+        }
+        .function-demo { 
+            border: 2px solid #6f42c1; background: #faf9ff; 
+            padding: 20px; border-radius: 8px;
+        }
+        .back-link { 
+            display: inline-block; padding: 10px 20px; background: #6f42c1; 
+            color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;
+        }
+        .back-link:hover { background: #5a32a3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 页面头部 -->
+        <div class="header">
+            <h1>🚀 {{.Title}}</h1>
+            <p>{{.Message}}</p>
+        </div>
+
+        <!-- 测试信息 -->
+        <div class="content-section">
+            <div class="test-info">
+                <h3>📋 测试信息</h3>
+                <p><strong>测试类型：</strong> 综合函数测试</p>
+                <p><strong>功能：</strong> {{.TestData.description}}</p>
+                <p><strong>测试名称：</strong> {{.TestData.name}}</p>
+                <p><strong>测试时间：</strong> {{dateformat .TestData.timestamp "2006-01-02 15:04:05"}}</p>
+            </div>
+
+            <h3>🌟 所有模板函数综合演示</h3>
+            <p>下面演示所有5个核心模板函数的功能特性和使用方式：</p>
+
+            <!-- 所有函数演示 -->
+            <div class="function-grid">
+                <div class="function-demo">
+                    <h4 style="color: #e74c3c; margin-bottom: 15px;">📄 Include 函数</h4>
+                    {{include "test/partials/combo_demo.html" (makedict "method" "Include" "color" "#e74c3c" "data" .AllFunctions.include_demo)}}
+                </div>
+                
+                <div class="function-demo">
+                    <h4 style="color: #8e44ad; margin-bottom: 15px;">📋 TemplateInclude 函数</h4>
+                    {{include "test/partials/combo_demo.html" (makedict "method" "TemplateInclude" "color" "#8e44ad" "data" .AllFunctions.templateinclude_demo)}}
+                </div>
+
+                <div class="function-demo">
+                    <h4 style="color: #fd7e14; margin-bottom: 15px;">🧩 Partial 函数</h4>
+                    {{include "test/partials/combo_demo.html" (makedict "method" "Partial" "color" "#fd7e14" "data" .AllFunctions.partial_demo)}}
+                </div>
+
+                <div class="function-demo">
+                    <h4 style="color: #20c997; margin-bottom: 15px;">⚙️ ComponentTemplate 函数</h4>
+                    {{include "test/partials/combo_demo.html" (makedict "method" "ComponentTemplate" "color" "#20c997" "data" .AllFunctions.component_demo)}}
+                </div>
+
+                <div class="function-demo">
+                    <h4 style="color: #007bff; margin-bottom: 15px;">🎨 RenderTemplate 函数</h4>
+                    {{include "test/partials/combo_demo.html" (makedict "method" "RenderTemplate" "color" "#007bff" "data" .AllFunctions.render_demo)}}
+                </div>
+            </div>
+
+            <!-- 功能特性对比 -->
+            <div style="margin: 30px 0;">
+                <h4>📊 功能特性对比</h4>
+                {{include "test/partials/feature_list.html" (makedict "title" "五大模板函数功能对比" "features" .AllFunctions.features)}}
+            </div>
+
+            <!-- 性能统计 -->
+            <div style="margin: 30px 0;">
+                <h4>⚡ 性能统计</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    {{range .AllFunctions.performance_stats}}
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+                        <h6 style="color: #6f42c1; margin-bottom: 5px;">{{.name}}</h6>
+                        <div style="font-size: 1.2em; font-weight: bold;">{{.value}}</div>
+                        <small style="color: #6c757d;">{{.unit}}</small>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+
+        <!-- 返回链接 -->
+        <a href="/test/beego-functions" class="back-link">← 返回测试首页</a>
+        
+        <!-- 其他测试链接 -->
+        <div class="content-section">
+            <h3>🔗 相关测试</h3>
+            <p>
+                <a href="/test/beego-functions/include-templateinclude" style="margin-right: 15px;">Include + TemplateInclude组合</a>
+                <a href="/test/beego-functions/partial-component" style="margin-right: 15px;">Partial + Component组合</a>
+                <a href="/test/beego-functions/nested-includes">嵌套包含测试</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

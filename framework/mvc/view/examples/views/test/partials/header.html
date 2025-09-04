@@ -1,0 +1,17 @@
+<div style="background: #2c3e50; color: white; padding: 15px; border-radius: 5px;">
+    <h4 style="margin: 0 0 10px 0;">🧭 {{.HeaderTitle | default "导航栏"}}</h4>
+    <nav>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; gap: 20px;">
+            {{range .Navigation}}
+            <li>
+                <span style="color: #ecf0f1; padding: 5px 10px; border-radius: 3px; background: rgba(255,255,255,0.1);">
+                    {{.}}
+                </span>
+            </li>
+            {{end}}
+        </ul>
+    </nav>
+    <div style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">
+        ✅ 此内容通过 <code>include "test/partials/header.html"</code> 包含
+    </div>
+</div>

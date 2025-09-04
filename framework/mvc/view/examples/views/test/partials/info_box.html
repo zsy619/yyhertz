@@ -1,0 +1,39 @@
+{{$bgColor := ""}}
+{{$borderColor := ""}}
+{{$iconColor := ""}}
+{{$icon := ""}}
+
+{{if eq .type "info"}}
+  {{$bgColor = "#e8f4fd"}}
+  {{$borderColor = "#3498db"}}
+  {{$iconColor = "#3498db"}}
+  {{$icon = "ℹ️"}}
+{{else if eq .type "success"}}
+  {{$bgColor = "#d4edda"}}
+  {{$borderColor = "#27ae60"}}
+  {{$iconColor = "#27ae60"}}
+  {{$icon = "✅"}}
+{{else if eq .type "warning"}}
+  {{$bgColor = "#fff3cd"}}
+  {{$borderColor = "#f39c12"}}
+  {{$iconColor = "#f39c12"}}
+  {{$icon = "⚠️"}}
+{{else}}
+  {{$bgColor = "#f8f9fa"}}
+  {{$borderColor = "#6c757d"}}
+  {{$iconColor = "#6c757d"}}
+  {{$icon = "📋"}}
+{{end}}
+
+<div style="background: {{$bgColor}}; border-left: 4px solid {{$borderColor}}; padding: 15px; margin: 10px 0; border-radius: 5px;">
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="color: {{$iconColor}}; font-size: 1.2em; margin-top: 2px;">{{$icon}}</div>
+        <div style="flex: 1;">
+            <h6 style="color: {{$iconColor}}; margin: 0 0 8px 0; font-weight: 600;">{{.title}}</h6>
+            <p style="margin: 0; color: #495057; line-height: 1.5;">{{.content}}</p>
+            <div style="margin-top: 10px; font-size: 0.85em; color: #6c757d;">
+                ✅ 通过 <code>include "test/partials/info_box.html"</code> 渲染，类型：<strong>{{.type}}</strong>
+            </div>
+        </div>
+    </div>
+</div>
