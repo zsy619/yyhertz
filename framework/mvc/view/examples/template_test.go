@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/mvc/view"
+	"github.com/zsy619/yyhertz/framework/pkg/xmath"
 )
 
 // TestLoadTemplate 测试模板加载功能
@@ -252,10 +253,10 @@ func TestMathFunctions(t *testing.T) {
 		a, b     any
 		expected float64
 	}{
-		{"Add", view.Add, 5, 3, 8},
-		{"Sub", view.Sub, 5, 3, 2},
-		{"Mul", view.Mul, 5, 3, 15},
-		{"Div", view.Div, 6, 3, 2},
+		{"Add", xmath.Add, 5, 3, 8},
+		{"Sub", xmath.Sub, 5, 3, 2},
+		{"Mul", xmath.Mul, 5, 3, 15},
+		{"Div", xmath.Div, 6, 3, 2},
 	}
 
 	for _, tt := range tests {
@@ -325,12 +326,12 @@ func TestTypeConversion(t *testing.T) {
 	}
 
 	// ToInt
-	if view.ToInt("123") != 123 {
+	if xmath.ToInt("123") != 123 {
 		t.Error("ToInt('123') should return 123")
 	}
 
 	// ToFloat
-	if view.ToFloat("3.14") != 3.14 {
+	if xmath.ToFloat64("3.14") != 3.14 {
 		t.Error("ToFloat('3.14') should return 3.14")
 	}
 }

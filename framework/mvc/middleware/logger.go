@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xcrypto"
 )
 
 // MiddlewareLoggerConfig 日志中间件配置
@@ -89,7 +89,7 @@ func LoggerMiddlewareWithConfig(logConfig *MiddlewareLoggerConfig) Middleware {
 		}
 
 		// 生成请求ID
-		requestID := util.ShortID()
+		requestID := xcrypto.ShortID()
 		ctx.Set("request_id", requestID)
 
 		// 记录请求开始

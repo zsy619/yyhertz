@@ -35,7 +35,17 @@ import (
 	_ "github.com/zsy619/yyhertz/framework/scheduler"      // 任务调度系统
 	_ "github.com/zsy619/yyhertz/framework/mvc/session"    // 会话管理
 	_ "github.com/zsy619/yyhertz/framework/testing"        // 单元测试工具
-	_ "github.com/zsy619/yyhertz/framework/util"           // 通用类型和工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xstring"    // 字符串工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xdate"      // 日期时间工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xslice"     // 切片工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xmath"      // 数学工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xcrypto"    // 加密工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xstruct"    // 结构体工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xnet"       // 网络工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xio"        // IO工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xvalidation" // 验证工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xsystem"    // 系统工具
+	_ "github.com/zsy619/yyhertz/framework/pkg/xhttp"      // HTTP工具
 	_ "github.com/zsy619/yyhertz/framework/validation"     // 数据验证
 	"github.com/zsy619/yyhertz/framework/version"          // 版本
 	_ "github.com/zsy619/yyhertz/framework/mvc/view"       // 视图模板

@@ -49,7 +49,7 @@
             <!-- Template函数实际演示 -->
             <div style="margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
                 <h6 style="color: #004085; margin: 0 0 10px 0;">Template函数实际应用演示:</h6>
-                {{template "test/partials/header.html" (makedict "title" "Template函数测试头部" "nav" (split "Template测试,函数特性,实际应用" ","))}}
+                {{templateFunc "test/partials/header.html" (makedict "title" "Template函数测试头部" "nav" (split "Template测试,函数特性,实际应用" ","))}}
             </div>
         </div>
     </div>

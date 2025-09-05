@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zsy619/yyhertz/framework/pkg/xmath"
+	"github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 var (
@@ -64,11 +67,11 @@ var builtinTemplateFuncs = template.FuncMap{
 	"getTime":       GetTime,
 	"getTimestamp":  GetTimestamp,
 	"formatTime":    FormatTime,
-	"add":           Add,
-	"sub":           Sub,
-	"mul":           Mul,
-	"div":           Div,
-	"mod":           Mod,
+	"add":           xmath.Add,
+	"sub":           xmath.Sub,
+	"mul":           xmath.Mul,
+	"div":           xmath.Div,
+	"mod":           xmath.Mod,
 	"eq":            Eq,
 	"ne":            Ne,
 	"lt":            Lt,
@@ -80,11 +83,11 @@ var builtinTemplateFuncs = template.FuncMap{
 	"not":           Not,
 	"default":       Default,
 	"toString":      ToString,
-	"toInt":         ToInt,
-	"toFloat":       ToFloat,
+	"toInt":         xmath.ToInt,
+	"toFloat":       xmath.ToFloat64,
 	"upper":         strings.ToUpper,
 	"lower":         strings.ToLower,
-	"title":         ToTitleCase,
+	"title":         xstring.ToTitleCase,
 	"trim":          strings.TrimSpace,
 	"replace":       strings.ReplaceAll,
 	"split":         strings.Split,
@@ -568,31 +571,6 @@ func FormatTime(t time.Time, layout string) string {
 	return t.Format(layout)
 }
 
-// 数学运算函数
-func Add(a, b any) any {
-	return toFloat64(a) + toFloat64(b)
-}
-
-func Sub(a, b any) any {
-	return toFloat64(a) - toFloat64(b)
-}
-
-func Mul(a, b any) any {
-	return toFloat64(a) * toFloat64(b)
-}
-
-func Div(a, b any) any {
-	bVal := toFloat64(b)
-	if bVal == 0 {
-		return 0
-	}
-	return toFloat64(a) / bVal
-}
-
-func Mod(a, b any) any {
-	return int(toFloat64(a)) % int(toFloat64(b))
-}
-
 // 比较函数
 func Eq(arg1 any, arg2 ...any) (bool, error) {
 	v1 := reflect.ValueOf(arg1)
@@ -764,29 +742,6 @@ func ToString(v any) string {
 	}
 }
 
-func ToInt(v any) int {
-	return int(toFloat64(v))
-}
-
-func ToFloat(v any) float64 {
-	return toFloat64(v)
-}
-
-// ToTitleCase 转换为标题格式（替代strings.Title）
-func ToTitleCase(s string) string {
-	if s == "" {
-		return s
-	}
-
-	words := strings.Fields(s)
-	for i, word := range words {
-		if len(word) > 0 {
-			words[i] = strings.ToUpper(word[:1]) + strings.ToLower(word[1:])
-		}
-	}
-	return strings.Join(words, " ")
-}
-
 // 集合函数
 func Len(v any) int {
 	switch val := v.(type) {
@@ -822,41 +777,6 @@ func Slice(slice any, start, end int) any {
 		return s[start:end]
 	}
 	return nil
-}
-
-// 辅助函数
-func toFloat64(v any) float64 {
-	switch val := v.(type) {
-	case int:
-		return float64(val)
-	case int8:
-		return float64(val)
-	case int16:
-		return float64(val)
-	case int32:
-		return float64(val)
-	case int64:
-		return float64(val)
-	case uint:
-		return float64(val)
-	case uint8:
-		return float64(val)
-	case uint16:
-		return float64(val)
-	case uint32:
-		return float64(val)
-	case uint64:
-		return float64(val)
-	case float32:
-		return float64(val)
-	case float64:
-		return val
-	case string:
-		if f, err := strconv.ParseFloat(val, 64); err == nil {
-			return f
-		}
-	}
-	return 0
 }
 
 // GetCSRFTokenFromContext 从模板上下文获取CSRF token

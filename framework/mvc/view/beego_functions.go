@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
-	"math"
 	"net/url"
 	"reflect"
 	"regexp"
@@ -15,7 +14,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xmath"
+	"github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 // GetBeegoTemplateFuncs 获取Beego风格的模板函数（延迟初始化）
@@ -34,8 +34,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"urlfor":      URLFor,
 
 		// ============= 字符串处理函数 =============
-		"substr":     util.Substr,
-		"Substring":  util.Substr,
+		"substr":     xstring.Substr,
+		"Substring":  xstring.Substr,
 		"truncate":   TruncateString,
 		"nl2br":      NL2BR,
 		"markdown":   MarkdownString,
@@ -44,21 +44,21 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"tolower":    strings.ToLower,
 		"toupper":    strings.ToUpper,
 		"totitle":    strings.ToTitle,
-		"tocapital":  util.CapitalizeFirst,
+		"tocapital":  xstring.CapitalizeFirst,
 		"trim":       strings.TrimSpace,
 		"trimprefix": strings.TrimPrefix,
 		"trimsuffix": strings.TrimSuffix,
 
 		// ============= 数字处理函数 =============
-		"add":   Add,
-		"sub":   Sub,
-		"mul":   Mul,
-		"div":   Div,
-		"mod":   Mod,
-		"round": Round,
-		"ceil":  Ceil,
-		"floor": Floor,
-		"abs":   Abs,
+		"add":   xmath.Add,
+		"sub":   xmath.Sub,
+		"mul":   xmath.Mul,
+		"div":   xmath.Div,
+		"mod":   xmath.Mod,
+		"round": xmath.Round,
+		"ceil":  xmath.Ceil,
+		"floor": xmath.Floor,
+		"abs":   xmath.Abs,
 
 		// ============= 比较函数 =============
 		"eq": Eq,
@@ -85,24 +85,29 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"timestamp":  Timestamp,
 
 		// ============= 集合函数 =============
-		"len":      Len,
-		"index":    Index,
-		"slice":    Slice,
-		"append":   AppendSlice,
-		"reverse":  Reverse,
-		"sort":     SortSlice,
-		"join":     strings.Join,
-		"split":    strings.Split,
-		"contains": strings.Contains,
-		"first":    First,  // 🔧 添加first函数，获取集合的第一个元素
-		"last":     Last,   // 🔧 添加last函数，获取集合的最后一个元素
+		"len":             Len,
+		"index":           Index,
+		"slice":           Slice,
+		"append":          AppendSlice,
+		"reverse":         Reverse,
+		"sort":            SortSlice,
+		"join":            strings.Join,
+		"split":           strings.Split,
+		"contains":        xstring.Contains,
+		"first":           First,                   // 🔧 添加first函数，获取集合的第一个元素
+		"last":            Last,                    // 🔧 添加last函数，获取集合的最后一个元素
+		"hasPrefix":       xstring.HasPrefix,       // 🔧 添加hasPrefix函数，检查字符串是否以指定前缀开头
+		"hasSuffix":       xstring.HasSuffix,       // 🔧 添加hasSuffix函数，检查字符串是否以指定后缀结尾
+		"trimSuffixSlash": xstring.TrimSuffixSlash, // 🔧 添加trimSuffixSlash函数，移除字符串末尾的斜杠
+		"trimPrefixSlash": xstring.TrimPrefixSlash, // 🔧 添加trimPrefixSlash函数，移除字符串开头的斜杠
+		"trimSlash":       xstring.TrimSlash,       // 🔧 添加trimSlash函数，移除字符串开头和结尾的斜杠
 
 		// ============= 类型转换函数 =============
-		"int":    ToInt,
-		"int64":  ToInt64,
-		"float":  ToFloat,
+		"int":    xmath.ToInt,
+		"int64":  xmath.ToInt64,
+		"float":  xmath.ToFloat64,
 		"string": ToString,
-		"bool":   ToBool,
+		"bool":   xmath.ToBool,
 
 		// ============= URL和编码函数 =============
 		"urlencode": URLEncode,
@@ -119,6 +124,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		"safehtml":  SafeHTML,
 		"safeHtml":  SafeHTML,
 		"raw":       RawHTML, // 🔧 添加raw函数，用于输出原始HTML
+		"unescaped": RawHTML, // 🔧 添加unescaped函数，用于输出原始HTML（不转义）
+		"rawHtml":   RawHTML, // 🔧 添加rawHtml函数，用于输出原始HTML（不转义）
 
 		// ============= 条件和逻辑函数 =============
 		"default": Default,
@@ -137,12 +144,23 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 
 		// ============= 模板包含函数 =============
 		"include":         Include,
-		"template":        TemplateInclude,
+		"includetmpl":     Include,
+		"includeTmpl":     Include,
+		"templatefunc":    TemplateInclude, // 重命名为templatefunc避免与Go内置template动作冲突
+		"templateFunc":    TemplateInclude, // 重命名为templateFunc避免与Go内置template动作冲突
 		"templateinclude": TemplateInclude, // 🔧 添加小写版本的templateinclude函数映射
-		"unescaped":       RawHTML,         // 🔧 添加unescaped函数，用于输出原始HTML（不转义）
+		"templateInclude": TemplateInclude, // 🔧 添加小写版本的templateInclude函数映射
 		"partial":         Partial,
+		"partialfunc":     Partial,
+		"partialFunc":     Partial,
 		"component":       ComponentTemplate,
+		"componentfunc":   ComponentTemplate,
+		"componentFunc":   ComponentTemplate,
 		"render":          RenderTemplate,
+		"renderfunc":      RenderTemplate,
+		"renderFunc":      RenderTemplate,
+		"rendertmpl":      RenderTemplate,
+		"renderTmpl":      RenderTemplate,
 
 		// ============= 迭代和循环函数 =============
 		"makerange": CreateRange,
@@ -178,6 +196,8 @@ func GetBeegoTemplateFuncs() template.FuncMap {
 		// ============= CSRF Token 函数 =============
 		"csrf":       GetCSRFTokenFromContext,
 		"csrf_token": GetCSRFTokenFromContext,
+		"csrftoken":  GetCSRFTokenFromContext,
+		"csrfToken":  GetCSRFTokenFromContext,
 	}
 }
 
@@ -295,28 +315,6 @@ func MarkdownString(str string) template.HTML {
 func StripHTML(str string) string {
 	re := regexp.MustCompile(`<[^>]*>`)
 	return re.ReplaceAllString(str, "")
-}
-
-// ============= 数学函数实现 =============
-
-// Round 四舍五入
-func Round(f float64) float64 {
-	return math.Round(f)
-}
-
-// Ceil 向上取整
-func Ceil(f float64) float64 {
-	return math.Ceil(f)
-}
-
-// Floor 向下取整
-func Floor(f float64) float64 {
-	return math.Floor(f)
-}
-
-// Abs 绝对值
-func Abs(f float64) float64 {
-	return math.Abs(f)
 }
 
 // ============= 比较函数实现 =============
@@ -494,7 +492,7 @@ func First(slice any) any {
 	return nil
 }
 
-// Last 获取集合的最后一个元素  
+// Last 获取集合的最后一个元素
 func Last(slice any) any {
 	switch s := slice.(type) {
 	case []any:
@@ -586,49 +584,6 @@ func SortSlice(slice any) []any {
 		return result
 	}
 	return []any{}
-}
-
-// ============= 类型转换函数实现 =============
-
-// ToInt64 转换为int64
-func ToInt64(v any) int64 {
-	switch val := v.(type) {
-	case int64:
-		return val
-	case int:
-		return int64(val)
-	case int32:
-		return int64(val)
-	case float64:
-		return int64(val)
-	case float32:
-		return int64(val)
-	case string:
-		if i, err := strconv.ParseInt(val, 10, 64); err == nil {
-			return i
-		}
-	}
-	return 0
-}
-
-// ToBool 转换为bool
-func ToBool(v any) bool {
-	switch val := v.(type) {
-	case bool:
-		return val
-	case int:
-		return val != 0
-	case int64:
-		return val != 0
-	case float64:
-		return val != 0
-	case string:
-		if b, err := strconv.ParseBool(val); err == nil {
-			return b
-		}
-		return val != ""
-	}
-	return false
 }
 
 // ============= URL和编码函数实现 =============
@@ -764,13 +719,13 @@ func MakeDict(values ...any) map[string]any {
 
 // FormatNumber 格式化数字
 func FormatNumber(number any, decimals int) string {
-	f := toFloat64(number)
+	f := xmath.ToFloat64(number)
 	return fmt.Sprintf("%.*f", decimals, f)
 }
 
 // FormatPercent 格式化百分比
 func FormatPercent(number any, decimals int) string {
-	f := toFloat64(number) * 100
+	f := xmath.ToFloat64(number) * 100
 	return fmt.Sprintf("%.*f%%", decimals, f)
 }
 
@@ -927,6 +882,9 @@ func Include(templateName string, data ...any) template.HTML {
 	if len(data) > 0 {
 		includeData = data[0]
 	}
+
+	// 添加调试信息
+	// fmt.Printf("🔍 Include Debug: templateName=%s, engineInitialized=%v\n", templateName, globalEngineForFunctions != nil)
 
 	// 渲染包含的模板
 	result, err := globalEngineForFunctions.Render(templateName, includeData)

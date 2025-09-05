@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xdate"
 )
 
 type Statistics struct {
@@ -82,13 +82,13 @@ func (m *URLMap) GetMap() map[string]interface{} {
 				fmt.Sprintf("% -10s", kk),
 				fmt.Sprintf("% -16d", vv.RequestNum),
 				fmt.Sprintf("%d", vv.TotalTime),
-				fmt.Sprintf("% -16s", util.ToShortTimeFormat(vv.TotalTime)),
+				fmt.Sprintf("% -16s", xdate.ToShortTimeFormat(vv.TotalTime)),
 				fmt.Sprintf("%d", vv.MaxTime),
-				fmt.Sprintf("% -16s", util.ToShortTimeFormat(vv.MaxTime)),
+				fmt.Sprintf("% -16s", xdate.ToShortTimeFormat(vv.MaxTime)),
 				fmt.Sprintf("%d", vv.MinTime),
-				fmt.Sprintf("% -16s", util.ToShortTimeFormat(vv.MinTime)),
+				fmt.Sprintf("% -16s", xdate.ToShortTimeFormat(vv.MinTime)),
 				fmt.Sprintf("%d", time.Duration(int64(vv.TotalTime)/vv.RequestNum)),
-				fmt.Sprintf("% -16s", util.ToShortTimeFormat(time.Duration(int64(vv.TotalTime)/vv.RequestNum))),
+				fmt.Sprintf("% -16s", xdate.ToShortTimeFormat(time.Duration(int64(vv.TotalTime)/vv.RequestNum))),
 			}
 			resultLists = append(resultLists, result)
 		}
@@ -108,10 +108,10 @@ func (m *URLMap) GetMapData() []map[string]interface{} {
 				"request_url": k,
 				"method":      kk,
 				"times":       vv.RequestNum,
-				"total_time":  util.ToShortTimeFormat(vv.TotalTime),
-				"max_time":    util.ToShortTimeFormat(vv.MaxTime),
-				"min_time":    util.ToShortTimeFormat(vv.MinTime),
-				"avg_time":    util.ToShortTimeFormat(time.Duration(int64(vv.TotalTime) / vv.RequestNum)),
+				"total_time":  xdate.ToShortTimeFormat(vv.TotalTime),
+				"max_time":    xdate.ToShortTimeFormat(vv.MaxTime),
+				"min_time":    xdate.ToShortTimeFormat(vv.MinTime),
+				"avg_time":    xdate.ToShortTimeFormat(time.Duration(int64(vv.TotalTime) / vv.RequestNum)),
 			}
 			resultLists = append(resultLists, result)
 		}

@@ -178,33 +178,6 @@ func BenchmarkTemplateFunctions(b *testing.B) {
 	})
 }
 
-// BenchmarkMathFunctions 数学函数性能测试
-func BenchmarkMathFunctions(b *testing.B) {
-	b.Run("Add", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.Add(5, 3)
-		}
-	})
-
-	b.Run("Sub", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.Sub(10, 3)
-		}
-	})
-
-	b.Run("Mul", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.Mul(4, 7)
-		}
-	})
-
-	b.Run("Div", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.Div(20, 4)
-		}
-	})
-}
-
 // BenchmarkComparisonFunctions 比较函数性能测试
 func BenchmarkComparisonFunctions(b *testing.B) {
 	b.Run("Eq", func(b *testing.B) {
@@ -249,27 +222,6 @@ func BenchmarkLogicalFunctions(b *testing.B) {
 	b.Run("Not", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			_ = view.Not(false)
-		}
-	})
-}
-
-// BenchmarkTypeConversion 类型转换函数性能测试
-func BenchmarkTypeConversion(b *testing.B) {
-	b.Run("ToString", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.ToString(12345)
-		}
-	})
-
-	b.Run("ToInt", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.ToInt("12345")
-		}
-	})
-
-	b.Run("ToFloat", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			_ = view.ToFloat("123.45")
 		}
 	})
 }

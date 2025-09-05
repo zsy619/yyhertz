@@ -5,22 +5,22 @@ import (
 	"log"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/util/mapper"
+	mapper "github.com/zsy619/yyhertz/framework/pkg/xmapper"
 )
 
 // User 源结构体 - 模拟数据库模型
 type User struct {
-	ID          int                    `json:"id"`
-	Name        string                 `json:"name"`
-	Email       string                 `json:"email"`
-	Age         int                    `json:"age"`
-	Score       float64                `json:"score"`
-	IsActive    bool                   `json:"is_active"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   *time.Time             `json:"updated_at"`
-	Tags        []string               `json:"tags"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Profile     UserProfile            `json:"profile"`
+	ID        int                    `json:"id"`
+	Name      string                 `json:"name"`
+	Email     string                 `json:"email"`
+	Age       int                    `json:"age"`
+	Score     float64                `json:"score"`
+	IsActive  bool                   `json:"is_active"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt *time.Time             `json:"updated_at"`
+	Tags      []string               `json:"tags"`
+	Metadata  map[string]interface{} `json:"metadata"`
+	Profile   UserProfile            `json:"profile"`
 }
 
 type UserProfile struct {
@@ -123,7 +123,7 @@ func basicMappingExample(user *User) {
 	}
 
 	fmt.Printf("⏱️  映射耗时: %v\n", duration)
-	fmt.Printf("✅ 映射成功: ID=%d, 姓名=%s, 邮箱=%s, 活跃=%t\n", 
+	fmt.Printf("✅ 映射成功: ID=%d, 姓名=%s, 邮箱=%s, 活跃=%t\n",
 		userDTO.UserID, userDTO.FullName, userDTO.EmailAddress, userDTO.Active)
 	fmt.Printf("📊 嵌套数据: Profile.Bio=%s\n", userDTO.UserProfile.Bio)
 	fmt.Printf("🏷️  标签数量: %d\n", len(userDTO.Labels))
@@ -244,7 +244,7 @@ func customConfigExample(user *User) {
 	if err != nil {
 		log.Printf("❌ 映射失败: %v", err)
 	} else {
-		fmt.Printf("   忽略Email和Score后: 邮箱='%s' (应为空), 评分=%f (应为0)\n", 
+		fmt.Printf("   忽略Email和Score后: 邮箱='%s' (应为空), 评分=%f (应为0)\n",
 			dto1.EmailAddress, dto1.Rating)
 	}
 
@@ -275,7 +275,7 @@ func customConfigExample(user *User) {
 	if err != nil {
 		log.Printf("❌ 映射失败: %v", err)
 	} else {
-		fmt.Printf("   深拷贝映射成功: 标签数=%d, Metadata=%v\n", 
+		fmt.Printf("   深拷贝映射成功: 标签数=%d, Metadata=%v\n",
 			len(dto3.Labels), len(dto3.ExtraData))
 	}
 	fmt.Println()
@@ -290,7 +290,7 @@ func performanceStatsExample() {
 
 	// 执行一些映射操作
 	user := &User{ID: 1, Name: "测试用户", Email: "test@example.com", Age: 25}
-	
+
 	fmt.Println("🔄 执行测试映射...")
 	for i := 0; i < 10; i++ {
 		var dto UserDTO
@@ -384,14 +384,14 @@ func advancedFeaturesExample() {
 		WithMaxDepth(5)
 
 	_ = mapper.NewMapper(mapper.WithConfig(config))
-	fmt.Printf("   ✅ 链式配置完成: 策略=%d, 最大深度=%d\n", 
+	fmt.Printf("   ✅ 链式配置完成: 策略=%d, 最大深度=%d\n",
 		config.Strategy, config.MaxDepth)
 
 	// 特性2：全局映射函数
 	fmt.Println("🌐 特性2: 全局映射函数")
 	src := &SimpleUser{ID: 1, Name: "全局测试", Age: 25}
 	var dst SimpleUserDTO
-	
+
 	err := mapper.Map(src, &dst)
 	if err != nil {
 		fmt.Printf("   ❌ 全局映射失败: %v\n", err)
@@ -404,7 +404,7 @@ func advancedFeaturesExample() {
 	m2 := mapper.NewMapper()
 	fmt.Println("   🔄 切换到JSON策略...")
 	m2.SetStrategy(mapper.StrategyJSON)
-	
+
 	var dst2 SimpleUserDTO
 	err = m2.Map(src, &dst2)
 	if err != nil {
