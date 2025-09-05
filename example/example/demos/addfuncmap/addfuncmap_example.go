@@ -5,7 +5,9 @@ import (
 
 	"github.com/zsy619/yyhertz/framework/mvc"
 	"github.com/zsy619/yyhertz/framework/mvc/core"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xdate"
+	"github.com/zsy619/yyhertz/framework/pkg/xfmt"
+	"github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 // ExampleController 示例控制器
@@ -33,10 +35,10 @@ func main() {
 	// ============= 添加自定义模板函数 =============
 
 	// 1. 使用框架内置的工具函数
-	mvc.AddFuncMap("containString", util.ContainString)
-	mvc.AddFuncMap("formatFloat2", util.FmtFloat2)
-	mvc.AddFuncMap("formatByte", util.FmtByte)
-	mvc.AddFuncMap("getTime", util.GetTime)
+	mvc.AddFuncMap("containString", xstring.ContainsCommaStr)
+	mvc.AddFuncMap("formatFloat2", xfmt.FmtFloat2)
+	mvc.AddFuncMap("formatByte", xfmt.FmtByte)
+	mvc.AddFuncMap("getTime", xdate.GetTime)
 
 	// 2. 添加自定义字符串处理函数
 	mvc.AddFuncMap("upper", func(s string) string {
@@ -57,7 +59,7 @@ func main() {
 
 	// 3. 添加格式化函数
 	mvc.AddFuncMap("formatPrice", func(price float64) string {
-		return "¥" + util.FmtFloat2(price)
+		return "¥" + xfmt.FmtFloat2(price)
 	})
 
 	mvc.AddFuncMap("formatUser", func(username string) string {

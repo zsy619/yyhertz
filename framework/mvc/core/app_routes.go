@@ -12,7 +12,7 @@ import (
 
 	mvcContext "github.com/zsy619/yyhertz/framework/mvc/context"
 	"github.com/zsy619/yyhertz/framework/mvc/define"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 // ============= 路由冲突检测 =============
@@ -248,7 +248,7 @@ func (app *App) registerAutoRoutes(basePath string, controller IController) {
 
 		// 构建路由路径
 		routePath := basePath
-		actionPath := util.CapitalizeFirst(actionName)
+		actionPath := xstring.CapitalizeFirst(actionName)
 		routePath = path.Join("/", routePath, actionPath)
 
 		// 清理路径，移除重复的斜杠

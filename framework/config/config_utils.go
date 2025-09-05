@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xio"
 	"github.com/zsy619/yyhertz/framework/version"
 )
 
@@ -117,7 +117,7 @@ func printSystemInfo() {
 func InitConfig[T ConfigInterface](cnf T) {
 	appConf := path.Join(".", "conf", fmt.Sprintf("%s.yaml", cnf.GetConfigName()))
 	// 判断文件是否存在
-	if isExists := util.FileExists(appConf); !isExists {
+	if isExists := xio.FileExists(appConf); !isExists {
 		// 文件不存在，生成默认配置
 		cm := NewViperConfigManager(cnf)
 		err := cm.Initialize()

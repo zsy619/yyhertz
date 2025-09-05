@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/zsy619/yyhertz/framework/config"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xcrypto"
 )
 
 // GenerateOpenTelemetryTraceID 生成一个 OpenTelemetry 格式的 Trace ID。
@@ -60,7 +60,7 @@ func TracingMiddleware() Middleware {
 		// 如果没有request_id，也生成一个
 		requestID := c.GetString("request_id")
 		if requestID == "" {
-			requestID = util.ShortID()
+			requestID = xcrypto.ShortID()
 			c.Set("request_id", requestID)
 		}
 
@@ -133,7 +133,7 @@ func SimpleTracingMiddleware() Middleware {
 		// 生成或获取TraceID
 		traceID := string(c.GetHeader("X-Trace-ID"))
 		if traceID == "" {
-			traceID = util.ShortID() // 使用更简单的ID生成
+			traceID = xcrypto.ShortID() // 使用更简单的ID生成
 		}
 
 		// 设置到上下文

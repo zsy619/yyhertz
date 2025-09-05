@@ -66,13 +66,13 @@
             <!-- 演示1：包含用户信息模板 -->
             <div class="included-content">
                 <h4>演示1：包含用户信息模板</h4>
-                {{template "test/partials/user_profile.html" .UserInfo}}
+                {{templateFunc "test/partials/user_profile.html" .UserInfo}}
             </div>
 
             <!-- 演示2：包含功能列表模板 -->
             <div class="included-content">
                 <h4>演示2：包含功能特性列表</h4>
-                {{template "test/partials/feature_list.html" (makedict "title" "TemplateInclude特性" "features" (split "完全兼容Include函数,支持数据传递,支持嵌套调用,错误处理机制" ","))}}
+                {{templateFunc "test/partials/feature_list.html" (makedict "title" "TemplateInclude特性" "features" (split "完全兼容Include函数,支持数据传递,支持嵌套调用,错误处理机制" ","))}}
             </div>
 
             <!-- 演示3：对比Include和TemplateInclude -->
@@ -85,7 +85,7 @@
                     </div>
                     <div style="border: 1px solid #8e44ad; padding: 15px; border-radius: 5px;">
                         <h5 style="color: #8e44ad; margin-bottom: 10px;">使用TemplateInclude函数</h5>
-                        {{template "test/partials/comparison_card.html" (makedict "method" "TemplateInclude" "syntax" `{{template "template" .data}}` "color" "#8e44ad")}}
+                        {{templateFunc "test/partials/comparison_card.html" (makedict "method" "TemplateInclude" "syntax" `{{templateFunc "template" .data}}` "color" "#8e44ad")}}
                     </div>
                 </div>
             </div>

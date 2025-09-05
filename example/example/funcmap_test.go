@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/mvc/core"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 // TestAppAddFuncMap 测试应用级别的AddFuncMap功能
@@ -21,7 +21,7 @@ func TestAppAddFuncMap(t *testing.T) {
 
 	// 添加函数
 	app.AddFuncMap("toUpper", testFunc)
-	app.AddFuncMap("containString", util.ContainString)
+	app.AddFuncMap("containString", xstring.ContainsCommaStr)
 
 	// 验证函数是否成功添加
 	globalFuncs := app.GetGlobalFuncMap()
@@ -76,7 +76,7 @@ func TestAddFuncMapWithTemplate(t *testing.T) {
 
 	// 创建一个简单的模板来测试函数
 	tmpl := template.New("test").Funcs(app.GetGlobalFuncMap())
-	
+
 	templateStr := `{{reverse "hello"}}`
 	tmpl, err := tmpl.Parse(templateStr)
 	if err != nil {
@@ -99,12 +99,12 @@ func TestAddFuncMapWithTemplate(t *testing.T) {
 func TestAddFuncMapContainString(t *testing.T) {
 	app := core.NewApp()
 
-	// 添加util.ContainString函数
-	app.AddFuncMap("containString", util.ContainString)
+	// 添加util.ContainsCommaStr函数
+	app.AddFuncMap("containString", xstring.ContainsCommaStr)
 
 	// 创建模板来测试containString函数
 	tmpl := template.New("test").Funcs(app.GetGlobalFuncMap())
-	
+
 	templateStr := `{{if containString .Tags "important"}}Important{{else}}Normal{{end}}`
 	tmpl, err := tmpl.Parse(templateStr)
 	if err != nil {

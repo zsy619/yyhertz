@@ -15,16 +15,16 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/zsy619/yyhertz/framework/mybatis"
-	"github.com/zsy619/yyhertz/framework/mybatis/mapper"
+	mapper "github.com/zsy619/yyhertz/framework/mybatis/mapper"
 )
 
 // TestUser annotation测试用户实体
 type TestUser struct {
-	ID       int64  `column:"id" pk:"true" auto_incr:"true"`
-	Username string `column:"username" validate:"required,min=3,max=50"`
-	Email    string `column:"email" validate:"required,email"`
-	Age      int    `column:"age" validate:"min=0,max=120"`
-	Status   string `column:"status" default:"active"`
+	ID       int64            `column:"id" pk:"true" auto_incr:"true"`
+	Username string           `column:"username" validate:"required,min=3,max=50"`
+	Email    string           `column:"email" validate:"required,email"`
+	Age      int              `column:"age" validate:"min=0,max=120"`
+	Status   string           `column:"status" default:"active"`
 	Profile  *TestUserProfile `association:"select=selectUserProfile,column=id,foreignKey=user_id" lazy:"true" cache:"true"`
 	Orders   []*TestOrder     `collection:"select=selectUserOrders,column=id,foreignKey=user_id,ofType=Order" lazy:"true" cache:"true"`
 }
@@ -56,32 +56,32 @@ type AnnotationStressTester struct {
 // AnnotationStressStats annotation压力测试统计
 type AnnotationStressStats struct {
 	// 操作统计
-	TotalOperations    int64 `json:"total_operations"`
-	SuccessOperations  int64 `json:"success_operations"`
-	FailedOperations   int64 `json:"failed_operations"`
-	
+	TotalOperations   int64 `json:"total_operations"`
+	SuccessOperations int64 `json:"success_operations"`
+	FailedOperations  int64 `json:"failed_operations"`
+
 	// 性能统计
-	TotalLatency       int64 `json:"total_latency_ms"`
-	MinLatency         int64 `json:"min_latency_ms"`
-	MaxLatency         int64 `json:"max_latency_ms"`
-	
+	TotalLatency int64 `json:"total_latency_ms"`
+	MinLatency   int64 `json:"min_latency_ms"`
+	MaxLatency   int64 `json:"max_latency_ms"`
+
 	// 并发统计
-	ActiveGoroutines   int64 `json:"active_goroutines"`
-	MaxGoroutines      int64 `json:"max_goroutines"`
-	
+	ActiveGoroutines int64 `json:"active_goroutines"`
+	MaxGoroutines    int64 `json:"max_goroutines"`
+
 	// 缓存统计
-	CacheHits          int64 `json:"cache_hits"`
-	CacheMisses        int64 `json:"cache_misses"`
-	
+	CacheHits   int64 `json:"cache_hits"`
+	CacheMisses int64 `json:"cache_misses"`
+
 	// 资源统计
-	MemoryUsageBytes   int64 `json:"memory_usage_bytes"`
-	MaxMemoryBytes     int64 `json:"max_memory_bytes"`
-	
+	MemoryUsageBytes int64 `json:"memory_usage_bytes"`
+	MaxMemoryBytes   int64 `json:"max_memory_bytes"`
+
 	// 错误统计
-	ParseErrors        int64 `json:"parse_errors"`
+	ParseErrors         int64 `json:"parse_errors"`
 	SQLGenerationErrors int64 `json:"sql_generation_errors"`
-	DatabaseErrors     int64 `json:"database_errors"`
-	
+	DatabaseErrors      int64 `json:"database_errors"`
+
 	mutex sync.RWMutex
 }
 
@@ -95,43 +95,43 @@ func NewAnnotationStressTester(dbPath string) (*AnnotationStressTester, error) {
 	} else {
 		connString = dbPath + "?cache=shared&mode=rwc"
 	}
-	
+
 	db, err := sql.Open("sqlite3", connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	
+
 	// 配置连接池
 	db.SetMaxOpenConns(500)
 	db.SetMaxIdleConns(100)
 	db.SetConnMaxLifetime(30 * time.Minute)
-	
+
 	// 初始化GORM
 	gormDB, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize GORM: %w", err)
 	}
-	
+
 	// 创建测试表
 	if err := createAnnotationTestTables(db); err != nil {
 		return nil, fmt.Errorf("failed to create test tables: %w", err)
 	}
-	
+
 	// 创建XML会话（模拟）
 	xmlSession := &MockXMLSession{db: db}
-	
+
 	// 创建annotation驱动会话
 	annotationSess := mybatis.NewAnnotationDrivenSession(xmlSession)
-	
+
 	tester := &AnnotationStressTester{
 		db:             db,
 		gormDB:         gormDB,
 		annotationSess: annotationSess,
-		stats:          &AnnotationStressStats{
+		stats: &AnnotationStressStats{
 			MinLatency: 999999,
 		},
 	}
-	
+
 	return tester, nil
 }
 
@@ -167,13 +167,13 @@ func createAnnotationTestTables(db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_testuserprofile_user_id ON testuserprofile(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_testorder_user_id ON testorder(user_id)`,
 	}
-	
+
 	for _, schema := range schemas {
 		if _, err := db.Exec(schema); err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -215,28 +215,28 @@ func (m *MockXMLSession) SelectOne(ctx context.Context, sql string, args ...any)
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	if !rows.Next() {
 		return nil, fmt.Errorf("no rows found")
 	}
-	
+
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 创建值切片
 	values := make([]interface{}, len(columns))
 	valuePtrs := make([]interface{}, len(columns))
 	for i := range values {
 		valuePtrs[i] = &values[i]
 	}
-	
+
 	err = rows.Scan(valuePtrs...)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 创建用户对象并根据列名赋值
 	user := &TestUser{}
 	for i, colName := range columns {
@@ -263,7 +263,7 @@ func (m *MockXMLSession) SelectOne(ctx context.Context, sql string, args ...any)
 			}
 		}
 	}
-	
+
 	return user, nil
 }
 
@@ -273,12 +273,12 @@ func (m *MockXMLSession) SelectList(ctx context.Context, sql string, args ...any
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var results []any
 	for rows.Next() {
 		// 创建值切片
@@ -287,12 +287,12 @@ func (m *MockXMLSession) SelectList(ctx context.Context, sql string, args ...any
 		for i := range values {
 			valuePtrs[i] = &values[i]
 		}
-		
+
 		err = rows.Scan(valuePtrs...)
 		if err != nil {
 			continue
 		}
-		
+
 		// 创建用户对象并根据列名赋值
 		user := &TestUser{}
 		for i, colName := range columns {
@@ -319,10 +319,10 @@ func (m *MockXMLSession) SelectList(ctx context.Context, sql string, args ...any
 				}
 			}
 		}
-		
+
 		results = append(results, user)
 	}
-	
+
 	return results, nil
 }
 
@@ -463,18 +463,18 @@ func (m *MockXMLSession) GetStatementIds(namespace string) []string {
 func (s *AnnotationStressStats) RecordOperation(success bool, latency time.Duration) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	
+
 	atomic.AddInt64(&s.TotalOperations, 1)
-	
+
 	if success {
 		atomic.AddInt64(&s.SuccessOperations, 1)
 	} else {
 		atomic.AddInt64(&s.FailedOperations, 1)
 	}
-	
+
 	latencyMs := latency.Milliseconds()
 	atomic.AddInt64(&s.TotalLatency, latencyMs)
-	
+
 	if latencyMs < s.MinLatency {
 		s.MinLatency = latencyMs
 	}
@@ -487,16 +487,16 @@ func (s *AnnotationStressStats) RecordOperation(success bool, latency time.Durat
 func (s *AnnotationStressStats) UpdateResourceUsage() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	memUsage := int64(m.Alloc)
 	atomic.StoreInt64(&s.MemoryUsageBytes, memUsage)
-	
+
 	if memUsage > s.MaxMemoryBytes {
 		atomic.StoreInt64(&s.MaxMemoryBytes, memUsage)
 	}
-	
+
 	atomic.StoreInt64(&s.ActiveGoroutines, int64(runtime.NumGoroutine()))
-	
+
 	if s.ActiveGoroutines > s.MaxGoroutines {
 		atomic.StoreInt64(&s.MaxGoroutines, s.ActiveGoroutines)
 	}
@@ -509,21 +509,21 @@ func TestAnnotationHighConcurrency(t *testing.T) {
 		t.Fatalf("Failed to create tester: %v", err)
 	}
 	defer tester.db.Close()
-	
+
 	concurrency := 200
 	operationsPerGoroutine := 50
 	ctx := context.Background()
-	
+
 	t.Logf("开始高并发annotation测试: %d协程, 每个协程%d次操作", concurrency, operationsPerGoroutine)
-	
+
 	var wg sync.WaitGroup
 	startTime := time.Now()
-	
+
 	// 资源监控协程
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
-		
+
 		for {
 			select {
 			case <-ticker.C:
@@ -533,41 +533,41 @@ func TestAnnotationHighConcurrency(t *testing.T) {
 			}
 		}
 	}()
-	
+
 	// 启动并发测试
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < operationsPerGoroutine; j++ {
 				// 测试插入操作
 				user := &TestUser{
 					Username: fmt.Sprintf("user_%d_%d", workerID, j),
 					Email:    fmt.Sprintf("user_%d_%d@test.com", workerID, j),
-					Age:      20 + (workerID%50),
+					Age:      20 + (workerID % 50),
 					Status:   "active",
 				}
-				
+
 				opStart := time.Now()
 				id, err := tester.annotationSess.Insert(ctx, user)
 				latency := time.Since(opStart)
-				
+
 				success := err == nil && id > 0
 				tester.stats.RecordOperation(success, latency)
-				
+
 				if !success {
 					atomic.AddInt64(&tester.stats.DatabaseErrors, 1)
 				}
-				
+
 				// 测试查询操作
 				if success {
 					opStart = time.Now()
 					_, err = tester.annotationSess.SelectByID(ctx, &TestUser{}, id)
 					latency = time.Since(opStart)
-					
+
 					tester.stats.RecordOperation(err == nil, latency)
-					
+
 					if err != nil {
 						atomic.AddInt64(&tester.stats.DatabaseErrors, 1)
 					}
@@ -575,10 +575,10 @@ func TestAnnotationHighConcurrency(t *testing.T) {
 			}
 		}(i)
 	}
-	
+
 	wg.Wait()
 	duration := time.Since(startTime)
-	
+
 	// 输出测试结果
 	t.Logf("高并发annotation测试完成:")
 	t.Logf("- 测试耗时: %v", duration)
@@ -593,13 +593,13 @@ func TestAnnotationHighConcurrency(t *testing.T) {
 	t.Logf("- 最大协程数: %d", tester.stats.MaxGoroutines)
 	t.Logf("- 最大内存使用: %.2fMB", float64(tester.stats.MaxMemoryBytes)/(1024*1024))
 	t.Logf("- 数据库错误: %d", tester.stats.DatabaseErrors)
-	
+
 	// 验证测试结果
 	successRate := float64(tester.stats.SuccessOperations) / float64(tester.stats.TotalOperations) * 100
 	if successRate < 95.0 {
 		t.Errorf("Success rate too low: %.2f%%, expected >= 95%%", successRate)
 	}
-	
+
 	avgLatency := float64(tester.stats.TotalLatency) / float64(tester.stats.TotalOperations)
 	if avgLatency > 50.0 { // 50ms阈值
 		t.Errorf("Average latency too high: %.2fms, expected <= 50ms", avgLatency)

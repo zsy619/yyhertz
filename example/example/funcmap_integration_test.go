@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/zsy619/yyhertz/framework/mvc"
-	"github.com/zsy619/yyhertz/framework/util"
+	"github.com/zsy619/yyhertz/framework/pkg/xfmt"
+	xstrings "github.com/zsy619/yyhertz/framework/pkg/xstring"
 )
 
 // TestGlobalAddFuncMapIntegration 测试全局静态方法mvc.AddFuncMap的集成功能
@@ -13,8 +14,8 @@ func TestGlobalAddFuncMapIntegration(t *testing.T) {
 	mvc.AddFuncMap("globalTest", func(s string) string {
 		return "global_" + s
 	})
-	
-	mvc.AddFuncMap("containString", util.ContainString)
+
+	mvc.AddFuncMap("containString", xstrings.ContainsCommaStr)
 
 	// 验证函数是否添加到全局mvc.HertzApp中
 	globalFuncs := mvc.GetGlobalFuncMap()
@@ -30,7 +31,7 @@ func TestGlobalAddFuncMapIntegration(t *testing.T) {
 	funcNames := mvc.ListFuncMap()
 	foundGlobalTest := false
 	foundContainString := false
-	
+
 	for _, name := range funcNames {
 		if name == "globalTest" {
 			foundGlobalTest = true
@@ -76,7 +77,7 @@ func TestGlobalFuncMapWithNilApp(t *testing.T) {
 	// 调用全局方法不应该panic
 	mvc.AddFuncMap("testNil", func() string { return "test" })
 	mvc.RemoveFuncMap("testNil")
-	
+
 	funcMap := mvc.GetGlobalFuncMap()
 	if funcMap == nil {
 		t.Error("mvc.GetGlobalFuncMap should return non-nil map even when mvc.HertzApp is nil")
@@ -91,12 +92,12 @@ func TestGlobalFuncMapWithNilApp(t *testing.T) {
 // TestAddFuncMapUsageExample 测试mvc.AddFuncMap的实际使用示例
 func TestAddFuncMapUsageExample(t *testing.T) {
 	// 示例：添加用户自定义的模板函数
-	mvc.AddFuncMap("containString", util.ContainString)
+	mvc.AddFuncMap("containString", xstrings.ContainsCommaStr)
 	mvc.AddFuncMap("upper", func(s string) string {
 		return "UPPER_" + s
 	})
 	mvc.AddFuncMap("formatPrice", func(price float64) string {
-		return "$" + util.FmtFloat2(price)
+		return "$" + xfmt.FmtFloat2(price)
 	})
 
 	// 验证函数都已正确添加

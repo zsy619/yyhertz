@@ -337,8 +337,8 @@ func (e *TemplateEngine) validateTemplateExecution(tmpl *template.Template, temp
 	return nil
 }
 
-// recoverFromTemplateLoadError 从模板加载错误中恢复
-func (e *TemplateEngine) recoverFromTemplateLoadError(templateName string, originalErr error) (*template.Template, error) {
+// RecoverFromTemplateLoadError 从模板加载错误中恢复
+func (e *TemplateEngine) RecoverFromTemplateLoadError(templateName string, originalErr error) (*template.Template, error) {
 	config.Warnf("🔧 Attempting to recover from template load error for: %s", templateName)
 
 	// 1. 尝试清除相关缓存并重新加载

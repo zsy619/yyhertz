@@ -13,8 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zsy619/yyhertz/framework/mybatis/mapper"
 	"gorm.io/gorm"
+
+	"github.com/zsy619/yyhertz/framework/mybatis/mapper"
 )
 
 // XMLSession XML支持的会话接口
@@ -81,27 +82,27 @@ type XMLSession interface {
 // xmlSession XML会话实现
 type xmlSession struct {
 	SimpleSession
-	parsers           map[string]*mapper.MapperXMLParser // namespace -> parser
-	dynamicBuilder    *mapper.DynamicSqlBuilder
-	resultMapper      *mapper.ResultMapper // 新增的结果映射器
-	lazyLoadManager   *LazyLoadManager     // 懒加载管理器
-	lazyLoadExecutor  *LazyLoadingExecutor // 懒加载执行器
+	parsers          map[string]*mapper.MapperXMLParser // namespace -> parser
+	dynamicBuilder   *mapper.DynamicSqlBuilder
+	resultMapper     *mapper.ResultMapper // 新增的结果映射器
+	lazyLoadManager  *LazyLoadManager     // 懒加载管理器
+	lazyLoadExecutor *LazyLoadingExecutor // 懒加载执行器
 }
 
 // NewXMLSession 创建支持XML的会话
 func NewXMLSession(db *gorm.DB) XMLSession {
 	simpleSession := NewSimpleSession(db)
 	lazyManager := NewLazyLoadManager(nil) // 使用默认配置
-	
+
 	session := &xmlSession{
-		SimpleSession:     simpleSession,
-		parsers:           make(map[string]*mapper.MapperXMLParser),
-		dynamicBuilder:    mapper.NewDynamicSqlBuilder(),
-		resultMapper:      mapper.NewResultMapper(), // 初始化结果映射器
-		lazyLoadManager:   lazyManager,
-		lazyLoadExecutor:  NewLazyLoadingExecutor(simpleSession, lazyManager),
+		SimpleSession:    simpleSession,
+		parsers:          make(map[string]*mapper.MapperXMLParser),
+		dynamicBuilder:   mapper.NewDynamicSqlBuilder(),
+		resultMapper:     mapper.NewResultMapper(), // 初始化结果映射器
+		lazyLoadManager:  lazyManager,
+		lazyLoadExecutor: NewLazyLoadingExecutor(simpleSession, lazyManager),
 	}
-	
+
 	return session
 }
 
@@ -109,14 +110,14 @@ func NewXMLSession(db *gorm.DB) XMLSession {
 func NewXMLSessionWithHooks(db *gorm.DB, enableDebug bool) XMLSession {
 	simpleSession := NewSimpleSession(db)
 	lazyManager := NewLazyLoadManager(nil) // 使用默认配置
-	
+
 	session := &xmlSession{
-		SimpleSession:     simpleSession,
-		parsers:           make(map[string]*mapper.MapperXMLParser),
-		dynamicBuilder:    mapper.NewDynamicSqlBuilder(),
-		resultMapper:      mapper.NewResultMapper(), // 初始化结果映射器
-		lazyLoadManager:   lazyManager,
-		lazyLoadExecutor:  NewLazyLoadingExecutor(simpleSession, lazyManager),
+		SimpleSession:    simpleSession,
+		parsers:          make(map[string]*mapper.MapperXMLParser),
+		dynamicBuilder:   mapper.NewDynamicSqlBuilder(),
+		resultMapper:     mapper.NewResultMapper(), // 初始化结果映射器
+		lazyLoadManager:  lazyManager,
+		lazyLoadExecutor: NewLazyLoadingExecutor(simpleSession, lazyManager),
 	}
 
 	// 配置调试模式和常用钩子
@@ -584,8 +585,8 @@ func (xs *xmlSession) applyResultMap(result any, resultMapId string) (any, error
 	return result, nil
 }
 
-// convertValue 根据TargetType转换值
-func (xs *xmlSession) convertValue(value any, targetType string) any {
+// ConvertValue 根据TargetType转换值
+func (xs *xmlSession) ConvertValue(value any, targetType string) any {
 	if targetType == "" || value == nil {
 		return value
 	}
