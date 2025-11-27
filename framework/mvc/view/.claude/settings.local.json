@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(rg:*)",
+      "Bash(touch /Volumes/E/JYW/YYHertz/framework/mvc/view/template_manager.go)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

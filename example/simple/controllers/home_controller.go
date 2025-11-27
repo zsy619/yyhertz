@@ -133,6 +133,7 @@ func (c *HomeController) GetIndex() {
 	c.SetData("Statistics", statistics)
 	c.SetData("Message", "欢迎使用Hertz MVC框架！")
 
+	c.Layout = ""
 	// 暂时使用完整HTML版本，确保页面正常显示
 	c.RenderHTML("home/index.html")
 }

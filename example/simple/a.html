@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina 数据分析平台克隆版 (V5.0 最终版)</title>
+    <!-- 引入 Layui CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/layui@2.9.13/dist/css/layui.css">
+    <!-- 引入 Font Awesome 6 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            padding: 15px;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+
+        .lumina-container {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 30px);
+        }
+
+        .lumina-col {
+            background-color: #fff;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lumina-col::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .lumina-col::-webkit-scrollbar-thumb {
+            background: #e0e0e0;
+            border-radius: 3px;
+        }
+
+        .col-left {
+            flex: 0 0 280px;
+        }
+
+        .col-middle {
+            flex: 0 0 320px;
+        }
+
+        .col-right {
+            flex: 1;
+        }
+
+        .section-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #303133;
+        }
+
+        /* 折叠面板样式优化 */
+        .layui-collapse {
+            border: none;
+        }
+
+        .layui-colla-item {
+            margin-bottom: 10px;
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .layui-colla-title {
+            background-color: #fafafa;
+            font-weight: 500;
+        }
+
+        .layui-colla-content {
+            padding: 15px;
+            border-top: 1px solid #e6e6e6;
+        }
+
+        .field-list .field-item {
+            padding: 10px 15px;
+            background-color: #fafafa;
+            border: 1px solid #e6e6e6;
+            border-radius: 3px;
+            margin-bottom: 8px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .field-list .field-item:hover {
+            background-color: #f5f5f5;
+            border-color: #c0c4cc;
+        }
+
+        .field-list .field-item .field-type {
+            font-size: 12px;
+            color: #909399;
+            background-color: #e9e9eb;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .sortable-ghost {
+            opacity: 0.5;
+            background: #eef5ff;
+            border: 1px dashed #79bbff;
+        }
+
+        .drop-zone {
+            border: 1px dashed #dcdfe6;
+            padding: 10px;
+            width: 100%;
+            min-height: 120px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .drop-zone.drag-enter {
+            border-color: #409eff;
+            background-color: #f4f8ff;
+        }
+
+        .drop-zone .placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #a8abb2;
+            pointer-events: none;
+        }
+
+        .drop-zone .placeholder i {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .field-badge {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0f2f5;
+            color: #606266;
+            border-radius: 4px;
+            border: 1px solid #e4e7ed;
+            margin: 4px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: grab;
+        }
+
+        .field-badge .agg-tag {
+            background-color: #e9e9eb;
+            color: #909399;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .field-badge .agg-tag:hover {
+            background-color: #dcdfe6;
+            color: #606266;
+        }
+
+        .field-badge .layui-icon-close {
+            margin-left: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .field-badge .layui-icon-close:hover {
+            color: #f56c6c;
+        }
+
+        .chart-type-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .chart-type-item {
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            text-align: center;
+            padding: 12px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-type-item:hover {
+            color: #409eff;
+        }
+
+        .chart-type-item.active {
+            background-color: #ecf5ff;
+            border-color: #a0cfff;
+            color: #409eff;
+        }
+
+        .chart-type-item i {
+            font-size: 26px;
+        }
+
+        .chart-type-item p {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .right-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .right-header .title-info {
+            font-size: 16px;
+        }
+
+        .right-header .title-info small {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .config-zones {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .chart-preview-container {
+            border: 1px solid #e6e6e6;
+            padding: 0 20px 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+
+        .chart-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+        }
+
+        .chart-preview-header .preview-info {
+            color: #606266;
+            font-size: 13px;
+        }
+
+        #chart-main {
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+        }
+
+        #data-table-container .layui-table-view {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lumina-container">
+        <!-- 第一列: 数据源与字段 -->
+        <div class="lumina-col col-left">
+            <div class="section-title">数据源选择</div>
+            <form class="layui-form"><select>
+                    <option selected>用户-订单汇总</option>
+                </select></form>
+            <hr class="layui-bg-gray" style="margin: 20px 0;">
+            <div class="section-title">字段列表</div>
+            <!-- 使用 lay-filter 是让 layui.element.render 生效的关键 -->
+            <div class="layui-collapse" lay-filter="fieldCollapse">
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">维度字段</h2>
+                    <div class="layui-colla-content layui-show">
+                        <div class="field-list" id="dimension-fields-source">
+                            <div class="field-item" data-field-name="用户名"><span class="field-name">用户名</span><span class="field-type">STR</span></div>
+                            <div class="field-item" data-field-name="省份"><span class="field-name">省份</span><span class="field-type">STR</span></div>
+                            <div class="field-item" data-field-name="城市"><span class="field-name">城市</span><span class="field-type">STR</span></div>
+                            <div class="field-item" data-field-name="订单月份"><span class="field-name">订单月份</span><span class="field-type">STR</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">指标字段</h2>
+                    <div class="layui-colla-content layui-show">
+                        <div class="field-list" id="metric-fields-source">
+                            <div class="field-item" data-field-name="实付金额"><span class="field-name">实付金额</span><span class="field-type">FLOAT</span></div>
+                            <div class="field-item" data-field-name="订单数"><span class="field-name">订单数</span><span class="field-type">INT</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 第二列: 图表类型与设置 -->
+        <div class="lumina-col col-middle">
+            <div class="section-title">图表类型</div>
+            <div class="chart-type-grid" id="chart-type-selector">
+                <div class="chart-type-item active" data-type="pie"><i class="fa-solid fa-chart-pie"></i>
+                    <p>饼图</p>
+                </div>
+                <div class="chart-type-item" data-type="ring"><i class="fa-solid fa-circle-notch"></i>
+                    <p>环形图</p>
+                </div>
+                <div class="chart-type-item" data-type="line"><i class="fa-solid fa-chart-line"></i>
+                    <p>折线图</p>
+                </div>
+                <div class="chart-type-item" data-type="bar"><i class="fa-solid fa-chart-column"></i>
+                    <p>柱状图</p>
+                </div>
+                <div class="chart-type-item" data-type="bar-y"><i class="fa-solid fa-chart-bar"></i>
+                    <p>条形图</p>
+                </div>
+                <div class="chart-type-item" data-type="area"><i class="fa-solid fa-chart-area"></i>
+                    <p>面积图</p>
+                </div>
+                <div class="chart-type-item" data-type="scatter"><i class="fa-solid fa-shapes"></i>
+                    <p>散点图</p>
+                </div>
+                <div class="chart-type-item" data-type="funnel"><i class="fa-solid fa-filter"></i>
+                    <p>漏斗图</p>
+                </div>
+                <div class="chart-type-item" data-type="pictorialBar"><i class="fa-solid fa-person"></i>
+                    <p>象形图</p>
+                </div>
+            </div>
+            <hr class="layui-bg-gray" style="margin: 20px 0;">
+            <div class="section-title">图表设置</div>
+            <form class="layui-form" id="chart-settings-form" lay-filter="chartSettings">
+                <div class="layui-form-item"><label class="layui-form-label">标题</label>
+                    <div class="layui-input-block"><input type="text" name="title" value="图表标题" autocomplete="off" class="layui-input"></div>
+                </div>
+                <div class="layui-form-item"><label class="layui-form-label">图例</label>
+                    <div class="layui-input-block"><input type="checkbox" name="showLegend" title="显示" lay-skin="switch" checked></div>
+                </div>
+                <div id="dynamic-settings"></div>
+            </form>
+        </div>
+        <!-- 第三列: 配置与预览 -->
+        <div class="lumina-col col-right">
+            <div class="right-header">
+                <div class="title-info">图表配置与预览</div>
+                <div class="actions">
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="reset-btn">重置</button>
+                    <button type="button" class="layui-btn">保存</button>
+                </div>
+            </div>
+            <div class="config-zones">
+                <div>
+                    <div class="section-title">维度</div>
+                    <div class="drop-zone" id="drop-dimension">
+                        <div class="placeholder"><i class="layui-icon layui-icon-app"></i><span>拖拽维度字段</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-title">指标</div>
+                    <div class="drop-zone" id="drop-metric">
+                        <div class="placeholder"><i class="layui-icon layui-icon-app"></i><span>拖拽指标字段</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-title">筛选器</div>
+                    <div class="drop-zone" id="drop-filter">
+                        <div class="placeholder"><i class="layui-icon layui-icon-app"></i><span>拖拽字段筛选</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-preview-container">
+                <div class="layui-tab layui-tab-brief" lay-filter="previewTab" style="flex-grow: 1; display: flex; flex-direction: column;">
+                    <div class="chart-preview-header">
+                        <div class="preview-info">图表预览</div>
+                        <div class="preview-actions">
+                            <button class="layui-btn" id="run-query-btn">运行查询</button>
+                            <button class="layui-btn layui-btn-primary layui-btn-sm" id="preview-sql-btn">预览SQL</button>
+                        </div>
+                    </div>
+                    <ul class="layui-tab-title">
+                        <li class="layui-this">图表视图</li>
+                        <li>数据表格</li>
+                    </ul>
+                    <div class="layui-tab-content" style="flex-grow: 1;">
+                        <div class="layui-tab-item layui-show" style="height: 100%;">
+                            <div id="chart-main"></div>
+                        </div>
+                        <div class="layui-tab-item" id="data-table-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/layui@2.9.13/dist/layui.js"></script>
+    <script>
+        layui.use(['form', 'element', 'table', 'layer'], function () {
+            const { form, element, table, layer, $ } = layui;
+
+            const chartDom = document.getElementById('chart-main');
+            const myChart = echarts.init(chartDom, null, { renderer: 'svg' });
+            let currentChartType = 'pie';
+
+            // =================================================================
+            // 1. 核心状态管理
+            // =================================================================
+            let configState = {
+                dimensions: [], // { name: '用户名' }
+                metrics: [],    // { name: '实付金额', agg: 'SUM' }
+                filters: []     // { name: '省份' }
+            };
+            const AGG_MAP = { SUM: '求和', AVG: '平均', COUNT: '计数', MAX: '最大值', MIN: '最小值' };
+            const AGG_METHODS = Object.keys(AGG_MAP);
+
+            // =================================================================
+            // 2. 数据模拟与处理
+            // =================================================================
+            const mockData = {
+                pie: [{ value: 1048, name: '华东' }, { value: 735, name: '华南' }, { value: 580, name: '华北' }, { value: 484, name: '华中' }, { value: 300, name: '西南' }],
+                category: { x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], y: [820, 932, 901, 934, 1290, 1330, 1320] },
+                scatter: [[10.0, 8.04], [8.07, 6.95], [13.0, 7.58], [9.05, 8.81], [11.0, 8.33], [14.0, 7.66], [13.4, 6.81]],
+                funnel: [{ value: 100, name: '展现' }, { value: 80, name: '点击' }, { value: 60, name: '访问' }, { value: 40, name: '咨询' }, { value: 20, name: '下单' }]
+            };
+
+            // =================================================================
+            // 3. UI 更新模块 (图表、表格、SQL)
+            // =================================================================
+            function updateAllViews() {
+                updateChart();
+                updateDataTable();
+            }
+
+            function updateChart() {
+                const settings = form.val('chartSettings');
+                let option = {
+                    title: { text: settings.title || '图表', left: 'center', textStyle: { fontSize: 16 } },
+                    tooltip: {},
+                    legend: { show: !!settings.showLegend, left: 'left', orient: 'vertical', type: 'scroll' },
+                    grid: { top: 60, right: 40, bottom: 40, left: 60, containLabel: true }
+                };
+
+                if (configState.dimensions.length === 0 || configState.metrics.length === 0) {
+                    myChart.clear();
+                    return;
+                }
+
+                // ... (ECharts option logic from previous version, no changes needed)
+                switch (currentChartType) {
+                    case 'pie': case 'ring':
+                        option.tooltip.trigger = 'item';
+                        option.series = [{ type: 'pie', radius: currentChartType === 'ring' ? ['40%', '70%'] : '70%', center: ['55%', '50%'], data: mockData.pie }];
+                        break;
+                    case 'line': case 'area':
+                        option.tooltip.trigger = 'axis'; option.xAxis = { type: 'category', data: mockData.category.x }; option.yAxis = { type: 'value' };
+                        option.series = [{ type: 'line', smooth: !!settings.smooth, areaStyle: currentChartType === 'area' ? {} : null, data: mockData.category.y }];
+                        break;
+                    case 'bar': case 'bar-y':
+                        option.tooltip.trigger = 'axis';
+                        option.xAxis = { type: currentChartType === 'bar' ? 'category' : 'value', data: currentChartType === 'bar' ? mockData.category.x : null };
+                        option.yAxis = { type: currentChartType === 'bar' ? 'value' : 'category', data: currentChartType === 'bar' ? null : mockData.category.x.slice().reverse() };
+                        option.series = [{ type: 'bar', stack: settings.stack ? 'total' : null, data: mockData.category.y }];
+                        break;
+                    case 'scatter':
+                        option.tooltip.trigger = 'item'; option.xAxis = {}; option.yAxis = {};
+                        option.series = [{ type: 'scatter', data: mockData.scatter }];
+                        break;
+                    case 'funnel':
+                        option.tooltip.trigger = 'item'; option.legend.orient = 'horizontal';
+                        option.series = [{ type: 'funnel', left: '10%', width: '80%', data: mockData.funnel }];
+                        break;
+                    case 'pictorialBar':
+                        option.tooltip.trigger = 'axis'; option.xAxis = { type: 'category', data: mockData.category.x }; option.yAxis = { type: 'value' };
+                        option.series = [{ type: 'pictorialBar', symbol: 'path://M0,10 L10,10 C5,-5 5,-5 0,10 z', data: mockData.category.y }];
+                        break;
+                }
+                myChart.setOption(option, true);
+            }
+
+            function updateDataTable() {
+                if (configState.dimensions.length === 0 && configState.metrics.length === 0) {
+                    $('#data-table-container').html('<div class="layui-none">暂无数据</div>');
+                    return;
+                }
+                const cols = [[]];
+                configState.dimensions.forEach(d => cols[0].push({ field: d.name, title: d.name, sort: true }));
+                configState.metrics.forEach(m => cols[0].push({ field: `${m.name}_${m.agg}`, title: `${m.name}(${AGG_MAP[m.agg]})`, sort: true }));
+
+                const tableData = Array(5).fill(0).map((_, i) => {
+                    const row = {};
+                    cols[0].forEach(c => row[c.field] = `${c.title.replace(/\(.*?\)/, '')}-数据${i + 1}`);
+                    return row;
+                });
+
+                table.render({ elem: '#data-table-container', cols: cols, data: tableData, page: true, skin: 'line' });
+            }
+
+            function generateSQL() {
+                if (configState.dimensions.length === 0 && configState.metrics.length === 0) return "/* 请拖拽字段以生成SQL */";
+                const selects = [];
+                const groups = [];
+                configState.dimensions.forEach(d => { selects.push(`\`${d.name}\``); groups.push(`\`${d.name}\``); });
+                configState.metrics.forEach(m => selects.push(`${m.agg}(\`${m.name}\`) AS \`${m.name}_${m.agg}\``));
+                const where = configState.filters.length > 0 ? `\nWHERE ${configState.filters.map(f => `\`${f.name}\` IS NOT NULL`).join(' AND ')}` : '';
+                const groupBy = groups.length > 0 ? `\nGROUP BY ${groups.join(', ')}` : '';
+                return `SELECT\n  ${selects.join(',\n  ')}\nFROM \`用户-订单汇总\`${where}${groupBy}\nLIMIT 1000;`;
+            }
+
+            // =================================================================
+            // 4. 拖拽功能 (SortableJS) - 包含去重逻辑
+            // =================================================================
+            function isFieldAlreadyUsed(fieldName) {
+                const allUsedFields = [
+                    ...configState.dimensions.map(d => d.name),
+                    ...configState.metrics.map(m => m.name),
+                    ...configState.filters.map(f => f.name)
+                ];
+                return allUsedFields.includes(fieldName);
+            }
+
+            function setupSortable() {
+                const createTargetZone = (id, groupConfig, zoneType) => {
+                    new Sortable(document.getElementById(id), {
+                        group: groupConfig, animation: 150,
+                        onAdd: (evt) => {
+                            const name = $(evt.item).data('field-name');
+                            // 立即移除sortablejs添加的dom，后续由renderDropZones根据状态统一渲染
+                            $(evt.item).remove();
+
+                            // **核心去重逻辑**
+                            if (isFieldAlreadyUsed(name)) {
+                                layer.msg('字段已存在于配置中', { icon: 5, time: 1500 });
+                                return; // 阻止添加
+                            }
+
+                            // 更新状态
+                            const newItem = { name };
+                            if (zoneType === 'metrics') newItem.agg = 'SUM';
+                            configState[zoneType].push(newItem);
+
+                            renderDropZones();
+                            updateAllViews();
+                        },
+                        onStart: () => { /* ... (visual feedback logic) */ },
+                        onEnd: () => $('.drop-zone').removeClass('drag-enter')
+                    });
+                };
+
+                ['dimension-fields-source', 'metric-fields-source'].forEach(id => {
+                    new Sortable(document.getElementById(id), {
+                        group: { name: id, pull: 'clone', put: false }, sort: false, animation: 150, ghostClass: 'sortable-ghost'
+                    });
+                });
+
+                createTargetZone('drop-dimension', { name: 'drop-dim', put: ['dimension-fields-source'] }, 'dimensions');
+                createTargetZone('drop-metric', { name: 'drop-met', put: ['metric-fields-source'] }, 'metrics');
+                createTargetZone('drop-filter', { name: 'drop-fil', put: ['dimension-fields-source', 'metric-fields-source'] }, 'filters');
+            }
+
+            function renderDropZones() {
+                Object.entries({ dimension: 'dimensions', metric: 'metrics', filter: 'filters' }).forEach(([key, stateKey]) => {
+                    const $zone = $(`#drop-${key}`);
+                    $zone.empty();
+                    if (configState[stateKey].length === 0) {
+                        $zone.html(`<div class="placeholder"><i class="layui-icon layui-icon-app"></i><span>拖拽字段</span></div>`);
+                    } else {
+                        configState[stateKey].forEach((item, index) => {
+                            const aggHtml = stateKey === 'metrics' ? `<span class="agg-tag" data-index="${index}">${AGG_MAP[item.agg]}</span>` : '';
+                            $zone.append(`<span class="field-badge" data-state-key="${stateKey}" data-index="${index}">${item.name}${aggHtml}<i class="layui-icon layui-icon-close"></i></span>`);
+                        });
+                    }
+                });
+            }
+
+            // =================================================================
+            // 5. 事件绑定
+            // =================================================================
+            $('#chart-type-selector').on('click', '.chart-type-item', function () {
+                $(this).addClass('active').siblings().removeClass('active');
+                currentChartType = $(this).data('type');
+                renderDynamicSettings(currentChartType);
+                updateChart();
+            });
+
+            const dynamicSettingsTpl = {
+                line: `<div class="layui-form-item"><label class="layui-form-label">平滑曲线</label><div class="layui-input-block"><input type="checkbox" name="smooth" title="开启" lay-skin="switch"></div></div>`,
+                area: `<div class="layui-form-item"><label class="layui-form-label">平滑曲线</label><div class="layui-input-block"><input type="checkbox" name="smooth" title="开启" lay-skin="switch"></div></div>`,
+                bar: `<div class="layui-form-item"><label class="layui-form-label">堆叠</label><div class="layui-input-block"><input type="checkbox" name="stack" title="开启" lay-skin="switch"></div></div>`,
+                'bar-y': `<div class="layui-form-item"><label class="layui-form-label">堆叠</label><div class="layui-input-block"><input type="checkbox" name="stack" title="开启" lay-skin="switch"></div></div>`
+            };
+            function renderDynamicSettings(type) {
+                $('#dynamic-settings').html(dynamicSettingsTpl[type] || '');
+                form.render();
+            }
+
+            form.on('switch', updateChart);
+            $('#chart-settings-form .layui-input').on('input', updateChart);
+
+            $('.config-zones').on('click', '.layui-icon-close', function () {
+                const $badge = $(this).parent();
+                configState[$badge.data('state-key')].splice($badge.data('index'), 1);
+                renderDropZones();
+                updateAllViews();
+            });
+
+            $('.config-zones').on('click', '.agg-tag', function () {
+                const index = $(this).data('index');
+                const currentAgg = configState.metrics[index].agg;
+                const nextIndex = (AGG_METHODS.indexOf(currentAgg) + 1) % AGG_METHODS.length;
+                configState.metrics[index].agg = AGG_METHODS[nextIndex];
+                renderDropZones();
+                updateAllViews();
+            });
+
+            $('#run-query-btn').on('click', updateAllViews);
+            $('#reset-btn').on('click', () => {
+                configState = { dimensions: [], metrics: [], filters: [] };
+                renderDropZones();
+                updateAllViews();
+                layer.msg('已重置', { icon: 1, time: 1000 });
+            });
+            $('#preview-sql-btn').on('click', () => {
+                layer.open({ type: 1, title: '预览SQL', area: ['500px', '300px'], content: `<pre class="layui-code" lay-options="{about: true}">${generateSQL()}</pre>`, shadeClose: true });
+                element.render('code');
+            });
+
+            // =================================================================
+            // 6. 初始化
+            // =================================================================
+            $(window).on('resize', () => myChart.resize());
+
+            // **确保折叠面板被正确渲染**
+            element.render('collapse', 'fieldCollapse');
+
+            renderDynamicSettings(currentChartType);
+            setupSortable();
+            updateAllViews();
+        });
+    </script>
+</body>
+
+</html>

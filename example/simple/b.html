@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - 可视化数据看板设计器 (拖拽优化版)</title>
+    <!-- 引入 Layui CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/css/layui.css" />
+    <!-- 引入 jQuery UI CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css" />
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+        body,
+        html {
+            overflow: hidden;
+            background-color: #f2f2f2;
+        }
+
+        /* --- 整体布局 --- */
+        .layui-header {
+            background-color: #fff;
+            box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
+            z-index: 1001;
+        }
+
+        .layui-side {
+            top: 60px;
+            box-shadow: 2px 0 6px rgba(0, 21, 41, .35);
+            z-index: 1000;
+        }
+
+        .properties-panel {
+            position: fixed;
+            top: 60px;
+            right: 0;
+            width: 320px;
+            height: calc(100vh - 60px);
+            background-color: #fff;
+            border-left: 1px solid #e6e6e6;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .layui-body {
+            top: 60px;
+            left: 220px;
+            right: 320px;
+            bottom: 0;
+            padding: 15px;
+            overflow: auto;
+        }
+
+        /* --- 左侧组件库 --- */
+        .component-group-title {
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0 5px 15px;
+            font-size: 14px;
+        }
+
+        .component-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 0 10px;
+        }
+
+        .component-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 5px;
+            cursor: grab;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #fafafa;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .component-item:hover {
+            background-color: #eef5ff;
+            border-color: #1E9FFF;
+        }
+
+        .component-item i {
+            font-size: 24px;
+            color: #1E9FFF;
+        }
+
+        .component-item span {
+            font-size: 12px;
+            margin-top: 8px;
+            color: #666;
+        }
+
+        /* 折叠面板样式 */
+        .layui-collapse {
+            border: none;
+        }
+
+        .layui-colla-item {
+            margin-bottom: 10px;
+        }
+
+        .layui-colla-title {
+            background-color: #f8f8f8;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .layui-colla-title::after {
+            content: "\e61a";
+            font-family: layui-icon !important;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s;
+        }
+        
+        .layui-colla-item.layui-colla-itemed .layui-colla-title::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .layui-colla-content {
+            border: 1px solid #eee;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            padding: 10px 0;
+        }
+
+        /* --- 中央画布与组件 --- */
+        #dashboard-canvas {
+            width: 1920px;
+            height: 1080px;
+            background-color: #fff;
+            background-image: linear-gradient(rgba(0, 0, 0, .04) 1px, transparent 0), linear-gradient(90deg, rgba(0, 0, 0, .04) 1px, transparent 0);
+            background-size: 20px 20px;
+            position: relative;
+            transform-origin: top left;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-widget {
+            position: absolute;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+        }
+
+        .chart-widget.selected {
+            border: 2px solid #1E9FFF !important;
+            box-shadow: 0 0 10px rgba(30, 159, 255, 0.5);
+            z-index: 999 !important;
+        }
+
+        .widget-delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+        }
+
+        .chart-widget.selected .widget-delete-btn {
+            display: block;
+        }
+
+        .chart-widget-header {
+            padding: 0 10px;
+            line-height: 38px;
+            font-weight: 600;
+            border-bottom: 1px solid #f6f6f6;
+            background-color: #fff;
+            cursor: move;
+        }
+
+        .chart-widget-body {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        .ui-resizable-handle {
+            background-color: #1E9FFF;
+            opacity: 0.7;
+        }
+
+        /* 拖拽辅助元素的样式 */
+        .ui-draggable-helper {
+            opacity: 0;
+            border: none;
+        }
+        /* --- 基础组件 & 表格样式 --- */
+        .widget-basic-component {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        .widget-basic-component.layui-btn {
+            height: 100% !important;
+        }
+
+        .widget-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .layui-table,
+        .layui-table-view {
+            margin: 0;
+        }
+
+        .layui-table-cell .layui-icon {
+            vertical-align: middle;
+        }
+
+        /* --- 右侧属性面板 --- */
+        .properties-panel .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 20px 0 15px;
+            padding-left: 10px;
+            border-left: 3px solid #1E9FFF;
+        }
+
+        .position-size-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 10px;
+        }
+
+        /* --- 缩放控制按钮样式 --- */
+        #zoom-level {
+            display: inline-block;
+            width: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* --- 滚动条样式优化 --- */
+        .layui-body::-webkit-scrollbar,
+        .properties-panel::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .layui-body::-webkit-scrollbar-track,
+        .properties-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .layui-body::-webkit-scrollbar-thumb,
+        .properties-panel::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .layui-body::-webkit-scrollbar-thumb:hover,
+        .properties-panel::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+
+<body class="layui-layout-body layui-layout-admin">
+    <div class="layui-layout">
+        <!-- 头部 -->
+        <div class="layui-header">
+            <div class="layui-logo" style="width: 220px; font-weight: bold; font-size: 20px;">LUMINA DESIGNER</div>
+            <ul class="layui-nav layui-layout-left">
+                <li class="layui-nav-item"><a href="javascript:;" id="btn-save">保存</a></li>
+                <li class="layui-nav-item"><a href="javascript:;" id="btn-load">加载</a></li>
+                <li class="layui-nav-item"><a href="javascript:;" id="btn-export">导出</a></li>
+                <li class="layui-nav-item"><a href="javascript:;" id="btn-preview">预览</a></li>
+                <li class="layui-nav-item"><a href="javascript:;" id="btn-help">帮助</a></li>
+                <li class="layui-nav-item">
+                    <div style="padding: 0 15px; line-height: 60px;">
+                        <button id="btn-zoom-out" class="layui-btn layui-btn-primary layui-btn-sm"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <span id="zoom-level" style="margin: 0 10px;">100%</span>
+                        <button id="btn-zoom-in" class="layui-btn layui-btn-primary layui-btn-sm"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button id="btn-zoom-reset" class="layui-btn layui-btn-primary layui-btn-sm"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <!-- 左侧组件库 -->
+        <div class="layui-side" style="width: 220px;">
+            <div class="layui-side-scroll">
+                <div class="layui-collapse" lay-accordion>
+                    <div class="layui-colla-item">
+                        <h2 class="layui-colla-title">基础组件</h2>
+                        <div class="layui-colla-content layui-show">
+                            <div class="component-list">
+                                <div class="component-item" data-type="label"><i class="fa-solid fa-font"></i><span>标签</span></div>
+                                <div class="component-item" data-type="text-input"><i class="fa-solid fa-grip-lines"></i><span>单行文本</span></div>
+                                <div class="component-item" data-type="textarea"><i class="fa-solid fa-align-justify"></i><span>多行文本</span></div>
+                                <div class="component-item" data-type="radio"><i class="fa-solid fa-circle-dot"></i><span>单选按钮</span></div>
+                                <div class="component-item" data-type="checkbox"><i class="fa-solid fa-square-check"></i><span>多选按钮</span></div>
+                                <div class="component-item" data-type="button"><i class="fa-solid fa-square"></i><span>普通按钮</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-colla-item">
+                        <h2 class="layui-colla-title">图表</h2>
+                        <div class="layui-colla-content layui-show">
+                            <div class="component-list">
+                                <div class="component-item" data-type="pie"><i class="fa-solid fa-chart-pie"></i><span>饼图</span></div>
+                                <div class="component-item" data-type="bar"><i class="fa-solid fa-chart-bar"></i><span>柱状图</span></div>
+                                <div class="component-item" data-type="line"><i class="fa-solid fa-chart-line"></i><span>曲线图</span></div>
+                                <div class="component-item" data-type="funnel"><i class="fa-solid fa-filter"></i><span>漏斗图</span></div>
+                                <div class="component-item" data-type="radar"><i class="fa-solid fa-bullseye"></i><span>雷达图</span></div>
+                                <div class="component-item" data-type="gauge"><i class="fa-solid fa-gauge-high"></i><span>仪表盘</span></div>
+                                <div class="component-item" data-type="scatter"><i class="fa-solid fa-braille"></i><span>散点图</span></div>
+                                <div class="component-item" data-type="candlestick"><i class="fa-solid fa-chart-column"></i><span>K线图</span></div>
+                                <div class="component-item" data-type="map"><i class="fa-solid fa-earth-americas"></i><span>百度地图</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-colla-item">
+                        <h2 class="layui-colla-title">表格</h2>
+                        <div class="layui-colla-content layui-show">
+                            <div class="component-list">
+                                <div class="component-item" data-type="table"><i class="fa-solid fa-table"></i><span>普通表格</span></div>
+                                <div class="component-item" data-type="tree-table"><i class="fa-solid fa-table-list"></i><span>树形表格</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 中央画布 -->
+        <div class="layui-body">
+            <div id="dashboard-canvas"></div>
+        </div>
+        <!-- 右侧属性面板 -->
+        <div class="properties-panel">
+            <div id="canvas-properties">
+                <div class="section-title">画布属性</div>
+                <form class="layui-form" lay-filter="canvas-form">
+                    <div class="layui-form-item"><label class="layui-form-label">常用尺寸</label>
+                        <div class="layui-input-block"><select lay-filter="canvasSize">
+                                <option value="">自定义</option>
+                                <option value="1366x768">1366x768 (WXGA)</option>
+                                <option value="1440x900">1440x900 (WXGA+)</option>
+                                <option value="1920x1080">1920x1080 (1080P)</option>
+                                <option value="2560x1440">2560x1440 (2K)</option>
+                                <option value="3840x2160">3840x2160 (4K)</option>
+                                <option value="4096x2160">4096x2160 (DCI 4K)</option>
+                                <option value="5120x2880">5120x2880 (5K)</option>
+                            </select></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">宽度(px)</label>
+                        <div class="layui-input-block"><input type="number" name="width" value="1920" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">高度(px)</label>
+                        <div class="layui-input-block"><input type="number" name="height" value="1080" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">背景颜色</label>
+                        <div class="layui-input-block">
+                            <div id="bgColorPicker"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div id="component-properties" style="display: none;">
+                <form class="layui-form" lay-filter="component-style-form">
+                    <div class="section-title">通用</div>
+                    <div class="position-size-grid">
+                        <div class="layui-form-item"><label class="layui-form-label">X</label>
+                            <div class="layui-input-block"><input type="number" name="x" class="layui-input"></div>
+                        </div>
+                        <div class="layui-form-item"><label class="layui-form-label">Y</label>
+                            <div class="layui-input-block"><input type="number" name="y" class="layui-input"></div>
+                        </div>
+                        <div class="layui-form-item"><label class="layui-form-label">宽度</label>
+                            <div class="layui-input-block"><input type="number" name="width" class="layui-input"></div>
+                        </div>
+                        <div class="layui-form-item"><label class="layui-form-label">高度</label>
+                            <div class="layui-input-block"><input type="number" name="height" class="layui-input"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">旋转角度</label>
+                        <div class="layui-input-block"><input type="number" name="rotate" value="0" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">透明度</label>
+                        <div class="layui-input-block"><input type="number" name="opacity" value="100" min="0" max="100" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">锁定宽高比</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="lockAspectRatio" lay-skin="switch" lay-text="是|否">
+                        </div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">图层</label>
+                        <div class="layui-input-block">
+                            <div class="layui-btn-group"><button type="button" class="layui-btn layui-btn-sm" id="btn-bring-to-front">置于顶层</button><button type="button" class="layui-btn layui-btn-sm" id="btn-send-to-back">置于底层</button></div>
+                        </div>
+                    </div>
+                    <div class="section-title">外观</div>
+                    <div class="layui-form-item"><label class="layui-form-label">背景颜色</label>
+                        <div class="layui-input-block">
+                            <div id="widgetBgColorPicker"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">边框颜色</label>
+                        <div class="layui-input-block">
+                            <div id="widgetBorderColorPicker"></div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">边框宽度</label>
+                        <div class="layui-input-block"><input type="number" name="borderWidth" value="1" min="0" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">圆角(px)</label>
+                        <div class="layui-input-block"><input type="number" name="borderRadius" value="0" class="layui-input"></div>
+                    </div>
+                    <div class="layui-form-item"><label class="layui-form-label">阴影</label>
+                        <div class="layui-input-block"><input type="text" name="boxShadow" placeholder="例: 0 2px 4px rgba(0,0,0,0.1)" class="layui-input"></div>
+                    </div>
+                    <div id="specific-properties-container"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/layui/2.9.13/layui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/map/js/china.js"></script>
+    <!-- Layui TreeTable 扩展 -->
+    <script src="https://cdn.jsdelivr.net/npm/layui-treetable@1.5.5/treetable.js"></script>
+    <script>
+        layui.use(['element', 'form', 'layer', 'colorpicker', 'table', 'treeTable'], function () {
+            var element = layui.element, form = layui.form, layer = layui.layer,
+                colorpicker = layui.colorpicker, table = layui.table, treeTable = layui.treeTable, $ = layui.$;
+
+            // 初始化折叠面板
+            element.init('collapse');
+            
+            var chartInstances = {}, chartOptions = {}, widgetCounter = 0;
+            var $canvas = $('#dashboard-canvas'), $canvasProps = $('#canvas-properties'),
+                $componentProps = $('#component-properties'), $selectedWidget = null;
+            
+            // 组件复制和粘贴功能
+            var clipboardWidget = null;
+            
+            function copyWidget() {
+                if (!$selectedWidget) return;
+                clipboardWidget = {
+                    type: $selectedWidget.data('type'),
+                    width: $selectedWidget.width(),
+                    height: $selectedWidget.height(),
+                    style: {
+                        backgroundColor: $selectedWidget.css('background-color'),
+                        borderRadius: $selectedWidget.css('border-radius'),
+                        boxShadow: $selectedWidget.css('box-shadow')
+                    }
+                };
+                
+                // 获取特定组件的数据
+                if (isBasicComponent($selectedWidget.data('type'))) {
+                    var body = $selectedWidget.find('.chart-widget-body');
+                    if ($selectedWidget.data('type') === 'label' || $selectedWidget.data('type') === 'button') {
+                        clipboardWidget.textContent = body.text().trim();
+                    } else if ($selectedWidget.data('type').includes('input') || $selectedWidget.data('type') === 'textarea') {
+                        clipboardWidget.placeholder = body.find('input, textarea').attr('placeholder');
+                    }
+                } else if (isChartComponent($selectedWidget.data('type'))) {
+                    clipboardWidget.chartOption = chartOptions[$selectedWidget.data('body-id')] || getChartOption($selectedWidget.data('type'));
+                }
+                
+                layer.msg('组件已复制到剪贴板');
+            }
+            
+            function pasteWidget() {
+                if (!clipboardWidget) {
+                    layer.msg('剪贴板为空');
+                    return;
+                }
+                
+                widgetCounter++;
+                var widgetId = 'widget-' + widgetCounter;
+                var bodyId = 'widget-body-' + widgetCounter;
+                
+                var newWidget = $('<div class="chart-widget" id="' + widgetId + '" data-type="' + clipboardWidget.type + '" data-body-id="' + bodyId + '"><div class="widget-delete-btn"><i class="fa-solid fa-xmark"></i></div><div class="chart-widget-body" id="' + bodyId + '"></div></div>');
+                
+                // 对于非基础组件且非地图和树形表格组件添加标题栏
+                if (!isBasicComponent(clipboardWidget.type) && clipboardWidget.type !== 'map' && clipboardWidget.type !== 'tree-table') {
+                    var componentTitle = $('.component-item[data-type="' + clipboardWidget.type + '"]').find('span').text();
+                    newWidget.prepend('<div class="chart-widget-header">' + componentTitle + '</div>');
+                }
+                
+                // 设置位置（在选中组件旁边）
+                var left = 100, top = 100;
+                if ($selectedWidget) {
+                    left = parseInt($selectedWidget.css('left')) + 20;
+                    top = parseInt($selectedWidget.css('top')) + 20;
+                }
+                
+                newWidget.css({
+                    left: left + 'px',
+                    top: top + 'px',
+                    width: clipboardWidget.width,
+                    height: clipboardWidget.height,
+                    backgroundColor: clipboardWidget.style.backgroundColor,
+                    borderRadius: clipboardWidget.style.borderRadius,
+                    boxShadow: clipboardWidget.style.boxShadow,
+                    zIndex: widgetCounter
+                });
+                
+                $canvas.append(newWidget);
+                bindWidgetEvents(newWidget);
+                
+                // 渲染组件
+                var customData = {};
+                if (clipboardWidget.textContent) customData.textContent = clipboardWidget.textContent;
+                if (clipboardWidget.placeholder) customData.placeholder = clipboardWidget.placeholder;
+                if (clipboardWidget.chartOption) customData.chartOption = clipboardWidget.chartOption;
+                
+                renderComponent(bodyId, clipboardWidget.type, customData);
+                showComponentProperties(newWidget);
+                layer.msg('组件粘贴成功');
+            }
+
+            // --- 属性面板逻辑 ---
+            function showCanvasProperties() {
+                $canvasProps.show(); $componentProps.hide();
+                if ($selectedWidget) { $selectedWidget.removeClass('selected'); $selectedWidget = null; }
+            }
+
+            function showComponentProperties($widget) {
+                $canvasProps.hide(); $componentProps.show();
+                $('.chart-widget').removeClass('selected');
+                $widget.addClass('selected'); $selectedWidget = $widget;
+
+                let formData = {
+                    "x": parseInt($widget.css('left')), "y": parseInt($widget.css('top')),
+                    "width": parseInt($widget.width()), "height": parseInt($widget.height()),
+                    "borderRadius": parseInt($widget.css('border-radius')),
+                    "boxShadow": $widget.css('box-shadow').replace(/rgba?\(0, 0, 0, 0\)\s(0px\s){2}0px/g, ''),
+                    "rotate": $widget.data('rotate') || 0,
+                    "opacity": Math.round(($widget.css('opacity') || 1) * 100),
+                    "lockAspectRatio": $widget.data('lockAspectRatio') || false
+                };
+
+                $('#specific-properties-container').html(getSpecificPropertiesHTML($widget.data('type'), formData));
+                form.val('component-style-form', formData);
+
+                colorpicker.render({ elem: '#widgetBgColorPicker', predefine: true, color: $widget.css('backgroundColor'), done: function (color) { if ($selectedWidget) $selectedWidget.css('backgroundColor', color); } });
+                
+                // 渲染组件特定的颜色选择器
+                var type = $widget.data('type');
+                var body = $widget.find('.chart-widget-body');
+                if (type === 'label') {
+                    var textColor = body.find('.widget-label').css('color') || '#000000';
+                    colorpicker.render({ 
+                        elem: '#widgetTextColorPicker', 
+                        predefine: true, 
+                        color: textColor, 
+                        done: function (color) { 
+                            if ($selectedWidget) {
+                                $selectedWidget.find('.widget-label').css('color', color);
+                            }
+                        } 
+                    });
+                }
+                
+                if (type === 'button') {
+                    var btnColor = body.find('button').css('background-color') || '#1E9FFF';
+                    colorpicker.render({ 
+                        elem: '#widgetButtonColorPicker', 
+                        predefine: true, 
+                        color: btnColor, 
+                        done: function (color) { 
+                            if ($selectedWidget) {
+                                $selectedWidget.find('button').css('background-color', color);
+                            }
+                        } 
+                    });
+                }
+                
+                if (isChartComponent(type)) {
+                    // 为图表添加主题色选择器
+                    colorpicker.render({ 
+                        elem: '#chartThemeColorPicker', 
+                        predefine: true, 
+                        color: '#1E9FFF', 
+                        done: function (color) { 
+                            if ($selectedWidget) {
+                                updateChartTheme($selectedWidget, color);
+                            }
+                        } 
+                    });
+                }
+                
+                form.render();
+            }
+
+            $canvas.on('click', function (e) { if (e.target === this) showCanvasProperties(); });
+
+            // --- 画布属性更新 ---
+            form.on('select(canvasSize)', function (data) {
+                if (!data.value) return;
+                var dims = data.value.split('x');
+                form.val('canvas-form', { "width": dims[0], "height": dims[1] });
+                $canvas.css({ width: dims[0] + 'px', height: dims[1] + 'px' });
+            });
+            $('#canvas-properties input[name="width"], #canvas-properties input[name="height"]').on('input blur', function () {
+                var formData = form.val('canvas-form');
+                $canvas.css({ width: formData.width + 'px', height: formData.height + 'px' });
+            });
+            colorpicker.render({ elem: '#bgColorPicker', color: '#ffffff', done: function (color) { $canvas.css('backgroundColor', color); } });
+
+            // --- 组件拖拽与创建 ---
+            $(".component-item").draggable({ helper: 'clone', revert: 'invalid', appendTo: 'body', zIndex: 1002 });
+            $canvas.droppable({
+                accept: ".component-item",
+                drop: function (event, ui) {
+                    widgetCounter++;
+                    var type = ui.draggable.data('type');
+                    var widgetId = 'widget-' + widgetCounter, bodyId = 'widget-body-' + widgetCounter;
+
+                    var newWidget = $(`<div class="chart-widget" id="${widgetId}" data-type="${type}" data-body-id="${bodyId}"><div class="widget-delete-btn"><i class="fa-solid fa-xmark"></i></div><div class="chart-widget-body" id="${bodyId}"></div></div>`);
+
+                    // 对于非基础组件且非地图和树形表格组件添加标题栏
+                    if (!isBasicComponent(type) && type !== 'map' && type !== 'tree-table') {
+                        newWidget.prepend(`<div class="chart-widget-header">${ui.draggable.find('span').text()}</div>`);
+                    }
+
+                    // 计算组件在画布中的相对位置
+                    var canvasOffset = $canvas.offset();
+                    var canvasScrollLeft = $canvas.parent().scrollLeft();
+                    var canvasScrollTop = $canvas.parent().scrollTop();
+                    newWidget.css({ 
+                        top: ui.offset.top - canvasOffset.top + canvasScrollTop, 
+                        left: ui.offset.left - canvasOffset.left + canvasScrollLeft, 
+                        zIndex: widgetCounter 
+                    });
+                    newWidget.css(getInitialSize(type));
+                    $canvas.append(newWidget);
+
+                    newWidget.draggable({
+                        containment: '#dashboard-canvas',
+                        helper: 'original',
+                        appendTo: '#dashboard-canvas',
+                        zIndex: 9999,
+                        scroll: false,
+                        refreshPositions: true,
+                        start: function (e, ui) {
+                            $(this).css('cursor', 'grabbing');
+                        },
+                        drag: function (e, ui) {
+                            // 实时更新位置属性
+                            $(this).css({
+                                left: ui.position.left,
+                                top: ui.position.top
+                            });
+                        },
+                        stop: function (e, ui) {
+                            $(this).css('cursor', 'default');
+                            showComponentProperties($(this));
+                        }
+                    }).resizable({
+                        containment: 'parent', minHeight: 30, minWidth: 50,
+                        resize: (e, ui) => {
+                            var chart = chartInstances[$(e.target).data('body-id')];
+                            if (chart) chart.resize();
+                            if ($(e.target).data('type').includes('table')) {
+                                var bodyId = $(e.target).data('body-id');
+                                renderComponent(bodyId, $(e.target).data('type'));
+                            }
+                        },
+                        stop: (e, ui) => showComponentProperties($(e.target))
+                    }).on('click', function (e) { e.stopPropagation(); showComponentProperties($(this)); });
+
+                    newWidget.find('.widget-delete-btn').on('click', function (e) {
+                        e.stopPropagation();
+                        var bodyId = newWidget.data('body-id');
+                        if (chartInstances[bodyId]) {
+                            echarts.dispose(document.getElementById(bodyId));
+                            delete chartInstances[bodyId];
+                            delete chartOptions[bodyId];
+                        }
+                        newWidget.remove();
+                        showCanvasProperties();
+                    });
+
+                    renderComponent(bodyId, type);
+                    showComponentProperties(newWidget);
+                }
+            });
+
+            // --- 组件渲染核心逻辑 ---
+            function renderComponent(containerId, type, customData = {}) {
+                var container = $('#' + containerId);
+                if (isChartComponent(type)) {
+                    if (chartInstances[containerId]) echarts.dispose(container[0]);
+                    var myChart = echarts.init(container[0]);
+                    // 使用自定义数据或默认数据
+                    var option = customData.chartOption || getChartOption(type);
+                    myChart.setOption(option);
+                    chartInstances[containerId] = myChart;
+                    chartOptions[containerId] = option;
+                } else if (isBasicComponent(type)) {
+                    container.html(getBasicComponentHTML(type, customData));
+                    if (['radio', 'checkbox'].includes(type)) form.render();
+                } else if (type === 'table') {
+                    table.render({ elem: '#' + containerId, height: 'full-20', data: [{ p: '产品A', d: '华东', s: 120 }, { p: '产品B', d: '华南', s: 200 }], cols: [[{ field: 'p', title: '产品' }, { field: 'd', title: '地区' }, { field: 's', title: '销量' }]], skin: 'line' });
+                } else if (type === 'tree-table') {
+                    treeTable.render({
+                        elem: '#' + containerId,
+                        height: 'full-20',
+                        tree: { iconPack: 'fa', isExpandAll: false },
+                        cols: [
+                            { key: 'id', title: 'ID', width: '80px' },
+                            { key: 'name', title: '部门名称' },
+                            { key: 'budget', title: '预算(万)', width: '120px' }
+                        ],
+                        data: [
+                            { "id": 1, "pid": 0, "name": "集团总部", "budget": 10000 },
+                            { "id": 2, "pid": 1, "name": "产品研发部", "budget": 5000 },
+                            { "id": 3, "pid": 2, "name": "前端开发组", "budget": 2000 },
+                            { "id": 4, "pid": 2, "name": "后端开发组", "budget": 2500 },
+                            { "id": 5, "pid": 1, "name": "市场营销部", "budget": 3000 },
+                            { "id": 6, "pid": 5, "name": "华南市场", "budget": 1200 },
+                            { "id": 7, "pid": 5, "name": "华北市场", "budget": 1800 }
+                        ]
+                    });
+                }
+                
+                // 应用自定义数据中的样式
+                if (customData.fontSize && (type === 'label')) {
+                    container.find('.widget-label').css('font-size', customData.fontSize);
+                }
+                
+                if (customData.color && (type === 'label')) {
+                    container.find('.widget-label').css('color', customData.color);
+                }
+                
+                if (customData.buttonColor && (type === 'button')) {
+                    container.find('button').css('background-color', customData.buttonColor);
+                }
+                
+                if ((type.includes('input') || type === 'textarea') && customData.fontSize) {
+                    container.find('input, textarea').css('font-size', customData.fontSize);
+                }
+                
+                if ((type.includes('input') || type === 'textarea') && customData.color) {
+                    container.find('input, textarea').css('color', customData.color);
+                }
+            }
+
+            // --- 属性面板动态更新画布 ---
+            form.on('input(component-style-form)', function (data) {
+                if (!$selectedWidget) return;
+                var field = data.elem.name, value = data.value;
+                var type = $selectedWidget.data('type');
+
+                switch (field) {
+                    case 'x': $selectedWidget.css('left', value + 'px'); break;
+                    case 'y': $selectedWidget.css('top', value + 'px'); break;
+                    case 'width': 
+                        $selectedWidget.width(value);
+                        // 如果锁定宽高比，则同时调整高度
+                        if ($selectedWidget.data('lockAspectRatio')) {
+                            var aspectRatio = $selectedWidget.data('aspectRatio') || 1;
+                            var newHeight = Math.round(value / aspectRatio);
+                            $selectedWidget.height(newHeight);
+                            $('input[name="height"]').val(newHeight);
+                        }
+                        break;
+                    case 'height': 
+                        $selectedWidget.height(value);
+                        // 如果锁定宽比，则同时调整宽度
+                        if ($selectedWidget.data('lockAspectRatio')) {
+                            var aspectRatio = $selectedWidget.data('aspectRatio') || 1;
+                            var newWidth = Math.round(value * aspectRatio);
+                            $selectedWidget.width(newWidth);
+                            $('input[name="width"]').val(newWidth);
+                        }
+                        break;
+                    case 'rotate': 
+                        $selectedWidget.data('rotate', value);
+                        $selectedWidget.css('transform', 'rotate(' + value + 'deg)');
+                        break;
+                    case 'opacity': 
+                        $selectedWidget.css('opacity', value / 100);
+                        break;
+                    case 'borderRadius': $selectedWidget.css('border-radius', value + 'px'); break;
+                    case 'boxShadow': $selectedWidget.css('box-shadow', value); break;
+                    case 'textContent':
+                        if (type === 'label') $selectedWidget.find('.widget-label').text(value);
+                        if (type === 'button') $selectedWidget.find('button').text(value);
+                        break;
+                    case 'placeholder':
+                        $selectedWidget.find('input, textarea').attr('placeholder', value);
+                        break;
+                    case 'fontSize':
+                        if (type === 'label') $selectedWidget.find('.widget-label').css('font-size', value + 'px');
+                        break;
+                    case 'inputFontSize':
+                        $selectedWidget.find('input, textarea').css('font-size', value + 'px');
+                        break;
+                }
+                if (['width', 'height'].includes(field)) {
+                    var chartId = $selectedWidget.data('body-id');
+                    if (chartInstances[chartId]) chartInstances[chartId].resize();
+                    if (type.includes('table')) renderComponent(chartId, type);
+                }
+            });
+            
+            // 监听锁定宽高比开关
+            form.on('switch(component-style-form)', function(data) {
+                if (!$selectedWidget) return;
+                var isChecked = data.elem.checked;
+                $selectedWidget.data('lockAspectRatio', isChecked);
+                
+                // 如果开启锁定宽高比，保存当前宽高比
+                if (isChecked) {
+                    var width = parseInt($selectedWidget.width());
+                    var height = parseInt($selectedWidget.height());
+                    var aspectRatio = width / height;
+                    $selectedWidget.data('aspectRatio', aspectRatio);
+                }
+            });
+            
+            // 监听组件特定配置
+            form.on('input(component-style-form)', function(data) {
+                if (!$selectedWidget) return;
+                var field = data.elem.name, value = data.value;
+                var type = $selectedWidget.data('type');
+                var body = $selectedWidget.find('.chart-widget-body');
+                
+                switch (field) {
+                    case 'fontSize':
+                        if (type === 'label') {
+                            body.find('.widget-label').css('font-size', value + 'px');
+                        }
+                        break;
+                    case 'inputFontSize':
+                        if (type.includes('input') || type === 'textarea') {
+                            body.find('input, textarea').css('font-size', value + 'px');
+                        }
+                        break;
+                }
+            });
+            
+            form.on('switch(component-style-form)', function(data) {
+                if (!$selectedWidget) return;
+                var field = data.elem.name;
+                var isChecked = data.elem.checked;
+                var type = $selectedWidget.data('type');
+                
+                switch (field) {
+                    case 'showLegend':
+                        // 图例显示/隐藏逻辑
+                        var chartId = $selectedWidget.data('body-id');
+                        if (chartInstances[chartId]) {
+                            var option = chartInstances[chartId].getOption();
+                            option.legend = option.legend || {};
+                            option.legend.show = isChecked;
+                            chartInstances[chartId].setOption(option, true);
+                        }
+                        break;
+                    case 'enableAnimation':
+                        // 动画开启/关闭逻辑
+                        var chartId = $selectedWidget.data('body-id');
+                        if (chartInstances[chartId]) {
+                            var option = chartInstances[chartId].getOption();
+                            option.animation = isChecked;
+                            chartInstances[chartId].setOption(option, true);
+                        }
+                        break;
+                }
+            });
+
+            // --- 图层调整 ---
+            $('#btn-bring-to-front, #btn-send-to-back').on('click', function () {
+                if (!$selectedWidget) return;
+                var isFront = $(this).attr('id') === 'btn-bring-to-front';
+                var zIndexes = $('.chart-widget').map(function () { return parseInt($(this).css('z-index')) || 0; }).get();
+                if (isFront) {
+                    $selectedWidget.css('z-index', Math.max.apply(null, zIndexes.length ? zIndexes : [0]) + 1);
+                } else {
+                    $selectedWidget.css('z-index', Math.min.apply(null, zIndexes.length ? zIndexes : [0]) - 1);
+                }
+            });
+
+            // --- 保存和加载功能 ---
+            function saveDashboard() {
+                var dashboardData = {
+                    canvas: {
+                        width: $canvas.width(),
+                        height: $canvas.height(),
+                        backgroundColor: $canvas.css('background-color')
+                    },
+                    widgets: []
+                };
+
+                $('.chart-widget').each(function () {
+                    var $widget = $(this);
+                    var widgetData = {
+                        id: $widget.attr('id'),
+                        type: $widget.data('type'),
+                        bodyId: $widget.data('body-id'),
+                        position: {
+                            left: parseInt($widget.css('left')),
+                            top: parseInt($widget.css('top'))
+                        },
+                        size: {
+                            width: parseInt($widget.width()),
+                            height: parseInt($widget.height())
+                        },
+                        style: {
+                            backgroundColor: $widget.css('background-color'),
+                            borderRadius: $widget.css('border-radius'),
+                            boxShadow: $widget.css('box-shadow'),
+                            opacity: $widget.css('opacity') || 1,
+                            transform: $widget.css('transform') || 'none'
+                        },
+                        // 保存新增的属性
+                        rotate: $widget.data('rotate') || 0,
+                        lockAspectRatio: $widget.data('lockAspectRatio') || false,
+                        aspectRatio: $widget.data('aspectRatio') || 1
+                    };
+
+                    // 获取特定组件的数据
+                    if (isBasicComponent($widget.data('type'))) {
+                        var body = $widget.find('.chart-widget-body');
+                        if ($widget.data('type') === 'label' || $widget.data('type') === 'button') {
+                            widgetData.customData = { textContent: body.text().trim() };
+                            
+                            // 保存标签和按钮的额外属性
+                            if ($widget.data('type') === 'label') {
+                                widgetData.customData.fontSize = body.find('.widget-label').css('font-size');
+                                widgetData.customData.color = body.find('.widget-label').css('color');
+                            }
+                            
+                            if ($widget.data('type') === 'button') {
+                                widgetData.customData.buttonColor = body.find('button').css('background-color');
+                            }
+                        } else if ($widget.data('type').includes('input') || $widget.data('type') === 'textarea') {
+                            widgetData.customData = { placeholder: body.find('input, textarea').attr('placeholder') };
+                            
+                            // 保存输入框的额外属性
+                            widgetData.customData.fontSize = body.find('input, textarea').css('font-size');
+                            widgetData.customData.color = body.find('input, textarea').css('color');
+                        }
+                    } else if (isChartComponent($widget.data('type'))) {
+                        widgetData.customData = { chartOption: chartOptions[$widget.data('body-id')] };
+                    }
+
+                    dashboardData.widgets.push(widgetData);
+                });
+
+                // 保存到本地存储
+                localStorage.setItem('luminaDashboard', JSON.stringify(dashboardData));
+                layer.msg('保存成功');
+            }
+
+            function loadDashboard() {
+                var savedData = localStorage.getItem('luminaDashboard');
+                if (!savedData) {
+                    layer.msg('没有找到保存的数据');
+                    return;
+                }
+
+                try {
+                    var dashboardData = JSON.parse(savedData);
+
+                    // 清空当前画布
+                    $('.chart-widget').remove();
+                    for (var id in chartInstances) {
+                        echarts.dispose(document.getElementById(id));
+                    }
+                    chartInstances = {};
+                    chartOptions = {};
+                    widgetCounter = 0;
+
+                    // 恢复画布属性
+                    $canvas.css({
+                        width: dashboardData.canvas.width,
+                        height: dashboardData.canvas.height,
+                        backgroundColor: dashboardData.canvas.backgroundColor
+                    });
+                    $('input[name="width"]').val(dashboardData.canvas.width);
+                    $('input[name="height"]').val(dashboardData.canvas.height);
+
+                    // 恢复组件
+                    dashboardData.widgets.forEach(function (widgetData) {
+                        widgetCounter++;
+                        var newWidget = $(`<div class="chart-widget" id="${widgetData.id}" data-type="${widgetData.type}" data-body-id="${widgetData.bodyId}"><div class="widget-delete-btn"><i class="fa-solid fa-xmark"></i></div><div class="chart-widget-body" id="${widgetData.bodyId}"></div></div>`);
+
+                        // 对于非基础组件且非地图和树形表格组件添加标题栏
+                        if (!isBasicComponent(widgetData.type) && widgetData.type !== 'map' && widgetData.type !== 'tree-table') {
+                            var componentTitle = $('.component-item[data-type="' + widgetData.type + '"]').find('span').text();
+                            newWidget.prepend(`<div class="chart-widget-header">${componentTitle}</div>`);
+                        }
+
+                        newWidget.css({
+                            left: widgetData.position.left,
+                            top: widgetData.position.top,
+                            width: widgetData.size.width,
+                            height: widgetData.size.height,
+                            backgroundColor: widgetData.style.backgroundColor,
+                            borderRadius: widgetData.style.borderRadius,
+                            boxShadow: widgetData.style.boxShadow,
+                            opacity: widgetData.style.opacity,
+                            transform: widgetData.style.transform
+                        });
+                        
+                        // 恢复新增的属性
+                        newWidget.data('rotate', widgetData.rotate || 0);
+                        newWidget.data('lockAspectRatio', widgetData.lockAspectRatio || false);
+                        newWidget.data('aspectRatio', widgetData.aspectRatio || 1);
+
+                        $canvas.append(newWidget);
+                        bindWidgetEvents(newWidget);
+                        renderComponent(widgetData.bodyId, widgetData.type, widgetData.customData || {});
+                    });
+
+                    layer.msg('加载成功');
+                } catch (e) {
+                    layer.msg('加载失败：' + e.message);
+                }
+            }
+
+            // --- 导出功能 ---
+            function exportDashboard() {
+                var dashboardData = {
+                    canvas: {
+                        width: $canvas.width(),
+                        height: $canvas.height(),
+                        backgroundColor: $canvas.css('background-color')
+                    },
+                    widgets: []
+                };
+
+                $('.chart-widget').each(function () {
+                    var $widget = $(this);
+                    var widgetData = {
+                        type: $widget.data('type'),
+                        position: {
+                            left: parseInt($widget.css('left')),
+                            top: parseInt($widget.css('top'))
+                        },
+                        size: {
+                            width: parseInt($widget.width()),
+                            height: parseInt($widget.height())
+                        },
+                        style: {
+                            backgroundColor: $widget.css('background-color'),
+                            borderRadius: $widget.css('border-radius'),
+                            boxShadow: $widget.css('box-shadow')
+                        }
+                    };
+
+                    // 获取特定组件的数据
+                    if (isBasicComponent($widget.data('type'))) {
+                        var body = $widget.find('.chart-widget-body');
+                        if ($widget.data('type') === 'label' || $widget.data('type') === 'button') {
+                            widgetData.textContent = body.text().trim();
+                        } else if ($widget.data('type').includes('input') || $widget.data('type') === 'textarea') {
+                            widgetData.placeholder = body.find('input, textarea').attr('placeholder');
+                        }
+                    } else if (isChartComponent($widget.data('type'))) {
+                        widgetData.chartOption = chartOptions[$widget.data('body-id')] || getChartOption($widget.data('type'));
+                    }
+
+                    dashboardData.widgets.push(widgetData);
+                });
+
+                // 创建下载链接
+                var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dashboardData, null, 2));
+                var downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "dashboard.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            }
+
+            // --- 预览功能 ---
+            function previewDashboard() {
+                var previewData = {
+                    canvas: {
+                        width: $canvas.width(),
+                        height: $canvas.height(),
+                        backgroundColor: $canvas.css('background-color')
+                    },
+                    widgets: []
+                };
+
+                $('.chart-widget').each(function () {
+                    var $widget = $(this);
+                    var type = $widget.data('type');
+                    
+                    // 预览页面不显示基础组件
+                    if (isBasicComponent(type)) {
+                        return;
+                    }
+                    
+                    var widgetData = {
+                        type: type,
+                        position: {
+                            left: parseInt($widget.css('left')),
+                            top: parseInt($widget.css('top'))
+                        },
+                        size: {
+                            width: parseInt($widget.width()),
+                            height: parseInt($widget.height())
+                        },
+                        style: {
+                            backgroundColor: $widget.css('background-color'),
+                            borderRadius: $widget.css('border-radius'),
+                            boxShadow: $widget.css('box-shadow'),
+                            opacity: $widget.css('opacity') || 1,
+                            transform: $widget.css('transform') || 'none'
+                        },
+                        // 保存新增的属性
+                        rotate: $widget.data('rotate') || 0
+                    };
+
+                    // 获取特定组件的数据
+                    if (isChartComponent(type)) {
+                        widgetData.chartOption = chartOptions[$widget.data('body-id')] || getChartOption(type);
+                    } else if (type === 'table' || type === 'tree-table') {
+                        // 表格组件数据处理
+                    }
+
+                    previewData.widgets.push(widgetData);
+                });
+
+                // 在新窗口中打开预览
+                var previewWindow = window.open('', '_blank');
+                
+                // 构建预览页面的HTML内容
+                var previewHTML = [
+                    '<!DOCTYPE html>',
+                    '<html>',
+                    '<head>',
+                    '    <meta charset="UTF-8">',
+                    '    <title>看板预览</title>',
+                    '    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"><\/script>',
+                    '    <script src="https://cdn.jsdelivr.net/npm/echarts@5/map/js/china.js"><\/script>',
+                    '    <style>',
+                    '        body {',
+                    '            margin: 0;',
+                    '            padding: 20px;',
+                    '            background-color: #f2f2f2;',
+                    '            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;',
+                    '        }',
+                    '        .preview-container {',
+                    '            max-width: 100%;',
+                    '            overflow: auto;',
+                    '        }',
+                    '        #preview-canvas {',
+                    '            position: relative;',
+                    '            width: ' + previewData.canvas.width + 'px;',
+                    '            height: ' + previewData.canvas.height + 'px;',
+                    '            background-color: ' + previewData.canvas.backgroundColor + ';',
+                    '            margin: 0 auto;',
+                    '            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);',
+                    '        }',
+                    '        .preview-widget {',
+                    '            position: absolute;',
+                    '            border: 1px solid #ddd;',
+                    '            background-color: #fff;',
+                    '            display: flex;',
+                    '            flex-direction: column;',
+                    '            overflow: hidden;',
+                    '        }',
+                    '        .preview-widget-header {',
+                    '            padding: 0 10px;',
+                    '            line-height: 38px;',
+                    '            font-weight: 600;',
+                    '            border-bottom: 1px solid #f6f6f6;',
+                    '            background-color: #fff;',
+                    '        }',
+                    '        .preview-widget-body {',
+                    '            flex-grow: 1;',
+                    '            width: 100%;',
+                    '            height: 100%;',
+                    '            padding: 10px;',
+                    '            box-sizing: border-box;',
+                    '        }',
+                    '        .preview-basic-component {',
+                    '            width: 100%;',
+                    '            height: 100%;',
+                    '        }',
+                    '        .preview-label {',
+                    '            display: flex;',
+                    '            align-items: center;',
+                    '            justify-content: center;',
+                    '            font-size: 16px;',
+                    '            height: 100%;',
+                    '        }',
+                    '    <\/style>',
+                    '<\/head>',
+                    '<body>',
+                    '    <div class="preview-container">',
+                    '        <div id="preview-canvas"><\/div>',
+                    '    <\/div>',
+                    '    <script>',
+                    '        var previewData = ' + JSON.stringify(previewData) + ';',
+                    '        var chartInstances = {};',
+                    '        ',
+                    '        function renderPreview() {',
+                    '            var canvas = document.getElementById("preview-canvas");',
+                    '            ',
+                    '            previewData.widgets.forEach(function(widgetData, index) {',
+                    '                var widgetId = "preview-widget-" + index;',
+                    '                var bodyId = "preview-body-" + index;',
+                    '                ',
+                    '                var widget = document.createElement("div");',
+                    '                widget.className = "preview-widget";',
+                    '                widget.id = widgetId;',
+                    '                widget.style.left = widgetData.position.left + "px";',
+                    '                widget.style.top = widgetData.position.top + "px";',
+                    '                widget.style.width = widgetData.size.width + "px";',
+                    '                widget.style.height = widgetData.size.height + "px";',
+                    '                widget.style.backgroundColor = widgetData.style.backgroundColor;',
+                    '                widget.style.borderRadius = widgetData.style.borderRadius;',
+                    '                widget.style.boxShadow = widgetData.style.boxShadow;',
+                    '                widget.style.opacity = widgetData.style.opacity || "1";',
+                    '                ',
+                    '                if (!["label", "text-input", "textarea", "radio", "checkbox", "button", "map", "tree-table"].includes(widgetData.type)) {',
+                    '                    var header = document.createElement("div");',
+                    '                    header.className = "preview-widget-header";',
+                    '                    header.textContent = getComponentTitle(widgetData.type);',
+                    '                    widget.appendChild(header);',
+                    '                }',
+                    '                ',
+                    '                var body = document.createElement("div");',
+                    '                body.className = "preview-widget-body";',
+                    '                body.id = bodyId;',
+                    '                widget.appendChild(body);',
+                    '                ',
+                    '                canvas.appendChild(widget);',
+                    '                ',
+                    '                renderComponent(bodyId, widgetData);',
+                    '            });',
+                    '        }',
+                    '        ',
+                    '        function renderComponent(containerId, widgetData) {',
+                    '            var container = document.getElementById(containerId);',
+                    '            if (["pie", "bar", "line", "funnel", "radar", "gauge", "scatter", "candlestick", "map"].includes(widgetData.type)) {',
+                    '                var myChart = echarts.init(container);',
+                    '                myChart.setOption(widgetData.chartOption);',
+                    '                chartInstances[containerId] = myChart;',
+                    '            } else if (["label", "text-input", "textarea", "radio", "checkbox", "button"].includes(widgetData.type)) {',
+                    '                container.innerHTML = getBasicComponentHTML(widgetData.type, widgetData);',
+                    '                ',
+                    '                // 应用额外的样式',
+                    '                if (widgetData.type === "label" && widgetData.fontSize) {',
+                    '                    container.firstChild.style.fontSize = widgetData.fontSize;',
+                    '                }',
+                    '                if (widgetData.type === "label" && widgetData.color) {',
+                    '                    container.firstChild.style.color = widgetData.color;',
+                    '                }',
+                    '                if (widgetData.type === "button" && widgetData.buttonColor) {',
+                    '                    container.firstChild.style.backgroundColor = widgetData.buttonColor;',
+                    '                }',
+                    '                if ((widgetData.type.includes("input") || widgetData.type === "textarea") && widgetData.fontSize) {',
+                    '                    container.firstChild.style.fontSize = widgetData.fontSize;',
+                    '                }',
+                    '                if ((widgetData.type.includes("input") || widgetData.type === "textarea") && widgetData.color) {',
+                    '                    container.firstChild.style.color = widgetData.color;',
+                    '                }',
+                    '            } else if (widgetData.type === "table") {',
+                    '                // 渲染普通表格',
+                    '                renderTable(containerId, widgetData);',
+                    '            } else if (widgetData.type === "tree-table") {',
+                    '                // 渲染树型表格',
+                    '                renderTreeTable(containerId, widgetData);',
+                    '            }',
+                    '        }',
+                    '        ',
+                    '        function renderTable(containerId, widgetData) {',
+                    '            // 普通表格渲染逻辑',
+                    '            var container = document.getElementById(containerId);',
+                    '            container.innerHTML = \'<table class="preview-table" style="width:100%;border-collapse:collapse;"><thead><tr><th style="border:1px solid #ddd;padding:8px;">产品</th><th style="border:1px solid #ddd;padding:8px;">地区</th><th style="border:1px solid #ddd;padding:8px;">销量</th></tr></thead><tbody><tr><td style="border:1px solid #ddd;padding:8px;">产品A</td><td style="border:1px solid #ddd;padding:8px;">华东</td><td style="border:1px solid #ddd;padding:8px;">120</td></tr><tr><td style="border:1px solid #ddd;padding:8px;">产品B</td><td style="border:1px solid #ddd;padding:8px;">华南</td><td style="border:1px solid #ddd;padding:8px;">200</td></tr></tbody></table>\';',
+                    '        }',
+                    '        ',
+                    '        function renderTreeTable(containerId, widgetData) {',
+                    '            // 树型表格渲染逻辑',
+                    '            var container = document.getElementById(containerId);',
+                    '            container.innerHTML = \'<div class="preview-tree-table" style="width:100%;"><div style="padding:5px;border-bottom:1px solid #eee;"><i class="fa fa-caret-right"></i> 集团总部</div><div style="padding:5px 5px 5px 20px;border-bottom:1px solid #eee;"><i class="fa fa-caret-right"></i> 产品研发部</div><div style="padding:5px 5px 5px 40px;border-bottom:1px solid #eee;">前端开发组</div><div style="padding:5px 5px 5px 40px;border-bottom:1px solid #eee;">后端开发组</div><div style="padding:5px 5px 5px 20px;">市场营销部</div></div>\';',
+                    '        }',
+                    '        ',
+                    '        function getComponentTitle(type) {',
+                    '            var titles = {',
+                    '                "label": "标签",',
+                    '                "text-input": "单行文本",',
+                    '                "textarea": "多行文本",',
+                    '                "radio": "单选按钮",',
+                    '                "checkbox": "多选按钮",',
+                    '                "button": "普通按钮",',
+                    '                "pie": "饼图",',
+                    '                "bar": "柱状图",',
+                    '                "line": "曲线图",',
+                    '                "funnel": "漏斗图",',
+                    '                "radar": "雷达图",',
+                    '                "gauge": "仪表盘",',
+                    '                "scatter": "散点图",',
+                    '                "candlestick": "K线图",',
+                    '                "map": "地图",',
+                    '                "table": "普通表格",',
+                    '                "tree-table": "树形表格"',
+                    '            };',
+                    '            return titles[type] || type;',
+                    '        }',
+                    '        ',
+                    '        function getBasicComponentHTML(type, data) {',
+                    '            switch (type) {',
+                    '                case "label": ',
+                    '                    return "<div class=\\"preview-label\\">" + (data.textContent || "这是一个标签") + "<\/div>";',
+                    '                case "text-input": ',
+                    '                    return "<input type=\\"text\\" placeholder=\\"" + (data.placeholder || "单行文本框") + "\\" style=\\"width:100%;height:100%;border:1px solid #ddd;padding:0 5px;box-sizing:border-box;\\">";',
+                    '                case "textarea": ',
+                    '                    return "<textarea placeholder=\\"" + (data.placeholder || "多行文本框") + "\\" style=\\"width:100%;height:100%;border:1px solid #ddd;padding:5px;resize:none;box-sizing:border-box;\\"><\/textarea>";',
+                    '                case "button": ',
+                    '                    return "<button style=\\"width:100%;height:100%;border:none;background-color:#1E9FFF;color:white;cursor:pointer;\\">" + (data.textContent || "普通按钮") + "<\/button>";',
+                    '                default: ',
+                    '                    return "";',
+                    '            }',
+                    '        }',
+                    '        ',
+                    '        // 页面加载完成后渲染预览',
+                    '        if (document.readyState === "loading") {',
+                    '            document.addEventListener("DOMContentLoaded", renderPreview);',
+                    '        } else {',
+                    '            renderPreview();',
+                    '        }',
+                    '        ',
+                    '        // 响应窗口大小变化',
+                    '        window.addEventListener("resize", function() {',
+                    '            for (var id in chartInstances) {',
+                    '                if (chartInstances[id]) {',
+                    '                    chartInstances[id].resize();',
+                    '                }',
+                    '            }',
+                    '        });',
+                    '    <\/script>',
+                    '<\/body>',
+                    '<\/html>'
+                ].join('\n');
+                
+                previewWindow.document.write(previewHTML);
+                previewWindow.document.close();
+            }
+
+            // --- 绑定组件事件 ---
+            function bindWidgetEvents($widget) {
+                $widget.draggable({
+                    containment: '#dashboard-canvas',
+                    helper: 'original',
+                    appendTo: '#dashboard-canvas',
+                    zIndex: 9999,
+                    scroll: false,
+                    refreshPositions: true,
+                    start: function (e, ui) {
+                        $(this).css('cursor', 'grabbing');
+                    },
+                    drag: function (e, ui) {
+                        // 实时更新位置属性
+                        $(this).css({
+                            left: ui.position.left,
+                            top: ui.position.top
+                        });
+                    },
+                    stop: function (e, ui) {
+                        $(this).css('cursor', 'default');
+                        showComponentProperties($(this));
+                    }
+                }).resizable({
+                    containment: 'parent', minHeight: 30, minWidth: 50,
+                    resize: (e, ui) => {
+                        var chart = chartInstances[$(e.target).data('body-id')];
+                        if (chart) chart.resize();
+                        if ($(e.target).data('type').includes('table')) {
+                            var bodyId = $(e.target).data('body-id');
+                            renderComponent(bodyId, $(e.target).data('type'));
+                        }
+                    },
+                    stop: (e, ui) => showComponentProperties($(e.target))
+                }).on('click', function (e) {
+                    e.stopPropagation();
+                    showComponentProperties($(this));
+                });
+
+                $widget.find('.widget-delete-btn').on('click', function (e) {
+                    e.stopPropagation();
+                    var bodyId = $widget.data('body-id');
+                    if (chartInstances[bodyId]) {
+                        echarts.dispose(document.getElementById(bodyId));
+                        delete chartInstances[bodyId];
+                        delete chartOptions[bodyId];
+                    }
+                    $widget.remove();
+                    showCanvasProperties();
+                });
+            }
+
+            // --- 显示帮助 ---
+            function showHelp() {
+                layer.open({
+                    type: 1,
+                    title: '使用帮助',
+                    area: ['500px', '400px'],
+                    content: `
+                        <div style="padding: 20px;">
+                            <h3>操作指南</h3>
+                            <ul>
+                                <li>从左侧组件库拖拽组件到画布中</li>
+                                <li>点击组件可选中并配置属性</li>
+                                <li>拖拽组件可移动位置</li>
+                                <li>拖拽组件右下角可调整大小</li>
+                                <li>点击组件右上角的×按钮可删除组件</li>
+                                <li>使用顶部按钮可保存、加载、导出和预览</li>
+                                <li>Ctrl+C 复制选中组件，Ctrl+V 粘贴组件</li>
+                                <li>Delete 键删除选中组件</li>
+                                <li>Esc 键取消选中</li>
+                            </ul>
+                            <h3>快捷键</h3>
+                            <ul>
+                                <li>Ctrl+S: 保存</li>
+                                <li>Ctrl+C: 复制</li>
+                                <li>Ctrl+V: 粘贴</li>
+                                <li>Delete: 删除</li>
+                                <li>Esc: 取消选中</li>
+                            </ul>
+                        </div>
+                    `
+                });
+            }
+
+            // --- 画布缩放功能 ---
+            var canvasScale = 1;
+            var isDraggingCanvas = false;
+            var lastX, lastY;
+
+            $('#btn-zoom-in').on('click', function() {
+                if (canvasScale < 2) { 
+                    canvasScale += 0.1; 
+                    updateCanvasScale(); 
+                } 
+            });
+            
+            $('#btn-zoom-out').on('click', function() {
+                if (canvasScale > 0.5) {
+                    canvasScale -= 0.1;
+                    updateCanvasScale();
+                }
+            });
+            
+            $('#btn-zoom-reset').on('click', function() {
+                canvasScale = 1;
+                updateCanvasScale();
+            });
+            
+            function updateCanvasScale() {
+                $canvas.css({
+                    transform: 'scale(' + canvasScale + ')',
+                    transformOrigin: 'top left'
+                });
+                $('#zoom-level').text(Math.round(canvasScale * 100) + '%');
+                
+                // 重新计算所有组件的位置约束
+                $('.chart-widget').each(function() {
+                    $(this).draggable('option', 'containment', '#dashboard-canvas');
+                });
+            }
+            
+            // 画布拖拽查看
+            $canvas.on('mousedown', function(e) {
+                if (e.ctrlKey || e.metaKey) { // Ctrl 或 Cmd 键按下时启用拖拽
+                    isDraggingCanvas = true;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    $canvas.css('cursor', 'grabbing');
+                    e.preventDefault();
+                }
+            });
+            
+            $(document).on('mousemove', function(e) {
+                if (isDraggingCanvas) {
+                    var deltaX = e.clientX - lastX;
+                    var deltaY = e.clientY - lastY;
+                    $canvas.parent().scrollLeft($canvas.parent().scrollLeft() - deltaX);
+                    $canvas.parent().scrollTop($canvas.parent().scrollTop() - deltaY);
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                }
+            });
+            
+            $(document).on('mouseup', function() {
+                isDraggingCanvas = false;
+                $canvas.css('cursor', 'default');
+            });
+
+            // --- 辅助函数 ---
+            function isBasicComponent(type) { 
+                return ['label', 'text-input', 'textarea', 'radio', 'checkbox', 'button'].includes(type); 
+            }
+            
+            function isChartComponent(type) { 
+                return ['pie', 'bar', 'line', 'funnel', 'radar', 'gauge', 'scatter', 'candlestick', 'map'].includes(type); 
+            }
+            
+            function updateChartTheme($widget, color) {
+                var chartId = $widget.data('body-id');
+                if (chartInstances[chartId]) {
+                    var option = chartInstances[chartId].getOption();
+                    
+                    // 更新图表系列颜色
+                    if (option.series) {
+                        for (var i = 0; i < option.series.length; i++) {
+                            if (option.series[i].itemStyle) {
+                                option.series[i].itemStyle.color = color;
+                            } else {
+                                option.series[i].itemStyle = { color: color };
+                            }
+                            
+                            // 特殊处理某些图表类型
+                            if (option.series[i].type === 'line') {
+                                option.series[i].lineStyle = { color: color };
+                            }
+                            
+                            if (option.series[i].type === 'bar') {
+                                option.series[i].itemStyle.color = color;
+                            }
+                        }
+                    }
+                    
+                    // 更新图表其他颜色相关属性
+                    if (option.color) {
+                        option.color[0] = color;
+                    }
+                    
+                    chartInstances[chartId].setOption(option, true);
+                }
+            }
+            
+            function getInitialSize(type) {
+                if (type.includes('input') || type === 'button') return { height: '40px', width: '200px' };
+                if (type === 'label') return { height: '40px', width: '150px' };
+                if (type.includes('radio') || type.includes('checkbox')) return { height: '80px', width: '150px' };
+                if (type.includes('table')) return { height: '250px', width: '500px' };
+                return { height: '300px', width: '450px' };
+            }
+            
+            function getBasicComponentHTML(type, data) {
+                switch (type) {
+                    case 'label': return `<div class="widget-basic-component widget-label">${data.textContent || '这是一个标签'}</div>`;
+                    case 'text-input': return `<input type="text" placeholder="${data.placeholder || '单行文本框'}" class="layui-input widget-basic-component">`;
+                    case 'textarea': return `<textarea placeholder="${data.placeholder || '多行文本框'}" class="layui-textarea widget-basic-component"></textarea>`;
+                    case 'radio': return `<form class="layui-form widget-basic-component" style="padding: 5px;"><input type="radio" name="sex" title="男" checked><input type="radio" name="sex" title="女"></form>`;
+                    case 'checkbox': return `<form class="layui-form widget-basic-component" style="padding: 5px;"><input type="checkbox" title="写作" checked><input type="checkbox" title="阅读"></form>`;
+                    case 'button': return `<button class="layui-btn widget-basic-component">${data.textContent || '普通按钮'}</button>`;
+                }
+                return '';
+            }
+            
+            function getSpecificPropertiesHTML(type, formData) {
+                let html = '<div class="section-title">组件配置</div>';
+                var body = $selectedWidget.find('.chart-widget-body');
+                if (type === 'label' || type === 'button') {
+                    formData.textContent = body.text().trim();
+                    html += `<div class="layui-form-item"><label class="layui-form-label">文本内容</label><div class="layui-input-block"><input type="text" name="textContent" placeholder="请输入内容" class="layui-input" value="${formData.textContent || ''}"></div></div>`;
+                    
+                    // 为标签和按钮添加字体大小和颜色配置
+                    if (type === 'label') {
+                        var fontSize = body.find('.widget-label').css('font-size') || '16px';
+                        var color = body.find('.widget-label').css('color') || '#000000';
+                        html += `<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><input type="number" name="fontSize" placeholder="字体大小" class="layui-input" value="${parseInt(fontSize)}"></div></div>`;
+                        html += `<div class="layui-form-item"><label class="layui-form-label">文字颜色</label><div class="layui-input-block"><div id="widgetTextColorPicker"></div></div></div>`;
+                    }
+                    
+                    if (type === 'button') {
+                        var bgColor = body.find('button').css('background-color') || '#1E9FFF';
+                        html += `<div class="layui-form-item"><label class="layui-form-label">按钮颜色</label><div class="layui-input-block"><div id="widgetButtonColorPicker"></div></div></div>`;
+                    }
+                }
+                if (type.includes('input') || type === 'textarea') {
+                    formData.placeholder = body.find('input, textarea').attr('placeholder');
+                    html += `<div class="layui-form-item"><label class="layui-form-label">占位符</label><div class="layui-input-block"><input type="text" name="placeholder" placeholder="请输入提示文字" class="layui-input" value="${formData.placeholder || ''}"></div></div>`;
+                    
+                    // 为输入框添加更多配置
+                    var inputElement = body.find('input, textarea');
+                    var fontSize = inputElement.css('font-size') || '14px';
+                    var color = inputElement.css('color') || '#000000';
+                    html += `<div class="layui-form-item"><label class="layui-form-label">字体大小</label><div class="layui-input-block"><input type="number" name="inputFontSize" placeholder="字体大小" class="layui-input" value="${parseInt(fontSize)}"></div></div>`;
+                }
+                if (isChartComponent(type)) {
+                    html += `<div class="layui-form-item"><label class="layui-form-label">图例</label><div class="layui-input-block"><input type="checkbox" name="showLegend" lay-skin="switch" lay-text="显示|隐藏" checked></div></div>`;
+                    html += `<div class="layui-form-item"><label class="layui-form-label">动画</label><div class="layui-input-block"><input type="checkbox" name="enableAnimation" lay-skin="switch" lay-text="开启|关闭" checked></div></div>`;
+                    
+                    // 为主题色添加颜色选择器
+                    html += `<div class="layui-form-item"><label class="layui-form-label">主题色</label><div class="layui-input-block"><div id="chartThemeColorPicker"></div></div></div>`;
+                }
+                if (type === 'table' || type === 'tree-table') {
+                    html += `<div class="layui-form-item"><label class="layui-form-label">边框</label><div class="layui-input-block"><select name="tableBorder">
+                        <option value="none">无边框</option>
+                        <option value="line" selected>线性边框</option>
+                        <option value="row">行边框</option>
+                        <option value="nob">列边框</option>
+                    </select></div></div>`;
+                    html += `<div class="layui-form-item"><label class="layui-form-label">尺寸</label><div class="layui-input-block"><select name="tableSize">
+                        <option value="lg">大尺寸</option>
+                        <option value="md" selected>中等尺寸</option>
+                        <option value="sm">小尺寸</option>
+                    </select></div></div>`;
+                }
+                return html;
+            }
+            
+            function getChartOption(type) {
+                switch (type) {
+                    case 'bar': return { 
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: ['商品A', '商品B', '商品C'] }, 
+                        yAxis: { type: 'value' }, 
+                        series: [{ 
+                            data: [120, 200, 150], 
+                            type: 'bar',
+                            itemStyle: {
+                                color: '#1E9FFF'
+                            }
+                        }], 
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true } 
+                    };
+                    case 'line': return { 
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: ['周一', '周二', '周三'] }, 
+                        yAxis: { type: 'value' }, 
+                        series: [{ 
+                            data: [150, 230, 224], 
+                            type: 'line', 
+                            smooth: true,
+                            itemStyle: {
+                                color: '#1E9FFF'
+                            }
+                        }], 
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true } 
+                    };
+                    case 'pie': return { 
+                        tooltip: { trigger: 'item' },
+                        series: [{ 
+                            type: 'pie', 
+                            radius: '60%', 
+                            data: [
+                                { value: 1048, name: '搜索引擎' },
+                                { value: 735, name: '直接访问' }
+                            ],
+                            itemStyle: {
+                                borderRadius: 5,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            }
+                        }] 
+                    };
+                    case 'funnel': return { 
+                        tooltip: { trigger: 'item' },
+                        series: [{ 
+                            type: 'funnel', 
+                            data: [
+                                { value: 60, name: '访问' },
+                                { value: 40, name: '咨询' },
+                                { value: 20, name: '下单' }
+                            ]
+                        }] 
+                    };
+                    case 'radar': return { 
+                        legend: { data: ['预算', '开销'] },
+                        radar: {
+                            indicator: [
+                                { name: '销售', max: 6500 },
+                                { name: '管理', max: 16000 },
+                                { name: '技术', max: 30000 }
+                            ]
+                        },
+                        series: [{ 
+                            type: 'radar',
+                            data: [
+                                {
+                                    value: [4200, 3000, 20000],
+                                    name: '预算'
+                                },
+                                {
+                                    value: [5000, 14000, 28000],
+                                    name: '开销'
+                                }
+                            ]
+                        }] 
+                    };
+                    case 'gauge': return { 
+                        series: [{ 
+                            type: 'gauge', 
+                            detail: { formatter: '{value}%' },
+                            data: [{ value: 50, name: '完成率' }],
+                            pointer: {
+                                itemStyle: {
+                                    color: '#1E9FFF'
+                                }
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: [[1, '#1E9FFF']],
+                                    width: 20
+                                }
+                            }
+                        }] 
+                    };
+                    case 'scatter': return { 
+                        xAxis: {},
+                        yAxis: {},
+                        series: [{ 
+                            symbolSize: 20,
+                            data: [[10, 8], [17, 4], [15, 2]],
+                            type: 'scatter',
+                            itemStyle: {
+                                color: '#1E9FFF'
+                            }
+                        }] 
+                    };
+                    case 'candlestick': return { 
+                        xAxis: { data: ['2024-01', '2024-02'] },
+                        yAxis: {},
+                        series: [{ 
+                            type: 'candlestick',
+                            data: [[20, 34, 10, 38], [40, 35, 30, 50]],
+                            itemStyle: {
+                                color: '#eb5454',
+                                color0: '#4cab54',
+                                borderColor: '#eb5454',
+                                borderColor0: '#4cab54'
+                            }
+                        }] 
+                    };
+                    case 'map': return { 
+                        tooltip: { trigger: 'item' },
+                        visualMap: {
+                            min: 800,
+                            max: 50000,
+                            inRange: {
+                                color: ['#50a3ba', '#eac736', '#d94e5d']
+                            }
+                        },
+                        series: [{ 
+                            type: 'map',
+                            map: 'china',
+                            roam: true,
+                            data: [
+                                { name: '北京', value: 20000 },
+                                { name: '上海', value: 50000 }
+                            ],
+                            label: {
+                                show: true
+                            },
+                            itemStyle: {
+                                areaColor: '#eee',
+                                borderColor: '#333'
+                            }
+                        }] 
+                    };
+                }
+                return {};
+            }
+
+            // --- 键盘快捷键 ---
+            $(document).keydown(function(e) {
+                // Ctrl+S 保存
+                if (e.ctrlKey && e.keyCode === 83) {
+                    e.preventDefault();
+                    saveDashboard();
+                }
+                // Ctrl+C 复制
+                else if (e.ctrlKey && e.keyCode === 67) {
+                    e.preventDefault();
+                    copyWidget();
+                }
+                // Ctrl+V 粘贴
+                else if (e.ctrlKey && e.keyCode === 86) {
+                    e.preventDefault();
+                    pasteWidget();
+                }
+                // Delete 删除选中组件
+                else if (e.keyCode === 46 && $selectedWidget) {
+                    $selectedWidget.find('.widget-delete-btn').click();
+                }
+                // Esc 取消选中
+                else if (e.keyCode === 27) {
+                    showCanvasProperties();
+                }
+            });
+
+            // --- 初始化 ---
+            showCanvasProperties();
+            
+            // 添加事件监听器
+            $('#btn-save').on('click', function () {
+                saveDashboard();
+            });
+            $('#btn-load').on('click', function () {
+                loadDashboard();
+            });
+            $('#btn-export').on('click', function () {
+                exportDashboard();
+            });
+            $('#btn-preview').on('click', function () {
+                previewDashboard();
+            });
+            $('#btn-help').on('click', function () {
+                showHelp();
+            });
+        });
+    </script>
+</body>
+
+</html>

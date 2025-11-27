@@ -91,12 +91,12 @@ func (e *TemplateEngine) LoadTemplate(templateName string) (*template.Template, 
 	manager := GetGlobalFunctionManager()
 	mergedFuncs := manager.GetMergedFunctions(e.funcMap)
 
-	// 🔧 核心修复：ParseFiles会自动创建以文件basename命名的主模板
-	// 我们不需要预先创建模板，这样避免了空模板覆盖有内容的模板的问题
+	// 🔧 核心修复：收集同目录下的所有相关模板文件一起解析，支持{{template}}引用
+	relatedFiles := e.collectRelatedTemplateFiles(templatePath, "")
 	tmpl, err := template.New("").
 		Delims(e.delimLeft, e.delimRight).
 		Funcs(mergedFuncs).
-		ParseFiles(templatePath)
+		ParseFiles(relatedFiles...)
 
 	if err != nil {
 		config.Errorf("❌ Failed to parse template %s at %s: %v", templateName, templatePath, err)
@@ -392,7 +392,9 @@ func (e *TemplateEngine) loadTemplateWithName(templateName string, funcMap templ
 		Delims(e.delimLeft, e.delimRight).
 		Funcs(funcMap)
 
-	_, err = tmpl.ParseFiles(templatePath)
+	// 🔧 修复：收集相关模板文件一起解析，支持{{template}}引用
+	relatedFiles := e.collectRelatedTemplateFiles(templatePath, "")
+	_, err = tmpl.ParseFiles(relatedFiles...)
 	if err != nil {
 		return nil, err
 	}

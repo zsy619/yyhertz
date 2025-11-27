@@ -27,13 +27,14 @@ import (
 //   - 错误处理和流程控制
 //
 // 接口实现：
-//   实现了完整的IController接口，包括：
-//   - 生命周期方法: Init(), Prepare(), Finish()
-//   - 控制器信息: GetControllerName(), GetActionName()
-//   - 模板渲染: Render()
-//   - 安全功能: XSRFToken(), CheckXSRFCookie()
-//   - 路由映射: URLMapping(), HandlerFunc()
-//   - 流程控制: ShouldStopExecution()
+//
+//	实现了完整的IController接口，包括：
+//	- 生命周期方法: Init(), Prepare(), Finish()
+//	- 控制器信息: GetControllerName(), GetActionName()
+//	- 模板渲染: Render()
+//	- 安全功能: XSRFToken(), CheckXSRFCookie()
+//	- 路由映射: URLMapping(), HandlerFunc()
+//	- 流程控制: ShouldStopExecution()
 //
 // 使用示例：
 //
@@ -56,7 +57,6 @@ import (
 //		}
 //		// 处理POST请求
 //	}
-//
 type BaseController struct {
 	Ctx *context.Context // 统一的上下文
 
@@ -74,7 +74,7 @@ type BaseController struct {
 
 	// 应用控制器引用
 	AppController IController // 应用控制器实例引用
-	
+
 	// 应用实例引用（用于访问全局功能）
 	app *App // 应用实例引用
 
@@ -110,7 +110,7 @@ type BaseController struct {
 	sessionHelper  *session.Manager            // Session管理器
 	templateEngine *view.TemplateEngine        // 模板引擎实例
 	includeEngine  *view.TemplateIncludeEngine // 支持include的模板引擎
-	
+
 	// 统一管理器
 	unifiedManager *unified.Manager // 统一管理器实例
 
@@ -119,11 +119,11 @@ type BaseController struct {
 	// 优化功能控制
 	optimizationEnabled bool     // 是否启用优化特性
 	middlewareList      []string // 中间件列表，支持GetMiddleware()
-	
+
 	// ============= 响应流程控制 =============
-	
+
 	// 响应状态控制（内部使用，不暴露给外部）
-	shouldStopExecution bool     // 是否应该停止执行
+	shouldStopExecution bool // 是否应该停止执行
 
 	// 内部控制字段
 	initialized bool // 控制器名称是否已初始化（内部使用）
@@ -156,7 +156,7 @@ func NewBaseController() *BaseController {
 		ViewPath:   "views",
 		LayoutPath: "views/layout",
 		ViewsPath:  "views", // 兼容性
-		Layout:     "layout.html",
+		Layout:     "",
 		TplExt:     ".html",
 		TplPrefix:  "",
 
@@ -174,7 +174,7 @@ func NewBaseController() *BaseController {
 		cookieHelper:   nil, // 将在 initializeBaseController 中设置
 		sessionHelper:  nil, // 将在 initializeBaseController 中设置
 		templateEngine: nil, // 将在 initializeBaseController 中设置
-		
+
 		// 统一管理器
 		unifiedManager: unified.GetManager(), // 获取全局统一管理器
 	}
@@ -210,7 +210,7 @@ func (c *BaseController) Init(ct *context.Context, controllerName, actionName st
 		if appController, ok := app.(IController); ok {
 			c.AppController = appController
 		}
-		
+
 		// 尝试类型断言为*App
 		if appInstance, ok := app.(*App); ok {
 			c.app = appInstance
@@ -231,10 +231,10 @@ func (c *BaseController) initializeBaseController() {
 		c.LayoutPath = "views/layout"
 	}
 	if c.Layout == "" {
-		c.Layout = "layout.html"
+		c.Layout = ""
 	}
 	c.EnableRender = true
-	
+
 	// 为了向后兼容，保留字段设置，但它们现在可能指向全局实例
 	// 通过 getGlobalManagerInstances 函数获取全局实例（如果可用）
 	c.ensureHelpersInitialized()
@@ -248,7 +248,7 @@ func (c *BaseController) ensureHelpersInitialized() {
 	if c.unifiedManager == nil {
 		c.unifiedManager = unified.GetManager()
 	}
-	
+
 	// 尝试从统一管理器获取组件实例
 	if c.unifiedManager != nil && c.unifiedManager.IsInitialized() {
 		// 使用统一管理器的组件
@@ -257,7 +257,7 @@ func (c *BaseController) ensureHelpersInitialized() {
 		c.templateEngine = c.unifiedManager.GetTemplateEngine()
 		return
 	}
-	
+
 	// 向后兼容：如果统一管理器不可用，使用独立的全局实例
 	if c.cookieHelper == nil {
 		if globalHelper := getGlobalCookieHelperIfAvailable(); globalHelper != nil {
@@ -266,7 +266,7 @@ func (c *BaseController) ensureHelpersInitialized() {
 			c.cookieHelper = cookie.NewHelper(cookie.DefaultConfig())
 		}
 	}
-	
+
 	if c.sessionHelper == nil {
 		if globalManager := getGlobalSessionManagerIfAvailable(); globalManager != nil {
 			c.sessionHelper = globalManager
@@ -274,7 +274,7 @@ func (c *BaseController) ensureHelpersInitialized() {
 			c.sessionHelper = session.NewManager(session.DefaultConfig())
 		}
 	}
-	
+
 	if c.templateEngine == nil {
 		if globalEngine := getGlobalTemplateEngineIfAvailable(); globalEngine != nil {
 			c.templateEngine = globalEngine
@@ -358,7 +358,7 @@ func (c *BaseController) Reset() {
 			delete(c.LayoutSections, k)
 		}
 	}
-	
+
 	// 重置执行状态
 	c.ResetExecutionState()
 }
@@ -463,7 +463,7 @@ func getGlobalTemplateEngineIfAvailable() *view.TemplateEngine {
 // ============= 统一管理器集成方法 =============
 
 // GetUnifiedManager 获取统一管理器
-// 
+//
 // 返回当前控制器使用的统一管理器实例，用于高级功能操作。
 //
 // 返回：
@@ -548,8 +548,6 @@ func (c *BaseController) GetTypedContextData(key string, target any) (any, bool)
 	}
 	return nil, false
 }
-
-
 
 // GenerateUnifiedCSRFToken 使用统一管理器生成CSRF令牌
 //

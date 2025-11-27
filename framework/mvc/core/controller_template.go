@@ -346,10 +346,15 @@ func (c *BaseController) renderBasicTemplate(tplName string) error {
 	// 解析视图文件和相关子模板
 	templateFiles := []string{viewPath}
 
-	// 尝试找到同目录下的子模板文件
+	// 🔧 关键修复：找到同目录下的所有模板文件以支持{{template}}引用
 	dir := filepath.Dir(viewPath)
-	if files, err := filepath.Glob(filepath.Join(dir, "_*.html")); err == nil {
-		templateFiles = append(templateFiles, files...)
+	// 不仅查找_*.html，还要查找所有.html文件来支持跨文件模板引用
+	if files, err := filepath.Glob(filepath.Join(dir, "*.html")); err == nil {
+		for _, file := range files {
+			if file != viewPath { // 避免重复添加主模板
+				templateFiles = append(templateFiles, file)
+			}
+		}
 	}
 
 	tmpl, err = tmpl.ParseFiles(templateFiles...)

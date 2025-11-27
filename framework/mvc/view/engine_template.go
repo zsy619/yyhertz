@@ -130,9 +130,12 @@ func (e *TemplateEngine) loadViewTemplates() error {
 					Delims(e.delimLeft, e.delimRight).
 					Funcs(mergedFuncs)
 
-				parsedTmpl, err := tmpl.ParseFiles(path)
+				// 🔧 关键修复：收集同目录下的所有相关模板文件进行一起解析
+				relatedFiles := e.collectRelatedTemplateFiles(path, viewPath)
+
+				parsedTmpl, err := tmpl.ParseFiles(relatedFiles...)
 				if err != nil {
-					config.Errorf("Failed to parse template %s: %v", path, err)
+					config.Errorf("Failed to parse template %s with related files: %v", path, err)
 					return nil
 				}
 
@@ -140,16 +143,30 @@ func (e *TemplateEngine) loadViewTemplates() error {
 				templates := parsedTmpl.Templates()
 				var actualTemplate *template.Template
 
+				// 优先查找与主模板名称匹配的模板
 				for _, t := range templates {
-					if t.Tree != nil && t.Tree.Root != nil {
-						actualTemplate = t
-						break
+					if t.Name() == templateName || t.Name() == filepath.Base(path) {
+						if t.Tree != nil && t.Tree.Root != nil {
+							actualTemplate = t
+							break
+						}
+					}
+				}
+
+				// 如果找不到匹配名称的模板，使用第一个有效的模板
+				if actualTemplate == nil {
+					for _, t := range templates {
+						if t.Tree != nil && t.Tree.Root != nil {
+							actualTemplate = t
+							break
+						}
 					}
 				}
 
 				if actualTemplate != nil {
-					e.templates[templateName] = actualTemplate
-					config.Debugf("Loaded template: %s -> %s", templateName, actualTemplate.Name())
+					e.templates[templateName] = parsedTmpl // 使用整个解析结果，而不是单个模板
+					config.Debugf("Loaded template: %s -> %s (with %d related templates)",
+						templateName, actualTemplate.Name(), len(templates))
 				} else {
 					config.Warnf("Template %s is empty or invalid", templateName)
 				}
@@ -164,6 +181,70 @@ func (e *TemplateEngine) loadViewTemplates() error {
 	}
 
 	return nil
+}
+
+// collectRelatedTemplateFiles 收集相关的模板文件用于一起解析
+func (e *TemplateEngine) collectRelatedTemplateFiles(mainTemplatePath, viewPath string) []string {
+	files := []string{mainTemplatePath} // 主模板文件
+	templateDir := filepath.Dir(mainTemplatePath)
+
+	// 收集同目录下的所有模板文件
+	entries, err := os.ReadDir(templateDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), e.extension) {
+				fullPath := filepath.Join(templateDir, entry.Name())
+				if fullPath != mainTemplatePath {
+					files = append(files, fullPath)
+				}
+			}
+		}
+	}
+
+	// 🔧 新增功能：收集跨目录的公共模板文件
+	// 搜索shared、components、layouts等公共目录
+	commonDirs := []string{"shared", "components", "layouts", "partials", "component", "layout", "partial"}
+
+	for _, viewPath := range e.viewPaths {
+		for _, commonDir := range commonDirs {
+			commonDirPath := filepath.Join(viewPath, commonDir)
+			if _, err := os.Stat(commonDirPath); err == nil {
+				// 递归收集公共目录下的所有模板文件
+				err := filepath.Walk(commonDirPath, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return nil // 忽略错误，继续搜索
+					}
+
+					if !info.IsDir() && strings.HasSuffix(path, e.extension) {
+						// 避免重复添加
+						for _, existingFile := range files {
+							if existingFile == path {
+								return nil
+							}
+						}
+						files = append(files, path)
+						config.Debugf("🔗 Added cross-directory template: %s", path)
+					}
+					return nil
+				})
+				if err != nil {
+					config.Debugf("Warning: failed to walk common directory %s: %v", commonDirPath, err)
+				}
+			}
+		}
+	}
+
+	// 记录收集到的文件
+	config.Debugf("Collected related template files for %s: %v", filepath.Base(mainTemplatePath),
+		func() []string {
+			names := make([]string, len(files))
+			for i, f := range files {
+				names[i] = filepath.Base(f)
+			}
+			return names
+		}())
+
+	return files
 }
 
 // getTemplateName 从文件路径获取模板名称
@@ -200,9 +281,11 @@ func (e *TemplateEngine) loadSingleTemplate(templateName string) (*template.Temp
 		Delims(e.delimLeft, e.delimRight).
 		Funcs(mergedFuncs)
 
-	_, err = tmpl.ParseFiles(templateFile)
+	// 🔧 关键修复：对单个模板也收集相关文件一起解析
+	relatedFiles := e.collectRelatedTemplateFiles(templateFile, "")
+	_, err = tmpl.ParseFiles(relatedFiles...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template %s: %w", templateFile, err)
+		return nil, fmt.Errorf("failed to parse template %s with related files: %w", templateFile, err)
 	}
 
 	return tmpl, nil
