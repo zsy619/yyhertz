@@ -1,46 +1,29 @@
 package core
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/zsy619/yyhertz/framework/mvc/view"
+    "github.com/zsy619/yyhertz/framework/config"
+    "github.com/zsy619/yyhertz/framework/mvc/view"
 )
 
 // initializeEnhancedTemplateEngine 初始化增强的模板引擎
 func (c *BaseController) initializeEnhancedTemplateEngine() {
-	if c.templateEngine == nil {
-		// 🔧 临时修复：直接使用统一引擎实例，绕过有问题的TemplateIncludeEngine
-		// 原因：TemplateIncludeEngine在解析模板时遇到大量缺失的函数定义
-		c.templateEngine = view.GetUnifiedEngine()
-		
-		// 注释掉有问题的TemplateIncludeEngine创建过程
-		/* 
-		// 尝试使用增强的模板引擎
-		cfg := view.DefaultTemplateConfig()
-		if c.ViewPath != "" {
-			// 扩展视图路径，包含基础路径、shared目录和其他常用目录
-			cfg.Paths.ViewPaths = []string{
-				c.ViewPath,                              // 主视图路径
-				filepath.Join(c.ViewPath, "shared"),     // shared模板目录
-				filepath.Join(c.ViewPath, "layouts"),    // 布局目录
-				filepath.Join(c.ViewPath, "components"), // 组件目录
-			}
-		}
-		if enhanced, err := view.NewTemplateIncludeEngine(cfg); err == nil {
-			c.templateEngine = enhanced.TemplateEngine
-			c.includeEngine = enhanced
+    if c.templateEngine == nil {
+        // 优先创建支持 {{template}} include 的引擎
+        cfg := config.GlobalTemplate
+        if includeEngine, err := view.NewTemplateIncludeEngine(cfg); err == nil {
+            c.includeEngine = includeEngine
+            c.templateEngine = includeEngine.TemplateEngine
 
-			// 自动添加Beego风格的模板函数
-			c.addBeegoTemplateFunctions()
+            c.addBeegoTemplateFunctions()
+            c.addGlobalTemplateFunctions()
+            return
+        }
 
-			// 添加应用级别的全局模板函数
-			c.addGlobalTemplateFunctions()
-		} else {
-			// 降级到标准模板引擎 - 使用统一引擎实例
-			c.templateEngine = view.GetUnifiedEngine()
-		}
-		*/
-	}
+        // 回退到统一引擎
+        c.templateEngine = view.GetUnifiedEngine()
+    }
 }
 
 // addBeegoTemplateFunctions 添加Beego风格的模板函数（内部方法）

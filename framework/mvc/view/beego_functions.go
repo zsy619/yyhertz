@@ -884,7 +884,7 @@ func Include(templateName string, data ...any) template.HTML {
 	}
 
 	// 添加调试信息
-	// fmt.Printf("🔍 Include Debug: templateName=%s, engineInitialized=%v\n", templateName, globalEngineForFunctions != nil)
+	fmt.Printf("🔍 Include Debug: templateName=%s, engineInitialized=%v\n", templateName, globalEngineForFunctions != nil)
 
 	// 渲染包含的模板
 	result, err := globalEngineForFunctions.Render(templateName, includeData)

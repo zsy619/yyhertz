@@ -34,11 +34,8 @@ func (ckm *CacheKeyManager) GenerateTemplateKey(templateName string) string {
 	// 因为LoadTemplate中使用filepath.Base(templatePath)作为模板名，缓存键也应该对应
 
 	// 先获取文件的basename
-	baseName := strings.TrimSuffix(strings.TrimPrefix(templateName, "/"), "/")
-	if idx := strings.LastIndex(baseName, "/"); idx >= 0 {
-		baseName = baseName[idx+1:]
-	}
-
+	baseName := strings.TrimPrefix(templateName, "/")
+	baseName = strings.TrimSuffix(baseName, "/")
 	// 再去掉扩展名
 	if idx := strings.LastIndex(baseName, "."); idx > 0 {
 		baseName = baseName[:idx]

@@ -46,12 +46,12 @@ func main() {
 
 	prefix := "/admin/s3"
 	distController := &controllers.DistController{}
-	
+
 	// 测试：直接使用自动路由注册
 	fmt.Printf("开始注册DistController到前缀: %s\n", prefix)
 	fmt.Printf("DistController控制器名: %s\n", distController.GetControllerName())
 	mvc.RouterAutoPrefix(prefix, distController)
-	
+
 	// 临时解决方案：手动注册用户期望的路由变体
 	app.RouterPrefix("/admin/s3", distController, false, "GET:/dist/searchBill|GetSearchBill")
 

@@ -13,10 +13,13 @@ import (
 
 // TemplateIncludeEngine 支持template include的模板引擎
 type TemplateIncludeEngine struct {
-	*TemplateEngine
-	
-	// 所有模板的统一实例
-	masterTemplate *template.Template
+    *TemplateEngine
+    
+    // masterTemplate 统一的模板集合，包含视图/布局/组件全部已解析模板
+    masterTemplate *template.Template
+    // keyIndex 将调用方可能使用的模板键别名映射到主集合中的规范模板名
+    // 支持：路径/basename、大小写、带/不带扩展名等变体，提升 Lookup/{{template}} 的命中率
+    keyIndex map[string]string
 }
 
 // NewTemplateIncludeEngine 创建支持include的模板引擎
@@ -26,9 +29,10 @@ func NewTemplateIncludeEngine(cfg *config.TemplateConfig) (*TemplateIncludeEngin
 		return nil, err
 	}
 	
-	engine := &TemplateIncludeEngine{
-		TemplateEngine: baseEngine,
-	}
+    engine := &TemplateIncludeEngine{
+        TemplateEngine: baseEngine,
+        keyIndex:       make(map[string]string),
+    }
 	
 	// 重新加载模板以支持include
 	if err := engine.loadAllTemplatesForInclude(); err != nil {
@@ -77,11 +81,30 @@ func (e *TemplateIncludeEngine) loadAllTemplatesForInclude() error {
 	}
 	
 	// 解析所有模板文件到主模板
-	if len(templateFiles) > 0 {
-		if _, err := e.masterTemplate.ParseFiles(templateFiles...); err != nil {
-			return fmt.Errorf("failed to parse template files: %w", err)
-		}
-	}
+    if len(templateFiles) > 0 {
+        if _, err := e.masterTemplate.ParseFiles(templateFiles...); err != nil {
+            return fmt.Errorf("failed to parse template files: %w", err)
+        }
+    }
+    for _, tmpl := range e.masterTemplate.Templates() {
+        n := tmpl.Name()
+        if n == "" {
+            continue
+        }
+        e.keyIndex[n] = n
+        ln := strings.ToLower(n)
+        e.keyIndex[ln] = n
+        noext := strings.TrimSuffix(n, e.extension)
+        if noext != n {
+            e.keyIndex[noext] = n
+            e.keyIndex[strings.ToLower(noext)] = n
+        }
+        if !strings.HasSuffix(n, e.extension) {
+            withExt := n + e.extension
+            e.keyIndex[withExt] = n
+            e.keyIndex[strings.ToLower(withExt)] = n
+        }
+    }
 	
 	config.Infof("Loaded %d template files for include support", len(templateFiles))
 	
@@ -95,13 +118,24 @@ func (e *TemplateIncludeEngine) RenderTemplate(templateName string, data any) (s
 	}
 	
 	// 标准化模板名称
-	templateKey := e.normalizeTemplateKey(templateName)
+    templateKey := e.normalizeTemplateKey(templateName)
+    if v, ok := e.keyIndex[templateKey]; ok {
+        templateKey = v
+    } else {
+        alt := e.generateAlternativeKeys(templateName)
+        for _, k := range alt {
+            if v2, ok2 := e.keyIndex[k]; ok2 {
+                templateKey = v2
+                break
+            }
+        }
+    }
 	
 	// 查找模板
-	tmpl := e.masterTemplate.Lookup(templateKey)
-	if tmpl == nil {
-		// 🔧 增强调试：收集所有尝试的键名
-		alternativeKeys := e.generateAlternativeKeys(templateName)
+    tmpl := e.masterTemplate.Lookup(templateKey)
+    if tmpl == nil {
+        // 🔧 增强调试：收集所有尝试的键名
+        alternativeKeys := e.generateAlternativeKeys(templateName)
 		
 		// 尝试其他可能的名称
 		for _, key := range alternativeKeys {
@@ -111,20 +145,20 @@ func (e *TemplateIncludeEngine) RenderTemplate(templateName string, data any) (s
 			}
 		}
 		
-		if tmpl == nil {
-			// 🔧 增强错误诊断：提供更详细的调试信息
-			availableTemplates := e.ListAvailableTemplates()
-			return "", fmt.Errorf("❌ 模板查找失败:\n  - 请求模板: %s\n  - 标准化键名: %s\n  - 尝试的键名: %v\n  - 可用模板 (前10个): %v\n  - 总可用模板数: %d", 
-				templateName, templateKey, append([]string{templateKey}, alternativeKeys...), 
-				func() []string {
-					if len(availableTemplates) > 10 {
-						return availableTemplates[:10]
-					}
-					return availableTemplates
-				}(),
-				len(availableTemplates))
-		}
-	}
+        if tmpl == nil {
+            // 🔧 增强错误诊断：提供更详细的调试信息
+            availableTemplates := e.ListAvailableTemplates()
+            return "", fmt.Errorf("❌ 模板查找失败:\n  - 请求模板: %s\n  - 标准化键名: %s\n  - 尝试的键名: %v\n  - 可用模板 (前10个): %v\n  - 总可用模板数: %d", 
+                templateName, templateKey, append([]string{templateKey}, alternativeKeys...), 
+                func() []string {
+                    if len(availableTemplates) > 10 {
+                        return availableTemplates[:10]
+                    }
+                    return availableTemplates
+                }(),
+                len(availableTemplates))
+        }
+    }
 	
 	// 直接使用原始数据，不进行包装
 	renderData := data

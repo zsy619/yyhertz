@@ -118,17 +118,19 @@ func (e *EnhancedTemplateEngine) loadAllTemplatesWithIncludes() error {
 
 	e.templateDefs = make(map[string]*template.Template)
 
-	for name := range templateFiles {
-		// 克隆全局模板为每个模板创建实例
-		if tmpl := e.globalTemplate.Lookup(name); tmpl != nil {
-			cloned, err := e.globalTemplate.Clone()
-			if err != nil {
-				config.Errorf("Failed to clone template for %s: %v", name, err)
-				continue
-			}
-			e.templateDefs[name] = cloned
-		}
-	}
+    for name, filePath := range templateFiles {
+        base := filepath.Base(filePath)
+        if tmpl := e.globalTemplate.Lookup(base); tmpl != nil {
+            cloned, err := e.globalTemplate.Clone()
+            if err != nil {
+                config.Errorf("Failed to clone template for %s: %v", name, err)
+                continue
+            }
+            e.templateDefs[name] = cloned
+            e.templateDefs[base] = cloned
+            e.templateDefs[strings.TrimSuffix(base, e.extension)] = cloned
+        }
+    }
 
 	config.Infof("Loaded %d template files with include support", len(templateFiles))
 	return nil

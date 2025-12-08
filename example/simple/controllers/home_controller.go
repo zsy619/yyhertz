@@ -97,6 +97,7 @@ func (c *HomeController) renderMarkdownDocWithGroup(group, docName, title string
 }
 
 func (c *HomeController) GetIndex() {
+	log.Printf("=== HomeController.GetIndex called ===")
 	// 模拟首页数据
 	features := []map[string]any{
 		{
@@ -287,6 +288,7 @@ func (c *HomeController) GetTest() {
 	// 测试简单模板渲染
 	c.SetData("Title", "Simple Test")
 	c.SetData("Content", "This is a simple test content")
+	log.Printf("=== 可用模板数量: %d ===", len(c.ListAvailableTemplates()))
 	log.Printf("=== 尝试渲染简单模板 ===")
 	c.RenderHTML("home/index.html")
 	log.Printf("=== 简单模板渲染完成 ===")
@@ -433,4 +435,7 @@ func (c *HomeController) GetPerformance() {
 // 测试工具文档
 func (c *HomeController) GetTesting() {
 	c.renderMarkdownDocWithGroup("dev-tools", "testing", "测试工具")
+}
+func (c *HomeController) Prepare() {
+	c.SetTemplatePath("./example/simple/views", "./example/simple/views/layouts")
 }

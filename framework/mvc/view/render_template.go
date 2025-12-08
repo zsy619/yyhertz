@@ -162,98 +162,31 @@ func (e *TemplateEngine) LoadTemplate(templateName string) (*template.Template, 
 
 // FindTemplateFile 查找模板文件（增强版）
 func (e *TemplateEngine) FindTemplateFile(templateName string) (string, error) {
-	// 确保模板名有扩展名
-	if !strings.HasSuffix(templateName, e.extension) {
-		templateName += e.extension
-	}
+    if !strings.HasSuffix(templateName, e.extension) {
+        templateName += e.extension
+    }
 
-	config.Debugf("🔍 查找模板文件: %s，在路径: %v", templateName, e.viewPaths)
+    cleanedName := strings.TrimPrefix(templateName, "/")
+    var searched []string
 
-	// 获取当前工作目录用于调试
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("获取当前工作目录失败: %w", err)
-	}
-	config.Debugf("  [FindTemplateFile]当前工作目录: %s", wd)
+    for _, vp := range e.viewPaths {
+        base := vp
+        if !filepath.IsAbs(base) {
+            resolved, err := resolveAbsolutePath(base)
+            if err != nil {
+                continue
+            }
+            base = resolved
+        }
 
-	// 在所有视图路径中搜索
-	for _, viewPath := range e.viewPaths {
-		// 先尝试绝对路径
-		templatePath := viewPath
-		if !filepath.IsAbs(viewPath) {
-			// 如果是相对路径，尝试不同的基准目录
-			possibleBases := []string{
-				wd,                             // 当前工作目录
-				filepath.Join(wd, "templates"), // templates子目录
-				filepath.Dir(wd),               // 上级目录
-				filepath.Join(filepath.Dir(wd), "templates"), // 上级目录下的templates
-			}
+        p := filepath.Join(base, cleanedName)
+        searched = append(searched, p)
+        if stat, err := os.Stat(p); err == nil && !stat.IsDir() {
+            return p, nil
+        }
+    }
 
-			for _, base := range possibleBases {
-				candidatePath := filepath.Join(base, viewPath, templateName)
-				config.Debugf("  检查候选路径: %s", candidatePath)
-
-				if stat, err := os.Stat(candidatePath); err == nil && !stat.IsDir() {
-					config.Debugf("✅ 找到模板文件: %s", candidatePath)
-					return candidatePath, nil
-				}
-			}
-		} else {
-			// 绝对路径直接检查
-			templatePath = filepath.Join(viewPath, templateName)
-			config.Debugf("  检查绝对路径: %s", templatePath)
-
-			if stat, err := os.Stat(templatePath); err == nil && !stat.IsDir() {
-				config.Debugf("✅ 找到模板文件: %s", templatePath)
-				return templatePath, nil
-			}
-		}
-	}
-
-	// 如果在配置的路径中没找到，尝试递归搜索
-	config.Debugf("🔍 在配置路径中未找到，开始递归搜索...")
-	for _, viewPath := range e.viewPaths {
-		// 对每个可能的基准目录进行递归搜索
-		possibleBases := []string{
-			wd,
-			filepath.Join(wd, "templates"),
-			filepath.Dir(wd),
-			filepath.Join(filepath.Dir(wd), "templates"),
-		}
-
-		for _, base := range possibleBases {
-			if !filepath.IsAbs(viewPath) {
-				searchPath := filepath.Join(base, viewPath)
-				if foundPath := e.recursiveSearchTemplate(searchPath, templateName); foundPath != "" {
-					config.Debugf("✅ 递归搜索找到模板文件: %s", foundPath)
-					return foundPath, nil
-				}
-			} else {
-				if foundPath := e.recursiveSearchTemplate(viewPath, templateName); foundPath != "" {
-					config.Debugf("✅ 递归搜索找到模板文件: %s", foundPath)
-					return foundPath, nil
-				}
-			}
-		}
-	}
-
-	// 提供更详细的错误信息
-	searchedPaths := make([]string, 0)
-	for _, viewPath := range e.viewPaths {
-		if !filepath.IsAbs(viewPath) {
-			searchedPaths = append(searchedPaths,
-				filepath.Join(wd, viewPath),
-				filepath.Join(wd, "examples", viewPath),
-				filepath.Join(filepath.Dir(wd), viewPath),
-				filepath.Join(filepath.Dir(wd), "examples", viewPath),
-			)
-		} else {
-			searchedPaths = append(searchedPaths, viewPath)
-		}
-	}
-
-	return "", fmt.Errorf("template file '%s' not found in searched paths: %v\nCurrent working directory: %s",
-		templateName, searchedPaths, wd)
+    return "", fmt.Errorf("template file '%s' not found in searched paths: %v", templateName, searched)
 }
 
 // recursiveSearchTemplate 递归搜索模板文件
@@ -325,7 +258,9 @@ func (e *TemplateEngine) validateTemplateExecution(tmpl *template.Template, temp
 
 	var testBuf strings.Builder
 	if err := tmpl.Execute(&testBuf, testData); err != nil {
-		// 如果是函数未定义错误，提供具体建议
+		if strings.Contains(err.Error(), "no such template") {
+			return nil
+		}
 		if strings.Contains(err.Error(), "function") && strings.Contains(err.Error(), "not defined") {
 			return fmt.Errorf("template execution test failed - function not defined: %w\n"+
 				"💡 Hint: Check if all template functions are properly registered before template parsing", err)
