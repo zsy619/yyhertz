@@ -101,7 +101,9 @@ func (tfm *TemplateFunctionManager) GetMergedFunctions(engineFuncs template.Func
 	// 2. 然后添加全局自定义函数（可能覆盖内置函数）
 	for name := range tfm.globalFuncs {
 		if _, exists := merged[name]; exists {
-			config.Warnf("Global function '%s' overrides builtin function", name)
+			// TODO: 记录警告日志
+			// config.Warnf("Global function '%s' overrides builtin function", name)
+			// fmt.Printf("Global function '%s' overrides builtin function\n", name)
 		}
 	}
 	maps.Copy(merged, tfm.globalFuncs)
