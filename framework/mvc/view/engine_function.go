@@ -112,7 +112,8 @@ func (tfm *TemplateFunctionManager) GetMergedFunctions(engineFuncs template.Func
 	for name, fn := range engineFuncs {
 		if _, exists := merged[name]; exists {
 			source := tfm.GetFunctionSource(name)
-			config.Warnf("Engine function '%s' overrides %s function", name, source)
+			// config.Warnf("Engine function '%s' overrides %s function", name, source)
+			_ = source
 		}
 		merged[name] = fn
 	}
